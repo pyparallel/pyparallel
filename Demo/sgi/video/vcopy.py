@@ -12,7 +12,7 @@ def report(time, iframe):
 	print 'Frame', iframe, ': t =', time
 
 def usage():
-	sys.stderr.write('usage: vcopy [-t type] [-m treshold] [-a] infile outfile\n')
+	sys.stderr.write('usage: Vcopy [-t type] [-m treshold] [-a] infile outfile\n')
 	sys.stderr.write('-t Convert to other type\n')
 	sys.stderr.write('-a Automatic\n')
 	sys.stderr.write('-m Convert grey to mono with treshold\n')
