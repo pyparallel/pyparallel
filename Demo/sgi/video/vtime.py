@@ -1,106 +1,117 @@
-#
-# Module vtime - Keep virtual time between two nodes.
-#
-# We try for synchronised clocks by sending a packet of the for
-# (1,mytime,0) to the other side, and waiting (at most) a second for
-# a reply. This reply has the form (2,mytime,histime), and we can
-# estimate the time difference by defining histime to be exactly half-way
-# between the time we sent our message and got our reply. We send a
-# final (3,mynewtime,histime) message to allow the other side to do the
-# same computations.
-#
-# Note that the protocol suffers heavily from the 2-army problem.
-# It'll have to do until I can read up on time-sync protocols, though.
-#
-from socket import *
-import time
+#! /ufs/guido/bin/sgi/python
 
-MSGSIZE = 100
-MSGTIMEOUT = 1000
+# Manipulate the time base of CMIF movies
 
-recv_timeout = 'receive timeout'
-bad_connect = 'Bad connection'
 
-def timeavg(a,b):
-    return int((long(a)+b)/2L)
-def tryrecv(s):
-    cnt = 0
-    while 1:
-	if s.avail():
-	    return s.recvfrom(MSGSIZE)
-	time.millisleep(100)
-	cnt = cnt + 100
-	if cnt > MSGTIMEOUT:
-	    raise recv_timeout
+# Possibilities:
+#
+# - resample at a fixed rate
+# - divide the time codes by a speed factor (to make it go faster/slower)
+# - drop frames that are less than n msec apart (to accomodate slow players)
 
-class VTime():
-    def init(self,(client,host,port)):
-	s = socket(AF_INET, SOCK_DGRAM)
-	host = gethostbyname(host)
-	localhost = gethostbyname(gethostname())
-	raddr = (host,port)
-	s.bind((localhost,port))
-	if client:
-	    #
-	    # We loop here because we want the *second* measurement
-	    # for accuracy
-	    for loopct in (0,2):
-		curtijd = time.millitimer()
-		check = `(loopct,curtijd,0)`
-		s.sendto(check,raddr)
-		while 1:
-		    try:
-			if loopct:
-			    data, other = s.recvfrom(MSGSIZE)
-			else:
-			    data, other = tryrecv(s)
-			newtijd = time.millitimer()
-			if other <> raddr:
-			    print 'Someone else syncing to us: ', other
-			    raise bad_connect
-			data = eval(data)
-			if data[:2] == (loopct+1,curtijd):
-			    break
-			if data[0] <> 2:
-			    print 'Illegal sync reply: ', data
-			    raise bad_connect
-		    except recv_timeout:
-			curtijd = time.millitimer()
-			check = `(loopct,curtijd,0)`
-			s.sendto(check,raddr)
-	    histime = data[2]
-	    s.sendto(`(4,newtijd,histime)`,raddr)
-	    mytime = timeavg(curtijd,newtijd)
-	    #mytime = curtijd
-	    self.timediff = histime - mytime
-	else:
-	    while 1:
-		data,other = s.recvfrom(MSGSIZE)
-		if other <> raddr:
-		    print 'Someone else syncing to us: ', other, ' Wanted ', raddr
-		    raise bad_connect
-		data = eval(data)
-		if data[0] in (0,2):
-		    curtijd = time.millitimer()
-		    s.sendto(`(data[0]+1,data[1],curtijd)`,raddr)
-		elif data[0] == 4:
-		    newtijd = time.millitimer()
-		    histime = data[1]
-		    mytime = timeavg(curtijd,newtijd)
-		    #mytime = curtijd
-		    self.timediff = histime-mytime
-		    break
+
+# Usage:
+#
+# Vtime [-m msec] [-r msec] [-s speed] [infile [outfile]]
+
+
+# Options:
+#
+# -m n       : drop frames closer than n msec (default 0)
+# -r n       : regenerate input time base n msec apart
+# -s speed   : speed change factor after other processing (default 1.0)
+# infile     : input file (default film.video)
+# outfile    : output file (default out.video)
+
+
+import sys
+sys.path.append('/ufs/guido/src/video')
+import VFile
+import getopt
+import string
+
+
+# Global options
+
+speed = 1.0
+mindelta = 0
+regen = None
+
+
+# Main program -- mostly command line parsing
+
+def main():
+	global speed, mindelta
+	opts, args = getopt.getopt(sys.argv[1:], 'm:r:s:')
+	for opt, arg in opts:
+		if opt == '-m':
+			mindelta = string.atoi(arg)
+		elif opt == '-r':
+			regen = string.atoi(arg)
+		elif opt == '-s':
+			speed = float(eval(arg))
+	if len(args) < 1:
+		args.append('film.video')
+	if len(args) < 2:
+		args.append('out.video')
+	if len(args) > 2:
+		sys.stderr.write('usage: Vtime [options] [infile [outfile]]\n')
+		sys.exit(2)
+	sts = process(args[0], args[1])
+	sys.exit(sts)
+
+
+# Copy one file to another
+
+def process(infilename, outfilename):
+	try:
+		vin = VFile.VinFile().init(infilename)
+	except IOError, msg:
+		sys.stderr.write(infilename + ': I/O error: ' + `msg` + '\n')
+		return 1
+	except VFile.Error, msg:
+		sys.stderr.write(msg + '\n')
+		return 1
+	except EOFError:
+		sys.stderr.write(infilename + ': EOF in video file\n')
+		return 1
+
+	try:
+		vout = VFile.VoutFile().init(outfilename)
+	except IOError, msg:
+		sys.stderr.write(outfilename + ': I/O error: ' + `msg` + '\n')
+		return 1
+
+	vout.setinfo(vin.getinfo())
+	vout.writeheader()
+	
+	told = 0
+	nin = 0
+	nout = 0
+	tin = 0
+	tout = 0
+
+	while 1:
+		try:
+			tin, data, cdata = vin.getnextframe()
+		except EOFError:
+			break
+		nin = nin + 1
+		if regen:
+			tout = nin * regen
 		else:
-		    print 'Funny data: ', data
-		    raise bad_connect
-	return self
-	#
-    def his2mine(self,tijd):
-	return tijd - self.timediff
-    #
-    def mine2his(self, tijd):
-	return tijd + self.timediff
+			tout = tin
+		tout = int(tout / speed)
+		if tout - told < mindelta:
+			continue
+		told = tout
+		vout.writeframe(tout, data, cdata)
+		nout = nout + 1
 
-def test(clt, host, port):
-    xx = VTime().init(clt,host,port)
-    print 'Time diff: ', xx.his2mine(0)
+	vout.close()
+	vin.close()
+
+
+# Don't forget to call the main program
+
+main()
