@@ -1,129 +1,72 @@
 """Test suite for the cProfile module."""
 
-import cProfile, pstats, sys
+import sys
+from test.support import run_unittest
 
-# In order to have reproducible time, we simulate a timer in the global
-# variable 'ticks', which represents simulated time in milliseconds.
-# (We can't use a helper function increment the timer since it would be
-# included in the profile and would appear to consume all the time.)
-ticks = 0
+# rip off all interesting stuff from test_profile
+import cProfile
+from test.test_profile import ProfileTest, regenerate_expected_output
 
-# IMPORTANT: this is an output test.  *ALL* NUMBERS in the expected
-# output are relevant.  If you change the formatting of pstats,
-# please don't just regenerate output/test_cProfile without checking
-# very carefully that not a single number has changed.
+class CProfileTest(ProfileTest):
+    profilerclass = cProfile.Profile
+
 
 def test_main():
-    global ticks
-    ticks = 42000
-    prof = cProfile.Profile(timer, 0.001)
-    prof.runctx("testfunc()", globals(), locals())
-    assert ticks == 43000, ticks
-    st = pstats.Stats(prof)
-    st.strip_dirs().sort_stats('stdname').print_stats()
-    st.print_callees()
-    st.print_callers()
+    run_unittest(CProfileTest)
 
-def timer():
-    return ticks
-
-def testfunc():
-    # 1 call
-    # 1000 ticks total: 270 ticks local, 730 ticks in subfunctions
-    global ticks
-    ticks += 99
-    helper()                            # 300
-    helper()                            # 300
-    ticks += 171
-    factorial(14)                       # 130
-
-def factorial(n):
-    # 23 calls total
-    # 170 ticks total, 150 ticks local
-    # 3 primitive calls, 130, 20 and 20 ticks total
-    # including 116, 17, 17 ticks local
-    global ticks
-    if n > 0:
-        ticks += n
-        return mul(n, factorial(n-1))
+def main():
+    if '-r' not in sys.argv:
+        test_main()
     else:
-        ticks += 11
-        return 1
-
-def mul(a, b):
-    # 20 calls
-    # 1 tick, local
-    global ticks
-    ticks += 1
-    return a * b
-
-def helper():
-    # 2 calls
-    # 300 ticks total: 20 ticks local, 260 ticks in subfunctions
-    global ticks
-    ticks += 1
-    helper1()                           # 30
-    ticks += 2
-    helper1()                           # 30
-    ticks += 6
-    helper2()                           # 50
-    ticks += 3
-    helper2()                           # 50
-    ticks += 2
-    helper2()                           # 50
-    ticks += 5
-    helper2_indirect()                  # 70
-    ticks += 1
-
-def helper1():
-    # 4 calls
-    # 30 ticks total: 29 ticks local, 1 tick in subfunctions
-    global ticks
-    ticks += 10
-    hasattr(C(), "foo")                 # 1
-    ticks += 19
-    lst = []
-    lst.append(42)                      # 0
-    sys.exc_info()                      # 0
-
-def helper2_indirect():
-    helper2()                           # 50
-    factorial(3)                        # 20
-
-def helper2():
-    # 8 calls
-    # 50 ticks local: 39 ticks local, 11 ticks in subfunctions
-    global ticks
-    ticks += 11
-    hasattr(C(), "bar")                 # 1
-    ticks += 13
-    subhelper()                         # 10
-    ticks += 15
-
-def subhelper():
-    # 8 calls
-    # 10 ticks total: 8 ticks local, 2 ticks in subfunctions
-    global ticks
-    ticks += 2
-    for i in range(2):                  # 0
-        try:
-            C().foo                     # 1 x 2
-        except AttributeError:
-            ticks += 3                  # 3 x 2
-
-class C:
-    def __getattr__(self, name):
-        # 28 calls
-        # 1 tick, local
-        global ticks
-        ticks += 1
-        raise AttributeError
+        regenerate_expected_output(__file__, CProfileTest)
 
 
-def test_main():
-    from test.support import TestSkipped
-    raise TestSkipped('test_cProfile test is current broken')
-
+# Don't remove this comment. Everything below it is auto-generated.
+#--cut--------------------------------------------------------------------------
+CProfileTest.expected_output['print_stats'] = """\
+       28    0.028    0.001    0.028    0.001 profilee.py:110(__getattr__)
+        1    0.270    0.270    1.000    1.000 profilee.py:25(testfunc)
+     23/3    0.150    0.007    0.170    0.057 profilee.py:35(factorial)
+       20    0.020    0.001    0.020    0.001 profilee.py:48(mul)
+        2    0.040    0.020    0.600    0.300 profilee.py:55(helper)
+        4    0.116    0.029    0.120    0.030 profilee.py:73(helper1)
+        2    0.000    0.000    0.140    0.070 profilee.py:84(helper2_indirect)
+        8    0.312    0.039    0.400    0.050 profilee.py:88(helper2)
+        8    0.064    0.008    0.080    0.010 profilee.py:98(subhelper)"""
+CProfileTest.expected_output['print_callers'] = """\
+profilee.py:110(__getattr__)                      <-      16    0.016    0.016  profilee.py:98(subhelper)
+profilee.py:25(testfunc)                          <-       1    0.270    1.000  <string>:1(<module>)
+profilee.py:35(factorial)                         <-       1    0.014    0.130  profilee.py:25(testfunc)
+                                                        20/3    0.130    0.147  profilee.py:35(factorial)
+                                                           2    0.006    0.040  profilee.py:84(helper2_indirect)
+profilee.py:48(mul)                               <-      20    0.020    0.020  profilee.py:35(factorial)
+profilee.py:55(helper)                            <-       2    0.040    0.600  profilee.py:25(testfunc)
+profilee.py:73(helper1)                           <-       4    0.116    0.120  profilee.py:55(helper)
+profilee.py:84(helper2_indirect)                  <-       2    0.000    0.140  profilee.py:55(helper)
+profilee.py:88(helper2)                           <-       6    0.234    0.300  profilee.py:55(helper)
+                                                           2    0.078    0.100  profilee.py:84(helper2_indirect)
+profilee.py:98(subhelper)                         <-       8    0.064    0.080  profilee.py:88(helper2)
+{built-in method exc_info}                        <-       4    0.000    0.000  profilee.py:73(helper1)
+{built-in method hasattr}                         <-       4    0.000    0.004  profilee.py:73(helper1)
+                                                           8    0.000    0.008  profilee.py:88(helper2)
+{method 'append' of 'list' objects}               <-       4    0.000    0.000  profilee.py:73(helper1)"""
+CProfileTest.expected_output['print_callees'] = """\
+<string>:1(<module>)                              ->       1    0.270    1.000  profilee.py:25(testfunc)
+profilee.py:110(__getattr__)                      ->
+profilee.py:25(testfunc)                          ->       1    0.014    0.130  profilee.py:35(factorial)
+                                                           2    0.040    0.600  profilee.py:55(helper)
+profilee.py:35(factorial)                         ->    20/3    0.130    0.147  profilee.py:35(factorial)
+                                                          20    0.020    0.020  profilee.py:48(mul)
+profilee.py:48(mul)                               ->
+profilee.py:55(helper)                            ->       4    0.116    0.120  profilee.py:73(helper1)
+                                                           2    0.000    0.140  profilee.py:84(helper2_indirect)
+                                                           6    0.234    0.300  profilee.py:88(helper2)
+profilee.py:73(helper1)                           ->       4    0.000    0.000  {built-in method exc_info}
+profilee.py:84(helper2_indirect)                  ->       2    0.006    0.040  profilee.py:35(factorial)
+                                                           2    0.078    0.100  profilee.py:88(helper2)
+profilee.py:88(helper2)                           ->       8    0.064    0.080  profilee.py:98(subhelper)
+profilee.py:98(subhelper)                         ->      16    0.016    0.016  profilee.py:110(__getattr__)
+{built-in method hasattr}                         ->      12    0.012    0.012  profilee.py:110(__getattr__)"""
 
 if __name__ == "__main__":
-    test_main()
+    main()
