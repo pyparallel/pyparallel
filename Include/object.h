@@ -51,8 +51,8 @@ A standard interface exists for objects that contain an array of items
 whose size is determined when the object is allocated.
 */
 
-/* Py_DEBUG implies Py_TRACE_REFS. */
-#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS)
+/* Py_DEBUG implies Py_TRACE_REFS if !WITH_PARALLEL. */
+#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(WITH_PARALLEL)
 #define Py_TRACE_REFS
 #endif
 
@@ -655,7 +655,6 @@ given type object has a specified feature.
 #endif
 #define PyType_FastSubclass(t,f)  PyType_HasFeature(t,f)
 
-
 /*
 The macros Py_INCREF(op) and Py_DECREF(op) are used to increment or decrement
 reference counts.  Py_DECREF calls the object's deallocator function when
@@ -748,22 +747,47 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
 /* Without Py_TRACE_REFS, there's little enough to do that we expand code
  * inline.
  */
-#define _Py_NewReference(op) (                          \
-    _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA         \
-    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA               \
+#ifndef WITH_PARALLEL
+#define _Py_NewReference(op) (                      \
+    _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA     \
+    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA           \
     Py_REFCNT(op) = 1)
-
 #define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
+#else
+#define _Py_NewReference(op)                        \
+    (Py_PXCTX ? (Py_REFCNT(op) = 1) : (             \
+        _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
+        _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
+        Py_REFCNT(op) = 1))
+
+#define _Py_ForgetReference(op) \
+    do {                        \
+        if (Py_PXCTX)           \
+            break;              \
+        _Py_INC_TPFREES(op);    \
+    } while (0)
+
+#endif /* WITH_PARALLEL */
 
 #ifdef Py_LIMITED_API
 PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else
+#ifndef WITH_PARALLEL
 #define _Py_Dealloc(op) (                               \
     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA          \
     (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op)))
-#endif
+#else
+
+#define _Py_Dealloc(op)                            \
+    (Py_PXCTX ? (void)0 : (                        \
+        _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA \
+        (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
+
+#endif /* WITH_PARALLEL */
+#endif /* Py_LIMITED_API */
 #endif /* !Py_TRACE_REFS */
 
+#ifndef WITH_PARALLEL
 #define Py_INCREF(op) (                         \
     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
     ((PyObject*)(op))->ob_refcnt++)
@@ -776,6 +800,28 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
         else                                            \
         _Py_Dealloc((PyObject *)(op));                  \
     } while (0)
+
+#else /* !WITH_PARALLEL */
+
+#define Py_INCREF(op)                             \
+    ((Py_PXCTX) ? (void)2 : (                     \
+        _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA     \
+        ((PyObject*)(op))->ob_refcnt++))
+
+#define Py_DECREF(op)                                     \
+    do {                                                  \
+        if (!Py_PXCTX) {                                  \
+            _Py_DEC_REFTOTAL;                             \
+            if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
+                _Py_CHECK_REFCNT(op);                     \
+            } else {                                      \
+                _Py_Dealloc((PyObject *)(op));            \
+            }                                             \
+        }                                                 \
+    } while (0)
+
+
+#endif /* WITH_PARALLEL */
 
 /* Safely decref `op` and set `op` to NULL, especially useful in tp_clear
  * and tp_dealloc implementatons.
@@ -811,18 +857,36 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
  * Python integers aren't currently weakly referencable.  Best practice is
  * to use Py_CLEAR() even if you can't think of a reason for why you need to.
  */
-#define Py_CLEAR(op)                            \
-    do {                                        \
-        if (op) {                               \
-            PyObject *_py_tmp = (PyObject *)(op);               \
-            (op) = NULL;                        \
-            Py_DECREF(_py_tmp);                 \
-        }                                       \
+#ifndef WITH_PARALLEL
+#define Py_CLEAR(op)                              \
+    do {                                          \
+        if (op) {                                 \
+            PyObject *_py_tmp = (PyObject *)(op); \
+            (op) = NULL;                          \
+            Py_DECREF(_py_tmp);                   \
+        }                                         \
     } while (0)
 
 /* Macros to use in case the object pointer may be NULL: */
 #define Py_XINCREF(op) do { if ((op) == NULL) ; else Py_INCREF(op); } while (0)
 #define Py_XDECREF(op) do { if ((op) == NULL) ; else Py_DECREF(op); } while (0)
+
+
+#else /* !WITH_PARALLEL */
+
+#define Py_CLEAR(op)                              \
+    do {                                          \
+        if (op && !Py_PXCTX) {                    \
+            PyObject *_py_tmp = (PyObject *)(op); \
+            (op) = NULL;                          \
+            Py_DECREF(_py_tmp);                   \
+        }                                         \
+    } while (0)
+
+#define Py_XINCREF(op) do { if (op && !Py_PXCTX) Py_INCREF(op); } while (0)
+#define Py_XDECREF(op) do { if (op && !Py_PXCTX) Py_DECREF(op); } while (0)
+
+#endif /* WITH_PARALLEL */
 
 /*
 These are provided as conveniences to Python runtime embedders, so that

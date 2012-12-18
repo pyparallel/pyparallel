@@ -88,6 +88,11 @@ WIN32 is still required for the locale module.
 #define USE_SOCKET
 #endif
 
+#if !defined(WITH_PARALLEL) && !defined(DISABLE_PARALLEL) 
+#define WITH_PARALLEL 1
+#define WITH_INTRINSICS 1
+#endif
+
 /* CE6 doesn't have strdup() but _strdup(). Assume the same for earlier versions. */
 #if defined(MS_WINCE)
 #  include <stdlib.h>
@@ -155,6 +160,11 @@ WIN32 is still required for the locale module.
 #endif
 #endif /* MS_WIN64 */
 
+#ifdef WITH_PARALLEL
+#define Py_WINVER 0x0600
+#define Py_NTDDI NTDDI_VISTA
+#else
+
 /* set the version macros for the windows headers */
 #ifdef MS_WINX64
 /* 64 bit only runs on XP or greater */
@@ -165,6 +175,8 @@ WIN32 is still required for the locale module.
 #define Py_WINVER 0x0500 /* _WIN32_WINNT_WIN2K */
 #define Py_NTDDI NTDDI_WIN2KSP4
 #endif
+
+#endif /* WITH_PARALLEL */
 
 /* We only set these values when building Python - we don't want to force
    these values on extensions, as that will affect the prototypes and

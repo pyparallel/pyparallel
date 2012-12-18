@@ -337,6 +337,10 @@ Py_Main(int argc, wchar_t **argv)
     orig_argc = argc;           /* For Py_GetArgcArgv() */
     orig_argv = argv;
 
+#ifdef WITH_PARALLEL
+    _PyParallel_Init();
+#endif
+
     /* Hash randomization needed early for all string operations
        (including -W and -X options). */
     _PyOS_opterr = 0;  /* prevent printing the error in 1st pass */

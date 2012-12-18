@@ -230,6 +230,8 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
 /* C equivalent of gc.collect(). */
 PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
 
+PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
+
 /* Test if a type has a GC head */
 #define PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
 
@@ -237,7 +239,6 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
 #define PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
     (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
 
-PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 #define PyObject_GC_Resize(type, op, n) \
                 ( (type *) _PyObject_GC_Resize((PyVarObject *)(op), (n)) )
 
@@ -260,6 +261,7 @@ extern PyGC_Head *_PyGC_generation0;
 #define _PyGC_REFS_REACHABLE                    (-3)
 #define _PyGC_REFS_TENTATIVELY_UNREACHABLE      (-4)
 
+#ifndef WITH_PARALLEL
 /* Tell the GC to track this object.  NB: While the object is tracked the
  * collector it must be safe to call the ob_traverse method. */
 #define _PyObject_GC_TRACK(o) do { \
@@ -295,6 +297,44 @@ extern PyGC_Head *_PyGC_generation0;
 #define _PyObject_GC_MAY_BE_TRACKED(obj) \
     (PyObject_IS_GC(obj) && \
         (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
+
+#else /* !WITH_PARALLEL */
+
+#define _PyObject_GC_TRACK(o) do {                  \
+    PyGC_Head *g;                                   \
+    if (Py_PXCTX)                                   \
+        break;                                      \
+    g = _Py_AS_GC(o);                               \
+    if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED)      \
+        Py_FatalError("GC object already tracked"); \
+    g->gc.gc_refs = _PyGC_REFS_REACHABLE;           \
+    g->gc.gc_next = _PyGC_generation0;              \
+    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev;  \
+    g->gc.gc_prev->gc.gc_next = g;                  \
+    _PyGC_generation0->gc.gc_prev = g;              \
+    } while (0)
+
+#define _PyObject_GC_UNTRACK(o) do {                \
+    PyGC_Head *g;                                   \
+    if (Py_PXCTX)                                   \
+        break;                                      \
+    g = _Py_AS_GC(o);                               \
+    assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED);  \
+    g->gc.gc_refs = _PyGC_REFS_UNTRACKED;           \
+    g->gc.gc_prev->gc.gc_next = g->gc.gc_next;      \
+    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev;      \
+    g->gc.gc_next = NULL;                           \
+    } while (0)
+
+#define _PyObject_GC_IS_TRACKED(o)                  \
+    (Py_PXCTX ? 0 : ((_Py_AS_GC(o))->gc.gc_refs != _PyGC_REFS_UNTRACKED))
+
+#define _PyObject_GC_MAY_BE_TRACKED(obj)            \
+    (Py_PXCTX ? 0 : (PyObject_IS_GC(obj) &&         \
+        (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj))))
+
+#endif /* WITH_PARALLEL */
+
 #endif /* Py_LIMITED_API */
 
 PyAPI_FUNC(PyObject *) _PyObject_GC_Malloc(size_t);
@@ -304,11 +344,20 @@ PyAPI_FUNC(void) PyObject_GC_Track(void *);
 PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
 PyAPI_FUNC(void) PyObject_GC_Del(void *);
 
-#define PyObject_GC_New(type, typeobj) \
+#ifndef WITH_PARALLEL
+#define PyObject_GC_New(type, typeobj)                          \
                 ( (type *) _PyObject_GC_New(typeobj) )
-#define PyObject_GC_NewVar(type, typeobj, n) \
+#define PyObject_GC_NewVar(type, typeobj, n)                    \
                 ( (type *) _PyObject_GC_NewVar((typeobj), (n)) )
+#else /* !WITH_PARALLEL */
+#define PyObject_GC_New(type, typeobj)                          \
+    (Py_PXCTX ? ( (type *) _PyObject_New(typeobj) ) :           \
+                ( (type *) _PyObject_GC_New(typeobj) ))
 
+#define PyObject_GC_NewVar(type, typeobj, n)                    \
+    (Py_PXCTX ? ( (type *) _PyObject_NewVar((typeobj), (n)) ) : \
+                ( (type *) _PyObject_GC_NewVar((typeobj), (n)) ))
+#endif /* WITH_PARALLEL */
 
 /* Utility macro to help write tp_traverse functions.
  * To use this macro, the tp_traverse function must name its arguments

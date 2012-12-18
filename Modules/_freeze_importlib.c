@@ -2,6 +2,11 @@
    Lib/importlib/_bootstrap.py into a frozen module in Python/importlib.h
 */
 
+/*
+#undef WITH_PARALLEL
+#define DISABLE_PARALLEL 1
+*/
+
 #include <Python.h>
 #include <marshal.h>
 

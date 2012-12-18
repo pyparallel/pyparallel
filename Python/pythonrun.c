@@ -244,7 +244,6 @@ import_init(PyInterpreterState *interp, PyObject *sysmod)
     _PyImportZip_Init();
 }
 
-
 void
 _Py_InitializeEx_Private(int install_sigs, int install_importlib)
 {
@@ -258,6 +257,10 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
         return;
     initialized = 1;
     _Py_Finalizing = NULL;
+
+#ifdef WITH_PARALLEL
+    _PyParallel_Init();
+#endif
 
 #if defined(HAVE_LANGINFO_H) && defined(HAVE_SETLOCALE)
     /* Set up the LC_CTYPE locale, so we can obtain
