@@ -11,16 +11,31 @@ extern "C" {
 #endif
 #include "pyintrinsics.h"
 
-PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_MainThreadId;
+PyAPI_DATA(long) Py_MainProcessId;
 
+
+/*
+ * _PyParallel_Init() can be called safely multiple times.  It *must* be
+ * called as early as possible, before any object allocations (and thus,
+ * Py_INCREF/DECREF calls).  It is currently called in two places, Py_Main
+ * and _PyInitializeEx_Private().  The latter is necessary for code that
+ * embeds the interpreter (as Py_Main (probably) won't be called).
+ */
 PyAPI_FUNC(void) _PyParallel_Init(void);
+
+PyAPI_FUNC(void) _PyParallel_CreatedGIL(void);
+PyAPI_FUNC(void) _PyParallel_DestroyedGIL(void);
+PyAPI_FUNC(void) _PyParallel_AboutToDropGIL(void);
+PyAPI_FUNC(void) _PyParallel_JustAcquiredGIL(void);
+
+PyAPI_FUNC(void) _PyParallel_ClearMainThreadId(void);
 
 #ifdef Py_DEBUG
 static int
 _Py_PXCTX(void)
 {
-    assert(Py_MainThreadId != -1);
+    assert(Py_MainThreadId > 0);
     assert(Py_MainThreadId == _Py_get_current_thread_id());
     return (Py_MainThreadId != _Py_get_current_thread_id());
 }
@@ -28,6 +43,10 @@ _Py_PXCTX(void)
 #else
 #define Py_PXCTX (Py_MainThreadId != _Py_get_current_thread_id())
 #endif /* Py_DEBUG */
+
+#define Py_PYCTX              \
+     (Py_MainThreadId <= 0 || \
+      Py_MainThreadId == _Py_get_current_thread_id())
 
 #endif /* WITH_PARALLEL */
 

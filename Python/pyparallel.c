@@ -8,10 +8,16 @@
 extern "C" {
 #endif
 
+#ifdef MS_WINDOWS
 #include <Windows.h>
 
+__declspec(align(8)) long Py_MainThreadId  = -1;
+__declspec(align(4)) long Py_MainProcessId = -1;
+
+#else
 long Py_MainProcessId = -1;
 long Py_MainThreadId = -1;
+#endif
 
 void
 _PyParallel_Init(void)
@@ -44,6 +50,56 @@ _PyParallel_Init(void)
                           "_Py_get_current_thread_id() != "        \
                           "GetCurrentThreadId()");
     }
+}
+
+void
+_PyParallel_ClearMainThreadId(void)
+{
+    _Py_sfence();
+    Py_MainThreadId = 0;
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
+}
+
+void
+_PyParallel_CreatedGIL(void)
+{
+    _PyParallel_ClearMainThreadId();
+}
+
+void
+_PyParallel_AboutToDropGIL(void)
+{
+    _PyParallel_ClearMainThreadId();
+}
+
+void
+_PyParallel_DestroyedGIL(void)
+{
+    _PyParallel_ClearMainThreadId();
+}
+
+void
+_PyParallel_JustAcquiredGIL(void)
+{
+    char buf[128], *fmt;
+
+    _Py_lfence();
+    if (Py_MainThreadId != 0) {
+        fmt = "_PyParallel_JustAcquiredGIL: invariant failed: "   \
+              "expected Py_MainThreadId to have value 0, actual " \
+              "value: %d";
+        (void)snprintf(buf, sizeof(buf), fmt, Py_MainThreadId);
+        Py_FatalError(buf);
+    }
+
+    if (Py_MainProcessId == -1)
+        Py_FatalError("_PyParallel_JustAcquiredGIL: Py_MainProcessId == -1");
+
+    _Py_sfence();
+    Py_MainThreadId = _Py_get_current_thread_id();
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
 }
 
 #ifdef __cpplus

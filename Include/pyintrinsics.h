@@ -18,6 +18,10 @@ extern "C" {
 #       else
 #           error "Unsupported architecture."
 #       endif
+#       define _Py_clflush(p)    _mm_clflush(p)
+#       define _Py_lfence()      _mm_lfence()
+#       define _Py_mfence()      _mm_mfence()
+#       define _Py_sfence()      _mm_sfence()
 #   else
 #       error "Intrinsics not available for this platform yet."
 #   endif
@@ -25,6 +29,10 @@ extern "C" {
 #   ifdef MS_WINDOWS
 #       define _Py_get_current_process_id GetCurrentProcessId()
 #       define _Py_get_current_thread_id GetCurrentThreadId()
+#       define _Py_clflush()    XXX_UNKNOWN
+#       define _Py_lfence()     MemoryBarrier()
+#       define _Py_mfence()     MemoryBarrier()
+#       define _Py_sfence()     MemoryBarrier()
 #   else /* MS_WINDOWS */
 #       error "No intrinsics stubs available for this platform."
 #   endif

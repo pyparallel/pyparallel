@@ -302,6 +302,14 @@ typedef size_t socklen_t;
 #  include <fcntl.h>
 # endif
 
+/* Our CMSG stuff is busted on Windows. */
+#ifdef CMSG_LEN
+#undef CMSG_LEN
+#endif
+#ifdef CMSG_DATA
+#undef CMSG_DATA
+#endif
+
 #endif
 
 #include <stddef.h>
