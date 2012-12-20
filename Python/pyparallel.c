@@ -102,6 +102,8 @@ _PyParallel_JustAcquiredGIL(void)
     _Py_clflush(&Py_MainThreadId);
 }
 
+
+
 #ifdef __cpplus
 }
 #endif

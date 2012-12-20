@@ -250,6 +250,9 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
     PyInterpreterState *interp;
     PyThreadState *tstate;
     PyObject *bimod, *sysmod, *pstderr;
+#ifdef WITH_PARALLEL
+    PyObject *pxmod;
+#endif
     char *p;
     extern void _Py_ReadyTypes(void);
 
@@ -400,6 +403,17 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
 
     if (!Py_NoSiteFlag)
         initsite(); /* Module site */
+#ifdef WITH_PARALLEL
+    /*
+     * XXX: I have no idea whether or not any of this is correct.  I basically
+     * just copied how the sys module is initialized.  Sort of.
+     */
+    pxmod = _PyParallel_ModInit();
+    if (pxmod == NULL)
+        Py_FatalError("Py_Initialize: can't initialize parallel module");
+    Py_INCREF(pxmod);
+    _PyImport_FixupBuiltin(pxmod, "parallel");
+#endif
 }
 
 void

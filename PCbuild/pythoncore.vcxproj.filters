@@ -409,6 +409,9 @@
     <ClInclude Include="..\Python\ceval_gil.h">
       <Filter>Python</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\pyparallel.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -917,6 +920,9 @@
     </ClCompile>
     <ClCompile Include="..\Objects\namespaceobject.c" />
     <ClCompile Include="..\Python\pyparallel.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\parallelmodule.c">
       <Filter>Python</Filter>
     </ClCompile>
   </ItemGroup>

@@ -200,6 +200,9 @@ PyAPI_FUNC(int) _PyFrame_Init(void);
 PyAPI_FUNC(void) _PyFloat_Init(void);
 PyAPI_FUNC(int) PyByteArray_Init(void);
 PyAPI_FUNC(void) _PyRandom_Init(void);
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(PyObject *) _PyParallel_ModInit(void);
+#endif
 #endif
 
 /* Various internal finalizers */
