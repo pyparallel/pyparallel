@@ -76,12 +76,12 @@ PyAPI_FUNC(void) PyMem_Free(void *);
 
 #ifdef WITH_PARALLEL
 #   ifdef PYMALLOC_DEBUG
-#       define PyMem_MALLOC(n)     (!Py_PYCTX ? __PyMem_MALLOC((size_t)n) :  \
-                                                __PyMem_MALLOC_d((size_t)n))
-#       define PyMem_REALLOC(p, n) (!Py_PYCTX ? __PyMem_REALLOC((p), (n) ) : \
-                                                __PyMem_REALLOC_d((p), (n)))
-#       define PyMem_FREE(p)       (!Py_PYCTX ? __PyMem_FREE(p) :            \
-                                                __PyMem_FREE_d(p))
+#       define PyMem_MALLOC(n)     (Py_PXCTX ? __PyMem_MALLOC((size_t)n) :  \
+                                               __PyMem_MALLOC_d((size_t)n))
+#       define PyMem_REALLOC(p, n) (Py_PXCTX ? __PyMem_REALLOC((p), (n) ) : \
+                                               __PyMem_REALLOC_d((p), (n)))
+#       define PyMem_FREE(p)       (Py_PXCTX ? __PyMem_FREE(p) :            \
+                                               __PyMem_FREE_d(p))
 #   else
 #       define PyMem_MALLOC     __PyMem_MALLOC
 #       define PyMem_REALLOC    __PyMem_REALLOC
