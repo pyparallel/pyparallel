@@ -13,6 +13,7 @@ extern "C" {
 
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
+PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
 
 /*
@@ -31,13 +32,24 @@ PyAPI_FUNC(void) _PyParallel_JustAcquiredGIL(void);
 
 PyAPI_FUNC(void) _PyParallel_ClearMainThreadId(void);
 
+PyAPI_FUNC(void) _PyParallel_ClearMainProcessId(void);
+PyAPI_FUNC(void) _PyParallel_RestoreMainProcessId(void);
+PyAPI_FUNC(void) _PyParallel_EnableParallelContexts(void);
+PyAPI_FUNC(void) _PyParallel_DisableParallelContexts(void);
+
 #ifdef Py_DEBUG
 static int
 _Py_PXCTX(void)
 {
+    int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
     assert(Py_MainThreadId > 0);
-    assert(Py_MainThreadId == _Py_get_current_thread_id());
-    return (Py_MainThreadId != _Py_get_current_thread_id());
+    assert(Py_MainProcessId != -1);
+    assert(Py_ParallelContextsEnabled != -1);
+    if (Py_ParallelContextsEnabled)
+        assert(active);
+    else
+        assert(!active);
+    return active;
 }
 #define Py_PXCTX _Py_PXCTX()
 #else

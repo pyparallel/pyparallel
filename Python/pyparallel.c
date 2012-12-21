@@ -13,6 +13,7 @@ extern "C" {
 
 __declspec(align(8)) long Py_MainThreadId  = -1;
 __declspec(align(4)) long Py_MainProcessId = -1;
+__declspec(align(4)) long Py_ParallelContextsEnabled = -1;
 
 #else
 long Py_MainProcessId = -1;
@@ -22,6 +23,8 @@ long Py_MainThreadId = -1;
 void
 _PyParallel_Init(void)
 {
+    _Py_sfence();
+
     if (Py_MainProcessId == -1) {
         if (Py_MainThreadId != -1)
             Py_FatalError("_PyParallel_Init: invariant failed: "  \
@@ -50,6 +53,10 @@ _PyParallel_Init(void)
                           "_Py_get_current_thread_id() != "        \
                           "GetCurrentThreadId()");
     }
+
+    Py_ParallelContextsEnabled = 0;
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
 }
 
 void
@@ -102,7 +109,44 @@ _PyParallel_JustAcquiredGIL(void)
     _Py_clflush(&Py_MainThreadId);
 }
 
+void
+_PyParallel_SetMainProcessId(long id)
+{
+    _Py_sfence();
+    Py_MainProcessId = id;
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
+}
 
+void
+_PyParallel_ClearMainProcessId(void)
+{
+    _PyParallel_SetMainProcessId(0);
+}
+
+void
+_PyParallel_RestoreMainProcessId(void)
+{
+    _PyParallel_SetMainProcessId(_Py_get_current_process_id());
+}
+
+void
+_PyParallel_EnableParallelContexts(void)
+{
+    _Py_sfence();
+    Py_ParallelContextsEnabled = 1;
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
+}
+
+void
+_PyParallel_DisableParallelContexts(void)
+{
+    _Py_sfence();
+    Py_ParallelContextsEnabled = 0;
+    _Py_lfence();
+    _Py_clflush(&Py_MainThreadId);
+}
 
 #ifdef __cpplus
 }
