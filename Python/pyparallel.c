@@ -37,7 +37,7 @@ Heap_Init(Heap *h, size_t n)
     else
         size = n;
 
-    size = Px_CACHE_ALIGN(n);
+    size = Px_CACHE_ALIGN(size);
 
     memset((void *)h, 0, sizeof(Heap));
 
@@ -55,8 +55,9 @@ Heap_Init(Heap *h, size_t n)
     s->remaining += size;
     s->size += size;
     s->heaps++;
-    h->sle_next = (Heap *)Heap_Malloc(Px_CACHE_ALIGN(sizeof(Heap)));
     ctx.h = h;
+    h->sle_next = (Heap *)Heap_Malloc(Px_CACHE_ALIGN(sizeof(Heap)));
+
 }
 
 static __inline void
@@ -144,7 +145,9 @@ _PyParallel_LeavingParallelContext(void)
     Callback *c;
 
     UNREFERENCED_PARAMETER(s);
-    UNREFERENCED_PARAMETER(c);    
+    UNREFERENCED_PARAMETER(c);
+
+    //HeapDestroy(ctx.heap_handle);
 }
 
 

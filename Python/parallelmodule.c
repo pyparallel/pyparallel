@@ -2,6 +2,8 @@
 #include "Python.h"
 #include <Windows.h>
 
+#include "pyparallel_private.h"
+
 PyDoc_STRVAR(parallel_doc,
 "Parallel module.\n\
 \n\
@@ -137,11 +139,15 @@ px_cb4(PTP_CALLBACK_INSTANCE instance, void *context)
     PyObject *args;
     PXCTX4 *c = (PXCTX4 *)context;
 
+    _PyParallel_EnteredParallelContext(context);
+
     args = Py_BuildValue("(O)", c->arg);
     *(c->result) = PyObject_CallObject(c->func, args);
 
     if (c->done)
         SetEventWhenCallbackReturns(instance, c->done);
+
+    _PyParallel_LeavingParallelContext();
 }
 
 

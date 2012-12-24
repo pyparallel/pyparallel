@@ -64,7 +64,7 @@ _Py_PXCTX(void)
 #define Py_PXCTX _Py_PXCTX()
 #define Py_CTX (!_Py_PXCTX)
 #define PY (Py_CTX)
-#define PX (_Py_PXCTX)
+#define PX Py_PXCTX
 #else
 #define Py_PXCTX (Py_MainThreadId != _Py_get_current_thread_id())
 #endif /* Py_DEBUG */

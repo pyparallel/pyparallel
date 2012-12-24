@@ -11,15 +11,19 @@
 #define Px_ALIGN_SIZE 4U
 #define Px_UINTPTR unsigned long
 #endif
-#define Px_CACHE_ALIGN_SIZE SYSTEM_CACHE_ALIGNMENT_SIZE
-#define Px_ALIGN(n) (              \
-    (n + (Px_ALIGN_SIZE-1)) &      \
-   ~(Px_ALIGN_SIZE-1)              \
+#define Px_CACHE_ALIGN_SIZE ((Px_UINTPTR)SYSTEM_CACHE_ALIGNMENT_SIZE)
+
+#define Px_ALIGN(n) ( \
+    (((Px_UINTPTR)n) + (((Px_UINTPTR)Px_ALIGN_SIZE)-1ULL)) & \
+    ~(((Px_UINTPTR)Px_ALIGN_SIZE)-1ULL) \
 )
-#define Px_CACHE_ALIGN(n) (              \
-    (n + (Px_CACHE_ALIGN_SIZE-1)) &      \
-   ~(Px_CACHE_ALIGN_SIZE-1)              \
+
+#define xPx_CACHE_ALIGN(n) ( \
+    (((Px_UINTPTR)n) + (((Px_UINTPTR)Px_CACHE_ALIGN_SIZE)-1ULL)) & \
+    ~(((Px_UINTPTR)Px_CACHE_ALIGN_SIZE)-1ULL) \
 )
+#define Px_CACHE_ALIGN(n) ((n + 63ULL) & ~(63ULL))
+
 #define Px_PTRADD(p, n)            \
         (void *)((Px_UINTPTR)(p) + \
                  (Px_UINTPTR)(n))
@@ -92,8 +96,8 @@ typedef struct _Object {
 } Object;
 
 typedef struct _Objects {
-    Object  *first;
-    Object **last;
+    Object *first;
+    Object *last;
 } Objects;
 
 static __inline
@@ -103,11 +107,11 @@ append_object(Objects *list, Object *o)
     register Object *n;
     if (!list->first) {
         list->first = o;
-        *list->last = o;
+        list->last = o;
     } else {
-        n = *list->last;
+        n = list->last;
         n->next = o;
-        list->last = &o;
+        list->last = o;
     }
     o->next = 0;
 }

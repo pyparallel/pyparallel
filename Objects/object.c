@@ -56,7 +56,7 @@ static PyObject refchain = {&refchain, &refchain};
 void
 _Py_AddToAllObjects(PyObject *op, int force)
 {
-    Py_GUARD
+    Px_VOID
 #ifdef  Py_DEBUG
     if (!force) {
         /* If it's initialized memory, op must be in or out of
