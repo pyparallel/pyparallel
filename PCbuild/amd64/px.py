@@ -1,5 +1,13 @@
 import sys
-import parallel
+
+try:
+    import parallel
+except:
+    class parallel:
+        @classmethod
+        def t4(cls, fn, data):
+            results = [ fn(d) for d in data ]
+            return results
 
 def simple_test():
     data = [ i for i in range(1, 5) ]

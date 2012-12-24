@@ -15,7 +15,6 @@ PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
-
 /*
  * _PyParallel_Init() can be called safely multiple times.  It *must* be
  * called as early as possible, before any object allocations (and thus,
@@ -31,11 +30,22 @@ PyAPI_FUNC(void) _PyParallel_AboutToDropGIL(void);
 PyAPI_FUNC(void) _PyParallel_JustAcquiredGIL(void);
 
 PyAPI_FUNC(void) _PyParallel_ClearMainThreadId(void);
-
 PyAPI_FUNC(void) _PyParallel_ClearMainProcessId(void);
 PyAPI_FUNC(void) _PyParallel_RestoreMainProcessId(void);
+
 PyAPI_FUNC(void) _PyParallel_EnableParallelContexts(void);
 PyAPI_FUNC(void) _PyParallel_DisableParallelContexts(void);
+
+PyAPI_FUNC(void) _PyParallel_BeginAllowThreads(void);
+PyAPI_FUNC(void) _PyParallel_EndAllowThreads(void);
+
+PyAPI_FUNC(void) _PyParallel_EnteredParallelContext(void *c);
+PyAPI_FUNC(void) _PyParallel_LeavingParallelContext(void);
+
+PyAPI_FUNC(void) _PyParallel_ContextGuardFailure(const char *function,
+                                                 const char *filename,
+                                                 int lineno,
+                                                 int was_px_ctx);
 
 #ifdef Py_DEBUG
 static int
@@ -52,15 +62,49 @@ _Py_PXCTX(void)
     return active;
 }
 #define Py_PXCTX _Py_PXCTX()
+#define Py_CTX (!_Py_PXCTX)
+#define PY (Py_CTX)
+#define PX (_Py_PXCTX)
 #else
 #define Py_PXCTX (Py_MainThreadId != _Py_get_current_thread_id())
 #endif /* Py_DEBUG */
 
-#define Py_PYCTX              \
-     (Py_MainThreadId <= 0 || \
-      Py_MainThreadId == _Py_get_current_thread_id())
+#define Px_GUARD            \
+    if (!Py_PXCTX)          \
+        _PyParallel_ContextGuardFailure(__FUNCTION__, __FILE__, __LINE__, 1);
 
-#endif /* WITH_PARALLEL */
+#define Py_GUARD            \
+    if (Py_PXCTX)           \
+        _PyParallel_ContextGuardFailure(__FUNCTION__, __FILE__, __LINE__, 0);
+
+#define Px_RETURN(arg)      \
+    if (Py_PXCTX)           \
+        return (arg);
+
+#define Px_VOID             \
+    if (Py_PXCTX)           \
+        return;
+
+#define Px_RETURN_VOID(arg) \
+    if (Py_PXCTX) {         \
+        (arg);              \
+        return;             \
+    }
+
+#define Px_RETURN_NULL      \
+    if (Py_PXCTX)           \
+        return NULL;
+
+#else /* WITH_PARALLEL */
+#define Py_GUARD
+#define Px_GUARD
+#define Px_VOID
+#define Px_RETURN(a)
+#define Px_RETURN_VOID(a)
+#define Px_RETURN_NULL
+#define Py_PXCTX 0
+#define Py_CTX 0
+#endif
 
 #ifdef __cplusplus
 }

@@ -9,8 +9,8 @@ extern "C" {
 #       include <intrin.h>
 #       if defined(MS_WIN64)
 #           pragma intrinsic(__readgsdword)
-#           define _Py_get_current_process_id() __readgsdword(0x40)
-#           define _Py_get_current_thread_id()  __readgsdword(0x48)
+#           define _Py_get_current_process_id() (__readgsdword(0x40))
+#           define _Py_get_current_thread_id()  (__readgsdword(0x48))
 #       elif defined(MS_WIN32)
 #           pragma intrinsic(__readfsdword)
 #           define _Py_get_current_process_id() __readfsdword(0x20)

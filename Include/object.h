@@ -51,8 +51,8 @@ A standard interface exists for objects that contain an array of items
 whose size is determined when the object is allocated.
 */
 
-/* Py_DEBUG implies Py_TRACE_REFS if !WITH_PARALLEL. */
-#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(WITH_PARALLEL)
+/* Py_DEBUG implies Py_TRACE_REFS */
+#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS)
 #define Py_TRACE_REFS
 #endif
 
@@ -705,15 +705,25 @@ PyAPI_FUNC(void) _Py_NegativeRefcount(const char *fname,
 PyAPI_FUNC(PyObject *) _PyDict_Dummy(void);
 PyAPI_FUNC(PyObject *) _PySet_Dummy(void);
 PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
+#ifndef WITH_PARALLEL
 #define _Py_INC_REFTOTAL        _Py_RefTotal++
 #define _Py_DEC_REFTOTAL        _Py_RefTotal--
 #define _Py_REF_DEBUG_COMMA     ,
-#define _Py_CHECK_REFCNT(OP)                                    \
-{       if (((PyObject*)OP)->ob_refcnt < 0)                             \
-                _Py_NegativeRefcount(__FILE__, __LINE__,        \
-                                     (PyObject *)(OP));         \
+#define _Py_CHECK_REFCNT(OP)                                        \
+{       if (((PyObject*)OP)->ob_refcnt < 0)                         \
+                _Py_NegativeRefcount(__FILE__, __LINE__,            \
+                                     (PyObject *)(OP));             \
 }
-#else
+#else  /* WITH_PARALLEL */
+#define _Py_INC_REFTOTAL        (Py_PXCTX ? (void)0 : _Py_RefTotal++)
+#define _Py_DEC_REFTOTAL        (Py_PXCTX ? (void)0 : _Py_RefTotal--)
+#define _Py_REF_DEBUG_COMMA     ,
+#define _Py_CHECK_REFCNT(OP) {                                      \
+    if (!Py_PXCTX && ((PyObject*)OP)->ob_refcnt < 0)                \
+        _Py_NegativeRefcount(__FILE__, __LINE__, (PyObject *)(OP)); \
+}
+#endif /* WITH_PARALLEL */
+#else  /* Py_REF_DEBUG */
 #define _Py_INC_REFTOTAL
 #define _Py_DEC_REFTOTAL
 #define _Py_REF_DEBUG_COMMA
@@ -723,11 +733,18 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
 #ifdef COUNT_ALLOCS
 PyAPI_FUNC(void) inc_count(PyTypeObject *);
 PyAPI_FUNC(void) dec_count(PyTypeObject *);
+#ifndef WITH_PARALLEL
 #define _Py_INC_TPALLOCS(OP)    inc_count(Py_TYPE(OP))
 #define _Py_INC_TPFREES(OP)     dec_count(Py_TYPE(OP))
 #define _Py_DEC_TPFREES(OP)     Py_TYPE(OP)->tp_frees--
 #define _Py_COUNT_ALLOCS_COMMA  ,
-#else
+#else  /* !WITH_PARALLEL */
+#define _Py_INC_TPALLOCS(OP)    (Py_PXCTX ? (void)0 : inc_count(Py_TYPE(OP)))
+#define _Py_INC_TPFREES(OP)     (Py_PXCTX ? (void)0 : dec_count(Py_TYPE(OP)))
+#define _Py_DEC_TPFREES(OP)     (PY_PXCTX ? (void)0 : Py_TYPE(OP)->tp_frees--)
+#define _Py_COUNT_ALLOCS_COMMA  ,
+#endif /* !WITH_PARALLEL */
+#else  /* COUNT_ALLOCS */
 #define _Py_INC_TPALLOCS(OP)
 #define _Py_INC_TPFREES(OP)
 #define _Py_DEC_TPFREES(OP)
@@ -779,7 +796,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else
 
 #define _Py_Dealloc(op)                            \
-    (Py_PXCTX ? (void)0 : (                        \
+    (Py_PXCTX ? _Px_Dealloc(op) : (                \
         _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA \
         (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
 
@@ -804,7 +821,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else /* !WITH_PARALLEL */
 
 #define Py_INCREF(op)                             \
-    ((Py_PXCTX) ? (void)2 : (                     \
+    ((Py_PXCTX) ? (void)0 : (                     \
         _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA     \
         ((PyObject*)(op))->ob_refcnt++))
 

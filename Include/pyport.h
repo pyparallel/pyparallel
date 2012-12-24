@@ -297,6 +297,14 @@ typedef size_t Py_uhash_t;
 /* enable more aggressive optimization for visual studio */
 #pragma optimize("agtw", on)
 #endif
+#ifndef FORCEINLINE
+#if (_MSC_VER >= 1200)
+#define FORCEINLINE __forceinline
+#else
+#define FORCEINLINE __inline
+#endif
+#define Py_INLINE FORCEINLINE
+#endif
 /* ignore warnings if the compiler decides not to inline a function */
 #pragma warning(disable: 4710)
 /* fastest possible local call under MSVC */

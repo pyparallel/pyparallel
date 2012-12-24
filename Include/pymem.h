@@ -53,14 +53,23 @@ PyAPI_FUNC(void *) PyMem_Malloc(size_t);
 PyAPI_FUNC(void *) PyMem_Realloc(void *, size_t);
 PyAPI_FUNC(void) PyMem_Free(void *);
 
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void *) _PxMem_Malloc(size_t);
+PyAPI_FUNC(void *) _PxMem_Realloc(void *, size_t);
+PyAPI_FUNC(void) _PxMem_Free(void *);
+#endif
+
 /* Starting from Python 1.6, the wrappers Py_{Malloc,Realloc,Free} are
    no longer supported. They used to call PyErr_NoMemory() on failure. */
 
 /* Macros. */
+#ifdef PYMALLOC_DEBUG
 /* Redirect all memory operations to Python's debugging allocator. */
-#define __PyMem_MALLOC_d    _PyMem_DebugMalloc
-#define __PyMem_REALLOC_d   _PyMem_DebugRealloc
-#define __PyMem_FREE_d      _PyMem_DebugFree
+#define _PyMem_MALLOC		_PyMem_DebugMalloc
+#define _PyMem_REALLOC		_PyMem_DebugRealloc
+#define _PyMem_FREE		_PyMem_DebugFree
+
+#else	/* ! PYMALLOC_DEBUG */
 
 /* PyMem_MALLOC(0) means malloc(1). Some systems would return NULL
    for malloc(0), which would be treated as an error. Some platforms
@@ -68,35 +77,27 @@ PyAPI_FUNC(void) PyMem_Free(void *);
    pymalloc. To solve these problems, allocate an extra byte. */
 /* Returns NULL to indicate error if a negative size or size larger than
    Py_ssize_t can represent is supplied.  Helps prevents security holes. */
-#define __PyMem_MALLOC(n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX ? NULL \
+#define _PyMem_MALLOC(n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX ? NULL \
 				: malloc((n) ? (n) : 1))
-#define __PyMem_REALLOC(p, n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX  ? NULL \
+#define _PyMem_REALLOC(p, n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX  ? NULL \
 				: realloc((p), (n) ? (n) : 1))
-#define __PyMem_FREE		free
+#define _PyMem_FREE		free
+
+#endif	/* PYMALLOC_DEBUG */
+
 
 #ifdef WITH_PARALLEL
-#   ifdef PYMALLOC_DEBUG
-#       define PyMem_MALLOC(n)     (Py_PXCTX ? __PyMem_MALLOC((size_t)n) :  \
-                                               __PyMem_MALLOC_d((size_t)n))
-#       define PyMem_REALLOC(p, n) (Py_PXCTX ? __PyMem_REALLOC((p), (n) ) : \
-                                               __PyMem_REALLOC_d((p), (n)))
-#       define PyMem_FREE(p)       (Py_PXCTX ? __PyMem_FREE(p) :            \
-                                               __PyMem_FREE_d(p))
-#   else
-#       define PyMem_MALLOC     __PyMem_MALLOC
-#       define PyMem_REALLOC    __PyMem_REALLOC
-#       define PyMem_FREE       __PyMem_FREE
-#   endif
+#define PyMem_MALLOC(n) \
+    (Py_PXCTX ? _PxMem_Malloc((size_t)n) : _PyMem_MALLOC((size_t)n))
+
+#define PyMem_REALLOC(p, n) \
+    (Py_PXCTX ? _PxMem_Realloc((p), (n)) : _PyMem_REALLOC((p), (n)))
+
+#define PyMem_FREE(p) (Py_PXCTX ? _PxMem_Free((p)) : _PyMem_FREE(p))
 #else
-#   ifdef PYMALLOC_DEBUG
-#       define PyMem_MALLOC     __PyMem_MALLOC_d
-#       define PyMem_REALLOC    __PyMem_REALLOC_d
-#       define PyMem_FREE       __PyMem_FREE_d
-#   else
-#       define PyMem_MALLOC     __PyMem_MALLOC
-#       define PyMem_REALLOC    __PyMem_REALLOC
-#       define PyMem_FREE       __PyMem_FREE
-#   endif
+#define PyMem_MALLOC  _PyMem_MALLOC
+#define PyMem_REALLOC _PyMem_REALLOC
+#define PyMem_FREE    _PyMem_FREE
 #endif
 
 

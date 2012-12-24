@@ -140,6 +140,20 @@ PyAPI_FUNC(void) _PyMem_DebugFree(void *p);
 #define PyObject_Del            PyObject_Free
 #define PyObject_DEL            PyObject_FREE
 
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void *) _PxMem_Malloc(size_t n);
+PyAPI_FUNC(void *) _PxMem_Realloc(void *p, size_t n);
+PyAPI_FUNC(void)   _PxMem_Free(void *p);
+
+PyAPI_FUNC(PyObject *) _PxObject_Malloc(size_t n);
+/*
+PyAPI_FUNC(void *) _PxObject_Realloc(void *p, size_t n);
+PyAPI_FUNC(void)   _PxObject_Free(void *p);
+*/
+PyAPI_FUNC(PyObject *) _PyObject_FromPxObject(PyObject *op);
+PyAPI_FUNC(PyObject *) _PyObject_ToPxObject(PyObject *op);
+#endif /* WITH_PARALLEL */
+
 /*
  * Generic object allocator interface
  * ==================================
@@ -152,17 +166,73 @@ PyAPI_FUNC(PyVarObject *) PyObject_InitVar(PyVarObject *,
 PyAPI_FUNC(PyObject *) _PyObject_New(PyTypeObject *);
 PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
 
-#define PyObject_New(type, typeobj) \
+#ifndef WITH_PARALLEL
+#define PyObject_New(type, typeobj)                                  \
                 ( (type *) _PyObject_New(typeobj) )
-#define PyObject_NewVar(type, typeobj, n) \
+#define PyObject_NewVar(type, typeobj, n)                            \
                 ( (type *) _PyObject_NewVar((typeobj), (n)) )
 
 /* Macros trading binary compatibility for speed. See also pymem.h.
    Note that these macros expect non-NULL object pointers.*/
-#define PyObject_INIT(op, typeobj) \
+#define PyObject_INIT(op, typeobj)                                   \
     ( Py_TYPE(op) = (typeobj), _Py_NewReference((PyObject *)(op)), (op) )
-#define PyObject_INIT_VAR(op, typeobj, size) \
+#define PyObject_INIT_VAR(op, typeobj, size)                         \
     ( Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj)) )
+
+#else /* !WITH_PARALLEL */
+PyAPI_FUNC(PyObject *)    _PxObject_Init(PyObject *op, PyTypeObject *tp);
+PyAPI_FUNC(PyVarObject *) _PxObject_InitVar(PyVarObject *op,
+                                            PyTypeObject *tp,
+                                            Py_ssize_t s);
+
+PyAPI_FUNC(PyObject *)    _PxObject_New(PyTypeObject *tp);
+PyAPI_FUNC(PyVarObject *) _PxObject_NewVar(PyTypeObject *op, Py_ssize_t s);
+PyAPI_FUNC(PyVarObject *) _PxObject_Resize(PyVarObject *op, Py_ssize_t s);
+
+PyAPI_FUNC(void) _Px_NewReference(PyObject *op);
+PyAPI_FUNC(void) _Px_ForgetReference(PyObject *op);
+PyAPI_FUNC(void) _Px_Dealloc(PyObject *op);
+
+#define PyObject_New(type, typeobj)                                  \
+    (Py_PXCTX ? ((type *)_PxObject_New(typeobj)) :                   \
+                ((type *)_PyObject_New(typeobj)))
+
+#define PyObject_NewVar(type, typeobj, n)                            \
+    (Py_PXCTX ? ((type *)_PxObject_NewVar((typeobj)), (n)) :         \
+                ((type *)_PyObject_NewVar((typeobj)), (n)))
+
+static __inline
+PyObject *
+PyObject_INIT(PyObject *op, PyTypeObject *tp)
+{
+    Px_RETURN(_PxObject_Init(op, tp))
+    Py_TYPE(op) = tp;
+    _Py_NewReference(op);
+    return op;
+}
+
+static __inline
+PyVarObject *
+PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
+{
+    Px_RETURN(_PxObject_InitVar(op, tp, n))
+    Py_SIZE(op) = n;
+    Py_TYPE(op) = tp;
+    _Py_NewReference((PyObject *)op);
+    return op;
+}
+/*
+#define PyObject_INIT(op, typeobj)                             \
+    (Py_PXCTX ?                                                \
+        (_PxObject_Init((op), (typeobj))) :                    \
+        (Py_TYPE(op) = (typeobj), _Py_NewReference((PyObject *)(op)), (op)))
+
+#define PyObject_INIT_VAR(op, typeobj, size)                   \
+    (Py_PXCTX ? (_PxObject_InitVar((op), (typeobj), (size))) : \
+                (Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj))))
+*/
+#endif /* WITH_PARALLEL */
+
 
 #define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
 
@@ -185,14 +255,37 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
         (nitems)*(typeobj)->tp_itemsize,        \
         SIZEOF_VOID_P)
 
-#define PyObject_NEW(type, typeobj) \
-( (type *) PyObject_Init( \
+#ifndef WITH_PARALLEL
+#define PyObject_NEW(type, typeobj)                                        \
+( (type *) PyObject_Init(                                                  \
     (PyObject *) PyObject_MALLOC( _PyObject_SIZE(typeobj) ), (typeobj)) )
 
-#define PyObject_NEW_VAR(type, typeobj, n) \
-( (type *) PyObject_InitVar( \
-      (PyVarObject *) PyObject_MALLOC(_PyObject_VAR_SIZE((typeobj),(n)) ),\
+#define PyObject_NEW_VAR(type, typeobj, n)                                 \
+( (type *) PyObject_InitVar(                                               \
+      (PyVarObject *) PyObject_MALLOC(_PyObject_VAR_SIZE((typeobj),(n)) ), \
       (typeobj), (n)) )
+#else /* !WITH_PARALLEL */
+static __inline
+PyObject *
+_PyObject_NEW(PyTypeObject *tp)
+{
+    Px_RETURN(_PxObject_New(tp))
+    return PyObject_Init((PyObject *)PyObject_MALLOC(_PyObject_SIZE(tp)), tp);
+}
+
+static __inline
+PyVarObject *
+_PyObject_NEW_VAR(PyTypeObject *tp, Py_ssize_t n)
+{
+    register PyObject *op;
+    Px_RETURN(_PxObject_NewVar(tp, n))
+    op = (PyObject *)PyObject_MALLOC(_PyObject_VAR_SIZE(tp, n));
+    return (PyVarObject *)PyObject_InitVar((PyVarObject*)op, tp, n);
+}
+#define PyObject_NEW(type, tp) ((type *)_PyObject_NEW(tp))
+#define PyObject_NEW_VAR(type, tp, n) ((type *)_PyObject_NEW_VAR(tp, n))
+
+#endif /* WITH_PARALLEL */
 
 /* This example code implements an object constructor with a custom
    allocator, where PyObject_New is inlined, and shows the important
@@ -232,6 +325,7 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
 
 PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 
+#ifndef WITH_PARALLEL
 /* Test if a type has a GC head */
 #define PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
 
@@ -241,6 +335,27 @@ PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 
 #define PyObject_GC_Resize(type, op, n) \
                 ( (type *) _PyObject_GC_Resize((PyVarObject *)(op), (n)) )
+#else
+#define __PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
+
+/* Test if an object has a GC head */
+#define __PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
+    (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
+
+#define PyType_IS_GC(t)     (Py_PXCTX ? (0) : __PyType_IS_GC(t))
+#define PyObject_IS_GC(o)   (Py_PXCTX ? (0) : __PyObject_IS_GC(o))
+static __inline
+PyVarObject *
+__PyObject_GC_RESIZE(PyVarObject *op, Py_ssize_t nitems)
+{
+    if (Py_PXCTX)
+        return _PxObject_Resize(op, nitems);
+    else
+        return _PyObject_GC_Resize(op, nitems);
+}
+
+#define PyObject_GC_Resize(type, op, n) ((type *)__PyObject_GC_RESIZE(op, n))
+#endif
 
 /* GC information is stored BEFORE the object structure. */
 #ifndef Py_LIMITED_API
@@ -255,7 +370,11 @@ typedef union _gc_head {
 
 extern PyGC_Head *_PyGC_generation0;
 
+#ifndef WITH_PARALLEL
 #define _Py_AS_GC(o) ((PyGC_Head *)(o)-1)
+#else
+#define _Py_AS_GC(o) (Py_PXCTX ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
+#endif
 
 #define _PyGC_REFS_UNTRACKED                    (-2)
 #define _PyGC_REFS_REACHABLE                    (-3)
@@ -300,10 +419,8 @@ extern PyGC_Head *_PyGC_generation0;
 
 #else /* !WITH_PARALLEL */
 
-#define _PyObject_GC_TRACK(o) do {                  \
+#define __PyObject_GC_TRACK(o) do {                 \
     PyGC_Head *g;                                   \
-    if (Py_PXCTX)                                   \
-        break;                                      \
     g = _Py_AS_GC(o);                               \
     if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED)      \
         Py_FatalError("GC object already tracked"); \
@@ -314,10 +431,8 @@ extern PyGC_Head *_PyGC_generation0;
     _PyGC_generation0->gc.gc_prev = g;              \
     } while (0)
 
-#define _PyObject_GC_UNTRACK(o) do {                \
+#define __PyObject_GC_UNTRACK(o) do {               \
     PyGC_Head *g;                                   \
-    if (Py_PXCTX)                                   \
-        break;                                      \
     g = _Py_AS_GC(o);                               \
     assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED);  \
     g->gc.gc_refs = _PyGC_REFS_UNTRACKED;           \
@@ -326,12 +441,32 @@ extern PyGC_Head *_PyGC_generation0;
     g->gc.gc_next = NULL;                           \
     } while (0)
 
-#define _PyObject_GC_IS_TRACKED(o)                  \
-    (Py_PXCTX ? 0 : ((_Py_AS_GC(o))->gc.gc_refs != _PyGC_REFS_UNTRACKED))
+#define __PyObject_GC_IS_TRACKED(o)                 \
+    ((_Py_AS_GC(o))->gc.gc_refs != _PyGC_REFS_UNTRACKED)
 
-#define _PyObject_GC_MAY_BE_TRACKED(obj)            \
-    (Py_PXCTX ? 0 : (PyObject_IS_GC(obj) &&         \
-        (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj))))
+#define __PyObject_GC_MAY_BE_TRACKED(obj)           \
+    (PyObject_IS_GC(obj) &&                         \
+     (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
+
+#define _PxObject_GC_Del(o)
+#define _PxObject_GC_Track(o)
+#define _PxObject_GC_UnTrack(o)
+#define _PxObject_GC_Is_Tracked(o) (0)
+#define _PxObject_GC_May_Be_Tracked(o) (0)
+
+#define _PyObject_GC_TRACK(o)                       \
+    if (!Py_PXCTX)                                   \
+        __PyObject_GC_TRACK(o)
+
+#define _PyObject_GC_UNTRACK(o)                     \
+    if (!Py_PXCTX)                                   \
+        __PyObject_GC_UNTRACK(o)
+
+#define _PyObject_GC_IS_TRACKED(o)                  \
+    (Py_PXCTX ? (0) : __PyObject_GC_IS_TRACKED(o))
+
+#define _PyObject_GC_MAY_BE_TRACKED(o)              \
+    (Py_PXCTX ? (0) : __PyObject_GC_MAY_BE_TRACKED(o))
 
 #endif /* WITH_PARALLEL */
 
@@ -345,18 +480,19 @@ PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
 PyAPI_FUNC(void) PyObject_GC_Del(void *);
 
 #ifndef WITH_PARALLEL
-#define PyObject_GC_New(type, typeobj)                          \
+#define PyObject_GC_New(type, typeobj)                             \
                 ( (type *) _PyObject_GC_New(typeobj) )
-#define PyObject_GC_NewVar(type, typeobj, n)                    \
+#define PyObject_GC_NewVar(type, typeobj, n)                       \
                 ( (type *) _PyObject_GC_NewVar((typeobj), (n)) )
 #else /* !WITH_PARALLEL */
-#define PyObject_GC_New(type, typeobj)                          \
-    (Py_PXCTX ? ( (type *) _PyObject_New(typeobj) ) :           \
-                ( (type *) _PyObject_GC_New(typeobj) ))
 
-#define PyObject_GC_NewVar(type, typeobj, n)                    \
-    (Py_PXCTX ? ( (type *) _PyObject_NewVar((typeobj), (n)) ) : \
-                ( (type *) _PyObject_GC_NewVar((typeobj), (n)) ))
+#define PyObject_GC_New(type, typeobj)                             \
+    (Py_PXCTX ? ((type *) _PxObject_New(typeobj)) :                \
+                ((type *) _PyObject_GC_New(typeobj)))
+
+#define PyObject_GC_NewVar(type, typeobj, n)                       \
+    (Py_PXCTX ? ((type *) _PxObject_NewVar((typeobj), (n))) :      \
+                ((type *) _PyObject_GC_NewVar((typeobj), (n))))
 #endif /* WITH_PARALLEL */
 
 /* Utility macro to help write tp_traverse functions.
@@ -364,6 +500,7 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
  * "visit" and "arg".  This is intended to keep tp_traverse functions
  * looking as much alike as possible.
  */
+#ifndef WITH_PARALLEL
 #define Py_VISIT(op)                                                    \
     do {                                                                \
         if (op) {                                                       \
@@ -372,7 +509,17 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
                 return vret;                                            \
         }                                                               \
     } while (0)
-
+#else
+#define Py_VISIT(op)                                                    \
+    do {                                                                \
+        Py_GUARD                                                        \
+        if (op) {                                                       \
+            int vret = visit((PyObject *)(op), arg);                    \
+            if (vret)                                                   \
+                return vret;                                            \
+        }                                                               \
+    } while (0)
+#endif
 
 /* Test if a type supports weak references */
 #define PyType_SUPPORTS_WEAKREFS(t) ((t)->tp_weaklistoffset > 0)
