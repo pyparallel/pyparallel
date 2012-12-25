@@ -94,6 +94,11 @@ PyInterpreterState_New(void)
         interp->next = interp_head;
         interp_head = interp;
         HEAD_UNLOCK();
+#ifdef WITH_PARALLEL
+        interp->errors   = PxList_New();
+        interp->incoming = PxList_New();
+        interp->outgoing = PxList_New();
+#endif
     }
 
     return interp;
@@ -116,6 +121,11 @@ PyInterpreterState_Clear(PyInterpreterState *interp)
     Py_CLEAR(interp->sysdict);
     Py_CLEAR(interp->builtins);
     Py_CLEAR(interp->importlib);
+#ifdef WITH_PARALLEL
+    PxList_Clear(interp->errors);
+    PxList_Clear(interp->incoming);
+    PxList_Clear(interp->outgoing);
+#endif
 }
 
 
@@ -148,6 +158,11 @@ PyInterpreterState_Delete(PyInterpreterState *interp)
         Py_FatalError("PyInterpreterState_Delete: remaining threads");
     *p = interp->next;
     HEAD_UNLOCK();
+#ifdef WITH_PARALLEL
+    PxList_Delete(interp->errors);
+    PxList_Delete(interp->incoming);
+    PxList_Delete(interp->outgoing);
+#endif
     free(interp);
 #ifdef WITH_THREAD
     if (interp_head == NULL && head_mutex != NULL) {
@@ -164,6 +179,7 @@ threadstate_getframe(PyThreadState *self)
 {
     return self->frame;
 }
+
 
 static PyThreadState *
 new_threadstate(PyInterpreterState *interp, int init)
@@ -209,6 +225,11 @@ new_threadstate(PyInterpreterState *interp, int init)
         tstate->trash_delete_nesting = 0;
         tstate->trash_delete_later = NULL;
 
+#ifdef WITH_PARALLEL
+        tstate->errors   = PxList_New();
+        tstate->incoming = PxList_New();
+        tstate->outgoing = PxList_New();
+#endif
         if (init)
             _PyThreadState_Init(tstate);
 
@@ -239,6 +260,10 @@ _PyThreadState_Init(PyThreadState *tstate)
 #ifdef WITH_THREAD
     _PyGILState_NoteThreadState(tstate);
 #endif
+#ifdef WITH_PARALLEL
+    /*_PyParallel_ThreadStateInitialized(tstate);*/
+#endif
+
 }
 
 PyObject*
@@ -341,6 +366,12 @@ PyThreadState_Clear(PyThreadState *tstate)
     tstate->c_tracefunc = NULL;
     Py_CLEAR(tstate->c_profileobj);
     Py_CLEAR(tstate->c_traceobj);
+
+#ifdef WITH_PARALLEL
+    PxList_Clear(tstate->errors);
+    PxList_Clear(tstate->incoming);
+    PxList_Clear(tstate->outgoing);
+#endif
 }
 
 
@@ -379,6 +410,11 @@ tstate_delete_common(PyThreadState *tstate)
     }
     *p = tstate->next;
     HEAD_UNLOCK();
+#ifdef WITH_PARALLEL
+    PxList_Delete(tstate->errors);
+    PxList_Delete(tstate->incoming);
+    PxList_Delete(tstate->outgoing);
+#endif
     free(tstate);
 }
 

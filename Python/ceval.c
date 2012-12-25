@@ -1236,6 +1236,28 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         assert(stack_pointer >= f->f_valuestack); /* else underflow */
         assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
 
+#ifdef WITH_PARALLEL
+#define IS_PX  (tstate->is_parallel_thread)
+#define HAS_PX (tstate->has_parallel_threads)
+        /* Parallel threads skip the normal thread periodic tasks below. */
+
+        if (IS_PX) {
+
+        } else if (HAS_PX) {
+            PxListItem *item = PxList_Flush(tstate->errors);
+            if (item) {
+
+
+            }
+
+        }
+
+#else
+#define IS_PX  (0)
+#define HAS_PX (0)
+#endif /* WITH_PARALLEL */
+
+
         /* Do periodic things.  Doing this every time through
            the loop would add too much overhead, so we do it
            only every Nth instruction.  We also do it if
@@ -3043,7 +3065,7 @@ fast_yield:
             swap_exc_state(tstate, f);
     }
 
-    if (tstate->use_tracing) {
+    if (!PX && tstate->use_tracing) {
         if (tstate->c_tracefunc) {
             if (why == WHY_RETURN || why == WHY_YIELD) {
                 if (call_trace(tstate->c_tracefunc,

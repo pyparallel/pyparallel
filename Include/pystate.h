@@ -8,6 +8,10 @@
 extern "C" {
 #endif
 
+#ifdef WITH_PARALLEL
+#include "pxlist.h"
+#endif
+
 /* State shared between threads */
 
 struct _ts; /* Forward */
@@ -43,7 +47,6 @@ typedef struct _is {
 
 } PyInterpreterState;
 #endif
-
 
 /* State unique per thread */
 
@@ -119,12 +122,23 @@ typedef struct _ts {
 
     /* XXX signal handlers should also be here */
 
+#ifdef WITH_PARALLEL
+    void *px;
+    PxListHead *errors;
+    PxListHead *incoming;
+    PxListHead *outgoing;
+#endif
+
 } PyThreadState;
 #endif
 
 
 PyAPI_FUNC(PyInterpreterState *) PyInterpreterState_New(void);
 PyAPI_FUNC(void) PyInterpreterState_Clear(PyInterpreterState *);
+PyAPI_FUNC(void) PyInterpreterState_Delete(PyInterpreterState *);
+PyAPI_FUNC(int) _PyState_AddModule(PyObject*, struct PyModuleDef*);
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
+/* New in 3.3 */
 PyAPI_FUNC(void) PyInterpreterState_Delete(PyInterpreterState *);
 PyAPI_FUNC(int) _PyState_AddModule(PyObject*, struct PyModuleDef*);
 #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
@@ -148,6 +162,26 @@ PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
 PyAPI_FUNC(PyThreadState *) PyThreadState_Swap(PyThreadState *);
 PyAPI_FUNC(PyObject *) PyThreadState_GetDict(void);
 PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
+
+/*
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void) _PxInterpreterState_New(void);
+PyAPI_FUNC(void) PyInterpreterState_Clear(PyInterpreterState *);
+PyAPI_FUNC(void) PyInterpreterState_Delete(PyInterpreterState *);
+
+PyAPI_FUNC(void) _PyParallel_CreatedNewInterpreterState(PyInterpreterState *);
+PyAPI_FUNC(void) _PyParallel_CreatedNewThreadState(PyThreadState *);
+
+PyAPI_FUNC(void) _PyParallel_ClearingInterpreterState(PyInterpreterState *);
+PyAPI_FUNC(void) _PyParallel_ClearedInterpreterState(PyInterpreterState *);
+
+PyAPI_FUNC(void) _PyParallel_ClearingThreadState(PyThreadState *);
+PyAPI_FUNC(void) _PyParallel_ClearedThreadState(PyThreadState *);
+
+PyAPI_FUNC(void) _PyParallel_DeletingingThreadState(PyThreadState *);
+PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
+#endif
+*/
 
 
 /* Variable and macro for in-line access to current thread state */
@@ -220,10 +254,6 @@ PyAPI_FUNC(PyThreadState *) PyGILState_GetThisThreadState(void);
 #ifndef Py_LIMITED_API
 PyAPI_FUNC(PyObject *) _PyThread_CurrentFrames(void);
 #endif
-
-/* Routines for advanced debuggers, requested by David Beazley.
-   Don't use unless you know what you are doing! */
-#ifndef Py_LIMITED_API
 PyAPI_FUNC(PyInterpreterState *) PyInterpreterState_Head(void);
 PyAPI_FUNC(PyInterpreterState *) PyInterpreterState_Next(PyInterpreterState *);
 PyAPI_FUNC(PyThreadState *) PyInterpreterState_ThreadHead(PyInterpreterState *);

@@ -296,6 +296,10 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
         Py_FatalError("Py_Initialize: can't make first thread");
     (void) PyThreadState_Swap(tstate);
 
+#ifdef WITH_PARALLEL
+    _PyParallel_InterpreterCreatedFirstThread(tstate);
+#endif
+
 #ifdef WITH_THREAD
     /* We can't call _PyEval_FiniThreads() in Py_Finalize because
        destroying the GIL might fail when it is being referenced from

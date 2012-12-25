@@ -108,6 +108,7 @@
 #include "codecs.h"
 #include "pyerrors.h"
 
+#include "pxlist.h"
 #include "pystate.h"
 
 #include "pyarena.h"

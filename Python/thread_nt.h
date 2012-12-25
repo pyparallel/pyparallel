@@ -107,7 +107,7 @@ LeaveNonRecursiveMutex(PNRMUTEX mutex)
     result = PyCOND_SIGNAL(&mutex->cv);
     result &= PyMUTEX_UNLOCK(&mutex->cs);
     return result;
-}    
+}
 
 #else /* if ! _PY_USE_CV_LOCKS */
 

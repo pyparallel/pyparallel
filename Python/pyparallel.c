@@ -135,7 +135,6 @@ _PyParallel_EnteredParallelContext(void *p)
 
     memset((void *)&ctx, 0, sizeof(Context));
     Heap_Init(&ctx.heap, 0);
- 
 }
 
 void
@@ -164,7 +163,7 @@ void
 _PyParallel_Init(void)
 {
     _Py_sfence();
-    
+
     if (Py_MainProcessId == -1) {
         if (Py_MainThreadId != -1)
             Py_FatalError("_PyParallel_Init: invariant failed: "  \
@@ -308,6 +307,12 @@ _PyParallel_ContextGuardFailure(const char *function,
         Py_FatalError("_PyParallel_ContextGuardFailure: snprintf failed");
     else
         Py_FatalError(buf);
+}
+
+void
+_PyParallel_NewThreadState(PyThreadState *tstate)
+{
+    return;
 }
 
 /* Objects (PyObjects) */

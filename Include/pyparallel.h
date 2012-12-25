@@ -16,6 +16,28 @@ PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
 /*
+PyAPI_FUNC(PxList *)        PxList_New(void);
+
+PyAPI_FUNC(void)            PxList_Clear(PxListHead *);
+PyAPI_FUNC(void)            PxList_Delete(PxListHead *);
+PyAPI_FUNC(void)            PxList_FreeList(PxListHead *);
+
+PyAPI_FUNC(PxListItem *)    PxList_Push(PxListHead *head, PxListItem *item);
+PyAPI_FUNC(PxListItem *)    PxList_Pop(PxListHead *head);
+
+PyAPI_FUNC(void)            PxList_DeleteItem(PxListItem *item);
+PyAPI_FUNC(void)            PxList_FreeListItem(PxListItem *item);
+
+PyAPI_FUNC(PxListItem *)    PxList_Flush(PxListHead *head);
+PyAPI_FUNC(unsigned short)  PxList_QueryDepth(PxListHead *head);
+
+PyAPI_FUNC(PxListItem *)    PxList_PushList(PxListHead  *head,
+                                            PxListItem  *start,
+                                            PxListItem  *end,
+                                            Py_ssize_t   count);
+*/
+
+/*
  * _PyParallel_Init() can be called safely multiple times.  It *must* be
  * called as early as possible, before any object allocations (and thus,
  * Py_INCREF/DECREF calls).  It is currently called in two places, Py_Main
