@@ -922,9 +922,6 @@
     <ClCompile Include="..\Python\pyparallel.c">
       <Filter>Python</Filter>
     </ClCompile>
-    <ClCompile Include="..\Python\parallelmodule.c">
-      <Filter>Python</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\PC\python_nt.rc">

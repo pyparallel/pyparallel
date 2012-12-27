@@ -9,10 +9,7 @@ extern "C" {
 
 #include "pyerrors.h" /* for Py_FatalError */
 
-#include <windows.h>
-
-#define PxListHead  SLIST_HEADER
-#define PxListEntry SLIST_ENTRY
+//#include <windows.h>
 
 #undef E2I
 #undef I2E
@@ -20,50 +17,42 @@ extern "C" {
 #define E2I(p) ((PxListItem  *)p)
 #define I2E(p) ((PxListEntry *)p)
 
+#define PxListHead  SLIST_HEADER
+#define PxListEntry SLIST_ENTRY
+
 /* Fill up 64-bytes. */
-typedef struct _PxListItem32 {  /* sizeof   total   remaining   */
-    PxListEntry   entry;        /*      8       8          56   */
-    __declspec(align(8))
-    void         *from;         /*      8      16          48   */
-    __declspec(align(8))
-    void         *p1;           /*      8      24          40   */
-    __declspec(align(8))
-    void         *p2;           /*      8      32          32   */
-    __declspec(align(8))
-    void         *p3;           /*      8      40          24   */
-    __declspec(align(8))
-    void         *p4;           /*      8      48          16   */
-    __declspec(align(8))
-    void         *p5;           /*      8      56           8   */
-    __declspec(align(8))
-    void         *p6;           /*      8      64           0   */
+#ifndef _WIN64
+typedef struct _PxListItem32 {
+    __declspec(align(16)) PxListEntry entry;
+    __declspec(align(8))  __int64  when;
+    __declspec(align(8))  void    *from;
+    __declspec(align(8))  void    *p1;
+    __declspec(align(8))  void    *p2;
+    __declspec(align(8))  void    *p3;
+    __declspec(align(8))  void    *p4;
 } PxListItem32;
-
-typedef struct _PxListItem64 {  /* sizeof   total   remaining   */
-    PxListEntry   entry;        /*      8       8          56   */
-    void         *from;         /*      8      16          48   */
-    void         *p1;           /*      8      24          40   */
-    void         *p2;           /*      8      32          32   */
-    void         *p3;           /*      8      40          24   */
-    void         *p4;           /*      8      48          16   */
-    void         *p5;           /*      8      56           8   */
-    void         *p6;           /*      8      64           0   */
-} PxListItem64;
-
-#ifdef _WIN64
-typedef struct _PxListItem64 PxListItem;
-#else
 typedef struct _PxListItem32 PxListItem;
+
+#else
+typedef struct _PxListItem64 {
+    PxListEntry   entry; /* aligned to 16-bytes */
+    unsigned __int64 when;
+    void         *from;
+    void         *p1;
+    void         *p2;
+    void         *p3;
+    void         *p4;
+} PxListItem64;
+typedef struct _PxListItem64 PxListItem;
 #endif
+
+C_ASSERT(sizeof(PxListItem) == 64);
 
 static __inline
 void *
 PxList_Malloc(Py_ssize_t size)
 {
-    register void *p = _aligned_malloc(size, MEMORY_ALLOCATION_ALIGNMENT);
-    if (!p)
-        Py_FatalError("PxList_Malloc:_aligned_malloc");
-    return p;
+    return _aligned_malloc(size, MEMORY_ALLOCATION_ALIGNMENT);
 }
 
 static __inline
@@ -80,8 +69,18 @@ PxListHead *
 PxList_New(void)
 {
     PxListHead *l = (PxListHead *)PxList_Malloc(sizeof(PxListHead));
+    if (!l)
+        return NULL;
+
     InitializeSListHead(l);
     return l;
+}
+
+static __inline
+void
+PxList_TimestampItem(PxListItem *item)
+{
+    item->when = _Py_rdtsc();
 }
 
 static __inline
@@ -137,6 +136,16 @@ PxList_Clear(PxListHead *head)
 
 static __inline
 void
+PxList_FreeAllListItems(PxListItem *start)
+{
+    register PxListItem *item = start;
+    do {
+        PxList_FreeListItem(item);
+    } while (item = PxList_Next(item));
+}
+
+static __inline
+void
 PxList_Delete(PxListHead *head)
 {
     PxList_Free(head);
@@ -156,7 +165,7 @@ PxList_Push(PxListHead *head, PxListItem *item)
     return E2I(InterlockedPushEntrySList(head, I2E(&item->entry)));
 }
 
-#if (Py_NTDDI >= 0x0602)
+#if (Py_NTDDI >= 0x06020000)
 static __inline
 PxListItem *
 PxList_PushList(PxListHead *head,

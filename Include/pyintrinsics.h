@@ -22,6 +22,7 @@ extern "C" {
 #       define _Py_lfence()      _mm_lfence()
 #       define _Py_mfence()      _mm_mfence()
 #       define _Py_sfence()      _mm_sfence()
+#       define _Py_rdtsc()       __rdtsc()
 #   else
 #       error "Intrinsics not available for this platform yet."
 #   endif

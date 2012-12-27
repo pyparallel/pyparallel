@@ -251,7 +251,8 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
     PyThreadState *tstate;
     PyObject *bimod, *sysmod, *pstderr;
 #ifdef WITH_PARALLEL
-    PyObject *pxmod;
+    PyObject *_parallelmod;
+    PyObject *_asyncmod;
 #endif
     char *p;
     extern void _Py_ReadyTypes(void);
@@ -297,7 +298,7 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
     (void) PyThreadState_Swap(tstate);
 
 #ifdef WITH_PARALLEL
-    _PyParallel_InterpreterCreatedFirstThread(tstate);
+    /*_PyParallel_InterpreterCreatedFirstThread(tstate);*/
 #endif
 
 #ifdef WITH_THREAD
@@ -408,15 +409,17 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
     if (!Py_NoSiteFlag)
         initsite(); /* Module site */
 #ifdef WITH_PARALLEL
-    /*
-     * XXX: I have no idea whether or not any of this is correct.  I basically
-     * just copied how the sys module is initialized.  Sort of.
-     */
-    pxmod = _PyParallel_ModInit();
-    if (pxmod == NULL)
-        Py_FatalError("Py_Initialize: can't initialize parallel module");
-    Py_INCREF(pxmod);
-    _PyImport_FixupBuiltin(pxmod, "parallel");
+    _parallelmod = _PyParallel_ModInit();
+    if (_parallelmod == NULL)
+        Py_FatalError("Py_Initialize: can't initialize _parallel module");
+    Py_INCREF(_parallelmod);
+    _PyImport_FixupBuiltin(_parallelmod, "_parallel");
+
+    _asyncmod = _PyAsync_ModInit();
+    if (_asyncmod == NULL)
+        Py_FatalError("Py_Initialize: can't initialize _async module");
+    Py_INCREF(_asyncmod);
+    _PyImport_FixupBuiltin(_asyncmod, "_async");
 #endif
 }
 

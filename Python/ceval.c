@@ -1238,18 +1238,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
 
 #ifdef WITH_PARALLEL
 #define IS_PX  (tstate->is_parallel_thread)
-#define HAS_PX (tstate->has_parallel_threads)
         /* Parallel threads skip the normal thread periodic tasks below. */
 
-        if (IS_PX) {
+        if (tstate->is_parallel_thread) {
+            /*
+             * What sort of things will be posted to a parallel thread's
+             * inbox?  Perhaps watchdog inquiries from the parent thread?
+             * Stats requests?
+             */
 
-        } else if (HAS_PX) {
-            PxListItem *item = PxList_Flush(tstate->errors);
-            if (item) {
+            /* ....for now, nothing. */
 
-
-            }
-
+            /*
+             * (And would we really need to do these things every loop
+             *  invocation?  Probably not.)
+             */
+            goto fast_next_opcode;
         }
 
 #else
@@ -3065,7 +3069,7 @@ fast_yield:
             swap_exc_state(tstate, f);
     }
 
-    if (!PX && tstate->use_tracing) {
+    if (tstate->use_tracing) {
         if (tstate->c_tracefunc) {
             if (why == WHY_RETURN || why == WHY_YIELD) {
                 if (call_trace(tstate->c_tracefunc,

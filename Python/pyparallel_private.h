@@ -30,10 +30,58 @@
 
 #define Px_DEFAULT_HEAP_SIZE (1024 * 1024) /* 1MB */
 
+#include "pxlist.h"
+
+typedef struct _cpuinfo {
+    struct _core {
+        int logical;
+        int physical;
+    } core;
+    struct _cache {
+        int l1;
+        int l2;
+    } cache;
+} cpuinfo;
+
+typedef struct _Object Object;
+
+typedef struct _Object {
+    Object   *next;
+    PyObject *op;
+} Object;
+
+typedef struct _Objects {
+    Object *first;
+    Object *last;
+} Objects;
+
+static __inline
+void
+append_object(Objects *list, Object *o)
+{
+    register Object *n;
+    if (!list->first) {
+        list->first = o;
+        list->last = o;
+    } else {
+        n = list->last;
+        n->next = o;
+        list->last = o;
+    }
+    o->next = 0;
+}
+
+
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
 typedef struct _PyParallelContext PyParallelContext, Context;
 typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
+
+typedef struct _PxState {
+    PxListHead *errors;
+    PxListHead *completed;
+    PxListHead *incoming;
+} PxState;
 
 typedef struct _PyParallelHeap {
     Heap   *sle_prev;
@@ -78,103 +126,42 @@ typedef struct _PyParallelContextStats {
     size_t objects;
     size_t varobjs;
 
+    size_t tbuf_mallocs;
+    size_t tbuf_allocated;
+    size_t tbuf_remaining;
 } PyParallelContextStats, Stats;
 
-typedef struct _PyParallelCallback {
-    PyObject *func;
-    PyObject *self;
-    PyObject *args;
-    PyObject **result;
-    OVERLAPPED **overlapped;
-} PyParallelCallback, Callback;
+#define _PX_TMPBUF_SIZE 1024
 
-typedef struct _Object Object;
-
-typedef struct _Object {
-    Object   *next;
-    PyObject *op;
-} Object;
-
-typedef struct _Objects {
-    Object *first;
-    Object *last;
-} Objects;
-
-static __inline
-void
-append_object(Objects *list, Object *o)
-{
-    register Object *n;
-    if (!list->first) {
-        list->first = o;
-        list->last = o;
-    } else {
-        n = list->last;
-        n->next = o;
-        list->last = o;
-    }
-    o->next = 0;
-}
-
-/*
- * Unique/active for the lifetime of the underlying platform thread.
- * Has only one active context at any time.
- */
-typedef struct _PyParallelThreadState {
-    HANDLE  heap_handle;
-
-    long    process_id;
-    long    pxthread_id;    /* Our thread ID. */
-    long    pythread_id;    /* Thread ID of the parent Python thread. */
-
-    /* XXX TODO: fix access to tstate. */
-    PyThreadState *tstate;  /* Parent thread state. */
-    PyInterpreterState *interp;
-
-} PyParallelThreadState, PxThreadState, State;
-
-typedef struct _cpuinfo {
-    struct _core {
-        int logical;
-        int physical;
-    } core;
-    struct _cache {
-        int l1;
-        int l2;
-    } cache;
-} cpuinfo;
-
-/*
-typedef struct _SLIST_HEADER _PxListHead PxListHead;
-typedef struct _SLIST_ENTRY  _PxListEntry PxListEntry;
-
-typedef struct _PxListItem {
-    SLIST_ENTRY  entry;
-    PyObject    *op;
-} PxListItem;
-
-static __
-*/
-
-/*
- * Unique/active for the lifetime of a parallel execution context.
- */
 typedef struct _PyParallelContext {
-    Context *prev;
-    Context *next;
-    HANDLE   heap_handle;
-    Heap     heap;
-    Stats    stats;
-    Callback callback;
+    PyObject *func;
+    PyObject *args;
+    PyObject *kwds;
+    PyObject *callback;
+    PyObject *errback;
+    PyObject *result;
 
-    __int64  id; /* Initialized to rtdsc when context starts. */
+    PyThreadState *tstate;
 
-    Heap    *h;
+    PxListItem *error;
+    PxListItem *success;
+
+    HANDLE heap_handle;
+    Heap   heap;
+    Heap  *h;
+
+    Stats  stats;
 
     Objects objects;
     Objects varobjs;
 
-    cpuinfo cpu;
+    char *tbuf[_PX_TMPBUF_SIZE];
+    void *tbuf_base;
+    void *tbuf_next;
+    size_t tbuf_mallocs;
+    size_t tbuf_allocated;
+    size_t tbuf_remaining;
+
 } PyParallelContext, Context;
 
 /*

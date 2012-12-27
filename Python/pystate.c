@@ -94,11 +94,6 @@ PyInterpreterState_New(void)
         interp->next = interp_head;
         interp_head = interp;
         HEAD_UNLOCK();
-#ifdef WITH_PARALLEL
-        interp->errors   = PxList_New();
-        interp->incoming = PxList_New();
-        interp->outgoing = PxList_New();
-#endif
     }
 
     return interp;
@@ -121,11 +116,6 @@ PyInterpreterState_Clear(PyInterpreterState *interp)
     Py_CLEAR(interp->sysdict);
     Py_CLEAR(interp->builtins);
     Py_CLEAR(interp->importlib);
-#ifdef WITH_PARALLEL
-    PxList_Clear(interp->errors);
-    PxList_Clear(interp->incoming);
-    PxList_Clear(interp->outgoing);
-#endif
 }
 
 
@@ -158,11 +148,6 @@ PyInterpreterState_Delete(PyInterpreterState *interp)
         Py_FatalError("PyInterpreterState_Delete: remaining threads");
     *p = interp->next;
     HEAD_UNLOCK();
-#ifdef WITH_PARALLEL
-    PxList_Delete(interp->errors);
-    PxList_Delete(interp->incoming);
-    PxList_Delete(interp->outgoing);
-#endif
     free(interp);
 #ifdef WITH_THREAD
     if (interp_head == NULL && head_mutex != NULL) {
@@ -188,6 +173,15 @@ new_threadstate(PyInterpreterState *interp, int init)
 
     if (_PyThreadState_GetFrame == NULL)
         _PyThreadState_GetFrame = threadstate_getframe;
+
+#ifdef WITH_PARALLEL
+    if (tstate != NULL) {
+        if (!_PyParallel_CreatedNewThreadState(tstate)) {
+            free(tstate);
+            tstate = NULL;
+        }
+    }
+#endif
 
     if (tstate != NULL) {
         tstate->interp = interp;
@@ -225,11 +219,6 @@ new_threadstate(PyInterpreterState *interp, int init)
         tstate->trash_delete_nesting = 0;
         tstate->trash_delete_later = NULL;
 
-#ifdef WITH_PARALLEL
-        tstate->errors   = PxList_New();
-        tstate->incoming = PxList_New();
-        tstate->outgoing = PxList_New();
-#endif
         if (init)
             _PyThreadState_Init(tstate);
 
@@ -368,9 +357,6 @@ PyThreadState_Clear(PyThreadState *tstate)
     Py_CLEAR(tstate->c_traceobj);
 
 #ifdef WITH_PARALLEL
-    PxList_Clear(tstate->errors);
-    PxList_Clear(tstate->incoming);
-    PxList_Clear(tstate->outgoing);
 #endif
 }
 
@@ -411,9 +397,6 @@ tstate_delete_common(PyThreadState *tstate)
     *p = tstate->next;
     HEAD_UNLOCK();
 #ifdef WITH_PARALLEL
-    PxList_Delete(tstate->errors);
-    PxList_Delete(tstate->incoming);
-    PxList_Delete(tstate->outgoing);
 #endif
     free(tstate);
 }
@@ -453,14 +436,18 @@ PyThreadState_DeleteCurrent()
 PyThreadState *
 PyThreadState_Get(void)
 {
-    PyThreadState *tstate = (PyThreadState*)_Py_atomic_load_relaxed(
-        &_PyThreadState_Current);
+    PyThreadState *tstate = _PyThreadState_XGET();
     if (tstate == NULL)
         Py_FatalError("PyThreadState_Get: no current thread");
 
     return tstate;
 }
 
+PyThreadState *
+PyThreadState_XGet(void)
+{
+    return _PyThreadState_GET();
+}
 
 PyThreadState *
 PyThreadState_Swap(PyThreadState *newts)
@@ -497,8 +484,7 @@ PyThreadState_Swap(PyThreadState *newts)
 PyObject *
 PyThreadState_GetDict(void)
 {
-    PyThreadState *tstate = (PyThreadState*)_Py_atomic_load_relaxed(
-        &_PyThreadState_Current);
+    PyThreadState *tstate = PyThreadState_XGET();
     if (tstate == NULL)
         return NULL;
 

@@ -190,6 +190,18 @@ PyAPI_DATA(PyObject *) PyExc_NotADirectoryError;
 PyAPI_DATA(PyObject *) PyExc_PermissionError;
 PyAPI_DATA(PyObject *) PyExc_ProcessLookupError;
 PyAPI_DATA(PyObject *) PyExc_TimeoutError;
+#ifdef WITH_PARALLEL
+PyAPI_DATA(PyObject *) PyExc_ParallelError;
+PyAPI_DATA(PyObject *) PyExc_ParallelThreadInitializationError;
+PyAPI_DATA(PyObject *) PyExc_ParallelContextInitializationError;
+PyAPI_DATA(PyObject *) PyExc_ParallelContextError;
+PyAPI_DATA(PyObject *) PyExc_ParallelImportError;
+PyAPI_DATA(PyObject *) PyExc_ParallelGlobalVariableAccessError;
+PyAPI_DATA(PyObject *) PyExc_ParallelNonlocalVariableAccessError;
+PyAPI_DATA(PyObject *) PyExc_AsyncError;
+PyAPI_DATA(PyObject *) PyExc_AsyncRunCalledWithoutEventsError;
+PyAPI_DATA(PyObject *) PyExc_AsyncRunNoActiveEventsError;
+#endif
 
 
 /* Compatibility aliases */

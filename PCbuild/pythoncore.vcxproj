@@ -708,7 +708,6 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\PC\dl_nt.c" />
     <ClCompile Include="..\PC\getpathp.c" />
     <ClCompile Include="..\PC\msvcrtmodule.c" />
-    <ClCompile Include="..\Python\parallelmodule.c" />
     <ClCompile Include="..\Python\pyparallel.c" />
     <ClCompile Include="..\Python\random.c" />
     <ClCompile Include="..\Python\_warnings.c" />

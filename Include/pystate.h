@@ -8,10 +8,6 @@
 extern "C" {
 #endif
 
-#ifdef WITH_PARALLEL
-#include "pxlist.h"
-#endif
-
 /* State shared between threads */
 
 struct _ts; /* Forward */
@@ -123,10 +119,8 @@ typedef struct _ts {
     /* XXX signal handlers should also be here */
 
 #ifdef WITH_PARALLEL
+    int is_parallel_thread;
     void *px;
-    PxListHead *errors;
-    PxListHead *incoming;
-    PxListHead *outgoing;
 #endif
 
 } PyThreadState;
@@ -159,18 +153,14 @@ PyAPI_FUNC(void) _PyGILState_Reinit(void);
 #endif
 
 PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
+PyAPI_FUNC(PyThreadState *) PyThreadState_XGet(void);
 PyAPI_FUNC(PyThreadState *) PyThreadState_Swap(PyThreadState *);
 PyAPI_FUNC(PyObject *) PyThreadState_GetDict(void);
 PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
 
-/*
 #ifdef WITH_PARALLEL
-PyAPI_FUNC(void) _PxInterpreterState_New(void);
-PyAPI_FUNC(void) PyInterpreterState_Clear(PyInterpreterState *);
-PyAPI_FUNC(void) PyInterpreterState_Delete(PyInterpreterState *);
-
 PyAPI_FUNC(void) _PyParallel_CreatedNewInterpreterState(PyInterpreterState *);
-PyAPI_FUNC(void) _PyParallel_CreatedNewThreadState(PyThreadState *);
+PyAPI_FUNC(void *) _PyParallel_CreatedNewThreadState(PyThreadState *);
 
 PyAPI_FUNC(void) _PyParallel_ClearingInterpreterState(PyInterpreterState *);
 PyAPI_FUNC(void) _PyParallel_ClearedInterpreterState(PyInterpreterState *);
@@ -181,8 +171,6 @@ PyAPI_FUNC(void) _PyParallel_ClearedThreadState(PyThreadState *);
 PyAPI_FUNC(void) _PyParallel_DeletingingThreadState(PyThreadState *);
 PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
 #endif
-*/
-
 
 /* Variable and macro for in-line access to current thread state */
 
@@ -190,13 +178,29 @@ PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
    PyThreadState for the current thread. */
 #ifndef Py_LIMITED_API
 PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
+#if defined(WITH_PARALLEL) && !defined(GETBUILDINFO)
+PyAPI_DATA(PyThreadState *) _PyThreadState_Parallel;
+#endif
+#endif
+
+#ifdef WITH_PARALLEL
+#define _PyThreadState_GET() ((PyThreadState *) \
+    (Py_PXCTX ? (_PyThreadState_Parallel) :    \
+                (_Py_atomic_load_relaxed(&_PyThreadState_Current))) \
+)
+#define _PyThreadState_XGET() _PyThreadState_GET()
+#else
+#define _PyThreadState_GET()                    \
+    ((PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current))
+#define _PyThreadState_XGET()_ PyThreadState_GET()
 #endif
 
 #if defined(Py_DEBUG) || defined(Py_LIMITED_API)
 #define PyThreadState_GET() PyThreadState_Get()
+#define PyThreadState_XGET() PyThreadState_XGet()
 #else
-#define PyThreadState_GET() \
-    ((PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current))
+#define PyThreadState_GET() _PyThreadState_GET()
+#define PyThreadState_XGET() _PyThreadState_XGET()
 #endif
 
 typedef

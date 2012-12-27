@@ -1,3 +1,4 @@
+#define GETBUILDINFO
 #include "Python.h"
 
 #ifndef DONT_HAVE_STDIO_H
