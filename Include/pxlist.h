@@ -108,9 +108,60 @@ PxList_FreeListItem(PxListItem *item)
 
 static __inline
 PxListItem *
+PxList_FreeListItemAfterNext(PxListItem *item)
+{
+    PxListItem *next = PxList_Next(item);
+    PxList_FreeListItem(item);
+    return next;
+}
+
+static __inline
+PxListItem *
 PxList_Next(PxListItem *item)
 {
     return E2I(item->entry.Next);
+}
+
+static __inline
+PxListItem *
+PxList_SeverNext(PxListItem *item)
+{
+    register PxListItem *next = E2I(item->entry.Next);
+    item->entry.Next = NULL;
+    return next;
+}
+
+static __inline
+PxListItem *
+PxList_Transfer(PxListHead *head, PxListItem *item)
+{
+    register PxListItem *next = E2I(item->entry.Next);
+    item->entry.Next = NULL;
+    PxList_Push(head, item);
+    return next;
+}
+
+static __inline
+unsigned short
+PxList_QueryDepth(PxListHead *head)
+{
+    return QueryDepthSList(head);
+}
+
+static __inline
+PxListItem *
+PxList_Flush(PxListHead *head, unsigned short *depth_hint)
+{
+    if (depth_hint)
+        *depth_hint = QueryDepthSList(head);
+    return E2I(InterlockedFlushSList(head));
+}
+
+static __inline
+PxListItem *
+PxList_Flush(PxListHead *head)
+{
+    return E2I(InterlockedFlushSList(head));
 }
 
 static __inline
@@ -142,6 +193,23 @@ PxList_FreeAllListItems(PxListItem *start)
     do {
         PxList_FreeListItem(item);
     } while (item = PxList_Next(item));
+}
+
+__inline
+size_t
+PxList_CountItems(PxListItem *start)
+{
+    register PxListItem *item = start;
+    size_t i = 0;
+
+    if (!item)
+        return 0;
+
+    do {
+        ++i;
+    } while (item = PxList_Next(item));
+
+    return i;
 }
 
 static __inline

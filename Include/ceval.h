@@ -176,6 +176,7 @@ PyAPI_FUNC(void) _PyEval_SetSwitchInterval(unsigned long microseconds);
 PyAPI_FUNC(unsigned long) _PyEval_GetSwitchInterval(void);
 #endif
 
+#ifndef WITH_PARALLEL
 #define Py_BEGIN_ALLOW_THREADS { \
                         PyThreadState *_save; \
                         _save = PyEval_SaveThread();
@@ -183,6 +184,28 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwitchInterval(void);
 #define Py_UNBLOCK_THREADS      _save = PyEval_SaveThread();
 #define Py_END_ALLOW_THREADS    PyEval_RestoreThread(_save); \
                  }
+#else
+
+#define Py_BEGIN_ALLOW_THREADS       \
+    if (Py_PXCTX) {                  \
+        _PyParallel_BlockingCall();  \
+    } else {                         \
+        PyThreadState *_save;        \
+        _save = PyEval_SaveThread();
+#define Py_BLOCK_THREADS             \
+    if (!Py_PXCTX)                   \
+        PyEval_RestoreThread(_save);
+#define Py_UNBLOCK_THREADS           \
+    if (Py_PXCTX)                    \
+        _PyParallel_BlockingCall();  \
+    else                             \
+        _Py_save = PyEval_SaveThread();
+#define Py_END_ALLOW_THREADS         \
+    if (!Py_PXCTX)                   \
+        PyEval_RestoreThread(_save); \
+}
+
+#endif
 
 #else /* !WITH_THREAD */
 

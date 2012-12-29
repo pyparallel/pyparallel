@@ -31,6 +31,7 @@
 #define Px_MAX(a, b) ((a > b) ? a : b)
 
 #define Px_DEFAULT_HEAP_SIZE (1024) /* 1KB */
+#define Px_MAX_SEM (32768)
 
 #include "pxlist.h"
 
@@ -78,12 +79,6 @@ typedef struct _PyParallelHeap PyParallelHeap, Heap;
 typedef struct _PyParallelContext PyParallelContext, Context;
 typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
-
-typedef struct _PxState {
-    PxListHead *errors;
-    PxListHead *completed;
-    PxListHead *incoming;
-} PxState;
 
 typedef struct _PyParallelHeap {
     Heap   *sle_prev;
@@ -135,6 +130,22 @@ typedef struct _PyParallelContextStats {
 
 #define _PX_TMPBUF_SIZE 1024
 
+typedef struct _PxState {
+    PxListHead *errors;
+    PxListHead *completed_callbacks;
+    PxListHead *completed_errbacks;
+    PxListHead *incoming;
+    PxListHead *finished;
+    HANDLE      wakeup;
+
+    volatile unsigned __int64 submitted;
+    volatile unsigned __int64 done;
+
+    volatile long    pending;
+    volatile long    inflight;
+    volatile long    persistent;
+} PxState;
+
 typedef struct _PyParallelContext {
     PyObject *func;
     PyObject *args;
@@ -145,13 +156,22 @@ typedef struct _PyParallelContext {
 
     PyThreadState *tstate;
 
-    PxListItem *work;
+    PxState *px;
+
     PxListItem *error;
-    PxListItem *completed;
+    PxListItem *outgoing;
+    PxListItem *callback_completed;
+    PxListItem *errback_completed;
+
+    long refcnt;
 
     HANDLE heap_handle;
     Heap   heap;
     Heap  *h;
+
+    void  *instance;
+
+    int disassociated;
 
     Stats  stats;
 

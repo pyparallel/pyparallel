@@ -45,6 +45,7 @@ PyAPI_FUNC(PxListItem *)    PxList_PushList(PxListHead  *head,
  * embeds the interpreter (as Py_Main (probably) won't be called).
  */
 PyAPI_FUNC(void) _PyParallel_Init(void);
+PyAPI_FUNC(void) _PyParallel_BlockingCall(void);
 
 PyAPI_FUNC(void) _PyParallel_CreatedGIL(void);
 PyAPI_FUNC(void) _PyParallel_DestroyedGIL(void);
