@@ -28,7 +28,9 @@
         (void *)((Px_UINTPTR)(p) +                                 \
                  (Px_UINTPTR)(n))
 
-#define Px_DEFAULT_HEAP_SIZE (1024 * 1024) /* 1MB */
+#define Px_MAX(a, b) ((a > b) ? a : b)
+
+#define Px_DEFAULT_HEAP_SIZE (1024) /* 1KB */
 
 #include "pxlist.h"
 

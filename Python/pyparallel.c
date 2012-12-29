@@ -17,7 +17,7 @@ extern "C" {
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 __declspec(thread) PyParallelContext *ctx = NULL;
-__declspec(thread) PyThreadState _PxThreadState = { NULL };
+/*__declspec(thread) PyThreadState _PxThreadState = { NULL };*/
 __declspec(thread) PyThreadState *pstate;
 #define _TMPBUF_SIZE 1024
 
@@ -153,7 +153,7 @@ begin:
         /* XXX TODO: merge this with Heap_Init(). */
         Heap *oldh;
         /* Try allocate another chunk. */
-        size_t newsize = Px_CACHE_ALIGN(MAX(size * 2, h->size));
+        size_t newsize = Px_CACHE_ALIGN(Px_MAX(size * 2, h->size));
         next = HeapAlloc(c->heap_handle, 0, newsize);
         if (!next)
             return Heap_LocalMalloc(c, size);
@@ -171,7 +171,7 @@ begin:
         s->remaining += newsize; /* forgot why this is += */
         s->heaps++;
         c->h = h;
-        h->sle_next = (Heap *)_PyHeap_Malloc(Px_CACHE_ALIGN(sizeof(Heap)));
+        h->sle_next = (Heap *)_PyHeap_Malloc(c, Px_CACHE_ALIGN(sizeof(Heap)));
         assert(h->sle_next);
     }
 
@@ -244,6 +244,8 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
 
     tstate->is_parallel_thread = 0;
     tstate->px = px;
+    
+    goto done;
 
 free_completed:
     PxList_FreeListHead(px->completed);
@@ -256,7 +258,7 @@ free_px:
     px = NULL;
 
 done:
-    return (px ? px : PyErr_NoMemory());
+    return (px ? (void *)px : (void *)PyErr_NoMemory());
 }
 
 typedef struct _work {
@@ -276,7 +278,7 @@ _PyParallel_HandleErrors(void)
         return;
 
     px = (PxState *)pstate->px;
-    error = ctx->cb->error;
+    error = ctx->error;
     PxList_TimestampItem(error);
     error->from = pstate;
     error->p1 = pstate->curexc_type;
@@ -335,48 +337,28 @@ _PyParallel_LeaveParallelContext(void)
 
 void
 NTAPI
-_PyParallel_SimpleWorkCallback(void *instance, void *context)
+_PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
 {
-    Callback *cb = (Callback *)context;
+    Context  *c = (Context *)context;
     Stats    *s;
     PyObject *result;
+    PxState  *px;
 
-    /*
-    assert(
-        (_tbuf_base == NULL && _tbuf_next == NULL) ||
-        (_tbuf_base && _tbuf_next)
-    );
+    PxListItem *error, *completed;
 
-    if (_tbuf_base == NULL) {
-        _tbuf_base = _tbuf[0];
-        _tbuf_next = _tbuf[0];
-    }
-    */
-
-    pstate = &_PxThreadState;
+    ctx = c;
+    pstate = _PxThreadState;
     memset((void *)pstate, 0, sizeof(PyThreadState));
 
     pstate->is_parallel_thread = 1;
-    pstate->interp = cb->tstate->interp;
+    pstate->interp = c->tstate->interp;
     pstate->thread_id = _Py_get_current_thread_id();
+    px = (PxState *)c->tstate->px;
 
-    memset((void *)&ctx, 0, sizeof(Context));
-    ctx->cb = cb;
-
-    if (!Heap_Init(&ctx->heap, 0))
-        goto end;
-
-    result = PyObject_Call(cb->func, cb->args, cb->kwds);
-    if (!result)
-        goto end;
-
-end:
-    if (pstate->curexc_type) {
-        PxState *px;
-        PxListItem *error;
-
-        px = (PxState *)pstate->px;
-        error = ctx->cb->error;
+    result = PyObject_Call(c->func, c->args, c->kwds);
+    if (!result) {
+        assert(pstate->curexc_type != NULL);
+        error = c->error;
         PxList_TimestampItem(error);
         error->from = pstate;
         error->p1 = pstate->curexc_type;
@@ -384,7 +366,11 @@ end:
         error->p3 = pstate->curexc_traceback;
         PxList_Push(px->errors, error);
     } else {
-
+        completed = c->completed;
+        PxList_TimestampItem(completed);
+        completed->from = c;
+        completed->p1 = result;
+        PxList_Push(px->completed, completed);
     }
 }
 
@@ -658,6 +644,20 @@ decref_args(Context *c)
     Py_XDECREF(c->kwds);
     Py_XDECREF(c->callback);
     Py_XDECREF(c->errback);
+}
+
+static __inline
+int
+submit_work(Context *c)
+{
+    int retval;
+    PTP_SIMPLE_CALLBACK cb;
+
+    cb = _PyParallel_SimpleWorkCallback;
+    retval = TrySubmitThreadpoolCallback(cb, c, NULL);
+    if (!retval)
+        PyErr_SetFromWindowsErr(0);
+    return retval;
 }
 
 PyObject *
