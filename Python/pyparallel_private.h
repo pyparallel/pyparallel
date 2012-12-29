@@ -143,8 +143,9 @@ typedef struct _PyParallelContext {
 
     PyThreadState *tstate;
 
+    PxListItem *work;
     PxListItem *error;
-    PxListItem *success;
+    PxListItem *completed;
 
     HANDLE heap_handle;
     Heap   heap;

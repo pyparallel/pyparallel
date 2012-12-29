@@ -131,7 +131,7 @@ _PyHeap_Malloc(Context *c, size_t n)
      * to free the resulting memory.
      */
     if (!c->heap_handle || !c->h->base)
-        return Heap_LocalMalloc(size);
+        return Heap_LocalMalloc(c, size);
 
 begin:
     h = c->h;
@@ -149,15 +149,14 @@ begin:
         h->next = Px_PTRADD(h->next, size);
         assert(Px_PTRADD(h->base, h->allocated) == h->next);
         return next;
-    }
-    /* XXX TODO: fix */
-    else {
+    } else {
+        /* XXX TODO: merge this with Heap_Init(). */
         Heap *oldh;
         /* Try allocate another chunk. */
         size_t newsize = Px_CACHE_ALIGN(MAX(size * 2, h->size));
         next = HeapAlloc(c->heap_handle, 0, newsize);
         if (!next)
-            return Heap_LocalMalloc(size);
+            return Heap_LocalMalloc(c, size);
 
         /* Update our heap details to reflect the new chunk. */
         /* (Note that this code is almost identical to Heap_Init.) */
@@ -173,6 +172,7 @@ begin:
         s->heaps++;
         c->h = h;
         h->sle_next = (Heap *)_PyHeap_Malloc(Px_CACHE_ALIGN(sizeof(Heap)));
+        assert(h->sle_next);
     }
 
     goto begin;
@@ -285,6 +285,7 @@ _PyParallel_HandleErrors(void)
     PxList_Push(px->errors, error);
 }
 
+/*
 int
 _PyParallel_EnterParallelContext(void *context)
 {
@@ -297,7 +298,7 @@ _PyParallel_EnterParallelContext(void *context)
     );
 
     if (_tbuf_base == NULL) {
-        /* We're a newly-created thread. */
+        * We're a newly-created thread. *
         _tbuf_base = _tbuf[0];
         _tbuf_next = _tbuf[0];
     }
@@ -330,6 +331,7 @@ _PyParallel_LeaveParallelContext(void)
 
     _PyParallel_HandleErrors();
 }
+*/
 
 void
 NTAPI
@@ -339,16 +341,17 @@ _PyParallel_SimpleWorkCallback(void *instance, void *context)
     Stats    *s;
     PyObject *result;
 
+    /*
     assert(
         (_tbuf_base == NULL && _tbuf_next == NULL) ||
         (_tbuf_base && _tbuf_next)
     );
 
     if (_tbuf_base == NULL) {
-        /* We're a newly-created thread. */
         _tbuf_base = _tbuf[0];
         _tbuf_next = _tbuf[0];
     }
+    */
 
     pstate = &_PxThreadState;
     memset((void *)pstate, 0, sizeof(PyThreadState));
@@ -679,21 +682,52 @@ _async_submit_work(PyObject *self, PyObject *args)
     }
 
     if (!_PyHeap_Init(c, 0))
-        goto heap_destroy;
+        goto free_heap;
+
+    c->work = PxList_NewItem();
+    if (!c->work)
+        goto free_heap;
+
+    c->error = PxList_NewItem();
+    if (!c->error)
+        goto free_work;
+
+    c->completed = PxList_NewItem();
+    if (!c->completed)
+        goto free_error;
 
     memset((void *)c->tbuf[0], 0, _PX_TMPBUF_SIZE);
     c->tbuf_next = c->tbuf_base = &c->tbuf[0];
     c->tbuf_remaining = _PX_TMPBUF_SIZE;
 
+    incref_args(c);
 
-heap_destroy:
+    if (!submit_work(c))
+        goto decref_args;
+
+    result = (Py_INCREF(Py_None), Py_None);
+    goto done;
+
+decref_args:
+    decref_args(c);
+
+free_completed:
+    PxList_FreeListItem(c->completed);
+
+free_error:
+    PxList_FreeListItem(c->error);
+
+free_work:
+    PxList_FreeListItem(c->work);
+
+free_heap:
     HeapDestroy(c->heap_handle);
 
 free_context:
     free(c);
 
-
-    return result;
+done:
+    return (result ? result : PyErr_NoMemory());
 }
 
 static
