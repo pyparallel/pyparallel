@@ -159,7 +159,6 @@ typedef struct _PyParallelContext {
     PxState *px;
 
     PxListItem *error;
-    PxListItem *outgoing;
     PxListItem *callback_completed;
     PxListItem *errback_completed;
 

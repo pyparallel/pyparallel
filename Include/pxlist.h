@@ -108,18 +108,18 @@ PxList_FreeListItem(PxListItem *item)
 
 static __inline
 PxListItem *
+PxList_Next(PxListItem *item)
+{
+    return E2I(item->entry.Next);
+}
+
+static __inline
+PxListItem *
 PxList_FreeListItemAfterNext(PxListItem *item)
 {
     PxListItem *next = PxList_Next(item);
     PxList_FreeListItem(item);
     return next;
-}
-
-static __inline
-PxListItem *
-PxList_Next(PxListItem *item)
-{
-    return E2I(item->entry.Next);
 }
 
 static __inline
@@ -132,16 +132,6 @@ PxList_SeverNext(PxListItem *item)
 }
 
 static __inline
-PxListItem *
-PxList_Transfer(PxListHead *head, PxListItem *item)
-{
-    register PxListItem *next = E2I(item->entry.Next);
-    item->entry.Next = NULL;
-    PxList_Push(head, item);
-    return next;
-}
-
-static __inline
 unsigned short
 PxList_QueryDepth(PxListHead *head)
 {
@@ -150,7 +140,8 @@ PxList_QueryDepth(PxListHead *head)
 
 static __inline
 PxListItem *
-PxList_Flush(PxListHead *head, unsigned short *depth_hint)
+PxList_FlushWithDepthHint(PxListHead *head,
+                          unsigned short *depth_hint)
 {
     if (depth_hint)
         *depth_hint = QueryDepthSList(head);
@@ -231,6 +222,16 @@ PxListItem *
 PxList_Push(PxListHead *head, PxListItem *item)
 {
     return E2I(InterlockedPushEntrySList(head, I2E(&item->entry)));
+}
+
+static __inline
+PxListItem *
+PxList_Transfer(PxListHead *head, PxListItem *item)
+{
+    register PxListItem *next = E2I(item->entry.Next);
+    item->entry.Next = NULL;
+    PxList_Push(head, item);
+    return next;
 }
 
 #if (Py_NTDDI >= 0x06020000)

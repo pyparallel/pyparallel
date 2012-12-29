@@ -327,8 +327,8 @@ _PyEval_FiniThreads(void)
 void
 PyEval_AcquireLock(void)
 {
-    Py_GUARD
     PyThreadState *tstate = PyThreadState_GET();
+    Py_GUARD 
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
     take_gil(tstate);
