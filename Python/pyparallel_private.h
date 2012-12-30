@@ -144,6 +144,11 @@ typedef struct _PxState {
     volatile long    pending;
     volatile long    inflight;
     volatile long    persistent;
+
+    long last_done_count;
+    long last_submitted_count;
+
+    CRITICAL_SECTION cs;
 } PxState;
 
 typedef struct _PyParallelContext {

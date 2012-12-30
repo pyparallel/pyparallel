@@ -1,6 +1,7 @@
 import sys
 import unittest
 
+import async
 import _async
 
 class TestBasic(unittest.TestCase):
@@ -32,9 +33,54 @@ def t2():
     def f(i):
         return i * 2
     def cb(r):
-        print("result: %d" % r)
+        s = "result x 2 = %d" % (r * 2)
+        _async.call_from_main_thread(print, s)
+
     _async.submit_work(f, 2, None, cb, None)
     _async.run_once()
+
+def t3():
+    d = {}
+    def f(i):
+        return i * 2
+    def cb(r):
+        _async.call_from_main_thread(d.__setitem__, ('result', r*2))
+
+    _async.submit_work(f, 2, None, cb, None)
+    _async.run_once()
+    print(d)
+
+def t4():
+    d = {}
+    def f(i):
+        return i * 12
+    def cb(r):
+        _async.call_from_main_thread_and_wait(d.__setitem__, ('result', r*2))
+        v = _async.call_from_main_thread_and_wait(
+            d.__getitem__, 'result'
+        )
+        _async.call_from_main_thread_and_wait(print, "v: %d" % v)
+
+    _async.submit_work(f, 2, None, cb, None)
+    _async.run_once()
+    _async.run_once()
+    _async.run_once()
+    #print(d)
+
+def t5():
+    d = {}
+    def f(i):
+        return i * 12
+    def cb(r):
+        _async.call_from_main_thread_and_wait(d.__setitem__, ('result', r*2))
+        v = _async.call_from_main_thread_and_wait(
+            d.__getitem__, 'result'
+        )
+        _async.call_from_main_thread_and_wait(print, "v: %d" % v)
+
+    _async.submit_work(f, 2, None, cb, None)
+    async.run()
+    #print(d)
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:

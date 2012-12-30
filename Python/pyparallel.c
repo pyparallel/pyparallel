@@ -1,17 +1,8 @@
 #include "Python.h"
 
-#ifndef WITH_PARALLEL
-#error "This file should only be included when WITH_PARALLEL is defined."
-#endif
-
 #ifdef __cpplus
 extern "C" {
 #endif
-
-/* XXX TODO:
- *  - Review all dealloc methods -- make nullops where approp.
- *  - Review free lists!
- */
 
 #include "pyparallel_private.h"
 
@@ -89,22 +80,6 @@ _PyHeap_Init(Context *c, Py_ssize_t n)
 {
     return Heap_Init(c, n);
 }
-
-
-/*
-static __inline
-void *
-Heap_Extend(Context *c)
-{
-    Heap *oldh = c->h;
-    Heap *newh = oldh->sle_next;
-    if (!Heap_Init(c, newh, oldh->size * 2))
-        return PyErr_SetFromWindowsErr(0);
-    assert(newh == ctx->h);
-    newh->sle_prev = oldh;
-    return newh;
-}
-*/
 
 void *
 Heap_LocalMalloc(Context *c, size_t size)
@@ -235,6 +210,25 @@ Heap_Free(void *p)
 
 __inline
 int
+null_with_exc_or_non_none_return_type(PyObject *op)
+{
+    Px_GUARD
+
+    if (!op && pstate->curexc_type)
+        return 1;
+
+    assert(!pstate->curexc_type);
+
+    if ((!op && !pstate->curexc_type) || op == Py_None)
+        return 0;
+
+    Py_DECREF(op);
+    PyErr_SetString(PyExc_ValueError, "non-None return value detected");
+    return 1;
+}
+
+__inline
+int
 null_or_non_none_return_type(PyObject *op)
 {
     if (!op)
@@ -247,6 +241,7 @@ null_or_non_none_return_type(PyObject *op)
     PyErr_SetString(PyExc_ValueError, "non-None return value detected");
     return 1;
 }
+
 
 __inline
 void
@@ -297,11 +292,16 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->wakeup)
         goto free_finished;
 
+    InitializeCriticalSectionAndSpinCount(&(px->cs), 12);
+
     tstate->px = px;
 
     tstate->is_parallel_thread = 0;
 
     goto done;
+
+free_wakeup:
+    CloseHandle(px->wakeup);
 
 free_finished:
     PxList_FreeListHead(px->finished);
@@ -355,54 +355,6 @@ _PyParallel_HandleErrors(void)
     PxList_Push(px->errors, error);
 }
 
-/*
-int
-_PyParallel_EnterParallelContext(void *context)
-{
-    Callback *cb = (Callback *)context;
-    Stats    *s;
-
-    assert(
-        (_tbuf_base == NULL && _tbuf_next == NULL) ||
-        (_tbuf_base && _tbuf_next)
-    );
-
-    if (_tbuf_base == NULL) {
-        * We're a newly-created thread. *
-        _tbuf_base = _tbuf[0];
-        _tbuf_next = _tbuf[0];
-    }
-
-    pstate = &_PxThreadState;
-    memset((void *)pstate, 0, sizeof(PyThreadState));
-
-    pstate->is_parallel_thread = 1;
-    pstate->interp = cb->tstate->interp;
-    pstate->thread_id = _Py_get_current_thread_id();
-
-    memset((void *)&ctx, 0, sizeof(Context));
-    ctx->cb = cb;
-
-    if (!Heap_Init(&ctx->heap, 0))
-        return 0;
-
-    return 1;
-}
-
-
-
-void
-_PyParallel_LeaveParallelContext(void)
-{
-    Stats    *s;
-
-    if (ctx->heap_handle)
-        HeapDestroy(ctx->heap_handle);
-
-    _PyParallel_HandleErrors();
-}
-*/
-
 void
 NTAPI
 _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
@@ -429,45 +381,47 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     s->start = _Py_rdtsc();
     c->result = PyObject_Call(c->func, c->args, c->kwds);
     s->end = _Py_rdtsc();
-    InterlockedIncrement64(&px->done);
-    InterlockedDecrement(&px->inflight);
 
-    if (!c->result) {
-        if (c->errback) {
-            PyObject *exc;
-            exc = PyTuple_Pack(3, pstate->curexc_type,
-                                  pstate->curexc_value,
-                                  pstate->curexc_traceback);
-            if (!exc)
-                goto error;
-
-            args = Py_BuildValue("(O)", exc);
-            r = PyObject_CallObject(c->errback, args);
-            if (!null_or_non_none_return_type(r)) {
-                c->errback_completed->from = c;
-                PxList_TimestampItem(c->errback_completed);
-                PxList_Push(px->completed_errbacks, c->errback_completed);
-                SetEvent(px->wakeup);
-                return;
-            }
-        }
-        goto error;
-    } else {
+    if (c->result) {
+        assert(!pstate->curexc_type);
         if (c->callback) {
             args = Py_BuildValue("(O)", c->result);
             r = PyObject_CallObject(c->callback, args);
-            if (null_or_non_none_return_type(r))
-                goto error;
+            if (null_with_exc_or_non_none_return_type(r))
+                goto errback;
         }
         c->callback_completed->from = c;
         PxList_TimestampItem(c->callback_completed);
         PxList_Push(px->completed_callbacks, c->callback_completed);
+        InterlockedIncrement64(&px->done);
+        InterlockedDecrement(&px->inflight);
         SetEvent(px->wakeup);
         return;
     }
 
-    /* unreachable */
-    assert(0);
+errback:
+    if (c->errback) {
+        PyObject *exc;
+        assert(pstate->curexc_type);
+        exc = PyTuple_Pack(3, pstate->curexc_type,
+                              pstate->curexc_value,
+                              pstate->curexc_traceback);
+        if (!exc)
+            goto error;
+
+        PyErr_Clear();
+        args = Py_BuildValue("(O)", exc);
+        r = PyObject_CallObject(c->errback, args);
+        if (!null_with_exc_or_non_none_return_type(r)) {
+            c->errback_completed->from = c;
+            PxList_TimestampItem(c->errback_completed);
+            PxList_Push(px->completed_errbacks, c->errback_completed);
+            SetEvent(px->wakeup);
+            InterlockedIncrement64(&px->done);
+            InterlockedDecrement(&px->inflight);
+            return;
+        }
+    }
 
 error:
     assert(pstate->curexc_type != NULL);
@@ -728,6 +682,38 @@ free_context(Context *c)
     return 1;
 }
 
+__inline
+int
+_active(void)
+{
+    PyThreadState *tstate = PyThreadState_GET();
+    PxState *px = (PxState *)tstate->px;
+    int rv;
+
+    if (!TryEnterCriticalSection(&(px->cs)))
+        return 1;
+
+    rv = !(px->done == px->last_done_count && 
+           px->submitted == px->last_submitted_count &&
+           px->pending == 0 && px->inflight == 0 &&        
+           PxList_QueryDepth(px->errors)   == 0 &&
+           PxList_QueryDepth(px->finished)  == 0 &&
+           PxList_QueryDepth(px->incoming) == 0 &&
+           PxList_QueryDepth(px->completed_errbacks)  == 0 &&
+           PxList_QueryDepth(px->completed_callbacks));
+   
+    LeaveCriticalSection(&(px->cs));
+    return rv;
+}
+
+PyObject *
+_async_active(PyObject *self, PyObject *args)
+{
+    if (_active())
+        Py_RETURN_TRUE;
+    else
+        Py_RETURN_FALSE;
+}
 
 PyObject *
 _async_run_once(PyObject *self, PyObject *args)
@@ -741,6 +727,7 @@ _async_run_once(PyObject *self, PyObject *args)
     unsigned int errors = 0;
     unsigned int completed_errbacks = 0;
     unsigned int completed_callbacks = 0;
+    static long long last_done_count = 0;
     PyObject *result = NULL;
     Context *c;
     PxState *px;
@@ -1157,9 +1144,11 @@ _call_from_main_thread(PyObject *self, PyObject *args, int wait)
         PxList_Push(c->outgoing, item);
     }
     PxList_Push(px->incoming, item);
+    SetEvent(px->wakeup);
     if (!wait)
         return Py_None;
 
+    _PyParallel_DisassociateCurrentThreadFromCallback();
     err = WaitForSingleObject(item->p4, INFINITE);
     switch (err) {
         case WAIT_ABANDONED:
@@ -1239,6 +1228,7 @@ PyDoc_STRVAR(_async_unregister_doc,
 Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_active_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_work_doc, "XXX TODO\n");
@@ -1257,6 +1247,7 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
+    _ASYNC_N(active),
     _ASYNC_N(run_once),
     _ASYNC_V(submit_io),
     _ASYNC_V(submit_work),
