@@ -22,6 +22,14 @@ class TestSubmitWork(unittest.TestCase):
 
 def t1():
     def f(i):
+        r = i * 2
+        s = "result: %d" % r
+        _async.call_from_main_thread(print, s)
+    _async.submit_work(f, 2)
+    _async.run_once()
+
+def t2():
+    def f(i):
         return i * 2
     def cb(r):
         print("result: %d" % r)

@@ -207,6 +207,7 @@ PyObject_INIT(PyObject *op, PyTypeObject *tp)
 {
     Px_RETURN(_PxObject_Init(op, tp))
     Py_TYPE(op) = tp;
+    Py_PX(op) = NULL;
     _Py_NewReference(op);
     return op;
 }
@@ -218,6 +219,7 @@ PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
     Px_RETURN(_PxObject_InitVar(op, tp, n))
     Py_SIZE(op) = n;
     Py_TYPE(op) = tp;
+    Py_PX(op) = NULL;
     _Py_NewReference((PyObject *)op);
     return op;
 }
@@ -342,13 +344,13 @@ PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 #define __PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
     (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
 
-#define PyType_IS_GC(t)     (Py_PXCTX ? (0) : __PyType_IS_GC(t))
-#define PyObject_IS_GC(o)   (Py_PXCTX ? (0) : __PyObject_IS_GC(o))
+#define PyType_IS_GC(t)   (Py_PXCTX   ? (0) : __PyType_IS_GC(t))
+#define PyObject_IS_GC(o) (Py_ISPX(o) ? (0) : __PyObject_IS_GC(o))
 static __inline
 PyVarObject *
 __PyObject_GC_RESIZE(PyVarObject *op, Py_ssize_t nitems)
 {
-    if (Py_PXCTX)
+    if (Py_ISPX(op))
         return _PxObject_Resize(op, nitems);
     else
         return _PyObject_GC_Resize(op, nitems);
@@ -373,7 +375,7 @@ extern PyGC_Head *_PyGC_generation0;
 #ifndef WITH_PARALLEL
 #define _Py_AS_GC(o) ((PyGC_Head *)(o)-1)
 #else
-#define _Py_AS_GC(o) (Py_PXCTX ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
+#define _Py_AS_GC(o) (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
 #endif
 
 #define _PyGC_REFS_UNTRACKED                    (-2)
@@ -454,19 +456,19 @@ extern PyGC_Head *_PyGC_generation0;
 #define _PxObject_GC_Is_Tracked(o) (0)
 #define _PxObject_GC_May_Be_Tracked(o) (0)
 
-#define _PyObject_GC_TRACK(o)                       \
-    if (!Py_PXCTX)                                   \
+#define _PyObject_GC_TRACK(o)          \
+    if (!Py_ISPX(o))                   \
         __PyObject_GC_TRACK(o)
 
-#define _PyObject_GC_UNTRACK(o)                     \
-    if (!Py_PXCTX)                                   \
+#define _PyObject_GC_UNTRACK(o)        \
+    if (!Py_ISPX(o))                   \
         __PyObject_GC_UNTRACK(o)
 
-#define _PyObject_GC_IS_TRACKED(o)                  \
-    (Py_PXCTX ? (0) : __PyObject_GC_IS_TRACKED(o))
+#define _PyObject_GC_IS_TRACKED(o)     \
+    (Py_ISPX(o) ? (0) : __PyObject_GC_IS_TRACKED(o))
 
-#define _PyObject_GC_MAY_BE_TRACKED(o)              \
-    (Py_PXCTX ? (0) : __PyObject_GC_MAY_BE_TRACKED(o))
+#define _PyObject_GC_MAY_BE_TRACKED(o) \
+    (Py_ISPX(o) ? (0) : __PyObject_GC_MAY_BE_TRACKED(o))
 
 #endif /* WITH_PARALLEL */
 

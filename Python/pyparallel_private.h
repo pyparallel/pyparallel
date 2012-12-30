@@ -138,8 +138,8 @@ typedef struct _PxState {
     PxListHead *finished;
     HANDLE      wakeup;
 
-    volatile unsigned __int64 submitted;
-    volatile unsigned __int64 done;
+    volatile long long submitted;
+    volatile long long done;
 
     volatile long    pending;
     volatile long    inflight;
@@ -161,6 +161,8 @@ typedef struct _PyParallelContext {
     PxListItem *error;
     PxListItem *callback_completed;
     PxListItem *errback_completed;
+
+    PxListHead *outgoing;
 
     long refcnt;
 

@@ -55,8 +55,8 @@ _PySet_Dummy(void)
 #ifndef PySet_MAXFREELIST
 #define PySet_MAXFREELIST 80
 #endif
-static PySetObject *free_list[PySet_MAXFREELIST];
-static int numfree = 0;
+__declspec(thread) static PySetObject *free_list[PySet_MAXFREELIST];
+__declspec(thread) static int numfree = 0;
 
 
 /*

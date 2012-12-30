@@ -8,8 +8,8 @@
 /* Free list for method objects to safe malloc/free overhead
  * The im_self element is used to chain the elements.
  */
-static PyMethodObject *free_list;
-static int numfree = 0;
+__declspec(thread) static PyMethodObject *free_list;
+__declspec(thread) static int numfree = 0;
 #ifndef PyMethod_MAXFREELIST
 #define PyMethod_MAXFREELIST 256
 #endif

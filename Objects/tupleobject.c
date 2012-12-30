@@ -16,8 +16,8 @@
 /* Entries 1 up to PyTuple_MAXSAVESIZE are free lists, entry 0 is the empty
    tuple () of which at most one instance will be allocated.
 */
-static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
-static int numfree[PyTuple_MAXSAVESIZE];
+__declspec(thread) static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
+__declspec(thread) static int numfree[PyTuple_MAXSAVESIZE];
 #endif
 #ifdef COUNT_ALLOCS
 Py_ssize_t fast_tuple_allocs;

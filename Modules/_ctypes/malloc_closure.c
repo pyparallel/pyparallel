@@ -27,8 +27,8 @@ typedef union _tagITEM {
     union _tagITEM *next;
 } ITEM;
 
-static ITEM *free_list;
-static int _pagesize;
+__declspec(thread) static ITEM *free_list;
+__declspec(thread) static int _pagesize;
 
 static void more_core(void)
 {

@@ -194,7 +194,7 @@ void
 _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 {
     char buf[300];
-    Py_GUARD
+    Py_GUARD_OP(op)
 
     PyOS_snprintf(buf, sizeof(buf),
                   "%s:%i object at %p has negative ref count "
@@ -208,35 +208,38 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 void
 Py_IncRef(PyObject *o)
 {
-    Px_VOID
+    Px_VOID_OP(o)
     Py_XINCREF(o);
 }
 
 void
 Py_DecRef(PyObject *o)
 {
-    Px_VOID
+    Px_VOID_OP(o)
     Py_XDECREF(o);
 }
 
 PyObject *
 PyObject_Init(PyObject *op, PyTypeObject *tp)
 {
-    Px_RETURN(_PxObject_Init(op, tp))
     if (op == NULL)
         return PyErr_NoMemory();
+    Px_RETURN(_PxObject_Init(op, tp))
     /* Any changes should be reflected in PyObject_INIT (objimpl.h) */
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
+#ifdef WITH_PARALLEL
+    Py_PX(op) = NULL;
+#endif
     return op;
 }
 
 PyVarObject *
 PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
 {
-    Px_RETURN(_PxObject_InitVar(op, tp, size))
     if (op == NULL)
         return (PyVarObject *) PyErr_NoMemory();
+    Px_RETURN(_PxObject_InitVar(op, tp, size))
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
     Py_TYPE(op) = tp;

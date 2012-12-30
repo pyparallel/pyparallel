@@ -7,8 +7,8 @@
 /* Free list for method objects to safe malloc/free overhead
  * The m_self element is used to chain the objects.
  */
-static PyCFunctionObject *free_list = NULL;
-static int numfree = 0;
+__declspec(thread) static PyCFunctionObject *free_list = NULL;
+__declspec(thread) static int numfree = 0;
 #ifndef PyCFunction_MAXFREELIST
 #define PyCFunction_MAXFREELIST 256
 #endif

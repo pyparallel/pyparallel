@@ -67,15 +67,30 @@ whose size is determined when the object is allocated.
 
 #ifdef Py_TRACE_REFS
 /* Define pointers to support a doubly-linked list of all live heap objects. */
+#ifndef WITH_PARALLEL
 #define _PyObject_HEAD_EXTRA            \
     struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
 #define _PyObject_EXTRA_INIT 0, 0,
+#else
+#define _PyObject_HEAD_EXTRA            \
+    void *px_ctx;                       \
+    struct _object *_ob_next;           \
+    struct _object *_ob_prev;
 
+#define _PyObject_EXTRA_INIT 0, 0, 0,
+#endif
+
+#else
+#ifndef WITH_PARALLEL
+#define _PyObject_HEAD_EXTRA            \
+    void *px_ctx;                       \
+#define _PyObject_EXTRA_INIT 0,
 #else
 #define _PyObject_HEAD_EXTRA
 #define _PyObject_EXTRA_INIT
+#endif
 #endif
 
 /* PyObject_HEAD defines the initial segment of every PyObject. */
@@ -116,6 +131,11 @@ typedef struct {
 #define Py_REFCNT(ob)           (((PyObject*)(ob))->ob_refcnt)
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
+#ifdef WITH_PARALLEL
+#define Py_PX(ob)                   (((PyObject*)(ob))->px_ctx)
+#define Py_ISPX(ob) \
+    ((Py_PXCTX) || (ob != NULL && ((((PyObject*)(ob))->px_ctx) != NULL)))
+#endif
 
 /********************* String Literals ****************************************/
 /* This structure helps managing static strings. The basic usage goes like this:
@@ -719,7 +739,7 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
 #define _Py_DEC_REFTOTAL        (Py_PXCTX ? (void)0 : _Py_RefTotal--)
 #define _Py_REF_DEBUG_COMMA     ,
 #define _Py_CHECK_REFCNT(OP) {                                      \
-    if (!Py_PXCTX && ((PyObject*)OP)->ob_refcnt < 0)                \
+    if (!Py_ISPX(OP) && ((PyObject*)OP)->ob_refcnt < 0)                \
         _Py_NegativeRefcount(__FILE__, __LINE__, (PyObject *)(OP)); \
 }
 #endif /* WITH_PARALLEL */
@@ -739,9 +759,9 @@ PyAPI_FUNC(void) dec_count(PyTypeObject *);
 #define _Py_DEC_TPFREES(OP)     Py_TYPE(OP)->tp_frees--
 #define _Py_COUNT_ALLOCS_COMMA  ,
 #else  /* !WITH_PARALLEL */
-#define _Py_INC_TPALLOCS(OP)    (Py_PXCTX ? (void)0 : inc_count(Py_TYPE(OP)))
-#define _Py_INC_TPFREES(OP)     (Py_PXCTX ? (void)0 : dec_count(Py_TYPE(OP)))
-#define _Py_DEC_TPFREES(OP)     (PY_PXCTX ? (void)0 : Py_TYPE(OP)->tp_frees--)
+#define _Py_INC_TPALLOCS(OP) (Py_ISPX(OP) ? (void)0 : inc_count(Py_TYPE(OP)))
+#define _Py_INC_TPFREES(OP)  (Py_ISPX(OP) ? (void)0 : dec_count(Py_TYPE(OP)))
+#define _Py_DEC_TPFREES(OP)  (Py_ISPX(OP) ? (void)0 : Py_TYPE(OP)->tp_frees--)
 #define _Py_COUNT_ALLOCS_COMMA  ,
 #endif /* !WITH_PARALLEL */
 #else  /* COUNT_ALLOCS */
@@ -772,16 +792,18 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
 #define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
 #else
 #define _Py_NewReference(op)                        \
-    (Py_PXCTX ? (Py_REFCNT(op) = 1) : (             \
+    (Py_ISPX(op) ? (_Px_NewReference(op)) : (          \
         _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
         _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
         Py_REFCNT(op) = 1))
 
-#define _Py_ForgetReference(op) \
-    do {                        \
-        if (Py_PXCTX)           \
-            break;              \
-        _Py_INC_TPFREES(op);    \
+#define _Py_ForgetReference(op)      \
+    do {                             \
+        if (Py_PXCTX)                \
+            _Px_ForgetReference(op); \
+        else                         \
+            _Py_INC_TPFREES(op);     \
+        break;                       \
     } while (0)
 
 #endif /* WITH_PARALLEL */
@@ -796,7 +818,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else
 
 #define _Py_Dealloc(op)                            \
-    (Py_PXCTX ? _Px_Dealloc(op) : (                \
+    (Py_ISPX(op) ? _Px_Dealloc(op) : (             \
         _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA \
         (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
 
@@ -821,13 +843,13 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else /* !WITH_PARALLEL */
 
 #define Py_INCREF(op)                             \
-    ((Py_PXCTX) ? (void)0 : (                     \
+    (Py_ISPX(op) ? (void)0 : (                    \
         _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA     \
         ((PyObject*)(op))->ob_refcnt++))
 
 #define Py_DECREF(op)                                     \
     do {                                                  \
-        if (!Py_PXCTX) {                                  \
+        if (!Py_ISPX(op)) {                               \
             _Py_DEC_REFTOTAL;                             \
             if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
                 _Py_CHECK_REFCNT(op);                     \
@@ -893,15 +915,15 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 
 #define Py_CLEAR(op)                              \
     do {                                          \
-        if (op && !Py_PXCTX) {                    \
+        if (op && !Py_ISPX(op)) {                 \
             PyObject *_py_tmp = (PyObject *)(op); \
             (op) = NULL;                          \
             Py_DECREF(_py_tmp);                   \
         }                                         \
     } while (0)
 
-#define Py_XINCREF(op) do { if (op && !Py_PXCTX) Py_INCREF(op); } while (0)
-#define Py_XDECREF(op) do { if (op && !Py_PXCTX) Py_DECREF(op); } while (0)
+#define Py_XINCREF(op) do { if (op && !Py_ISPX(op)) Py_INCREF(op); } while (0)
+#define Py_XDECREF(op) do { if (op && !Py_ISPX(op)) Py_DECREF(op); } while (0)
 
 #endif /* WITH_PARALLEL */
 

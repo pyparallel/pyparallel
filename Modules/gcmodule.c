@@ -36,8 +36,8 @@
 #define __AS_GC(o)   ((PyGC_Head *)(o)-1)
 #define __FROM_GC(g) ((PyObject *)(((PyGC_Head *)g)+1))
 /* Force a null-pointer deref if we're in a parallel context. */
-#define AS_GC(o)   (PX ? (PyGC_Head *)0 : __AS_GC(o))
-#define FROM_GC(g) (PX ? (PyObject  *)0 : __FROM_GC(g))
+#define AS_GC(o)   (Py_ISPX(o) ? (PyGC_Head *)0 : __AS_GC(o))
+#define FROM_GC(g) (Py_PXCTX   ? (PyObject  *)0 : __FROM_GC(g))
 #endif
 
 /*** Global GC state ***/
@@ -222,7 +222,8 @@ GC_TENTATIVELY_UNREACHABLE
 #ifndef WITH_PARALLEL
 #define IS_TRACKED(o) ((AS_GC(o))->gc.gc_refs != GC_UNTRACKED)
 #else
-#define IS_TRACKED(o) (Py_PXCTX ? 0 : ((AS_GC(o))->gc.gc_refs != GC_UNTRACKED))
+#define IS_TRACKED(o) \
+    (Py_ISPX(o) ? 0 : ((AS_GC(o))->gc.gc_refs != GC_UNTRACKED))
 #endif
 #define IS_REACHABLE(o) ((AS_GC(o))->gc.gc_refs == GC_REACHABLE)
 #define IS_TENTATIVELY_UNREACHABLE(o) ( \
@@ -1669,7 +1670,7 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
     PyGC_Head *g;
     size_t basicsize;
-    Px_RETURN(_PxObject_Resize(op, nitems))
+    Px_RETURN_OP(op, _PxObject_Resize(op, nitems))
 
     basicsize = _PyObject_VAR_SIZE(Py_TYPE(op), nitems);
     g = AS_GC(op);

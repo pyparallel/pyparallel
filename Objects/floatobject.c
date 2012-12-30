@@ -23,8 +23,8 @@
 #ifndef PyFloat_MAXFREELIST
 #define PyFloat_MAXFREELIST    100
 #endif
-static int numfree = 0;
-static PyFloatObject *free_list = NULL;
+__declspec(thread) static int numfree = 0;
+__declspec(thread) static PyFloatObject *free_list = NULL;
 
 double
 PyFloat_GetMax(void)

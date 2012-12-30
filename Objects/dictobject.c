@@ -239,8 +239,8 @@ static int dictresize(PyDictObject *mp, Py_ssize_t minused);
 #ifndef PyDict_MAXFREELIST
 #define PyDict_MAXFREELIST 80
 #endif
-static PyDictObject *free_list[PyDict_MAXFREELIST];
-static int numfree = 0;
+__declspec(thread) static PyDictObject *free_list[PyDict_MAXFREELIST];
+__declspec(thread) static int numfree = 0;
 
 int
 PyDict_ClearFreeList(void)

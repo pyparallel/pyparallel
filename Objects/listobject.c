@@ -95,8 +95,8 @@ show_alloc(void)
 #ifndef PyList_MAXFREELIST
 #define PyList_MAXFREELIST 80
 #endif
-static PyListObject *free_list[PyList_MAXFREELIST];
-static int numfree = 0;
+__declspec(thread) static PyListObject *free_list[PyList_MAXFREELIST];
+__declspec(thread) static int numfree = 0;
 
 int
 PyList_ClearFreeList(void)

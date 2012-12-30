@@ -52,7 +52,11 @@ static __inline
 void *
 PxList_Malloc(Py_ssize_t size)
 {
-    return _aligned_malloc(size, MEMORY_ALLOCATION_ALIGNMENT);
+    register void *p;
+    p = _aligned_malloc(size, MEMORY_ALLOCATION_ALIGNMENT);
+    if (p)
+        memset(p, 0, size);
+    return p;
 }
 
 static __inline

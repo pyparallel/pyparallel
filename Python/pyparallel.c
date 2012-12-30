@@ -144,20 +144,6 @@ _PyHeap_Malloc(Context *c, size_t n)
 
     size_t size = Px_ALIGN(n);
 
-    /*
-     * This method effectively intercepts *every* malloc() call from
-     * anywhere else within CPython.  This isn't a problem when we've
-     * been able to create our thread-local or context-local heap, but
-     * if heap creation/initialization fails, we'll get invoked by the
-     * various PyErr_* methods called.  Heap_LocalMalloc() is a hacky
-     * attempt at dealing with this for now (it allocates from a static
-     * buffer, and if that has already been filled, just uses malloc
-     * despite not having any infrastructure in place (at the moment)
-     * to free the resulting memory.
-     */
-    if (!c->heap_handle || !c->h->base)
-        return Heap_LocalMalloc(c, size);
-
 begin:
     h = c->h;
     if (size < h->remaining) {
@@ -285,6 +271,8 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px)
         return PyErr_NoMemory();
 
+    memset((void *)px, 0, sizeof(PxState));
+
     px->errors = PxList_New();
     if (!px->errors)
         goto free_px;
@@ -308,10 +296,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     px->wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->wakeup)
         goto free_finished;
-
-    px->done = 0;
-    px->pending = 0;
-    px->inflight = 0;
 
     tstate->px = px;
 
@@ -427,6 +411,7 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     Stats    *s;
     PxState  *px;
     PyObject *r;
+    PyObject *args;
 
     ctx = c;
     c->instance = instance;
@@ -456,7 +441,8 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
             if (!exc)
                 goto error;
 
-            r = PyObject_Call(c->errback, exc, NULL);
+            args = Py_BuildValue("(O)", exc);
+            r = PyObject_CallObject(c->errback, args);
             if (!null_or_non_none_return_type(r)) {
                 c->errback_completed->from = c;
                 PxList_TimestampItem(c->errback_completed);
@@ -468,7 +454,8 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
         goto error;
     } else {
         if (c->callback) {
-            r = PyObject_CallObject(c->callback, c->result);
+            args = Py_BuildValue("(O)", c->result);
+            r = PyObject_CallObject(c->callback, args);
             if (null_or_non_none_return_type(r))
                 goto error;
         }
@@ -760,8 +747,10 @@ _async_run_once(PyObject *self, PyObject *args)
     PxListItem *item = NULL;
     PyThreadState *tstate = PyThreadState_GET();
 
+    /*
     if (!PyArg_ParseTuple(args, "|i", &wait))
         return NULL;
+    */
 
     px = (PxState *)tstate->px;
 
@@ -778,6 +767,7 @@ _async_run_once(PyObject *self, PyObject *args)
     }
 
 start:
+    errors = 0;
     item = PxList_FlushWithDepthHint(px->errors, &depth_hint);
     if (item) {
         size_t depth = 0;
@@ -836,11 +826,28 @@ start:
             kwds = (PyObject *)item->p3;
             wait = (HANDLE)item->p4;
 
-            result = PyObject_Call(func, args, kwds);
+            if (!args) {
+                if (kwds)
+                    args = PyTuple_New(0);
+                else
+                    args = Py_None;
+            } else {
+                if (!PyTuple_Check(args))
+                    args = Py_BuildValue("(O)", args);
+            }
+
+            Py_INCREF(func);
+            Py_INCREF(args);
+            Py_XINCREF(kwds);
+
+            if (kwds)
+                result = PyObject_Call(func, args, kwds);
+            else
+                result = PyObject_CallObject(func, args);
 
             if (wait) {
                 if (null_or_non_none_return_type(result))
-                    PyErr_Fetch((PyObject **)&(item->p1), 
+                    PyErr_Fetch((PyObject **)&(item->p1),
                                 (PyObject **)&(item->p2),
                                 (PyObject **)&(item->p3));
                 else {
@@ -849,7 +856,6 @@ start:
                     item->p3 = NULL;
                 }
                 SetEvent((HANDLE)item->p4);
-                transfer = NULL;
                 item = PxList_Next(item);
             } else {
                 if (null_or_non_none_return_type(result)) {
@@ -858,6 +864,7 @@ start:
                     item->p2 = tstate->curexc_value;
                     item->p3 = tstate->curexc_traceback;
                     transfer = px->errors;
+                    errors++;
                 } else {
                     assert(result == Py_None);
                     transfer = px->finished;
@@ -866,6 +873,8 @@ start:
             }
         } while (item);
     }
+    if (errors)
+        goto start;
 
     /* Process completed items. */
     item = PxList_Flush(px->completed_callbacks);
@@ -916,11 +925,29 @@ __inline
 int
 extract_args(PyObject *args, Context *c)
 {
-    return PyArg_UnpackTuple(
-        args, "", 1, 5,
-        &(c->func), &(c->args), &(c->kwds),
-        &(c->callback), &(c->errback)
-    );
+    if (!PyArg_UnpackTuple(
+            args, "", 1, 5,
+            &(c->func), &(c->args), &(c->kwds),
+            &(c->callback), &(c->errback)))
+        return 0;
+
+    if (c->callback == Py_None) {
+        Py_DECREF(c->callback);
+        c->callback = NULL;
+    }
+
+    if (c->errback == Py_None) {
+        Py_DECREF(c->errback);
+        c->errback = NULL;
+    }
+
+    if (!PyTuple_Check(c->args)) {
+        PyObject *tmp = c->args;
+        c->args = Py_BuildValue("(O)", c->args);
+        Py_DECREF(tmp);
+    }
+
+    return 1;
 }
 
 __inline
@@ -995,13 +1022,18 @@ _async_submit_work(PyObject *self, PyObject *args)
     if (!c->errback_completed)
         goto free_callback_completed;
 
+    c->outgoing = PxList_New();
+    if (!c->outgoing)
+        goto free_errback_completed;
+
     c->tbuf_next = c->tbuf_base = &c->tbuf[0];
     c->tbuf_remaining = _PX_TMPBUF_SIZE;
 
     c->tstate = PyThreadState_GET();
     assert(c->tstate);
-    c->px = (PxState *)c->tstate;
+    c->px = (PxState *)c->tstate->px;
     InterlockedIncrement64(&(c->px->submitted));
+    InterlockedIncrement(&(c->px->pending));
 
     incref_args(c);
 
@@ -1015,6 +1047,9 @@ _async_submit_work(PyObject *self, PyObject *args)
 
 decref_args:
     decref_args(c);
+
+free_outgoing:
+    PxList_FreeList(c->outgoing);
 
 free_errback_completed:
     PxList_FreeListItem(c->errback_completed);
@@ -1117,8 +1152,10 @@ _call_from_main_thread(PyObject *self, PyObject *args, int wait)
     item->from = c;
     px = c->px;
     PxList_TimestampItem(item);
-    if (!wait)
+    if (!wait) {
         Px_INCCTX(c);
+        PxList_Push(c->outgoing, item);
+    }
     PxList_Push(px->incoming, item);
     if (!wait)
         return Py_None;
@@ -1202,6 +1239,7 @@ PyDoc_STRVAR(_async_unregister_doc,
 Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_work_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_wait_doc, "XXX TODO\n");
@@ -1217,8 +1255,9 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 #define _ASYNC_O(n) _METHOD(_async, n, METH_O)
 #define _ASYNC_V(n) _METHOD(_async, n, METH_VARARGS)
 PyMethodDef _async_methods[] = {
-    _ASYNC_N(run),
     _ASYNC_V(map),
+    _ASYNC_N(run),
+    _ASYNC_N(run_once),
     _ASYNC_V(submit_io),
     _ASYNC_V(submit_work),
     _ASYNC_V(submit_wait),
@@ -1274,7 +1313,9 @@ Object_Init(PyObject *op, PyTypeObject *tp)
     o = (Object *)Heap_Malloc(sizeof(Object));
 
     Py_TYPE(op) = tp;
-    op->ob_refcnt = 1;
+    Py_REFCNT(op) = 1;
+    Py_PX(op) = ctx;
+
     o->op = op;
     append_object(&ctx->objects, o);
     s->objects++;
@@ -1307,7 +1348,8 @@ VarObject_Init(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
 
     Py_SIZE(op) = size;
     Py_TYPE(op) = tp;
-    ((PyObject *)op)->ob_refcnt = 1;
+    Py_REFCNT(op) = 1;
+    Py_PX(op) = ctx;
     o->op = (PyObject *)op;
     append_object(&ctx->varobjs, o);
     s->varobjs++;
@@ -1341,6 +1383,7 @@ void
 _Px_NewReference(PyObject *op)
 {
     op->ob_refcnt = 1;
+    op->px_ctx = ctx;
     ctx->stats.newrefs++;
 }
 

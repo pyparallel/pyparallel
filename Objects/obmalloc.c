@@ -1295,14 +1295,14 @@ PyObject_Malloc(size_t n)
 void *
 PyObject_Realloc(void *p, size_t n)
 {
-    Px_RETURN(_PxObject_Realloc(p, n))
+    Px_RETURN(_PxMem_Realloc(p, n))
     return PyMem_REALLOC(p, n);
 }
 
 void
 PyObject_Free(void *p)
 {
-    Px_RETURN(_PxObject_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p))
     PyMem_FREE(p);
 }
 #endif /* WITH_PYMALLOC */
