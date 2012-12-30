@@ -179,21 +179,21 @@ PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
    PyThreadState for the current thread. */
 #ifndef Py_LIMITED_API
 PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
-#if defined(WITH_PARALLEL) && !defined(GETBUILDINFO)
+#ifdef WITH_PARALLEL
 __declspec(thread) static PyThreadState _PxThreadState;
 #endif
 #endif
 
 #ifdef WITH_PARALLEL
-#define _PyThreadState_GET() ((PyThreadState *) \
-    (Py_PXCTX ? (&_PxThreadState) :    \
+#define _PyThreadState_GET() ((PyThreadState *)                     \
+    (Py_PXCTX ? (&_PxThreadState) :                                 \
                 (_Py_atomic_load_relaxed(&_PyThreadState_Current))) \
 )
 #define _PyThreadState_XGET() _PyThreadState_GET()
 #else
-#define _PyThreadState_GET()                    \
+#define _PyThreadState_GET()                                        \
     ((PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current))
-#define _PyThreadState_XGET()_ PyThreadState_GET()
+#define _PyThreadState_XGET() _PyThreadState_GET()
 #endif
 
 #if defined(Py_DEBUG) || defined(Py_LIMITED_API)

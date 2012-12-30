@@ -432,10 +432,20 @@ PyEval_SaveThread(void)
 {
     PyThreadState *tstate;
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX) {
+    PyThreadState *pstate;
+    long cur_thread_id = _Py_get_current_thread_id();
+    tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);
+    pstate = &_PxThreadState;
+    if (tstate->thread_id != cur_thread_id) {
+        /* Verify we've been called from a parallel thread. */
+        assert(tstate->is_parallel_thread == 0);
+        assert(pstate != NULL);
+        assert(pstate->thread_id == cur_thread_id);
+        assert(pstate->is_parallel_thread == 1);
         _PyParallel_BlockingCall();
-        return PyThreadState_GET();
+        return pstate;
     }
+    assert(tstate->is_parallel_thread == 0);
 #endif
     tstate = PyThreadState_Swap(NULL);
     if (tstate == NULL)
@@ -450,13 +460,13 @@ PyEval_SaveThread(void)
 void
 PyEval_RestoreThread(PyThreadState *tstate)
 {
-#ifdef WITH_PARALLEL
-    if (Py_PXCTX)
-        return;
-#endif
-    tstate = PyThreadState_Swap(NULL);
     if (tstate == NULL)
         Py_FatalError("PyEval_RestoreThread: NULL tstate");
+#ifdef WITH_PARALLEL
+    /* Ensure this is a no-op when called from a parallel context thread. */
+    if (tstate->is_parallel_thread == 1)
+        return;
+#endif
 #ifdef WITH_THREAD
     if (gil_created()) {
         int err = errno;
