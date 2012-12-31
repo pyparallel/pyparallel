@@ -27,7 +27,7 @@ def t1():
         s = "result: %d" % r
         _async.call_from_main_thread(print, s)
     _async.submit_work(f, 2)
-    _async.run_once()
+    async.run()
 
 def t2():
     def f(i):
@@ -37,7 +37,7 @@ def t2():
         _async.call_from_main_thread(print, s)
 
     _async.submit_work(f, 2, None, cb, None)
-    _async.run_once()
+    async.run()
 
 def t3():
     d = {}
@@ -47,7 +47,7 @@ def t3():
         _async.call_from_main_thread(d.__setitem__, ('result', r*2))
 
     _async.submit_work(f, 2, None, cb, None)
-    _async.run_once()
+    async.run()
     print(d)
 
 def t4():
@@ -62,9 +62,7 @@ def t4():
         _async.call_from_main_thread_and_wait(print, "v: %d" % v)
 
     _async.submit_work(f, 2, None, cb, None)
-    _async.run_once()
-    _async.run_once()
-    _async.run_once()
+    async.run()
     #print(d)
 
 def t5():
@@ -81,6 +79,44 @@ def t5():
     _async.submit_work(f, 2, None, cb, None)
     async.run()
     #print(d)
+
+def t6():
+    d = {}
+    def f(i):
+        r = i * 2
+        s = "result: %d" % r
+        return s
+
+    def cb(s):
+        d['foo'] = reversed(s)
+
+    _async.submit_work(f, 2, None, cb, None)
+    async.run()
+    print(d)
+
+def f7():
+    return result
+
+def t7():
+    _async.submit_work(f7, None, None, None, None)
+    async.run()
+
+def t8():
+    _async.submit_work(f7, None, None, None, None)
+    while _async.is_active():
+        _async.run_once()
+
+def t9():
+    d = {'foo' : 'bar'}
+    def m(x):
+        return x.upper()
+
+    def f(i):
+        v = _async.call_from_main_thread_and_wait(m, 'foo')
+        _async.call_from_main_thread(print, "v: %d" % v)
+
+    _async.submit_work(f, 'foo', None, None, None)
+    async.run()
 
 if __name__ == '__main__':
     if len(sys.argv) == 2:

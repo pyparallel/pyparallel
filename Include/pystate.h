@@ -119,9 +119,8 @@ typedef struct _ts {
     /* XXX signal handlers should also be here */
 
 #ifdef WITH_PARALLEL
-    unsigned int is_parallel_thread;
-    unsigned int inflight;
     void *px;
+    int is_parallel_thread;
 #endif
 
 } PyThreadState;
@@ -171,6 +170,8 @@ PyAPI_FUNC(void) _PyParallel_ClearedThreadState(PyThreadState *);
 
 PyAPI_FUNC(void) _PyParallel_DeletingingThreadState(PyThreadState *);
 PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
+
+PyAPI_FUNC(PyThreadState *) _PyParallel_GetThreadState(void);
 #endif
 
 /* Variable and macro for in-line access to current thread state */
@@ -179,14 +180,11 @@ PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
    PyThreadState for the current thread. */
 #ifndef Py_LIMITED_API
 PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
-#ifdef WITH_PARALLEL
-__declspec(thread) static PyThreadState _PxThreadState;
-#endif
 #endif
 
 #ifdef WITH_PARALLEL
 #define _PyThreadState_GET() ((PyThreadState *)                     \
-    (Py_PXCTX ? (&_PxThreadState) :                                 \
+    (Py_PXCTX ? (_PyParallel_GetThreadState()) :                    \
                 (_Py_atomic_load_relaxed(&_PyThreadState_Current))) \
 )
 #define _PyThreadState_XGET() _PyThreadState_GET()

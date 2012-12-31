@@ -7,10 +7,6 @@ extern "C" {
 
 #ifdef WITH_PARALLEL
 
-#include "pyerrors.h" /* for Py_FatalError */
-
-//#include <windows.h>
-
 #undef E2I
 #undef I2E
 
@@ -47,6 +43,13 @@ typedef struct _PxListItem64 PxListItem;
 #endif
 
 C_ASSERT(sizeof(PxListItem) == 64);
+
+static __inline
+PxListItem *
+PxList_Next(PxListItem *item)
+{
+    return E2I(item->entry.Next);
+}
 
 static __inline
 void *
@@ -107,14 +110,8 @@ void
 PxList_FreeListItem(PxListItem *item)
 {
     /* xxx todo: manage a list of free item lists */
+    assert(PxList_Next(item) == NULL);
     PxList_Free(item);
-}
-
-static __inline
-PxListItem *
-PxList_Next(PxListItem *item)
-{
-    return E2I(item->entry.Next);
 }
 
 static __inline
@@ -128,7 +125,7 @@ PxList_FreeListItemAfterNext(PxListItem *item)
 
 static __inline
 PxListItem *
-PxList_SeverNext(PxListItem *item)
+PxList_SeverFromNext(PxListItem *item)
 {
     register PxListItem *next = E2I(item->entry.Next);
     item->entry.Next = NULL;

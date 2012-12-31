@@ -435,9 +435,9 @@ PyEval_SaveThread(void)
     PyThreadState *pstate;
     long cur_thread_id = _Py_get_current_thread_id();
     tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);
-    pstate = &_PxThreadState;
     if (tstate->thread_id != cur_thread_id) {
         /* Verify we've been called from a parallel thread. */
+        pstate = _PyParallel_GetThreadState();
         assert(tstate->is_parallel_thread == 0);
         assert(pstate != NULL);
         assert(pstate->thread_id == cur_thread_id);
