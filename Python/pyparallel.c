@@ -404,19 +404,14 @@ _PyHeap_ResizeTuple(Context *c, PyObject *op, Py_ssize_t nitems)
 
 __inline
 int
-null_with_exc_or_non_none_return_type(PyObject *op)
+null_with_exc_or_non_none_return_type(PyObject *op, PyThreadState *tstate)
 {
-    PyThreadState *pstate;
-    Px_GUARD
-
-    pstate = ctx->pstate;
-
-    if (!op && pstate->curexc_type)
+    if (!op && tstate->curexc_type)
         return 1;
 
-    assert(!pstate->curexc_type);
+    assert(!tstate->curexc_type);
 
-    if ((!op && !pstate->curexc_type) || op == Py_None)
+    if ((!op && !tstate->curexc_type) || op == Py_None)
         return 0;
 
     Py_DECREF(op);
@@ -635,7 +630,7 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
         if (c->callback) {
             args = Py_BuildValue("(O)", c->result);
             r = PyObject_CallObject(c->callback, args);
-            if (null_with_exc_or_non_none_return_type(r))
+            if (null_with_exc_or_non_none_return_type(r, pstate))
                 goto errback;
         }
         c->callback_completed->from = c;
@@ -661,7 +656,7 @@ errback:
         PyErr_Clear();
         args = Py_BuildValue("(O)", exc);
         r = PyObject_CallObject(c->errback, args);
-        if (!null_with_exc_or_non_none_return_type(r)) {
+        if (!null_with_exc_or_non_none_return_type(r, pstate)) {
             c->errback_completed->from = c;
             PxList_TimestampItem(c->errback_completed);
             InterlockedExchange(&(c->done), 1);
@@ -902,19 +897,6 @@ _PyParallel_ModInit(void)
 }
 
 /* mod _async */
-PyObject *
-_async_run(PyObject *self, PyObject *args)
-{
-    if (args) {
-        PyErr_SetString(PyExc_AsyncError, "run() called with args");
-        return NULL;
-    }
-
-    PyErr_SetNone(PyExc_AsyncRunCalledWithoutEventsError);
-
-    return NULL;
-}
-
 __inline
 int
 _is_active_ex(void)
@@ -1054,8 +1036,12 @@ _PxState_PurgeContexts(PxState *px)
         /* xxx todo: iterate over objects and check for any __dels__? */
         prev = c->prev;
         next = c->next;
+
         if (px->ctx_first == c)
             px->ctx_first = next;
+
+        if (px->ctx_last == c)
+            px->ctx_last = prev;
 
         if (prev)
             prev->next = next;
@@ -1090,6 +1076,21 @@ _is_nowait_item(PxListItem *item)
     return 0;
 }
 
+PyObject *
+_handle_parallel_error_item(PxListItem *item)
+{
+    PxState *px = PXSTATE();
+
+    assert(PyExceptionClass_Check((PyObject *)item->p1));
+    PyErr_Restore((PyObject *)item->p1,
+                  (PyObject *)item->p2,
+                  (PyObject *)item->p3);
+
+    PxList_Transfer(px->finished, item);
+    InterlockedIncrement64(&(px->done));
+
+    return NULL;
+}
 
 PyObject *
 _async_run_once(PyObject *self, PyObject *args)
@@ -1147,195 +1148,99 @@ _async_run_once(PyObject *self, PyObject *args)
     }
 
 start:
-    errors = 0;
-    item = PxList_FlushWithDepthHint(px->errors, &depth_hint);
+    /* First error wins. */
+    item = PxList_Pop(px->errors);
     if (item) {
-        Context *f = NULL;
-        PxListItem *i;
-        size_t depth = 0;
-        size_t newdepth = 0;
-        PyObject *e;
-        PyObject *t;
-        PxListHead *transfer = NULL;
+        assert(PyExceptionClass_Check((PyObject *)item->p1));
+        PyErr_Restore((PyObject *)item->p1,
+                      (PyObject *)item->p2,
+                      (PyObject *)item->p3);
 
-        assert(depth_hint != 0);
-
-        /* Oh the hackery... */
-        i = item;
-        do {
-            if (_is_nowait_item(i))
-                continue;
-            f = (Context *)i->from;
-            break;
-        } while (i = PxList_Next(i));
-
-        if (!f) {
-            Context *x;
-            i = item;
-            do {
-                x = (Context *)i->from;
-                _Py_clflush(&x->done);
-                if (_is_nowait_item(i) && !x->done)
-                    continue;
-                f = x;
-                break;
-            } while (i = PxList_Next(i));
-
-            if (!f)
-                Py_FatalError("couldn't find a context to hijack");
-        }
-
-        f->size_before_hijack = c->stats.allocated;
-        f->errors_tuple = t = _PyHeap_NewTuple(f, (Py_ssize_t)depth_hint);
-
-        if (!t) {
-            PxList_Push(px->errors, item);
-            return PyErr_NoMemory();
-        }
-        f->hijacked_for_errors_tuple = 1;
-        f->ttl++;
-
-        do {
-            c = (Context *)item->from;
-            depth++;
-            if ((depth_hint && depth > depth_hint)) {
-                newdepth = depth + PxList_CountItems(item);
-                if (!_PyHeap_ResizeTuple(f, f->errors_tuple, newdepth)) {
-                    PxList_Push(px->errors, item);
-                    return PyErr_NoMemory();
-                }
-                t = f->errors_tuple;
-                depth_hint = 0;
-            }
-            e = _PyHeap_NewTuple(c, 3);
-            if (!e) {
-                PxList_Push(px->errors, item);
-                return PyErr_NoMemory();
-            }
-
-            PyTuple_SET_ITEM(e, 0, (PyObject *)item->p1);
-            PyTuple_SET_ITEM(e, 1, (PyObject *)item->p2);
-            PyTuple_SET_ITEM(e, 2, (PyObject *)item->p3);
-
-            PyTuple_SET_ITEM(t, depth-1, e);
-            ++processed_errors;
-
-            /*
-             * Errors can originate from one of two places: from the parallel
-             * context, or the logic below that processes no-wait calls-from-
-             * main-thread.  Each no-wait call incremented the context refcnt,
-             * so we need to decrement it here if we're dealing with a no-wait
-             * call.  Additionally, no-wait items don't get added to the free-
-             * list -- they'll be added as part of the normal parallel context
-             * cleanup.
-             *
-             * We detect if an error is due to a failed no-wait callback by
-             * comparing c->error to the item; if they don't match, it's a no-
-             * wait error.  As an extra precaution, the code below sets the
-             * p4 member to the item->when timestamp -- so we check that as
-             * well.
-             */
-            if (_is_nowait_item(item)) {
-                PxListItem *next = PxList_Next(item);
-                //InterlockedDecrement(&(px->active));
-                Px_DECCTX(c);
-                _PyHeap_Free(c, item);
-                item = next;
-            } else {
-                item = PxList_Transfer(px->finished, item);
-                InterlockedIncrement64(&(px->done));
-            }
-        } while (item);
-
-        return t;
+        PxList_Transfer(px->finished, item);
+        InterlockedIncrement64(&(px->done));
+        return NULL;
     }
 
-    /* Process 'incoming' work items. */
-    item = PxList_Flush(px->incoming);
-    if (item) {
-        PxListHead *transfer;
+    /* Process incoming work items. */
+    while (item = PxList_Pop(px->incoming)) {
+        HANDLE wait;
+        PyObject *func, *args, *kwds, *result, *tmp;
 
-        do {
-            HANDLE wait;
-            PyObject *func, *args, *kwds, *result, *tmp;
+        func = (PyObject *)item->p1;
+        args = (PyObject *)item->p2;
+        kwds = (PyObject *)item->p3;
+        wait = (HANDLE)item->p4;
+        c = (Context *)item->from;
 
-            func = (PyObject *)item->p1;
-            args = (PyObject *)item->p2;
-            kwds = (PyObject *)item->p3;
-            wait = (HANDLE)item->p4;
-            c = (Context *)item->from;
-
-            if (!args) {
-                if (kwds)
-                    args = _PyHeap_NewTuple(c, 0);
-                else
-                    args = Py_None;
-            } else {
-                if (!PyTuple_Check(args)) {
-                    tmp = _PyHeap_NewTuple(c, 1);
-                    PyTuple_SET_ITEM(tmp, 0, args);
-                    args = tmp;
-                }
-            }
-
-            //Py_INCREF(func);
-            //Py_INCREF(args);
-            //Py_XINCREF(kwds);
-
-            if (wait) {
-                InterlockedDecrement(&(px->sync_wait_pending));
-                InterlockedIncrement(&(px->sync_wait_inflight));
-            } else {
-                InterlockedDecrement(&(px->sync_nowait_pending));
-                InterlockedIncrement(&(px->sync_nowait_inflight));
-            }
-
+        if (!args) {
             if (kwds)
-                result = PyObject_Call(func, args, kwds);
+                args = _PyHeap_NewTuple(c, 0);
             else
-                result = PyObject_CallObject(func, args);
-
-            if (wait) {
-                if (null_or_non_none_return_type(result))
-                    PyErr_Fetch((PyObject **)&(item->p1),
-                                (PyObject **)&(item->p2),
-                                (PyObject **)&(item->p3));
-                else {
-                    item->p1 = NULL;
-                    item->p2 = result;
-                    item->p3 = NULL;
-                }
-                SetEvent((HANDLE)item->p4);
-                item = PxList_SeverFromNext(item);
-            } else {
-                InterlockedDecrement(&(px->sync_nowait_inflight));
-                InterlockedIncrement64(&(px->sync_nowait_done));
-
-                if (null_or_non_none_return_type(result)) {
-                    assert (tstate->curexc_type != NULL);
-                    item->p1 = tstate->curexc_type;
-                    item->p2 = tstate->curexc_value;
-                    item->p3 = tstate->curexc_traceback;
-                    /* See error handling comments above for an explanation
-                     * of the next line. */
-                    item->p4 = (void *)item->when;
-                    item = PxList_Transfer(px->errors, item);
-                    errors++;
-                } else {
-                    PxListItem *next = PxList_SeverFromNext(item);
-                    assert(result == Py_None);
-                    //InterlockedDecrement(&(px->active));
-                    c = (Context *)item->from;
-                    Px_DECCTX(c);
-                    _PyHeap_Free(c, item);
-                    item = next;
-                }
+                args = Py_None;
+        } else {
+            if (!PyTuple_Check(args)) {
+                tmp = _PyHeap_NewTuple(c, 1);
+                PyTuple_SET_ITEM(tmp, 0, args);
+                args = tmp;
             }
-            ++processed_incoming;
-        } while (item);
+        }
+
+        if (wait) {
+            InterlockedDecrement(&(px->sync_wait_pending));
+            InterlockedIncrement(&(px->sync_wait_inflight));
+        } else {
+            InterlockedDecrement(&(px->sync_nowait_pending));
+            InterlockedIncrement(&(px->sync_nowait_inflight));
+        }
+
+        if (kwds)
+            result = PyObject_Call(func, args, kwds);
+        else
+            result = PyObject_CallObject(func, args);
+
+        ++processed_incoming;
+
+        if (wait) {
+            if (!result) {
+                PyObject **exc_type, **exc_value, **exc_tb;
+                assert(tstate->curexc_type);
+
+                exc_type  = (PyObject **)&item->p1;
+                exc_value = (PyObject **)&item->p2;
+                exc_tb    = (PyObject **)&item->p3;
+
+                PyErr_Fetch(exc_type, exc_value, exc_tb);
+                PyErr_Clear();
+
+                //Py_INCREF(exc_type);
+                //Py_XINCREF(exc_value);
+                //Py_XINCREF(exc_tb);
+            } else {
+                Py_INCREF(result);
+                item->p1 = NULL;
+                item->p2 = result;
+                item->p3 = NULL;
+            }
+            SetEvent(wait);
+        } else {
+            InterlockedDecrement(&(px->sync_nowait_inflight));
+            InterlockedIncrement64(&(px->sync_nowait_done));
+
+            if (!result) {
+                assert(tstate->curexc_type != NULL);
+            } else if (result != Py_None) {
+                char *msg = "async call from main thread returned non-None";
+                PyErr_WarnEx(PyExc_RuntimeWarning, msg, 1);
+            }
+
+            c = (Context *)item->from;
+            Px_DECCTX(c);
+            _PyHeap_Free(c, item);
+
+            if (!result)
+                return NULL;
+        }
     }
-    if (errors)
-        goto start;
 
     /* Process completed items. */
     item = PxList_Flush(px->completed_callbacks);
@@ -1491,6 +1396,35 @@ free_context:
 
 done:
     return (result ? result : PyErr_NoMemory());
+}
+
+PyObject *
+_async_run(PyObject *self, PyObject *args)
+{
+    PyThreadState *tstate = get_main_thread_state();
+    PxState *px = PXSTATE();
+    int i = 0;
+    long active_contexts = 0;
+    do {
+        i++;
+        active_contexts = px->contexts_active;
+        if (Py_VerboseFlag)
+            PySys_FormatStdout("_async.run(%d) [%d]\n", i, active_contexts);
+        assert(active_contexts >= 0);
+        if (active_contexts == 0)
+            break;
+        if (!_async_run_once(NULL, NULL)) {
+            assert(tstate->curexc_type != NULL);
+            if (Py_VerboseFlag)
+                PySys_FormatStdout("_async.run_once raised "
+                                   "exception, returning...\n");
+            return NULL;
+        }
+    } while (1);
+
+    if (Py_VerboseFlag)
+        PySys_FormatStdout("_async.run(): no more events, returning...\n");
+    Py_RETURN_NONE;
 }
 
 PyObject *
@@ -1821,7 +1755,6 @@ _PxMem_Free(void *p)
 {
     Heap_Free(p);
 }
-
 
 #ifdef __cpplus
 }

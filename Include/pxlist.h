@@ -249,7 +249,7 @@ PxList_PushList(PxListHead *head,
 
 static __inline
 PxListItem *
-PxList_Pop(PxListHead *head, PxListItem *item)
+PxList_Pop(PxListHead *head)
 {
     return E2I(InterlockedPopEntrySList(head));
 }
