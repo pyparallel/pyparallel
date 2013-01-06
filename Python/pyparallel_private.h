@@ -11,6 +11,7 @@
 #define Px_PTR_ALIGN_SIZE 4U
 #define Px_UINTPTR unsigned long
 #endif
+#define Px_MEM_ALIGN_RAW MEMORY_ALLOCATION_ALIGNMENT
 #define Px_MEM_ALIGN_SIZE ((Px_UINTPTR)MEMORY_ALLOCATION_ALIGNMENT)
 #define Px_PAGE_ALIGN_SIZE ((Px_UINTPTR)4096ULL)
 #define Px_CACHE_ALIGN_SIZE ((Px_UINTPTR)SYSTEM_CACHE_ALIGNMENT_SIZE)
@@ -25,7 +26,11 @@
 #define Px_CACHE_ALIGN(n)   (Px_ALIGN((n), Px_CACHE_ALIGN_SIZE))
 #define Px_PAGE_ALIGN(n)    (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
 
-#define Px_PTRADD(p, n)     ((void *)((Px_UINTPTR)(p) + (Px_UINTPTR)(n)))
+#define Px_PTR(p)           ((Px_UINTPTR)(p))
+#define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
+
+#define Px_PTR_ALIGNED_ADD(p, n) \
+    (Px_PTR_ALIGN(Px_PTR_ADD(p, Px_PTR_ALIGN(n))))
 
 #define Px_ALIGNED_MALLOC(n)                                \
     (Py_PXCTX ? _PyHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
@@ -269,5 +274,36 @@ typedef struct _PyParallelContext {
     int times_finished;
 
 } PyParallelContext, Context;
+
+typedef struct _PxObject {
+    Context     *ctx;
+    PyObject    *parent;
+    size_t       size;
+    int          resized;
+} PxObject;
+
+//#undef Py_PX
+#define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
+
+/*
+typedef struct _PyAsyncSocketObject {
+    PySocketSockObject  sock;
+    WSAOVERLAPPED       overlapped;
+    HANDLE              completion_port;
+
+    PyObject           *handler;
+    int                 preallocate;
+    PxListHead         *preallocated;
+    PxListHead         *freelist;
+
+    __declspec(align(Px_MEM_ALIGN_RAW))
+    Context _context;
+} PyAsyncSocketObject;
+
+typedef struct _PyAsyncServerSocketObject {
+    PyAsyncSocketObject sock;
+    int preallocated;
+} PyAsyncSocketObject;
+*/
 
 #endif /* PYPARALLEL_PRIVATE_H */

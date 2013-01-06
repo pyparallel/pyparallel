@@ -370,7 +370,7 @@ class SocketIO(io.RawIOBase):
         self._sock = None
 
 
-def getfqdn(name=''):
+def getfqdn(name='', callback, errback):
     """Get fully qualified domain name from name.
 
     An empty argument is interpreted as meaning the local host.
@@ -399,7 +399,7 @@ def getfqdn(name=''):
 _GLOBAL_DEFAULT_TIMEOUT = object()
 
 def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
-                      source_address=None):
+                      source_address=None, callback, errback):
     """Connect to *address* and return the socket object.
 
     Convenience function.  Connect to *address* (a 2-tuple ``(host,

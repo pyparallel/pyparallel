@@ -123,8 +123,8 @@ Heap_LocalMalloc(Context *c, size_t n, size_t align)
             c->tbuf_allocated += alignment_diff;
             c->tbuf_alignment_mismatches++;
             c->tbuf_bytes_wasted += alignment_diff;
-            c->tbuf_next = Px_PTRADD(c->tbuf_next, alignment_diff);
-            assert(Px_PTRADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
+            c->tbuf_next = Px_PTR_ADD(c->tbuf_next, alignment_diff);
+            assert(Px_PTR_ADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
         }
 
         c->tbuf_mallocs++;
@@ -136,8 +136,8 @@ Heap_LocalMalloc(Context *c, size_t n, size_t align)
         c->tbuf_last_alignment = alignment;
 
         next = c->tbuf_next;
-        c->tbuf_next = Px_PTRADD(c->tbuf_next, aligned_size);
-        assert(Px_PTRADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
+        c->tbuf_next = Px_PTR_ADD(c->tbuf_next, aligned_size);
+        assert(Px_PTR_ADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
 
     } else {
         next = (void *)malloc(aligned_size);
@@ -194,8 +194,8 @@ begin:
             s->alignment_mismatches++;
             h->bytes_wasted += alignment_diff;
             s->bytes_wasted += alignment_diff;
-            h->next = Px_PTRADD(h->next, alignment_diff);
-            assert(Px_PTRADD(h->base, h->allocated) == h->next);
+            h->next = Px_PTR_ADD(h->next, alignment_diff);
+            assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
         }
 
         h->allocated += aligned_size;
@@ -213,8 +213,8 @@ begin:
         h->last_alignment = alignment;
 
         next = h->next;
-        h->next = Px_PTRADD(h->next, aligned_size);
-        assert(Px_PTRADD(h->base, h->allocated) == h->next);
+        h->next = Px_PTR_ADD(h->next, aligned_size);
+        assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
         return next;
     }
 
@@ -303,88 +303,111 @@ _PyHeap_NewListItem(Context *c)
     return (PxListItem *)_PyHeap_MemAlignedMalloc(c, sizeof(PxListItem));
 }
 
+#define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
+#define _Px_O_OFFSET(n) \
+    (Px_PTR_ALIGN((_Px_X_OFFSET(n)) + (Px_PTR_ALIGN(sizeof(PxObject)))))
+
+#define _Px_X_PTR(p, n) \
+    ((PxObject *)(Px_PTR_ALIGN(Px_PTR_ALIGNED_ADD((p), _Px_X_OFFSET((n))))))
+
+#define _Px_O_PTR(p, n) \
+    ((Object *)(Px_PTR_ALIGN(Px_PTR_ALIGNED_ADD((p), _Px_O_OFFSET((n))))))
+
+#define _Px_SZ(n) (Px_PTR_ALIGN(      \
+    Px_PTR_ALIGN(n)                 + \
+    Px_PTR_ALIGN(sizeof(PxObject))  + \
+    Px_PTR_ALIGN(sizeof(Object))      \
+))
+
+#define _Px_VSZ(t, n) (Px_PTR_ALIGN( \
+    ((!((t)->tp_itemsize)) ?         \
+        _PyObject_SIZE(t) :          \
+        _PyObject_VAR_SIZE(t, n))))
+
+__inline
+PyObject *
+init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
+{
+    register PxObject *x;
+    register Object   *o;
+    const register size_t sz = _Px_VSZ(tp, nitems);
+    const register size_t total = _Px_SZ(sz);
+
+    if (!p)
+        return (PyObject *)_PyHeap_Malloc(c, total, 0);
+
+    Py_TYPE(p)   = tp;
+    Py_REFCNT(p) = 1;
+
+    o = _Px_O_PTR(p, sz);
+    o->op = p;
+
+    x = _Px_X_PTR(p, sz);
+    x->ctx       = c;
+    x->size      = sz;
+    x->resized   = 0;
+    Py_PX(p)     = x;
+
+    if (!tp->tp_itemsize) {
+        append_object(&c->varobjs, o);
+        (c->stats.objects)++;
+    } else {
+        Py_SIZE(p) = nitems;
+        append_object(&c->varobjs, o);
+        (c->stats.varobjs)++;
+    }
+
+    return p;
+}
+
 __inline
 PyObject *
 Object_Init(PyObject *op, PyTypeObject *tp, Context *c)
 {
-    Stats  *s;
-    Object *o;
-
-/* Make sure we're not called for PyVarObjects... */
-#ifdef Py_DEBUG
     assert(tp->tp_itemsize == 0);
-#endif
-
-    s = &c->stats;
-    o = (Object *)_PyHeap_Malloc(c, sizeof(Object), 0);
-
-    Py_TYPE(op) = tp;
-    Py_REFCNT(op) = 1;
-    Py_PX(op) = c;
-
-    o->op = op;
-    append_object(&c->objects, o);
-    s->objects++;
-
-    return op;
+    return init_object(c, op, tp, 0);
 }
 
 __inline
 PyObject *
 Object_New(PyTypeObject *tp, Context *c)
 {
-    return Object_Init((PyObject *)Heap_Malloc(_PyObject_SIZE(tp)), tp, c);
+    return init_object(c, NULL, tp, 0);
 }
 
 /* VarObjects (PyVarObjects) */
 __inline
 PyVarObject *
-VarObject_Init(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size, Context *c)
+VarObject_Init(PyVarObject *v, PyTypeObject *tp, Py_ssize_t nitems, Context *c)
 {
-    Stats  *s;
-    Object *o;
-
-/* Make sure we're not called for PyObjects... */
-#ifdef Py_DEBUG
     assert(tp->tp_itemsize > 0);
-#endif
-
-    s = &c->stats;
-    o = (Object *)_PyHeap_Malloc(c, sizeof(Object), 0);
-
-    Py_SIZE(op) = size;
-    Py_TYPE(op) = tp;
-    Py_REFCNT(op) = 1;
-    Py_PX(op) = c;
-    o->op = (PyObject *)op;
-    append_object(&c->varobjs, o);
-    s->varobjs++;
-
-    return op;
+    return (PyVarObject *)init_object(c, (PyObject *)v, tp, nitems);
 }
 
 __inline
 PyVarObject *
 VarObject_New(PyTypeObject *tp, Py_ssize_t nitems, Context *c)
 {
-    register const size_t sz = _PyObject_VAR_SIZE(tp, nitems);
-    register PyVarObject *v = (PyVarObject *)_PyHeap_Malloc(c, sz, 0);
-    return VarObject_Init(v, tp, nitems, c);
+    return (PyVarObject *)init_object(c, NULL, tp, nitems);
 }
 
 __inline
 PyVarObject *
-VarObject_Resize(PyObject *op, Py_ssize_t n, Context *c)
+VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
 {
-    register const int was_resize = 1;
-    register const size_t sz = _PyObject_VAR_SIZE(Py_TYPE(op), n);
-    PyVarObject *r = (PyVarObject *)_PyHeap_Malloc(c, sz, 0);
+    PyTypeObject *tp = Py_TYPE(v);
+    PyVarObject  *r = (PyVarObject *)init_object(c, NULL, tp, nitems);
+
     if (!r)
         return NULL;
-    memcpy(r, op, n);
+
+    init_object(c, (PyObject *)r, tp, nitems);
+
+    Py_ASPX(v)->resized = 1;
+    memcpy(r, v, Py_ASPX(v)->size);
     c->h->resizes++;
     c->stats.resizes++;
-    op = (PyObject *)r;
+    v = (PyObject *)r;
     return r;
 }
 
@@ -513,16 +536,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->finished)
         goto free_incoming;
 
-    /*
-    px->freelist = PxList_New();
-    if (!px->freelist)
-        goto free_finished;
-
-    px->singles = PxList_New();
-    if (!px->singles)
-        goto free_freelist;
-    */
-
     px->wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->wakeup)
         goto free_finished;
@@ -535,14 +548,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     px->ctx_ttl = 1;
 
     goto done;
-
-    /*
-free_singles:
-    PxList_FreeListHead(px->singles);
-
-free_freelist:
-    PxList_FreeListHead(px->freelist);
-    */
 
 free_finished:
     PxList_FreeListHead(px->finished);
@@ -585,7 +590,6 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     assert(c->heap_handle);
 
     px = (PxState *)c->tstate->px;
-    //InterlockedIncrement(&(px->active));
     InterlockedDecrement(&(px->pending));
     InterlockedIncrement(&(px->inflight));
 
@@ -936,6 +940,34 @@ PxState *
 PXSTATE(void)
 {
     return (PxState *)get_main_thread_state()->px;
+}
+
+__inline
+int
+_is_parallel_thread(void)
+{
+    return PyThreadState_GET()->is_parallel_thread;
+}
+
+PyObject *
+_async_is_parallel_thread(void)
+{
+    PyObject *r = (PyObject *)(_is_parallel_thread() ? Py_True : Py_False);
+    Py_INCREF(r);
+    return r;
+}
+
+__inline
+unsigned long long
+_rdtsc(void)
+{
+    return _Py_rdtsc();
+}
+
+PyObject *
+_async_rdtsc(void)
+{
+    return PyLong_FromUnsignedLongLong(_Py_rdtsc());
 }
 
 __inline
@@ -1290,9 +1322,9 @@ start:
 PyObject *
 _async_map(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 __inline
@@ -1341,7 +1373,6 @@ submit_work(Context *c)
 PyObject *
 _async_submit_work(PyObject *self, PyObject *args)
 {
-    PyCodeObject *code;
     PyObject *result = NULL;
     Context  *c = (Context *)malloc(sizeof(Context));
     PxState  *px;
@@ -1430,55 +1461,54 @@ _async_run(PyObject *self, PyObject *args)
 PyObject *
 _async_submit_wait(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _async_submit_timer(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _async_submit_io(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _async_submit_server(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _async_submit_client(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _async_submit_class(PyObject *self, PyObject *args)
 {
-    PyObject *result;
+    PyObject *result = NULL;
 
-    return NULL;
+    return result;
 }
 
 PyObject *
 _call_from_main_thread(PyObject *self, PyObject *args, int wait)
 {
-    int rv;
     int err;
     Context *c;
     PyObject *result = NULL;
@@ -1609,6 +1639,7 @@ PyDoc_STRVAR(_async_unregister_doc,
 Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_active_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
@@ -1621,6 +1652,7 @@ PyDoc_STRVAR(_async_submit_class_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_server_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_active_contexts_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_is_parallel_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 
@@ -1631,6 +1663,7 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
+    _ASYNC_N(rdtsc),
     _ASYNC_N(run_once),
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
@@ -1643,6 +1676,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(submit_client),
     _ASYNC_O(submit_server),
     _ASYNC_N(active_contexts),
+    _ASYNC_N(is_parallel_thread),
     _ASYNC_V(call_from_main_thread),
     _ASYNC_V(call_from_main_thread_and_wait),
 
@@ -1664,7 +1698,7 @@ struct PyModuleDef _asyncmodule = {
 PyObject *
 _PyAsync_ModInit(void)
 {
-    PyObject *m, *d;
+    PyObject *m;
 
     m = PyModule_Create(&_asyncmodule);
     if (m == NULL)
@@ -1673,13 +1707,11 @@ _PyAsync_ModInit(void)
     return m;
 }
 
-
 /* And now for the exported symbols... */
 PyThreadState *
 _PyParallel_GetThreadState(void)
 {
 #ifdef Py_DEBUG
-    PyThreadState *tstate;
     Px_GUARD
     assert(ctx->pstate);
     assert(ctx->pstate != ctx->tstate);
@@ -1690,8 +1722,8 @@ _PyParallel_GetThreadState(void)
 void
 _Px_NewReference(PyObject *op)
 {
-    op->ob_refcnt = 1;
-    op->px_ctx = ctx;
+    //op->ob_refcnt = 1;
+    //Py_PX(op)->ctx = ctx;
     ctx->stats.newrefs++;
 }
 
@@ -1732,6 +1764,7 @@ _PxObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t nitems)
     return VarObject_Init(op, tp, nitems, ctx);
 }
 
+
 PyVarObject *
 _PxObject_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
@@ -1755,6 +1788,7 @@ _PxMem_Free(void *p)
 {
     Heap_Free(p);
 }
+
 
 #ifdef __cpplus
 }

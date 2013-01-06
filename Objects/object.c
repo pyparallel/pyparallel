@@ -244,6 +244,9 @@ PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
     op->ob_size = size;
     Py_TYPE(op) = tp;
     _Py_NewReference((PyObject *)op);
+#ifdef WITH_PARALLEL
+    Py_PX(op) = NULL;
+#endif
     return op;
 }
 

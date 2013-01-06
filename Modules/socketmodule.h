@@ -15,6 +15,9 @@
 #else /* MS_WINDOWS */
 # include <winsock2.h>
 # include <ws2tcpip.h>
+# ifdef WITH_PARALLEL
+#  include <MSWSock.h>
+# endif
 /* VC6 is shipped with old platform headers, and does not have MSTcpIP.h
  * Separate SDKs have all the functions we want, but older ones don't have
  * any version information.
@@ -111,6 +114,28 @@ typedef int SOCKET_T;
 #       define SIZEOF_SOCKET_T SIZEOF_INT
 #endif
 
+#if defined(WITH_PARALLEL) && defined(MS_WINDOWS)
+static LPFN_WSAPOLL _WSAPoll;
+static LPFN_ACCEPTEX _AcceptEx;
+static LPFN_CONNECTEX _ConnectEx;
+static LPFN_WSARECVMSG _WSARecvMsg;
+static LPFN_WSASENDMSG _WSASendMsg;
+static LPFN_DISCONNECTEX _DisconnectEx;
+static LPFN_TRANSMITFILE _TransmitFile;
+static LPFN_TRANSMITPACKETS _TransmitPackets;
+static LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;
+
+const static GUID _WSAPoll_GUID = WSAID_WSAPOLL;
+const static GUID _AcceptEx_GUID = WSAID_ACCEPTEX;
+const static GUID _ConnectEx_GUID = WSAID_CONNECTEX;
+const static GUID _WSARecvMsg_GUID = WSAID_WSARECVMSG;
+const static GUID _WSASendMsg_GUID = WSAID_WSASENDMSG;
+const static GUID _DisconnectEx_GUID = WSAID_DISCONNECTEX;
+const static GUID _TransmitFile_GUID = WSAID_TRANSMITFILE;
+const static GUID _TransmitPackets_GUID = WSAID_TRANSMITPACKETS;
+const static GUID _GetAcceptExSockaddrs_GUID = WSAID_GETACCEPTEXSOCKADDRS;
+#endif
+
 #if SIZEOF_SOCKET_T <= SIZEOF_LONG
 #define PyLong_FromSocket_t(fd) PyLong_FromLong((SOCKET_T)(fd))
 #define PyLong_AsSocket_t(fd) (SOCKET_T)PyLong_AsLong(fd)
@@ -165,6 +190,11 @@ typedef struct {
                                         sets a Python exception */
     double sock_timeout;                 /* Operation timeout in seconds;
                                         0.0 means non-blocking */
+#ifdef WITH_PARALLEL
+    int sock_backlog;           /* Backlog specified to listen(n). Used for
+                                   pre-allocating sockets for AcceptEx when
+                                   on Windows. */
+#endif
 } PySocketSockObject;
 
 /* --- C API ----------------------------------------------------*/

@@ -75,7 +75,7 @@ whose size is determined when the object is allocated.
 #define _PyObject_EXTRA_INIT 0, 0,
 #else
 #define _PyObject_HEAD_EXTRA            \
-    void *px_ctx;                       \
+    void *px;                           \
     struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
@@ -85,7 +85,7 @@ whose size is determined when the object is allocated.
 #else
 #ifndef WITH_PARALLEL
 #define _PyObject_HEAD_EXTRA            \
-    void *px_ctx;                       \
+    void *px;                           \
 #define _PyObject_EXTRA_INIT 0,
 #else
 #define _PyObject_HEAD_EXTRA
@@ -132,9 +132,9 @@ typedef struct {
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
 #ifdef WITH_PARALLEL
-#define Py_PX(ob)                   (((PyObject*)(ob))->px_ctx)
+#define Py_PX(ob)               ((((PyObject*)(ob))->px))
 #define Py_ISPX(ob) \
-    ((Py_PXCTX) || (ob != NULL && ((((PyObject*)(ob))->px_ctx) != NULL)))
+    ((Py_PXCTX) || (ob != NULL && ((((PyObject*)(ob))->px) != NULL)))
 #endif
 
 /********************* String Literals ****************************************/

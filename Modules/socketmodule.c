@@ -812,6 +812,9 @@ init_sockobject(PySocketSockObject *s,
     s->sock_family = family;
     s->sock_type = type;
     s->sock_proto = proto;
+#ifdef WITH_PARALLEL
+    s->sock_backlog = 0;
+#endif
 
     s->errorhandler = &set_error;
 #ifdef SOCK_NONBLOCK
@@ -2074,6 +2077,68 @@ Wait for an incoming connection.  Return a new socket file descriptor\n\
 representing the connection, and the address of the client.\n\
 For IP sockets, the address info is a pair (hostaddr, port).");
 
+#ifdef WITH_PARALLEL
+PyObject *
+sock_acceptex(PySocketSockObject *s)
+{
+    sock_addr_t addrbuf;
+    SOCKET_T newfd = INVALID_SOCKET;
+    socklen_t addrlen;
+    PyObject *sock = NULL;
+    PyObject *addr = NULL;
+    PyObject *res = NULL;
+    int timeout;
+    if (!getsockaddrlen(s, &addrlen))
+        return NULL;
+    memset(&addrbuf, 0, addrlen);
+
+    if (!IS_SELECTABLE(s))
+        return select_error();
+
+    BEGIN_SELECT_LOOP(s)
+    Py_BEGIN_ALLOW_THREADS
+    timeout = internal_select_ex(s, 0, interval);
+    if (!timeout) {
+        newfd = accept(s->sock_fd, SAS2SA(&addrbuf), &addrlen);
+    }
+    Py_END_ALLOW_THREADS
+
+    if (timeout == 1) {
+        PyErr_SetString(socket_timeout, "timed out");
+        return NULL;
+    }
+    END_SELECT_LOOP(s)
+
+    if (newfd == INVALID_SOCKET)
+        return s->errorhandler();
+
+    sock = PyLong_FromSocket_t(newfd);
+    if (sock == NULL) {
+        SOCKETCLOSE(newfd);
+        goto finally;
+    }
+
+    addr = makesockaddr(s->sock_fd, SAS2SA(&addrbuf),
+                        addrlen, s->sock_proto);
+    if (addr == NULL)
+        goto finally;
+
+    res = PyTuple_Pack(2, sock, addr);
+
+finally:
+    Py_XDECREF(sock);
+    Py_XDECREF(addr);
+    return res;
+}
+
+PyDoc_STRVAR(acceptex_doc,
+"acceptex(func[, args[, kwds[, callback[, errback]]]]) -> None\
+\n\
+Wait for an incoming connection.  Return a new socket file descriptor\n\
+representing the connection, and the address of the client.\n\
+For IP sockets, the address info is a pair (hostaddr, port).");
+#endif
+
 /* s.setblocking(flag) method.  Argument:
    False -- non-blocking mode; same as settimeout(0)
    True -- blocking mode; same as settimeout(None)
@@ -2576,6 +2641,9 @@ sock_listen(PySocketSockObject *s, PyObject *arg)
     Py_END_ALLOW_THREADS
     if (res < 0)
         return s->errorhandler();
+#ifdef WITH_PARALLEL
+    s->sock_backlog = backlog;
+#endif
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -3883,15 +3951,24 @@ static PyMethodDef sock_methods[] = {
     {"sendmsg",           (PyCFunction)sock_sendmsg, METH_VARARGS,
                       sendmsg_doc},
 #endif
+#ifdef WITH_PARALLEL
+    /*
+    {"acceptex", (PyCFunction)sock_acceptex, METH_VARARGS, acceptex_doc},
+    {"connectex", (PyCFunction)sock_connectex, METH_VARARGS, acceptex_doc},
+    */
+#endif
     {NULL,                      NULL}           /* sentinel */
 };
 
 /* SockObject members */
 static PyMemberDef sock_memberlist[] = {
-       {"family", T_INT, offsetof(PySocketSockObject, sock_family), READONLY, "the socket family"},
-       {"type", T_INT, offsetof(PySocketSockObject, sock_type), READONLY, "the socket type"},
-       {"proto", T_INT, offsetof(PySocketSockObject, sock_proto), READONLY, "the socket protocol"},
-       {"timeout", T_DOUBLE, offsetof(PySocketSockObject, sock_timeout), READONLY, "the socket timeout"},
+    {"family", T_INT, offsetof(PySocketSockObject, sock_family), READONLY, "the socket family"},
+    {"type", T_INT, offsetof(PySocketSockObject, sock_type), READONLY, "the socket type"},
+    {"proto", T_INT, offsetof(PySocketSockObject, sock_proto), READONLY, "the socket protocol"},
+    {"timeout", T_DOUBLE, offsetof(PySocketSockObject, sock_timeout), READONLY, "the socket timeout"},
+#ifdef WITH_PARALLEL
+    {"backlog", T_INT, offsetof(PySocketSockObject, sock_backlog), READONLY, "the backlog specified to listen(n)"},
+#endif
        {0},
 };
 
@@ -3943,6 +4020,7 @@ sock_repr(PySocketSockObject *s)
 
 /* Create a new, uninitialized socket object. */
 
+/*
 static PyObject *
 sock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
@@ -3956,6 +4034,7 @@ sock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
     }
     return new;
 }
+*/
 
 
 /* Initialize a new socket object. */
@@ -3974,6 +4053,10 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
                                      "|iiiO:socket", keywords,
                                      &family, &type, &proto, &fdobj))
         return -1;
+
+    s->sock_fd = -1;
+    s->sock_timeout = -1.0;
+    s->errorhandler = &set_error;
 
     if (fdobj != NULL && fdobj != Py_None) {
 #ifdef MS_WINDOWS
@@ -4069,7 +4152,7 @@ static PyTypeObject sock_type = {
     0,                                          /* tp_dictoffset */
     sock_initobj,                               /* tp_init */
     PyType_GenericAlloc,                        /* tp_alloc */
-    sock_new,                                   /* tp_new */
+    0,                                          /* tp_new */
     PyObject_Del,                               /* tp_free */
 };
 
@@ -5504,16 +5587,46 @@ os_cleanup(void)
     WSACleanup();
 }
 
+#define _WSA_RESOLVE(n)                                 \
+    do {                                                \
+        ret = WSAIoctl(                                 \
+            sock,                                       \
+            SIO_GET_EXTENSION_FUNCTION_POINTER,         \
+            (void *)&##n##_GUID,                        \
+            sizeof(##n##_GUID),                         \
+            (void *)&##n##,                             \
+            sizeof(##n##),                              \
+            &size,                                      \
+            NULL,                                       \
+            NULL                                        \
+        );                                              \
+        if (ret == SOCKET_ERROR) {                      \
+            closesocket(sock);                          \
+            PyErr_SetString(PyExc_ImportError,          \
+                            "WSAIoctl failed to get "   \
+                            "function pointer to "      \
+                            "extension '" #n "'");      \
+            return 0;                                   \
+        }                                               \
+    } while (0)
+
+
 static int
 os_init(void)
 {
-    WSADATA WSAData;
+    WSADATA wsadata;
     int ret;
+#ifdef WITH_PARALLEL
+    SOCKET sock;
+    DWORD  size;
+    ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
+#else
     ret = WSAStartup(0x0101, &WSAData);
+#endif
     switch (ret) {
     case 0:     /* No error */
         Py_AtExit(os_cleanup);
-        return 1; /* Success */
+        goto next;
     case WSASYSNOTREADY:
         PyErr_SetString(PyExc_ImportError,
                         "WSAStartup failed: network not ready");
@@ -5529,6 +5642,28 @@ os_init(void)
         break;
     }
     return 0; /* Failure */
+next:
+#ifndef WITH_PARALLEL
+    return 1; /* Success */
+#else
+    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock == INVALID_SOCKET) {
+        PyErr_SetFromWindowsErr(0);
+        return 0;
+    }
+    _WSA_RESOLVE(_WSAPoll);
+    _WSA_RESOLVE(_AcceptEx);
+    _WSA_RESOLVE(_ConnectEx);
+    _WSA_RESOLVE(_WSARecvMsg);
+    _WSA_RESOLVE(_WSASendMsg);
+    _WSA_RESOLVE(_DisconnectEx);
+    _WSA_RESOLVE(_TransmitFile);
+    _WSA_RESOLVE(_TransmitPackets);
+    _WSA_RESOLVE(_GetAcceptExSockaddrs);
+
+    closesocket(sock);
+    return 1; /* Success */
+#endif /* !WITH_PARALLEL */
 }
 
 #endif /* MS_WINDOWS */

@@ -420,6 +420,7 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
         Py_FatalError("Py_Initialize: can't initialize _async module");
     Py_INCREF(_asyncmod);
     _PyImport_FixupBuiltin(_asyncmod, "_async");
+
 #endif
 }
 
