@@ -40,7 +40,16 @@ _Py_GetRefTotal(void)
  * together via the _ob_prev and _ob_next members of a PyObject, which
  * exist only in a Py_TRACE_REFS build.
  */
+#ifndef WITH_PARALLEL
 static PyObject refchain = {&refchain, &refchain};
+#else
+static PyObject refchain = {
+    _Py_NOT_PARALLEL,
+    _Py_NOT_PARALLEL,
+    &refchain,
+    &refchain
+};
+#endif
 
 /* Insert op at the front of the list of all objects.  If force is true,
  * op is added even if _ob_prev and _ob_next are non-NULL already.  If
@@ -75,17 +84,18 @@ _Py_AddToAllObjects(PyObject *op, int force)
 #endif  /* Py_TRACE_REFS */
 
 #ifdef COUNT_ALLOCS
-static PyTypeObject *type_list;
+Py_TLS static PyTypeObject *type_list;
 /* All types are added to type_list, at least when
    they get one object created. That makes them
    immortal, which unfortunately contributes to
    garbage itself. If unlist_types_without_objects
    is set, they will be removed from the type_list
    once the last object is deallocated. */
-static int unlist_types_without_objects;
-extern Py_ssize_t tuple_zero_allocs, fast_tuple_allocs;
-extern Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
-extern Py_ssize_t null_strings, one_strings;
+Py_TLS static int unlist_types_without_objects;
+Py_TLS extern Py_ssize_t tuple_zero_allocs, fast_tuple_allocs;
+Py_TLS extern Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
+Py_TLS extern Py_ssize_t null_strings, one_strings;
+
 void
 dump_counts(FILE* f)
 {
@@ -230,10 +240,8 @@ PyObject_Init(PyObject *op, PyTypeObject *tp)
     Py_GUARD_MEM(op);
     /* Any changes should be reflected in PyObject_INIT (objimpl.h) */
     Py_TYPE(op) = tp;
+    _PyObject_InitHead(op);
     _Py_NewReference(op);
-#ifdef WITH_PARALLEL
-    Py_PX(op) = (void *)_Py_NOT_PARALLEL;
-#endif
     return op;
 }
 
@@ -247,10 +255,8 @@ PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
     Py_TYPE(op) = tp;
+    _PyObject_InitHead((PyObject *)op);
     _Py_NewReference((PyObject *)op);
-#ifdef WITH_PARALLEL
-    Py_PX(op) = (void *)_Py_NOT_PARALLEL;
-#endif
     return op;
 }
 
@@ -1765,6 +1771,25 @@ _Py_ReadyTypes(void)
         Py_FatalError("Can't initialize sequence iterator type");
 }
 
+#if defined(Py_DEBUG) && defined(WITH_PARALLEL)
+void
+_Py_VerifyObjectHead(PyObject *op)
+{
+    assert(Py_TYPE(op));
+    assert(op->ob_refcnt == 1);
+    assert(op->is_px    == _Py_NOT_PARALLEL);
+    assert(op->px       == _Py_NOT_PARALLEL);
+#ifndef Py_TRACE_REFS
+    assert(op->_ob_next == _Py_NOT_PARALLEL);
+    assert(op->_ob_prev == _Py_NOT_PARALLEL);
+#else
+    assert(op->_ob_next == NULL);
+    assert(op->_ob_prev == NULL);
+#endif
+}
+#else
+#define _Py_VerifyObjectHead(o)
+#endif
 
 #ifdef Py_TRACE_REFS
 
@@ -1774,6 +1799,7 @@ _Py_NewReference(PyObject *op)
     Px_RETURN_VOID(_Px_NewReference(op))
     _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
+    _Py_VerifyObjectHead(op);
     _Py_AddToAllObjects(op, 1);
     _Py_INC_TPALLOCS(op);
 }
@@ -1784,6 +1810,7 @@ _Py_ForgetReference(register PyObject *op)
 #ifdef SLOW_UNREF_CHECK
     register PyObject *p;
 #endif
+    Py_GUARD_MEM(op);
     Px_RETURN_VOID(_Px_ForgetReference(op))
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");

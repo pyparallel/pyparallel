@@ -1210,7 +1210,7 @@ PyObject_Realloc(void *p, size_t nbytes)
     if (p == NULL)
         return PyObject_Malloc(nbytes);
 
-    PxMem_GUARD_AGAINST(p)
+    _GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     /*
@@ -1541,7 +1541,7 @@ _PyObject_DebugReallocApi(char api, void *p, size_t nbytes)
     if (p == NULL)
         return _PyObject_DebugMallocApi(api, nbytes);
 
-    PxMem_GUARD_AGAINST(p)
+    _GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     _PyObject_DebugCheckAddressApi(api, p);

@@ -102,7 +102,7 @@ typedef struct _PyParallelHeap {
     Heap   *sle_next;
     void   *base;
     void   *next;
-    int     pages;
+    size_t  pages;
     size_t  last_alignment;
     size_t  mallocs;
     size_t  deallocs;
@@ -263,8 +263,8 @@ typedef struct _PyParallelContext {
 
     Stats  stats;
 
-    //Objects objects;
-    //Objects varobjs;
+    Objects objects;
+    Objects varobjs;
 
     char  tbuf[_PX_TMPBUF_SIZE];
     void *tbuf_base;

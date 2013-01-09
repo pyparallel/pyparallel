@@ -28,9 +28,9 @@
    The integers that are preallocated are those in the range
    -NSMALLNEGINTS (inclusive) to NSMALLPOSINTS (not inclusive).
 */
-static PyLongObject small_ints[NSMALLNEGINTS + NSMALLPOSINTS];
+Py_TLS static PyLongObject small_ints[NSMALLNEGINTS + NSMALLPOSINTS];
 #ifdef COUNT_ALLOCS
-Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
+Py_TLS Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
 #endif
 
 static PyObject *

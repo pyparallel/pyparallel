@@ -16,12 +16,12 @@
 /* Entries 1 up to PyTuple_MAXSAVESIZE are free lists, entry 0 is the empty
    tuple () of which at most one instance will be allocated.
 */
-__declspec(thread) static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
-__declspec(thread) static int numfree[PyTuple_MAXSAVESIZE];
+Py_TLS static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
+Py_TLS static int numfree[PyTuple_MAXSAVESIZE];
 #endif
 #ifdef COUNT_ALLOCS
-Py_ssize_t fast_tuple_allocs;
-Py_ssize_t tuple_zero_allocs;
+Py_TLS Py_ssize_t fast_tuple_allocs;
+Py_TLS Py_ssize_t tuple_zero_allocs;
 #endif
 
 /* Debug statistic to count GC tracking of tuples.
@@ -30,8 +30,8 @@ Py_ssize_t tuple_zero_allocs;
    does not necessarily prove that the heuristic is inefficient.
 */
 #ifdef SHOW_TRACK_COUNT
-static Py_ssize_t count_untracked = 0;
-static Py_ssize_t count_tracked = 0;
+Py_TLS static Py_ssize_t count_untracked = 0;
+Py_TLS static Py_ssize_t count_tracked = 0;
 
 static void
 show_track(void)

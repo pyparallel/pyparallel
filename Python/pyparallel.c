@@ -29,7 +29,8 @@ __inline
 PxState *
 PXSTATE(void)
 {
-    return (PxState *)get_main_thread_state()->px;
+    register PyThreadState *pstate = get_main_thread_state();
+    return (!pstate ? NULL : (PxState *)pstate->px);
 }
 
 void
@@ -309,7 +310,7 @@ _PxContext_UnregisterHeaps(Context *c)
     Heap    *h;
     Stats   *s;
     PxState *px;
-    int      i, heap_count;
+    int      i, heap_count = 0;
 
     Py_GUARD
 
@@ -327,11 +328,6 @@ _PxContext_UnregisterHeaps(Context *c)
         for (i = 0; i < h->pages; i++) {
             void     *ptr;
             PyObject *base;
-            PyObject *value;
-            int       result;
-            int       times_seen;
-            int       is_freed;
-            int       is_active;
 
             ptr = Px_PTR_ADD(h->base, (i * Px_PAGE_SIZE));
             assert(Px_PTR(ptr) == Px_PTR_ALIGN(ptr));
@@ -363,6 +359,9 @@ _PxContext_UnregisterHeaps(Context *c)
 #define _MEMSIG_PX          (1UL << 5)
 #define _MEMSIG_PX_PARTIAL  (1UL << 6)
 #define _MEMSIG_CORRUPT     (1UL << 7)
+#define _MEMSIG_NOT_READY   (1UL << 8)
+
+__declspec(thread) int _Px_MemorySignature_CallDepth = 0;
 
 unsigned long
 _Px_MemorySignature(void *m)
@@ -373,23 +372,29 @@ _Px_MemorySignature(void *m)
     PxState  *px;
     PyObject *rr[4], *r1, *r2, *r3, *r4;
     int signature;
-    int i  = 0;
-    int px = 0;
-    int py = 0;
-    int un = 0;
-    int px_seen = 0;
+    int i = 0;
+    int x = 0;
+    int y = 0;
+    int s = 0;
 
     int is_px;
     int is_py;
     int is_corrupt;
     int is_unknown;
 
+    if (_Px_MemorySignature_CallDepth == 1)
+        return _MEMSIG_NOT_READY;
+    assert(_Px_MemorySignature_CallDepth == 0);
+    _Px_MemorySignature_CallDepth++;
+
     px = PXSTATE();
+    if (!px)
+        return _MEMSIG_NOT_READY;
 
     p1 = p = m;
-    p2 = ++p;
-    p3 = ++p;
-    p4 = ++p;
+    p2 = (void *)Px_PTR_ADD(p, 1);
+    p3 = (void *)Px_PTR_ADD(p, 2);
+    p4 = (void *)Px_PTR_ADD(p, 3);
 
     pp[0] = p1;
     pp[1] = p2;
@@ -405,6 +410,9 @@ _Px_MemorySignature(void *m)
     rr[1] = r2;
     rr[2] = r3;
     rr[3] = r4;
+
+    next = (PyObject *)p3;
+    prev = (PyObject *)p4;
 
     is_py = (p1 == _Py_NOT_PARALLEL && p2 == _Py_NOT_PARALLEL);
 
@@ -440,23 +448,23 @@ _Px_MemorySignature(void *m)
 
     for (i = 0; i < 4; i++) {
         if (pp[i] == _Py_NOT_PARALLEL)
-            py++;
+            y++;
 
         if (pp[i] == _Py_IS_PARALLEL)
-            px++;
+            x++;
 
         if (_PxPages_SEEN(rr[i]))
-            px_seen++;
+            s++;
     }
 
-    is_unknown = (py == 0 && px == 0 && px_seen == 0);
+    is_unknown = (y == 0 && x == 0 && s == 0);
 
     is_corrupt = (
         (!is_px && !is_py) && (
-            (px_seen != 0)                  ||
-            (px > 0)                        ||
-            (py > 0 && py < 4)              ||
-            (py == 1 && p2 == NULL)         ||
+            (s != 0)                        ||
+            (x > 0)                         ||
+            (y > 0 && y < 4)                ||
+            (y == 1 && p2 == NULL)          ||
             (p2 == _Py_IS_PARALLEL)         ||
             (p1 == _Py_IS_PARALLEL)
         )
@@ -491,6 +499,8 @@ _Px_MemorySignature(void *m)
     Py_DECREF(r2);
     Py_DECREF(r3);
     Py_DECREF(r4);
+
+    _Px_MemorySignature_CallDepth--;
 
     return signature;
 }
@@ -639,6 +649,8 @@ _PyParallel_Guard(const char *function,
     if (m) {
         s = _Px_MemorySignature(m);
         assert(!(s & _MEMSIG_CORRUPT));
+        if (s & _MEMSIG_NOT_READY)
+            return 0;
     }
 
     if (flags & _PX_TEST) {
@@ -702,9 +714,6 @@ _PyParallel_ContextGuardFailure(const char *function,
 
 
 #endif
-
-#define Py_PX(ob)   (_Py_PX((PyObject *)ob))
-#define Py_ISPX(ob) (_Py_ISPX((PyObject *)ob)
 
 #define Px_SIZEOF_HEAP        Px_CACHE_ALIGN(sizeof(Heap))
 #define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
@@ -903,7 +912,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
     void  *r;
     Heap  *h = c->h;
     Stats *s = &c->stats;
-    PyMem_GUARD_AGAINST(p)
+    Px_GUARD_MEM(p);
     r = _PyHeap_Malloc(c, n, 0);
     if (!r)
         return NULL;
@@ -916,7 +925,6 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
 void *
 Heap_Realloc(void *p, size_t n)
 {
-    PyMem_GUARD_AGAINST(p)
     return _PyHeap_Realloc(ctx, p, n);
 }
 
@@ -925,7 +933,7 @@ _PyHeap_Free(Context *c, void *p)
 {
     Heap  *h = c->h;
     Stats *s = &c->stats;
-    PyMem_GUARD_AGAINST(p)
+    Px_GUARD_MEM(p);
 
     h->frees++;
     s->frees++;
@@ -942,7 +950,7 @@ _PyHeap_FastFree(Heap *h, Stats *s, void *p)
 void
 Heap_Free(void *p)
 {
-    PyMem_GUARD_AGAINST(p)
+    Px_GUARD_MEM(p);
     _PyHeap_Free(ctx, p);
 }
 
@@ -1022,8 +1030,8 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         p->_ob_prev = NULL;
     } else {
         PyObject *last;
-        assert(!c->ob_first->prev);
-        assert(!c->ob_last->next);
+        assert(!c->ob_first->_ob_prev);
+        assert(!c->ob_last->_ob_next);
         last = c->ob_last;
         last->_ob_next = p;
         p->_ob_prev = last;
@@ -1879,7 +1887,7 @@ _PxState_PurgeContexts(PxState *px)
             next->prev = prev;
 
 #ifdef Py_DEBUG
-        _PxState_UnregisterHeaps(c);
+        _PxContext_UnregisterHeaps(c);
 #endif
 
         HeapDestroy(c->heap_handle);
@@ -2532,11 +2540,10 @@ _PyParallel_GetThreadState(void)
 void
 _Px_NewReference(PyObject *op)
 {
-    PyObject_GUARD_AGAINST(op)
-    PxObject_GUARD(op)
+    Px_GUARD_MEM(op);
     Px_GUARD
     op->ob_refcnt = 1;
-    Py_PX(op)->ctx = ctx;
+    Py_ASPX(op)->ctx = ctx;
     ctx->stats.newrefs++;
 }
 
@@ -2545,7 +2552,7 @@ _Px_ForgetReference(PyObject *op)
 {
     Px_GUARD_MEM(op);
     Px_GUARD
-    assert(Py_PX(op)->ctx == ctx);
+    assert(Py_ASPX(op)->ctx == ctx);
     ctx->stats.forgetrefs++;
 }
 
@@ -2554,7 +2561,7 @@ _Px_Dealloc(PyObject *op)
 {
     Px_GUARD_MEM(op);
     Px_GUARD
-    assert(Py_PX(op)->ctx == ctx);
+    assert(Py_ASPX(op)->ctx == ctx);
     ctx->h->deallocs++;
     ctx->stats.deallocs++;
 }

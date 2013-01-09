@@ -900,4 +900,14 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
 #endif
 #endif
 
+#ifdef WITH_PARALLEL
+#ifdef MS_WINDOWS
+#define Py_TLS __declspec(thread)
+#else
+#define Py_TLS __thread
+#endif
+#else
+#define Py_TLS
+#endif
+
 #endif /* Py_PYPORT_H */

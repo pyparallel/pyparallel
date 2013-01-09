@@ -179,6 +179,8 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
 #define PyObject_INIT_VAR(op, typeobj, size)                         \
     ( Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj)) )
 
+#define _PyObject_InitHead(o)
+
 #else /* !WITH_PARALLEL */
 PyAPI_FUNC(PyObject *)    _PxObject_Init(PyObject *op, PyTypeObject *tp);
 PyAPI_FUNC(PyVarObject *) _PxObject_InitVar(PyVarObject *op,
@@ -202,12 +204,28 @@ PyAPI_FUNC(void) _Px_Dealloc(PyObject *op);
                 ((type *)_PyObject_NewVar((typeobj)), (n)))
 
 static __inline
+void
+_PyObject_InitHead(PyObject *op)
+{
+    assert(Py_TYPE(op));
+    op->is_px = _Py_NOT_PARALLEL;
+    op->px    = _Py_NOT_PARALLEL;
+#ifdef Py_TRACE_REFS
+    op->_ob_next = NULL;
+    op->_ob_prev = NULL;
+#else
+    op->_ob_next = _Py_NOT_PARALLEL;
+    op->_ob_prev = _Py_NOT_PARALLEL;
+#endif
+}
+
+static __inline
 PyObject *
 PyObject_INIT(PyObject *op, PyTypeObject *tp)
 {
     Px_RETURN(_PxObject_Init(op, tp))
     Py_TYPE(op) = tp;
-    Py_PX(op) = NULL;
+    _PyObject_InitHead(op);
     _Py_NewReference(op);
     return op;
 }
@@ -219,10 +237,11 @@ PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
     Px_RETURN(_PxObject_InitVar(op, tp, n))
     Py_SIZE(op) = n;
     Py_TYPE(op) = tp;
-    Py_PX(op) = NULL;
+    _PyObject_InitHead((PyObject *)op);
     _Py_NewReference((PyObject *)op);
     return op;
 }
+
 /*
 #define PyObject_INIT(op, typeobj)                             \
     (Py_PXCTX ?                                                \
