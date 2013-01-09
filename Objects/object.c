@@ -194,7 +194,7 @@ void
 _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 {
     char buf[300];
-    Py_GUARD_OP(op)
+    Py_GUARD_MEM(op);
 
     PyOS_snprintf(buf, sizeof(buf),
                   "%s:%i object at %p has negative ref count "
@@ -208,6 +208,7 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 void
 Py_IncRef(PyObject *o)
 {
+    Py_GUARD_MEM(o);
     Px_VOID_OP(o)
     Py_XINCREF(o);
 }
@@ -215,6 +216,7 @@ Py_IncRef(PyObject *o)
 void
 Py_DecRef(PyObject *o)
 {
+    Py_GUARD_MEM(o);
     Px_VOID_OP(o)
     Py_XDECREF(o);
 }
@@ -225,11 +227,12 @@ PyObject_Init(PyObject *op, PyTypeObject *tp)
     if (op == NULL)
         return PyErr_NoMemory();
     Px_RETURN(_PxObject_Init(op, tp))
+    Py_GUARD_MEM(op);
     /* Any changes should be reflected in PyObject_INIT (objimpl.h) */
     Py_TYPE(op) = tp;
     _Py_NewReference(op);
 #ifdef WITH_PARALLEL
-    Py_PX(op) = NULL;
+    Py_PX(op) = (void *)_Py_NOT_PARALLEL;
 #endif
     return op;
 }
@@ -240,12 +243,13 @@ PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
     if (op == NULL)
         return (PyVarObject *) PyErr_NoMemory();
     Px_RETURN(_PxObject_InitVar(op, tp, size))
+    Py_GUARD_MEM(op);
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
     Py_TYPE(op) = tp;
     _Py_NewReference((PyObject *)op);
 #ifdef WITH_PARALLEL
-    Py_PX(op) = NULL;
+    Py_PX(op) = (void *)_Py_NOT_PARALLEL;
 #endif
     return op;
 }
@@ -280,6 +284,7 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
 {
     int ret = 0;
     Py_GUARD
+    Py_GUARD_MEM(op);
     if (PyErr_CheckSignals())
         return -1;
 #ifdef USE_STACKCHECK

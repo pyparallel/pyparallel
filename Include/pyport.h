@@ -152,8 +152,19 @@ Used in:  PY_LONG_LONG
    reduction modulo the prime 2**_PyHASH_BITS - 1. */
 
 #if SIZEOF_VOID_P >= 8
+#ifdef WITH_PARALLEL
+#if SIZEOF_VOID_P > 8
+#error SIZEOF_VOID_P is greater than 8!
+#endif
+#define _Py_DEADBEEF 0xdead1234beef5678
+#define _Px_DEADBEEF 0x9876beef5432dead
+#endif
 #define _PyHASH_BITS 61
 #else
+#ifdef WITH_PARALLEL
+#define _Py_DEADBEEF 0xdeadbeef
+#define _Px_DEADBEEF 0xb33fdead
+#endif
 #define _PyHASH_BITS 31
 #endif
 #define _PyHASH_MODULUS (((size_t)1 << _PyHASH_BITS) - 1)

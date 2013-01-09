@@ -2887,6 +2887,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
         PyErr_BadInternalCall();
         return -1;
     }
+    _GUARD_MEM(v);
+
     /* XXX UNREF/NEWREF interface should be more symmetrical */
     _Py_DEC_REFTOTAL;
     _Py_ForgetReference(v);

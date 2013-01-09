@@ -1210,6 +1210,7 @@ PyObject_Realloc(void *p, size_t nbytes)
     if (p == NULL)
         return PyObject_Malloc(nbytes);
 
+    PxMem_GUARD_AGAINST(p)
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     /*
@@ -1295,6 +1296,7 @@ PyObject_Malloc(size_t n)
 void *
 PyObject_Realloc(void *p, size_t n)
 {
+    _GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, n))
     return PyMem_REALLOC(p, n);
 }
@@ -1302,6 +1304,7 @@ PyObject_Realloc(void *p, size_t n)
 void
 PyObject_Free(void *p)
 {
+    _GUARD_MEM(p);
     Px_RETURN_VOID(_PxMem_Free(p))
     PyMem_FREE(p);
 }
@@ -1538,6 +1541,7 @@ _PyObject_DebugReallocApi(char api, void *p, size_t nbytes)
     if (p == NULL)
         return _PyObject_DebugMallocApi(api, nbytes);
 
+    PxMem_GUARD_AGAINST(p)
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     _PyObject_DebugCheckAddressApi(api, p);

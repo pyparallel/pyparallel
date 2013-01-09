@@ -11,20 +11,26 @@
 #define Px_PTR_ALIGN_SIZE 4U
 #define Px_UINTPTR unsigned long
 #endif
+#define Px_PAGE_SIZE (4096)
 #define Px_MEM_ALIGN_RAW MEMORY_ALLOCATION_ALIGNMENT
 #define Px_MEM_ALIGN_SIZE ((Px_UINTPTR)MEMORY_ALLOCATION_ALIGNMENT)
-#define Px_PAGE_ALIGN_SIZE ((Px_UINTPTR)4096ULL)
+#define Px_PAGE_ALIGN_SIZE ((Px_UINTPTR)Px_PAGE_SIZE)
 #define Px_CACHE_ALIGN_SIZE ((Px_UINTPTR)SYSTEM_CACHE_ALIGNMENT_SIZE)
 
-#define Px_ALIGN(n, a) (                                    \
-    (((Px_UINTPTR)(n)) + (((Px_UINTPTR)(a))-1ULL)) &            \
-    ~(((Px_UINTPTR)(a))-1ULL)                                 \
+#define Px_ALIGN(n, a) (                             \
+    (((Px_UINTPTR)(n)) + (((Px_UINTPTR)(a))-1ULL)) & \
+    ~(((Px_UINTPTR)(a))-1ULL)                        \
 )
 
-#define Px_PTR_ALIGN(n)     (Px_ALIGN((n), Px_PTR_ALIGN_SIZE))
-#define Px_MEM_ALIGN(n)     (Px_ALIGN((n), Px_MEM_ALIGN_SIZE))
-#define Px_CACHE_ALIGN(n)   (Px_ALIGN((n), Px_CACHE_ALIGN_SIZE))
-#define Px_PAGE_ALIGN(n)    (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
+#define Px_ALIGN_DOWN(n, a) (                        \
+    (((Px_UINTPTR)(n)) & (~((Px_UINTPTR)(a))))       \
+)
+
+#define Px_PTR_ALIGN(n)         (Px_ALIGN((n), Px_PTR_ALIGN_SIZE))
+#define Px_MEM_ALIGN(n)         (Px_ALIGN((n), Px_MEM_ALIGN_SIZE))
+#define Px_CACHE_ALIGN(n)       (Px_ALIGN((n), Px_CACHE_ALIGN_SIZE))
+#define Px_PAGE_ALIGN(n)        (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
+#define Px_PAGE_ALIGN_DOWN(n)   (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
 
 #define Px_PTR(p)           ((Px_UINTPTR)(p))
 #define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
@@ -42,7 +48,7 @@
 
 #define Px_MAX(a, b) ((a > b) ? a : b)
 
-#define Px_DEFAULT_HEAP_SIZE (Px_PAGE_ALIGN_SIZE) /* 4KB */
+#define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE) /* 4KB */
 #define Px_MAX_SEM (32768)
 
 #include "pxlist.h"
@@ -96,6 +102,7 @@ typedef struct _PyParallelHeap {
     Heap   *sle_next;
     void   *base;
     void   *next;
+    int     pages;
     size_t  last_alignment;
     size_t  mallocs;
     size_t  deallocs;
@@ -155,6 +162,14 @@ typedef struct _PxState {
     //PxListHead *freelist;
     //PxListHead *singles;
 
+#ifdef Py_DEBUG
+    SRWLOCK     pages_srwlock;
+    PxListHead *pages_incoming;
+    PyObject   *pages_seen;
+    PyObject   *pages_freed;
+    PyObject   *pages_active;
+#endif
+
     Context *ctx_first;
     Context *ctx_last;
     unsigned short ctx_minfree;
@@ -162,7 +177,7 @@ typedef struct _PxState {
     unsigned short ctx_maxfree;
     unsigned short ctx_ttl;
 
-    HANDLE      wakeup;
+    HANDLE wakeup;
 
     CRITICAL_SECTION cs;
 
@@ -222,6 +237,9 @@ typedef struct _PyParallelContext {
     Context *prev;
     Context *next;
 
+    PyObject *ob_first;
+    PyObject *ob_last;
+
     PyThreadState *tstate;
     PyThreadState *pstate;
 
@@ -245,8 +263,8 @@ typedef struct _PyParallelContext {
 
     Stats  stats;
 
-    Objects objects;
-    Objects varobjs;
+    //Objects objects;
+    //Objects varobjs;
 
     char  tbuf[_PX_TMPBUF_SIZE];
     void *tbuf_base;

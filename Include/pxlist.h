@@ -16,6 +16,8 @@ extern "C" {
 #define PxListHead  SLIST_HEADER
 #define PxListEntry SLIST_ENTRY
 
+#define PxListItem_SIZE 64
+
 /* Fill up 64-bytes. */
 #ifndef _WIN64
 typedef struct _PxListItem32 {
@@ -42,7 +44,7 @@ typedef struct _PxListItem64 {
 typedef struct _PxListItem64 PxListItem;
 #endif
 
-C_ASSERT(sizeof(PxListItem) == 64);
+C_ASSERT(sizeof(PxListItem) == PxListItem_SIZE);
 
 static __inline
 PxListItem *

@@ -65,42 +65,48 @@ whose size is determined when the object is allocated.
 #error Py_LIMITED_API is incompatible with Py_DEBUG, Py_TRACE_REFS, and Py_REF_DEBUG
 #endif
 
+#ifndef WITH_PARALLEL
 #ifdef Py_TRACE_REFS
 /* Define pointers to support a doubly-linked list of all live heap objects. */
-#ifndef WITH_PARALLEL
 #define _PyObject_HEAD_EXTRA            \
     struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
 #define _PyObject_EXTRA_INIT 0, 0,
-#else
-#define _PyObject_HEAD_EXTRA            \
-    void *px;                           \
-    struct _object *_ob_next;           \
-    struct _object *_ob_prev;
 
-#define _PyObject_EXTRA_INIT 0, 0, 0,
-#endif
-
-#else
-#ifndef WITH_PARALLEL
-#define _PyObject_HEAD_EXTRA            \
-    void *px;                           \
-#define _PyObject_EXTRA_INIT 0,
-#else
+#else /* Py_TRACE_REFS */
 #define _PyObject_HEAD_EXTRA
 #define _PyObject_EXTRA_INIT
-#endif
-#endif
+#endif /* Py_TRACE_REFS */
+#else /* !WITH_PARALLEL */
+/* We use _ob_next/_ob_prev in parallel contexts, so if we're WITH_PARALLEL,
+ * we always include these two pointers, regardless of Py_TRACE_REFS. */
+
+#define _Py_NOT_PARALLEL ((void *)_Py_DEADBEEF)
+#define _Py_IS_PARALLEL  ((void *)_Px_DEADBEEF)
+
+#define _PyObject_HEAD_EXTRA              \
+    void *is_px;                          \
+    void *px;                             \
+    struct _object *_ob_next;             \
+    struct _object *_ob_prev;
+
+#define _PyObject_EXTRA_INIT              \
+    (void *)_Py_NOT_PARALLEL,             \
+    (void *)_Py_NOT_PARALLEL,             \
+    (struct _object *)_Py_NOT_PARALLEL,   \
+    (struct _object *)_Py_NOT_PARALLEL,
+#endif /* WITH_PARALLEL */
+
 
 /* PyObject_HEAD defines the initial segment of every PyObject. */
 #define PyObject_HEAD                   PyObject ob_base;
 
-#define PyObject_HEAD_INIT(type)        \
-    { _PyObject_EXTRA_INIT              \
+#define PyObject_HEAD_INIT(type)          \
+    { _PyObject_EXTRA_INIT                \
     1, type },
 
-#define PyVarObject_HEAD_INIT(type, size)       \
+#define PyVarObject_HEAD_INIT(type, size) \
     { PyObject_HEAD_INIT(type) size },
 
 /* PyObject_VAR_HEAD defines the initial segment of all variable-size
@@ -131,11 +137,6 @@ typedef struct {
 #define Py_REFCNT(ob)           (((PyObject*)(ob))->ob_refcnt)
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
-#ifdef WITH_PARALLEL
-#define Py_PX(ob)               ((((PyObject*)(ob))->px))
-#define Py_ISPX(ob) \
-    ((Py_PXCTX) || (ob != NULL && ((((PyObject*)(ob))->px) != NULL)))
-#endif
 
 /********************* String Literals ****************************************/
 /* This structure helps managing static strings. The basic usage goes like this:

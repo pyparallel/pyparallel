@@ -25,6 +25,13 @@ get_main_thread_state(void)
     return (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
 }
 
+__inline
+PxState *
+PXSTATE(void)
+{
+    return (PxState *)get_main_thread_state()->px;
+}
+
 void
 _PyParallel_DisassociateCurrentThreadFromCallback(void)
 {
@@ -46,6 +53,659 @@ _PyParallel_BlockingCall(void)
     _PyParallel_DisassociateCurrentThreadFromCallback();
 }
 
+
+__inline
+void *
+_PyHeap_MemAlignedMalloc(Context *c, size_t n)
+{
+    return _PyHeap_Malloc(c, n, Px_MEM_ALIGN_SIZE);
+}
+
+__inline
+PxListItem *
+_PyHeap_NewListItem(Context *c)
+{
+    return (PxListItem *)_PyHeap_MemAlignedMalloc(c, sizeof(PxListItem));
+}
+
+int
+_Py_PXCTX(void)
+{
+    int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
+    assert(Py_MainThreadId > 0);
+    assert(Py_MainProcessId != -1);
+    /*assert(Py_ParallelContextsEnabled != -1);
+    if (Py_ParallelContextsEnabled)
+        assert(active);
+    else
+        assert(!active);*/
+    return active;
+}
+
+#ifdef Py_DEBUG
+void
+_PxState_InitPages(PxState *px)
+{
+    Py_GUARD
+
+    InitializeSRWLock(&px->pages_srwlock);
+
+    px->pages_seen      = PyDict_New();
+    px->pages_freed     = PyDict_New();
+    px->pages_active    = PyDict_New();
+    px->pages_incoming  = PxList_New();
+
+    assert(
+        px->pages_seen       &&
+        px->pages_freed     &&
+        px->pages_active    &&
+        px->pages_incoming
+    );
+}
+
+__inline
+int
+_PxPages_Contains(PxState *px, PyObject *dict, PyObject *ptr,  int lock)
+{
+    int result;
+
+    if (lock)
+        AcquireSRWLockShared(&px->pages_srwlock);
+
+    result = PyDict_Contains(dict, ptr);
+
+    if (lock)
+        ReleaseSRWLockShared(&px->pages_srwlock);
+
+    assert(result != -1);
+    return result;
+}
+
+#define _PxPages_FL_NOT_FOUND  (0UL)
+#define _PxPages_FL_SEEN       (1UL >> 1)
+#define _PxPages_FL_FREED      (1UL >> 2)
+#define _PxPages_FL_ACTIVE     (1UL >> 3)
+
+#define _PxPages_SEEN(p)        \
+    (!p ? 0 : PyDict_Contains(px->pages_seen, p) == 1)
+
+#define _PxPages_NEVER_SEEN(p)  (!p ? 1 : !_PxPages_SEEN(p))
+
+#define _PxPages_IS_FREED(p)    \
+    (!p ? 0 : (PyDict_Contains(px->pages_freed, p) == 1)
+
+#define _PxPages_IS_ACTIVE(p)   \
+    (!p ? 0 : PyDict_Contains(px->pages_active, p) == 1)
+
+
+int
+_PxPages_Find(PxState *px, void *m)
+{
+    PyObject    *ptr;
+    Px_UINTPTR   a;
+    Py_ssize_t   i = 0;
+    int flags;
+
+    assert(m);
+    assert(Px_PTR(m) == Px_PTR_ALIGN(m));
+
+    a = Px_PAGE_ALIGN_DOWN(m);
+    assert(a == Px_PAGE_ALIGN(a));
+
+    ptr = PyLong_FromVoidPtr((void *)a);
+
+    flags = 0;
+
+    AcquireSRWLockShared(&px->pages_srwlock);
+
+    if (_PxPages_Contains(px, px->pages_seen, ptr, 0))
+        flags = _PxPages_FL_SEEN;
+
+    if (_PxPages_Contains(px, px->pages_active, ptr, 0)) {
+        assert((flags & _PxPages_FL_SEEN));
+        flags |= _PxPages_FL_ACTIVE;
+    }
+
+    if (_PxPages_Contains(px, px->pages_freed, ptr, 0)) {
+        assert((flags & _PxPages_FL_SEEN));
+        assert(!(flags & _PxPages_FL_ACTIVE));
+        flags |= _PxPages_FL_FREED;
+    }
+
+    ReleaseSRWLockShared(&px->pages_srwlock);
+
+    return flags;
+}
+
+__inline
+int
+_PxPages_NotPxPointer(PxState *px, void *m)
+{
+    return (!m ? 1 : (_PxPages_Find(px, m) == _PxPages_FL_NOT_FOUND));
+}
+
+__inline
+int
+_PxPages_IsActivePxPointer(PxState *px, void *m)
+{
+    return (!m ? 0 : ((_PxPages_Find(px, m) & _PxPages_FL_ACTIVE)));
+}
+
+__inline
+int
+_PxPages_NeverSeen(PxState *px, void *m)
+{
+    return (!m ? 0 : !((_PxPages_Find(px, m) & _PxPages_FL_SEEN)));
+}
+
+__inline
+void
+_PxWarn_RegisteringFreedHeap(int i, void *b, void *p, int s)
+{
+    PySys_FormatStderr(
+        "WARNING! registering previously freed heap "
+        "(i: %d, h->base: 0x%llx, base: 0x%llx, seen: %d)\n",
+        i, b, p, s
+    );
+}
+
+void
+_PxState_RegisterHeap(PxState *px, Heap *h, Context *c)
+{
+    int i;
+    Py_GUARD
+
+    AcquireSRWLockExclusive(&px->pages_srwlock);
+
+    assert((h->size % Px_PAGE_SIZE) == 0);
+
+    for (i = 0; i < h->pages; i++) {
+        PyObject *base;
+        PyObject *value;
+        void     *baseptr;
+        int       result;
+        int       times_seen;
+        int       is_freed;
+        int       is_active;
+
+        baseptr = Px_PTR_ADD(h->base, (i * Px_PAGE_SIZE));
+        base = PyLong_FromVoidPtr(baseptr);
+        assert(base);
+
+        result = PyDict_Contains(px->pages_seen, base);
+        assert(result != -1);
+        if (result == 1) {
+            PyLongObject *l;
+            value = PyDict_GetItem(px->pages_seen, base);
+            assert(value);
+            assert(PyLong_Check(value));
+            l = (PyLongObject *)value;
+            assert(Py_SIZE(l) == 1);
+            times_seen = l->ob_digit[0];
+            l->ob_digit[0] += 1;
+        } else {
+            times_seen = 0;
+        }
+
+        result = PyDict_Contains(px->pages_freed, base);
+        assert(result != -1);
+        is_freed = (result == 1);
+
+        result = PyDict_Contains(px->pages_active, base);
+        assert(result != -1);
+        is_active = (result == 1);
+
+        if (is_freed) {
+            assert(times_seen >= 1);
+            assert(!is_active);
+            _PxWarn_RegisteringFreedHeap(i, h->base, baseptr, times_seen);
+            result = PyDict_DelItem(px->pages_freed, base);
+            value = PyDict_GetItem(px->pages_freed, base);
+            assert(value);
+        }
+
+        if (is_active) {
+            assert(times_seen >= 1);
+            assert(0 == (void *)"re-registering active heap!");
+        }
+
+        result = PyDict_SetItem(px->pages_active, base, Py_None);
+        assert(result == 0);
+
+        if (times_seen == 0)
+            result = PyDict_SetItem(px->pages_seen, base, PyLong_FromLong(1));
+    }
+    ReleaseSRWLockExclusive(&px->pages_srwlock);
+}
+
+void
+_PxContext_RegisterHeap(Context *c, Heap *h)
+{
+    if (!Py_PXCTX) {
+        _PxState_RegisterHeap(c->px, h, c);
+    } else {
+        int result;
+        PxListItem *item;
+
+        assert(h->remaining >= PxListItem_SIZE);
+
+        _PyParallel_DisassociateCurrentThreadFromCallback();
+        item = (PxListItem *)_PyHeap_NewListItem(c);
+        item->from = c;
+        PxList_TimestampItem(item);
+        item->p1 = h;
+        item->p2 = CreateEvent(NULL, FALSE, FALSE, NULL);
+        PxList_Push(c->px->pages_incoming, item);
+        SetEvent(c->px->wakeup);
+
+        result = WaitForSingleObject(item->p2, INFINITE);
+        assert(result == WAIT_OBJECT_0);
+    }
+}
+
+void
+_PxContext_UnregisterHeaps(Context *c)
+{
+    Heap    *h;
+    Stats   *s;
+    PxState *px;
+    int      i, heap_count;
+
+    Py_GUARD
+
+    px =  c->px;
+    s  = &c->stats;
+
+    AcquireSRWLockExclusive(&px->pages_srwlock);
+
+    h = &c->heap;
+    while (h) {
+        heap_count++;
+
+        assert((h->size % Px_PAGE_SIZE) == 0);
+
+        for (i = 0; i < h->pages; i++) {
+            void     *ptr;
+            PyObject *base;
+            PyObject *value;
+            int       result;
+            int       times_seen;
+            int       is_freed;
+            int       is_active;
+
+            ptr = Px_PTR_ADD(h->base, (i * Px_PAGE_SIZE));
+            assert(Px_PTR(ptr) == Px_PTR_ALIGN(ptr));
+            assert(Px_PTR(ptr) == Px_PAGE_ALIGN(ptr));
+
+            base = PyLong_FromVoidPtr(ptr);
+            assert(base);
+
+            assert(PyDict_Contains(px->pages_active, base) == 1);
+            assert(PyDict_Contains(px->pages_freed,  base) == 0);
+
+            assert(PyDict_DelItem(px->pages_active, base) == 0);
+            assert(PyDict_SetItem(px->pages_freed, base, Py_None) == 0);
+
+            Py_DECREF(base);
+        }
+
+        h = h->sle_next;
+    }
+    ReleaseSRWLockExclusive(&px->pages_srwlock);
+    assert(heap_count == s->heaps);
+}
+
+#define _MEMSIG_INVALID     (0UL)
+#define _MEMSIG_NULL        (1UL)
+#define _MEMSIG_UNKNOWN     (1UL << 2)
+#define _MEMSIG_PY          (1UL << 3)
+#define _MEMSIG_PY_PARTIAL  (1UL << 4)
+#define _MEMSIG_PX          (1UL << 5)
+#define _MEMSIG_PX_PARTIAL  (1UL << 6)
+#define _MEMSIG_CORRUPT     (1UL << 7)
+
+unsigned long
+_Px_MemorySignature(void *m)
+{
+    void *p, *pp[4], *p1, *p2, *p3, *p4;
+    PyObject *next;
+    PyObject *prev;
+    PxState  *px;
+    PyObject *rr[4], *r1, *r2, *r3, *r4;
+    int signature;
+    int i  = 0;
+    int px = 0;
+    int py = 0;
+    int un = 0;
+    int px_seen = 0;
+
+    int is_px;
+    int is_py;
+    int is_corrupt;
+    int is_unknown;
+
+    px = PXSTATE();
+
+    p1 = p = m;
+    p2 = ++p;
+    p3 = ++p;
+    p4 = ++p;
+
+    pp[0] = p1;
+    pp[1] = p2;
+    pp[2] = p3;
+    pp[3] = p4;
+
+    r1 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p1));
+    r2 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p2));
+    r3 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p3));
+    r4 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p4));
+
+    rr[0] = r1;
+    rr[1] = r2;
+    rr[2] = r3;
+    rr[3] = r4;
+
+    is_py = (p1 == _Py_NOT_PARALLEL && p2 == _Py_NOT_PARALLEL);
+
+    if (is_py) {
+        assert(_PxPages_NEVER_SEEN(r3));
+        assert(_PxPages_NEVER_SEEN(r4));
+    }
+
+    is_px = (
+        p1 == _Py_IS_PARALLEL   &&
+        _PxPages_IS_ACTIVE(r2)  && (
+            (
+                (
+                    (next == NULL && (((PxObject *)p2)->ctx->ob_last == m))   ||
+                    (next != NULL && next->is_px == _Py_IS_PARALLEL)
+                ) && (
+                    (prev == NULL && (((PxObject *)p2)->ctx->ob_first == m))  ||
+                    (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
+                )
+            ) && (
+                (next == NULL || _PxPages_IS_ACTIVE(r3)) &&
+                (prev == NULL || _PxPages_IS_ACTIVE(r4))
+            )
+        )
+    );
+
+    if (!is_px) {
+        assert(p1 != _Py_IS_PARALLEL);
+        assert(_PxPages_NEVER_SEEN(r2));
+        assert(_PxPages_NEVER_SEEN(r3));
+        assert(_PxPages_NEVER_SEEN(r4));
+    }
+
+    for (i = 0; i < 4; i++) {
+        if (pp[i] == _Py_NOT_PARALLEL)
+            py++;
+
+        if (pp[i] == _Py_IS_PARALLEL)
+            px++;
+
+        if (_PxPages_SEEN(rr[i]))
+            px_seen++;
+    }
+
+    is_unknown = (py == 0 && px == 0 && px_seen == 0);
+
+    is_corrupt = (
+        (!is_px && !is_py) && (
+            (px_seen != 0)                  ||
+            (px > 0)                        ||
+            (py > 0 && py < 4)              ||
+            (py == 1 && p2 == NULL)         ||
+            (p2 == _Py_IS_PARALLEL)         ||
+            (p1 == _Py_IS_PARALLEL)
+        )
+    );
+
+    assert(is_py || is_px || is_unknown || is_corrupt);
+
+    if (is_py) {
+        assert(!is_px);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_px) {
+        assert(!is_py);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_corrupt) {
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_unknown);
+        signature = _MEMSIG_CORRUPT;
+    } else {
+        assert(is_unknown);
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_corrupt);
+        signature = _MEMSIG_UNKNOWN;
+    }
+
+    Py_DECREF(r1);
+    Py_DECREF(r2);
+    Py_DECREF(r3);
+    Py_DECREF(r4);
+
+    return signature;
+}
+
+/*
+unsigned long
+_Px_ObjectSignature(void *m)
+{
+    void *p, *pp[4], *p1, *p2, *p3, *p4;
+    PxObject *px;
+    PyObject *next;
+    PyObject *prev;
+    PxState  *px;
+    PyObject *r1, *r2, *r3, *r4;
+    int signature;
+    int i  = 0;
+    int px = 0;
+    int py = 0;
+    int un = 0;
+
+    int is_px_obj;
+    int is_px_mem;
+    int is_py_obj;
+    int is_py_mem;
+    int is_corrupt;
+    int is_unknown;
+
+    px = PXSTATE();
+
+    p1 = p = m;
+    p2 = ++p;
+    p3 = ++p;
+    p4 = ++p;
+
+    pp[0] = p1;
+    pp[1] = p2;
+    pp[2] = p3;
+    pp[3] = p4;
+
+    r1 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p1));
+    r2 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p2));
+    r3 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p3));
+    r4 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p4));
+
+    px   = (PxObject *)p2;
+    next = (PyObject *)p3;
+    prev = (PyObject *)p4;
+
+    is_py = (
+        p1 == _Py_NOT_PARALLEL &&
+        p2 == _Py_NOT_PARALLEL &&
+        p3 == _Py_NOT_PARALLEL &&
+        p4 == _Py_NOT_PARALLEL
+    );
+
+    is_px_obj = (
+        p1 == _Py_IS_PARALLEL &&
+        p2 != NULL &&
+        p2 != _Py_IS_PARALLEL &&
+        p2 != _Py_NOT_PARALLEL &&
+        px->ctx != NULL && (
+            (next == NULL && ((void *)px->ctx->ob_last == m))   ||
+            (next != NULL && next->is_px == _Py_IS_PARALLEL)
+        ) && (
+            (prev == NULL && ((void *)px->ctx->ob_first == m))  ||
+            (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
+        )
+    );
+
+    for (i = 0; i < 4; i++) {
+        if (pp[i] == _Py_NOT_PARALLEL)
+            py++;
+
+        if (pp[i] == _Py_IS_PARALLEL)
+            px++;
+    }
+
+    is_corrupt = (
+        (px > 0)                        ||
+        (py > 0 && py < 4)              ||
+        (py == 1 && p2 == NULL)         ||
+        (p2 == _Py_IS_PARALLEL)         ||
+        (p1 == _Py_IS_PARALLEL && (
+            (px->ctx == NULL)           ||
+            (px->ctx != NULL && (
+                (next == NULL && ((void *)px->ctx->ob_last != m))   ||
+                (next != NULL && next->is_px != _Py_IS_PARALLEL)
+            ) && (
+                (prev == NULL && ((void *)px->ctx->ob_first != m))  ||
+                (prev != NULL && prev->is_px != _Py_IS_PARALLEL)
+            ))
+        ))
+    );
+
+    is_unknown = (
+        py == 0 && px == 0
+    );
+
+    if (is_py) {
+        assert(!is_px);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_px) {
+        assert(!is_py);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_corrupt) {
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_unknown);
+        signature = _MEMSIG_CORRUPT;
+    } else {
+        assert(is_unknown);
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_corrupt);
+        signature = _MEMSIG_UNKNOWN;
+    }
+
+    return signature;
+}
+*/
+
+/*
+#define _PYMEM_GUARD_AGAINST    (1UL <<  4)
+#define _PXMEM_GUARD_AGAINST    (1UL <<  5)
+#define _PYOBJ_GUARD            (1UL <<  6)
+#define _PXOBJ_GUARD            (1UL <<  7)
+#define _PYOBJ_GUARD_AGAINST    (1UL <<  6)
+#define _PXOBJ_GUARD_AGAINST    (1UL <<  7)
+*/
+
+int
+_PyParallel_Guard(const char *function,
+                  const char *filename,
+                  int lineno,
+                  void *m,
+                  unsigned int flags)
+{
+    unsigned long s;
+
+    assert(_Py_UINT32_BITS_SET(flags) == 1);
+
+    if (m) {
+        s = _Px_MemorySignature(m);
+        assert(!(s & _MEMSIG_CORRUPT));
+    }
+
+    if (flags & _PX_TEST) {
+        if (!m)
+            return 0;
+
+        assert((s & _MEMSIG_PY) || (s & _MEMSIG_PX));
+
+        if (Py_PXCTX || (s & _MEMSIG_PX))
+            return 1;
+        else
+            return 0;
+
+    } else if (flags & _PY_TEST) {
+        if (!m)
+            return 0;
+
+        assert((s & _MEMSIG_PY) || (s & _MEMSIG_PX));
+
+        return ((s & _MEMSIG_PY) ? 1 : 0);
+
+    } else {
+        assert(m);
+
+        if (flags & _PYMEM_GUARD)
+            assert(s & _MEMSIG_PY);
+
+        else if (flags & _PXMEM_GUARD)
+            assert(s & _MEMSIG_PX);
+
+        else
+            assert(0 == (void *)"unexpected code path");
+
+        return 0;
+    }
+
+    assert(0 == (void *)"unexpected code path");
+}
+
+void
+_PyParallel_ContextGuardFailure(const char *function,
+                                const char *filename,
+                                int lineno,
+                                int was_px_ctx)
+{
+    int err;
+    char buf[128], *fmt;
+    memset((void *)buf, 0, sizeof(buf));
+
+    if (was_px_ctx)
+        fmt = "%s called outside of parallel context (%s:%d)";
+    else
+        fmt = "%s called from within parallel context (%s:%d)";
+
+    err = snprintf(buf, sizeof(buf), fmt, function, filename, lineno);
+    if (err == -1)
+        Py_FatalError("_PyParallel_ContextGuardFailure: snprintf failed");
+    else
+        Py_FatalError(buf);
+}
+
+
+#endif
+
+#define Py_PX(ob)   (_Py_PX((PyObject *)ob))
+#define Py_ISPX(ob) (_Py_ISPX((PyObject *)ob)
+
 #define Px_SIZEOF_HEAP        Px_CACHE_ALIGN(sizeof(Heap))
 #define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
 #define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
@@ -65,6 +725,8 @@ Heap_Init(Context *c, size_t n)
 
     size = Px_PAGE_ALIGN(size);
 
+    assert((size % Px_PAGE_SIZE) == 0);
+
     if (!c->h)
         /* First init. */
         h = &(c->heap);
@@ -74,6 +736,7 @@ Heap_Init(Context *c, size_t n)
     }
 
     assert(h);
+    h->pages = size / Px_PAGE_SIZE;
 
     h->size = size;
     flags = HEAP_ZERO_MEMORY;
@@ -87,6 +750,9 @@ Heap_Init(Context *c, size_t n)
     c->h = h;
     h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), Px_SIZEOF_HEAP);
     assert(h->sle_next);
+#ifdef Py_DEBUG
+    _PxContext_RegisterHeap(c, h);
+#endif
     return h;
 }
 
@@ -225,13 +891,6 @@ begin:
     goto begin;
 }
 
-__inline
-void *
-_PyHeap_MemAlignedMalloc(Context *c, size_t n)
-{
-    return _PyHeap_Malloc(c, n, Px_MEM_ALIGN_SIZE);
-}
-
 void *
 Heap_Malloc(size_t n)
 {
@@ -244,6 +903,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
     void  *r;
     Heap  *h = c->h;
     Stats *s = &c->stats;
+    PyMem_GUARD_AGAINST(p)
     r = _PyHeap_Malloc(c, n, 0);
     if (!r)
         return NULL;
@@ -256,6 +916,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
 void *
 Heap_Realloc(void *p, size_t n)
 {
+    PyMem_GUARD_AGAINST(p)
     return _PyHeap_Realloc(ctx, p, n);
 }
 
@@ -264,6 +925,7 @@ _PyHeap_Free(Context *c, void *p)
 {
     Heap  *h = c->h;
     Stats *s = &c->stats;
+    PyMem_GUARD_AGAINST(p)
 
     h->frees++;
     s->frees++;
@@ -280,6 +942,7 @@ _PyHeap_FastFree(Heap *h, Stats *s, void *p)
 void
 Heap_Free(void *p)
 {
+    PyMem_GUARD_AGAINST(p)
     _PyHeap_Free(ctx, p);
 }
 
@@ -294,13 +957,6 @@ _PyHeap_NewList(Context *c)
         InitializeSListHead(l);
 
     return l;
-}
-
-__inline
-PxListItem *
-_PyHeap_NewListItem(Context *c)
-{
-    return (PxListItem *)_PyHeap_MemAlignedMalloc(c, sizeof(PxListItem));
 }
 
 #define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
@@ -336,6 +992,8 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     if (!p)
         return (PyObject *)_PyHeap_Malloc(c, total, 0);
 
+    Px_GUARD_MEM(p);
+
     Py_TYPE(p)   = tp;
     Py_REFCNT(p) = 1;
 
@@ -355,6 +1013,22 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         Py_SIZE(p) = nitems;
         append_object(&c->varobjs, o);
         (c->stats.varobjs)++;
+    }
+
+    if (!c->ob_first) {
+        c->ob_first = p;
+        c->ob_last  = p;
+        p->_ob_next = NULL;
+        p->_ob_prev = NULL;
+    } else {
+        PyObject *last;
+        assert(!c->ob_first->prev);
+        assert(!c->ob_last->next);
+        last = c->ob_last;
+        last->_ob_next = p;
+        p->_ob_prev = last;
+        p->_ob_next = NULL;
+        c->ob_last = p;
     }
 
     return p;
@@ -395,8 +1069,12 @@ __inline
 PyVarObject *
 VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
 {
-    PyTypeObject *tp = Py_TYPE(v);
-    PyVarObject  *r = (PyVarObject *)init_object(c, NULL, tp, nitems);
+    PyTypeObject *tp;
+    PyVarObject  *r;
+    Px_GUARD_MEM(v);
+
+    tp = Py_TYPE(v);
+    r = (PyVarObject *)init_object(c, NULL, tp, nitems);
 
     if (!r)
         return NULL;
@@ -410,6 +1088,92 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
     v = (PyObject *)r;
     return r;
 }
+
+__inline
+PyObject *
+_old_Object_Init(PyObject *op, PyTypeObject *tp, Context *c)
+{
+    Stats  *s;
+    Object *o;
+
+/* Make sure we're not called for PyVarObjects... */
+#ifdef Py_DEBUG
+    assert(tp->tp_itemsize == 0);
+#endif
+
+    s = &c->stats;
+    o = (Object *)_PyHeap_Malloc(c, sizeof(Object), 0);
+
+    Py_TYPE(op) = tp;
+    Py_REFCNT(op) = 1;
+    Py_PX(op) = c;
+
+    o->op = op;
+    append_object(&c->objects, o);
+    s->objects++;
+
+    return op;
+}
+
+__inline
+PyObject *
+_old_Object_New(PyTypeObject *tp, Context *c)
+{
+    return Object_Init((PyObject *)Heap_Malloc(_PyObject_SIZE(tp)), tp, c);
+}
+
+/* VarObjects (PyVarObjects) */
+__inline
+PyVarObject *
+_old_VarObject_Init(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size, Context *c)
+{
+    Stats  *s;
+    Object *o;
+
+/* Make sure we're not called for PyObjects... */
+#ifdef Py_DEBUG
+    assert(tp->tp_itemsize > 0);
+#endif
+
+    s = &c->stats;
+    o = (Object *)_PyHeap_Malloc(c, sizeof(Object), 0);
+
+    Py_SIZE(op) = size;
+    Py_TYPE(op) = tp;
+    Py_REFCNT(op) = 1;
+    Py_PX(op) = c;
+    o->op = (PyObject *)op;
+    append_object(&c->varobjs, o);
+    s->varobjs++;
+
+    return op;
+}
+
+__inline
+PyVarObject *
+_old_VarObject_New(PyTypeObject *tp, Py_ssize_t nitems, Context *c)
+{
+    register const size_t sz = _PyObject_VAR_SIZE(tp, nitems);
+    register PyVarObject *v = (PyVarObject *)_PyHeap_Malloc(c, sz, 0);
+    return VarObject_Init(v, tp, nitems, c);
+}
+
+__inline
+PyVarObject *
+_old_VarObject_Resize(PyObject *op, Py_ssize_t n, Context *c)
+{
+    register const int was_resize = 1;
+    register const size_t sz = _PyObject_VAR_SIZE(Py_TYPE(op), n);
+    PyVarObject *r = (PyVarObject *)_PyHeap_Malloc(c, sz, 0);
+    if (!r)
+        return NULL;
+    memcpy(r, op, n);
+    c->h->resizes++;
+    c->stats.resizes++;
+    op = (PyObject *)r;
+    return r;
+}
+
 
 __inline
 PyObject *
@@ -540,6 +1304,10 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->wakeup)
         goto free_finished;
 
+#ifdef Py_DEBUG
+    _PxState_InitPages(px);
+#endif
+
     InitializeCriticalSectionAndSpinCount(&(px->cs), 12);
 
     tstate->px = px;
@@ -548,6 +1316,11 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     px->ctx_ttl = 1;
 
     goto done;
+
+/*
+free_wakeup:
+    CloseHandle(px->wakeup);
+*/
 
 free_finished:
     PxList_FreeListHead(px->finished);
@@ -816,41 +1589,65 @@ _PyParallel_DisableParallelContexts(void)
 }
 
 void
-_PyParallel_ContextGuardFailure(const char *function,
-                                const char *filename,
-                                int lineno,
-                                int was_px_ctx)
-{
-    int err;
-    char buf[128], *fmt;
-    memset((void *)buf, 0, sizeof(buf));
-
-    if (was_px_ctx)
-        fmt = "%s called outside of parallel context (%s:%d)";
-    else
-        fmt = "%s called from within parallel context (%s:%d)";
-
-    err = snprintf(buf, sizeof(buf), fmt, function, filename, lineno);
-    if (err == -1)
-        Py_FatalError("_PyParallel_ContextGuardFailure: snprintf failed");
-    else
-        Py_FatalError(buf);
-}
-
-void
 _PyParallel_NewThreadState(PyThreadState *tstate)
 {
     return;
 }
 
 /* mod _parallel */
-static
 PyObject *
 _parallel_map(PyObject *self, PyObject *args)
 {
-    return NULL;;
+    return NULL;
 }
 
+PyObject *
+_parallel_seen_pages(PyObject *self, PyObject *args)
+{
+    PxState  *px;
+    PyObject *result;
+    Py_GUARD
+
+    px = PXSTATE();
+
+    /* This needs to be a deepcopy ASAP. */
+    AcquireSRWLockShared(&px->pages_srwlock);
+    result = PyDictProxy_New(PyDict_Copy(px->pages_seen));
+    ReleaseSRWLockShared(&px->pages_srwlock);
+    return result;
+}
+
+PyObject *
+_parallel_freed_pages(PyObject *self, PyObject *args)
+{
+    PxState  *px;
+    PyObject *result;
+    Py_GUARD
+
+    px = PXSTATE();
+
+    /* This needs to be a deepcopy ASAP. */
+    AcquireSRWLockShared(&px->pages_srwlock);
+    result = PyDictProxy_New(PyDict_Copy(px->pages_freed));
+    ReleaseSRWLockShared(&px->pages_srwlock);
+    return result;
+}
+
+PyObject *
+_parallel_active_pages(PyObject *self, PyObject *args)
+{
+    PxState  *px;
+    PyObject *result;
+    Py_GUARD
+
+    px = PXSTATE();
+
+    /* This needs to be a deepcopy ASAP. */
+    AcquireSRWLockShared(&px->pages_srwlock);
+    result = PyDictProxy_New(PyDict_Copy(px->pages_active));
+    ReleaseSRWLockShared(&px->pages_srwlock);
+    return result;
+}
 
 PyDoc_STRVAR(_parallel_doc,
 "_parallel module.\n\
@@ -865,6 +1662,10 @@ PyDoc_STRVAR(_parallel_map_doc,
 Calls ``callable`` with each item in ``iterable``.\n\
 Returns a list of results.");
 
+PyDoc_STRVAR(_parallel_seen_pages_doc, "XXX TODO\n");
+PyDoc_STRVAR(_parallel_freed_pages_doc, "XXX TODO\n");
+PyDoc_STRVAR(_parallel_active_pages_doc, "XXX TODO\n");
+
 #define _METHOD(m, n, a) {#n, (PyCFunction)##m##_##n##, a, m##_##n##_doc }
 #define _PARALLEL(n, a) _METHOD(_parallel, n, a)
 #define _PARALLEL_N(n) _METHOD(_parallel, n, METH_NOARGS)
@@ -872,6 +1673,9 @@ Returns a list of results.");
 #define _PARALLEL_V(n) _METHOD(_parallel, n, METH_VARARGS)
 static PyMethodDef _parallel_methods[] = {
     _PARALLEL_V(map),
+    _PARALLEL_N(seen_pages),
+    _PARALLEL_N(freed_pages),
+    _PARALLEL_N(active_pages),
 
     { NULL, NULL } /* sentinel */
 };
@@ -933,13 +1737,6 @@ _is_active_ex(void)
 
     LeaveCriticalSection(&(px->cs));
     return rv;
-}
-
-__inline
-PxState *
-PXSTATE(void)
-{
-    return (PxState *)get_main_thread_state()->px;
 }
 
 __inline
@@ -1081,6 +1878,10 @@ _PxState_PurgeContexts(PxState *px)
         if (next)
             next->prev = prev;
 
+#ifdef Py_DEBUG
+        _PxState_UnregisterHeaps(c);
+#endif
+
         HeapDestroy(c->heap_handle);
         free(c);
         destroyed++;
@@ -1178,6 +1979,13 @@ _async_run_once(PyObject *self, PyObject *args)
             PxList_SeverFromNext(item)
         );
     }
+
+#ifdef Py_DEBUG
+    while (item = PxList_Pop(px->pages_incoming)) {
+        _PxState_RegisterHeap(px, (Heap *)item->p1, (Context *)item->from);
+        SetEvent((HANDLE)item->p2);
+    }
+#endif
 
 start:
     /* First error wins. */
@@ -1313,8 +2121,10 @@ start:
             Py_RETURN_NONE;
         case WAIT_ABANDONED:
             PyErr_SetString(PyExc_SystemError, "wait abandoned");
+            break;
         case WAIT_FAILED:
             PyErr_SetFromWindowsErr(0);
+            break;
     }
     return NULL;
 }
@@ -1722,20 +2532,29 @@ _PyParallel_GetThreadState(void)
 void
 _Px_NewReference(PyObject *op)
 {
-    //op->ob_refcnt = 1;
-    //Py_PX(op)->ctx = ctx;
+    PyObject_GUARD_AGAINST(op)
+    PxObject_GUARD(op)
+    Px_GUARD
+    op->ob_refcnt = 1;
+    Py_PX(op)->ctx = ctx;
     ctx->stats.newrefs++;
 }
 
 void
 _Px_ForgetReference(PyObject *op)
 {
+    Px_GUARD_MEM(op);
+    Px_GUARD
+    assert(Py_PX(op)->ctx == ctx);
     ctx->stats.forgetrefs++;
 }
 
 void
 _Px_Dealloc(PyObject *op)
 {
+    Px_GUARD_MEM(op);
+    Px_GUARD
+    assert(Py_PX(op)->ctx == ctx);
     ctx->h->deallocs++;
     ctx->stats.deallocs++;
 }
@@ -1774,18 +2593,23 @@ _PxObject_Resize(PyVarObject *op, Py_ssize_t nitems)
 void *
 _PxMem_Malloc(size_t n)
 {
+    Px_GUARD
     return Heap_Malloc(n);
 }
 
 void *
 _PxMem_Realloc(void *p, size_t n)
 {
+    Px_GUARD_MEM(p);
+    Px_GUARD
     return Heap_Realloc(p, n);
 }
 
 void
 _PxMem_Free(void *p)
 {
+    Px_GUARD_MEM(p);
+    Px_GUARD
     Heap_Free(p);
 }
 

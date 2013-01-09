@@ -15,35 +15,6 @@ PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
-/*
-PyAPI_FUNC(PxList *)        PxList_New(void);
-
-PyAPI_FUNC(void)            PxList_Clear(PxListHead *);
-PyAPI_FUNC(void)            PxList_Delete(PxListHead *);
-PyAPI_FUNC(void)            PxList_FreeList(PxListHead *);
-
-PyAPI_FUNC(PxListItem *)    PxList_Push(PxListHead *head, PxListItem *item);
-PyAPI_FUNC(PxListItem *)    PxList_Pop(PxListHead *head);
-
-PyAPI_FUNC(void)            PxList_DeleteItem(PxListItem *item);
-PyAPI_FUNC(void)            PxList_FreeListItem(PxListItem *item);
-
-PyAPI_FUNC(PxListItem *)    PxList_Flush(PxListHead *head);
-PyAPI_FUNC(unsigned short)  PxList_QueryDepth(PxListHead *head);
-
-PyAPI_FUNC(PxListItem *)    PxList_PushList(PxListHead  *head,
-                                            PxListItem  *start,
-                                            PxListItem  *end,
-                                            Py_ssize_t   count);
-*/
-
-/*
- * _PyParallel_Init() can be called safely multiple times.  It *must* be
- * called as early as possible, before any object allocations (and thus,
- * Py_INCREF/DECREF calls).  It is currently called in two places, Py_Main
- * and _PyInitializeEx_Private().  The latter is necessary for code that
- * embeds the interpreter (as Py_Main (probably) won't be called).
- */
 PyAPI_FUNC(void) _PyParallel_Init(void);
 PyAPI_FUNC(void) _PyParallel_BlockingCall(void);
 
@@ -70,27 +41,37 @@ PyAPI_FUNC(void) _PyParallel_ContextGuardFailure(const char *function,
                                                  int lineno,
                                                  int was_px_ctx);
 
+PyAPI_FUNC(int) _PyParallel_Guard(const char *function,
+                                  const char *filename,
+                                  int lineno,
+                                  void *m,
+                                  unsigned int flags);
+
 #ifdef Py_DEBUG
-static int
-_Py_PXCTX(void)
-{
-    int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
-    assert(Py_MainThreadId > 0);
-    assert(Py_MainProcessId != -1);
-    /*assert(Py_ParallelContextsEnabled != -1);
-    if (Py_ParallelContextsEnabled)
-        assert(active);
-    else
-        assert(!active);*/
-    return active;
-}
-#define Py_PXCTX _Py_PXCTX()
-#define Py_CTX (!_Py_PXCTX)
-#define PY (Py_CTX)
-#define PX Py_PXCTX
-#else
-#define Py_PXCTX (Py_MainThreadId != _Py_get_current_thread_id())
-#endif /* Py_DEBUG */
+PyAPI_FUNC(int)     _Py_ISPX(void *ob);
+PyAPI_FUNC(int)     _Py_ISPY(void *ob);
+PyAPI_FUNC(int)     _Py_PXCTX(void);
+
+#define Py_PXCTX (_Py_PXCTX())
+/*
+#define _FUNC __FUNCTION__
+#define _FILE __FILE__
+#define _LINE __LINE__
+
+#define Py_CHECK(o)         _PyParallel_Guard(_FUNC, _FILE, _LINE, o, 0, 0, 0);
+#define Px_CHECK(o)         _PyParallel_Guard(_FUNC, _FILE, _LINE, o, 0, 0, 1);
+
+#define Py_GUARD            _PyParallel_Guard(_FUNC, _FILE, _LINE, 0, 0, 1, 0);
+#define Px_GUARD            _PyParallel_Guard(_FUNC, _FILE, _LINE, 0, 0, 1, 1);
+
+#define Py_GUARD_OBJ(o)     _PyParallel_Guard(_FUNC, _FILE, _LINE, o, 0, 1, 0);
+#define Px_GUARD_OBJ(o)     _PyParallel_Guard(_FUNC, _FILE, _LINE, o, 0, 1, 1);
+
+#define Py_GUARD_MEM(p)     _PyParallel_Guard(_FUNC, _FILE, _LINE, 0, p, 1, 0);
+#define Px_GUARD_MEM(p)     _PyParallel_Guard(_FUNC, _FILE, _LINE, 0, p, 1, 1);
+*/
+
+#define Py_PX(ob)   ((((PyObject*)(ob))->px))
 
 #define Px_GUARD                         \
     if (!Py_PXCTX)                       \
@@ -110,6 +91,118 @@ _Py_PXCTX(void)
             0                            \
         );
 
+#define _PX_TEST                (1UL <<  1)
+#define _PY_TEST                (1UL <<  2)
+#define _PYMEM_GUARD            (1UL <<  3)
+#define _PXMEM_GUARD            (1UL <<  4)
+
+#define Py_ISPX(pointer)           \
+    _PyParallel_Guard(             \
+        __FUNCTION__,              \
+        __FILE__,                  \
+        __LINE__,                  \
+        pointer,                   \
+        _PX_TEST                   \
+    )
+
+#define Py_ISPY(pointer)           \
+    _PyParallel_Guard(             \
+        __FUNCTION__,              \
+        __FILE__,                  \
+        __LINE__,                  \
+        pointer,                   \
+        _PY_TEST                   \
+    )
+
+#define Px_GUARD_MEM(m)            \
+    _PyParallel_Guard(             \
+        __FUNCTION__,              \
+        __FILE__,                  \
+        __LINE__,                  \
+        m,                         \
+        _PXMEM_GUARD               \
+    )
+
+#define Py_GUARD_MEM(m)            \
+    _PyParallel_Guard(             \
+        __FUNCTION__,              \
+        __FILE__,                  \
+        __LINE__,                  \
+        m,                         \
+        _PYMEM_GUARD               \
+    )
+
+#define _GUARD_MEM(m)              \
+    do {                           \
+    if (Py_PXCTX)                  \
+        Px_GUARD_MEM(m);           \
+    else                           \
+        Py_GUARD_MEM(m);           \
+} while (0)
+
+#define Px_RETURN(arg)             \
+    if (Py_PXCTX)                  \
+        return (arg);
+
+#define Px_VOID                    \
+    if (Py_PXCTX)                  \
+        return;
+
+#define Px_RETURN_VOID(arg)        \
+    if (Py_PXCTX) {                \
+        (arg);                     \
+        return;                    \
+    }
+
+#define Px_RETURN_NULL             \
+    if (Py_PXCTX)                  \
+        return NULL;
+
+#define Px_RETURN_OP(op, arg)      \
+    if (Py_ISPX(op))               \
+        return (arg);
+
+#define Px_VOID_OP(op)             \
+    if (Py_ISPX(op))               \
+        return;
+
+#define Px_RETURN_VOID_OP(op, arg) \
+    if (Py_ISPX(op)) {             \
+        (arg);                     \
+        return;                    \
+    }
+
+#define Px_RETURN_NULL_OP(op)      \
+    if (Py_ISPX(op))               \
+        return NULL;
+
+#else /* Py_DEBUG */
+#define Py_PXCTX    (Py_MainThreadId != _Py_get_current_thread_id())
+#define Py_PX(ob)   ((((PyObject*)(ob))->px))
+
+#define Py_ISPX(ob) (                                          \
+    Py_PXCTX || (                                              \
+        ob != NULL && (                                        \
+            ((((PyObject*)(ob))->is_px) == _Py_IS_PARALLEL) && \
+            ((((PyObject*)(ob))->px) != NULL)                  \
+        )                                                      \
+    )                                                          \
+)
+
+#define Py_ISPY(ob) (                                          \
+    ob != NULL && (                                            \
+        ((((PyObject*)(ob))->is_px) == _Py_NOT_PARALLEL) &&    \
+        ((((PyObject*)(ob))->px)    == _Py_NOT_PARALLEL)       \
+    )                                                          \
+)
+
+#define Px_GUARD
+#define Py_GUARD
+#define Py_GUARD_OBJ(o)
+#define Px_GUARD_OBJ(o)
+#define Py_GUARD_MEM(p)
+#define Px_GUARD_MEM(p)
+
 #define Px_RETURN(arg)                   \
     if (Py_PXCTX)                        \
         return (arg);
@@ -127,25 +220,6 @@ _Py_PXCTX(void)
 #define Px_RETURN_NULL                   \
     if (Py_PXCTX)                        \
         return NULL;
-
-/* op guards */
-#define Px_GUARD_OP(op)                  \
-    if (!Py_ISPX(op))                    \
-        _PyParallel_ContextGuardFailure( \
-            __FUNCTION__,                \
-            __FILE__,                    \
-            __LINE__,                    \
-            1                            \
-        );
-
-#define Py_GUARD_OP(op)                  \
-    if (Py_ISPX(op))                     \
-        _PyParallel_ContextGuardFailure( \
-            __FUNCTION__,                \
-            __FILE__,                    \
-            __LINE__,                    \
-            0                            \
-        );
 
 #define Px_RETURN_OP(op, arg)            \
     if (Py_ISPX(op))                     \
@@ -165,9 +239,15 @@ _Py_PXCTX(void)
     if (Py_ISPX(op))                     \
         return NULL;
 
+#endif /* !Py_DEBUG */
+
 #else /* WITH_PARALLEL */
 #define Py_GUARD
 #define Px_GUARD
+#define Py_GUARD_OBJECT_MUTATION(o)
+#define Px_GUARD_OBJECT_MUTATION(o)
+#define Py_GUARD_OBJECT_ACCESS(o)
+#define Px_GUARD_OBJECT_ACCESS(o)
 #define Px_VOID
 #define Px_RETURN(a)
 #define Px_RETURN_VOID(a)
@@ -186,4 +266,4 @@ _Py_PXCTX(void)
 }
 #endif
 #endif
-/* vim:set ts=8 sw=4 sts=4 tw=78 et: */
+

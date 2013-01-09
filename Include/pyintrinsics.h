@@ -18,11 +18,15 @@ extern "C" {
 #       else
 #           error "Unsupported architecture."
 #       endif
-#       define _Py_clflush(p)    _mm_clflush(p)
-#       define _Py_lfence()      _mm_lfence()
-#       define _Py_mfence()      _mm_mfence()
-#       define _Py_sfence()      _mm_sfence()
-#       define _Py_rdtsc()       __rdtsc()
+#       define _Py_clflush(p)           _mm_clflush(p)
+#       define _Py_lfence()             _mm_lfence()
+#       define _Py_mfence()             _mm_mfence()
+#       define _Py_sfence()             _mm_sfence()
+#       define _Py_rdtsc()              __rdtsc()
+#       define _Py_popcnt_u32(v)        _mm_popcnt_u32(v)
+#       define _Py_popcnt_u64(v)        _mm_popcnt_u64(v)
+#       define _Py_UINT32_BITS_SET(v)   _Py_popcnt_u32(v)
+#       define _Py_UINT64_BITS_SET(v)   _Py_popcnt_u64(v)
 #   else
 #       error "Intrinsics not available for this platform yet."
 #   endif
