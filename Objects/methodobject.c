@@ -7,8 +7,8 @@
 /* Free list for method objects to safe malloc/free overhead
  * The m_self element is used to chain the objects.
  */
-__declspec(thread) static PyCFunctionObject *free_list = NULL;
-__declspec(thread) static int numfree = 0;
+static PyCFunctionObject *free_list = NULL;
+static int numfree = 0;
 #ifndef PyCFunction_MAXFREELIST
 #define PyCFunction_MAXFREELIST 256
 #endif
@@ -17,7 +17,7 @@ PyObject *
 PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
 {
     PyCFunctionObject *op;
-    op = free_list;
+    op = (Py_PXCTX ? 0 : free_list);
     if (op != NULL) {
         free_list = (PyCFunctionObject *)(op->m_self);
         PyObject_INIT((PyObject *)op, &PyCFunction_Type);
@@ -121,6 +121,7 @@ PyCFunction_Call(PyObject *func, PyObject *arg, PyObject *kw)
 static void
 meth_dealloc(PyCFunctionObject *m)
 {
+    Py_GUARD
     _PyObject_GC_UNTRACK(m);
     Py_XDECREF(m->m_self);
     Py_XDECREF(m->m_module);
@@ -321,6 +322,9 @@ int
 PyCFunction_ClearFreeList(void)
 {
     int freelist_size = numfree;
+
+    if (Py_PXCTX)
+        return 0;
 
     while (free_list) {
         PyCFunctionObject *v = free_list;

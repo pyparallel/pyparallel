@@ -95,14 +95,16 @@ show_alloc(void)
 #ifndef PyList_MAXFREELIST
 #define PyList_MAXFREELIST 80
 #endif
-__declspec(thread) static PyListObject *free_list[PyList_MAXFREELIST];
-__declspec(thread) static int numfree = 0;
+static PyListObject *free_list[PyList_MAXFREELIST];
+static int numfree = 0;
 
 int
 PyList_ClearFreeList(void)
 {
     PyListObject *op;
     int ret = numfree;
+    if (Py_PXCTX)
+        return 0;
     while (numfree) {
         op = free_list[--numfree];
         assert(PyList_CheckExact(op));
@@ -148,7 +150,7 @@ PyList_New(Py_ssize_t size)
     if ((size_t)size > PY_SIZE_MAX / sizeof(PyObject *))
         return PyErr_NoMemory();
     nbytes = size * sizeof(PyObject *);
-    if (numfree) {
+    if (!Py_PXCTX && numfree) {
         numfree--;
         op = free_list[numfree];
         _Py_NewReference((PyObject *)op);
@@ -314,6 +316,7 @@ static void
 list_dealloc(PyListObject *op)
 {
     Py_ssize_t i;
+    Py_GUARD
     PyObject_GC_UnTrack(op);
     Py_TRASHCAN_SAFE_BEGIN(op)
     if (op->ob_item != NULL) {

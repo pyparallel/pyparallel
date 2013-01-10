@@ -32,13 +32,8 @@ struct method_cache_entry {
     PyObject *value;            /* borrowed */
 };
 
-#ifndef WITH_PARALLEL
 static struct method_cache_entry method_cache[1 << MCACHE_SIZE_EXP];
 static unsigned int next_version_tag = 0;
-#else
-__declspec(thread) static struct method_cache_entry method_cache[1 << MCACHE_SIZE_EXP];
-__declspec(thread) static unsigned int next_version_tag = 0;
-#endif
 
 _Py_IDENTIFIER(__class__);
 _Py_IDENTIFIER(__dict__);
@@ -58,7 +53,7 @@ PyType_ClearCache(void)
 {
     Py_ssize_t i;
     unsigned int cur_version_tag = next_version_tag - 1;
-    //Py_GUARD
+    Py_GUARD
 
     for (i = 0; i < (1 << MCACHE_SIZE_EXP); i++) {
         method_cache[i].version = 0;
@@ -2575,6 +2570,8 @@ _PyType_Lookup(PyTypeObject *type, PyObject *name)
             break;
     }
     Py_DECREF(mro);
+
+    Px_RETURN(res);
 
     if (MCACHE_CACHEABLE_NAME(name) && assign_version_tag(type)) {
         h = MCACHE_HASH_METHOD(type, name);

@@ -16,8 +16,8 @@
 /* Entries 1 up to PyTuple_MAXSAVESIZE are free lists, entry 0 is the empty
    tuple () of which at most one instance will be allocated.
 */
-Py_TLS static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
-Py_TLS static int numfree[PyTuple_MAXSAVESIZE];
+static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
+static int numfree[PyTuple_MAXSAVESIZE];
 #endif
 #ifdef COUNT_ALLOCS
 Py_TLS Py_ssize_t fast_tuple_allocs;
@@ -71,6 +71,8 @@ PyTuple_New(register Py_ssize_t size)
         PyErr_BadInternalCall();
         return NULL;
     }
+    if (Py_PXCTX)
+        goto newvar;
 #if PyTuple_MAXSAVESIZE > 0
     if (size == 0 && free_list[0]) {
         op = free_list[0];
@@ -96,6 +98,7 @@ PyTuple_New(register Py_ssize_t size)
     else
 #endif
     {
+newvar:
         /* Check for overflow */
         if (size > (PY_SSIZE_T_MAX - sizeof(PyTupleObject) -
                     sizeof(PyObject *)) / sizeof(PyObject *)) {
@@ -107,6 +110,10 @@ PyTuple_New(register Py_ssize_t size)
     }
     for (i=0; i < size; i++)
         op->ob_item[i] = NULL;
+
+    if (Py_PXCTX)
+        goto end;
+
 #if PyTuple_MAXSAVESIZE > 0
     if (size == 0) {
         free_list[0] = op;
@@ -118,6 +125,7 @@ PyTuple_New(register Py_ssize_t size)
     count_tracked++;
 #endif
     _PyObject_GC_TRACK(op);
+end:
     return (PyObject *) op;
 }
 
@@ -228,6 +236,7 @@ tupledealloc(register PyTupleObject *op)
 {
     register Py_ssize_t i;
     register Py_ssize_t len =  Py_SIZE(op);
+    Py_GUARD
     PyObject_GC_UnTrack(op);
     Py_TRASHCAN_SAFE_BEGIN(op)
     if (len > 0) {
@@ -890,6 +899,8 @@ PyTuple_ClearFreeList(void)
     int freelist_size = 0;
 #if PyTuple_MAXSAVESIZE > 0
     int i;
+    if (Py_PXCTX)
+        return 0;
     for (i = 1; i < PyTuple_MAXSAVESIZE; i++) {
         PyTupleObject *p, *q;
         p = free_list[i];
@@ -912,6 +923,7 @@ PyTuple_Fini(void)
 #if PyTuple_MAXSAVESIZE > 0
     /* empty tuples are used all over the place and applications may
      * rely on the fact that an empty tuple is a singleton. */
+    Py_GUARD
     Py_CLEAR(free_list[0]);
 
     (void)PyTuple_ClearFreeList();

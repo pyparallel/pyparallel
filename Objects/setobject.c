@@ -55,8 +55,8 @@ _PySet_Dummy(void)
 #ifndef PySet_MAXFREELIST
 #define PySet_MAXFREELIST 80
 #endif
-__declspec(thread) static PySetObject *free_list[PySet_MAXFREELIST];
-__declspec(thread) static int numfree = 0;
+static PySetObject *free_list[PySet_MAXFREELIST];
+static int numfree = 0;
 
 
 /*
@@ -555,6 +555,7 @@ set_dealloc(PySetObject *so)
 {
     register setentry *entry;
     Py_ssize_t fill = so->fill;
+    Py_GUARD
     PyObject_GC_UnTrack(so);
     Py_TRASHCAN_SAFE_BEGIN(so)
     if (so->weakreflist != NULL)
@@ -1033,7 +1034,7 @@ make_new_set(PyTypeObject *type, PyObject *iterable)
     }
 
     /* create PySetObject structure */
-    if (numfree &&
+    if (!Py_PXCTX && numfree &&
         (type == &PySet_Type  ||  type == &PyFrozenSet_Type)) {
         so = free_list[--numfree];
         assert (so != NULL && PyAnySet_CheckExact(so));
@@ -1115,6 +1116,8 @@ PySet_ClearFreeList(void)
 {
     int freelist_size = numfree;
     PySetObject *so;
+    if (Py_PXCTX)
+        return 0;
 
     while (numfree) {
         numfree--;

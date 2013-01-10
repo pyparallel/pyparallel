@@ -1646,7 +1646,6 @@ _PyObject_GC_New(PyTypeObject *tp)
 {
     PyObject *op;
     Px_RETURN(_PxObject_New(tp))
-    Py_GUARD_MEM(tp);
     op = _PyObject_GC_Malloc(_PyObject_SIZE(tp));
     if (op != NULL)
         op = PyObject_INIT(op, tp);
@@ -1659,7 +1658,6 @@ _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     PyVarObject *op;
     size_t size;
     Px_RETURN(_PxObject_NewVar(tp, nitems))
-    Py_GUARD_MEM(tp);
     size = _PyObject_VAR_SIZE(tp, nitems);
     op = (PyVarObject *) _PyObject_GC_Malloc(size);
     if (op != NULL)
@@ -1672,8 +1670,8 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
 {
     PyGC_Head *g;
     size_t basicsize;
+    PyPx_GUARD_OBJ(op);
     Px_RETURN_OP(op, _PxObject_Resize(op, nitems))
-    Py_GUARD_MEM(op);
 
     basicsize = _PyObject_VAR_SIZE(Py_TYPE(op), nitems);
     g = AS_GC(op);
@@ -1691,7 +1689,7 @@ void
 PyObject_GC_Del(void *op)
 {
     PyGC_Head *g;
-    Py_GUARD_MEM(op);
+    Py_GUARD_OBJ(op);
     Py_GUARD
     g = AS_GC(op);
     if (IS_TRACKED(op))

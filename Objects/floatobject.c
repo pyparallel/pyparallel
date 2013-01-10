@@ -23,8 +23,8 @@
 #ifndef PyFloat_MAXFREELIST
 #define PyFloat_MAXFREELIST    100
 #endif
-__declspec(thread) static int numfree = 0;
-__declspec(thread) static PyFloatObject *free_list = NULL;
+static int numfree = 0;
+static PyFloatObject *free_list = NULL;
 
 double
 PyFloat_GetMax(void)
@@ -114,7 +114,7 @@ PyFloat_GetInfo(void)
 PyObject *
 PyFloat_FromDouble(double fval)
 {
-    register PyFloatObject *op = free_list;
+    register PyFloatObject *op = (Py_PXCTX ? 0 : free_list);
     if (op != NULL) {
         free_list = (PyFloatObject *) Py_TYPE(op);
         numfree--;
@@ -181,6 +181,7 @@ PyFloat_FromString(PyObject *v)
 static void
 float_dealloc(PyFloatObject *op)
 {
+    Py_GUARD
     if (PyFloat_CheckExact(op)) {
         if (numfree >= PyFloat_MAXFREELIST)  {
             PyObject_FREE(op);
@@ -1917,6 +1918,8 @@ PyFloat_ClearFreeList(void)
 {
     PyFloatObject *f = free_list, *next;
     int i = numfree;
+    if (Py_PXCTX)
+        return 0;
     while (f) {
         next = (PyFloatObject*) Py_TYPE(f);
         PyObject_FREE(f);

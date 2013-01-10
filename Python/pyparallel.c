@@ -6,6 +6,7 @@ extern "C" {
 
 #include "pyparallel_private.h"
 
+
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 __declspec(thread) PyParallelContext *ctx = NULL;
 #define _TMPBUF_SIZE 1024
@@ -14,6 +15,7 @@ __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
+size_t _PxObjectSignature = -1;
 
 void *Heap_Malloc(size_t);
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align);
@@ -97,7 +99,7 @@ _PxState_InitPages(PxState *px)
     px->pages_incoming  = PxList_New();
 
     assert(
-        px->pages_seen       &&
+        px->pages_seen      &&
         px->pages_freed     &&
         px->pages_active    &&
         px->pages_incoming
@@ -352,288 +354,280 @@ _PxContext_UnregisterHeaps(Context *c)
 }
 
 #define _MEMSIG_INVALID     (0UL)
-#define _MEMSIG_NULL        (1UL)
+#define _MEMSIG_NOT_READY   (1UL)
+#define _MEMSIG_NULL        (1UL << 1)
 #define _MEMSIG_UNKNOWN     (1UL << 2)
 #define _MEMSIG_PY          (1UL << 3)
-#define _MEMSIG_PY_PARTIAL  (1UL << 4)
-#define _MEMSIG_PX          (1UL << 5)
-#define _MEMSIG_PX_PARTIAL  (1UL << 6)
-#define _MEMSIG_CORRUPT     (1UL << 7)
-#define _MEMSIG_NOT_READY   (1UL << 8)
+#define _MEMSIG_PX          (1UL << 4)
+
+#define _OBJSIG_INVALID     (0UL)
+#define _OBJSIG_NULL        (1UL << 1)
+#define _OBJSIG_UNKNOWN     (1UL << 2)  /* 4  */
+#define _OBJSIG_PY          (1UL << 3)  /* 8  */
+#define _OBJSIG_PX          (1UL << 4)  /* 16 */
 
 __declspec(thread) int _Px_MemorySignature_CallDepth = 0;
+__declspec(thread) int _Px_ObjectSignature_CallDepth = 0;
+__declspec(thread) int _Px_SafeObjectSignatureTest_CallDepth = 0;
 
 unsigned long
 _Px_MemorySignature(void *m)
 {
-    void *p, *pp[4], *p1, *p2, *p3, *p4;
-    PyObject *next;
-    PyObject *prev;
+    PyObject *p;
     PxState  *px;
-    PyObject *rr[4], *r1, *r2, *r3, *r4;
-    int signature;
-    int i = 0;
-    int x = 0;
-    int y = 0;
-    int s = 0;
+    unsigned long signature;
 
-    int is_px;
-    int is_py;
-    int is_corrupt;
-    int is_unknown;
+    if (!m)
+        return _MEMSIG_NULL;
 
-    if (_Px_MemorySignature_CallDepth == 1)
-        return _MEMSIG_NOT_READY;
-    assert(_Px_MemorySignature_CallDepth == 0);
-    _Px_MemorySignature_CallDepth++;
+    if (_PyMem_InRange(m))
+        return _MEMSIG_PY;
 
     px = PXSTATE();
     if (!px)
         return _MEMSIG_NOT_READY;
 
-    p1 = p = m;
-    p2 = (void *)Px_PTR_ADD(p, 1);
-    p3 = (void *)Px_PTR_ADD(p, 2);
-    p4 = (void *)Px_PTR_ADD(p, 3);
+    _Px_MemorySignature_CallDepth++;    
+    assert(_Px_MemorySignature_CallDepth <= 100);
 
-    pp[0] = p1;
-    pp[1] = p2;
-    pp[2] = p3;
-    pp[3] = p4;
+    signature = _MEMSIG_UNKNOWN;
 
-    r1 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p1));
-    r2 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p2));
-    r3 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p3));
-    r4 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p4));
-
-    rr[0] = r1;
-    rr[1] = r2;
-    rr[2] = r3;
-    rr[3] = r4;
-
-    next = (PyObject *)p3;
-    prev = (PyObject *)p4;
-
-    is_py = (p1 == _Py_NOT_PARALLEL && p2 == _Py_NOT_PARALLEL);
-
-    if (is_py) {
-        assert(_PxPages_NEVER_SEEN(r3));
-        assert(_PxPages_NEVER_SEEN(r4));
-    }
-
-    is_px = (
-        p1 == _Py_IS_PARALLEL   &&
-        _PxPages_IS_ACTIVE(r2)  && (
-            (
-                (
-                    (next == NULL && (((PxObject *)p2)->ctx->ob_last == m))   ||
-                    (next != NULL && next->is_px == _Py_IS_PARALLEL)
-                ) && (
-                    (prev == NULL && (((PxObject *)p2)->ctx->ob_first == m))  ||
-                    (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
-                )
-            ) && (
-                (next == NULL || _PxPages_IS_ACTIVE(r3)) &&
-                (prev == NULL || _PxPages_IS_ACTIVE(r4))
-            )
-        )
-    );
-
-    if (!is_px) {
-        assert(p1 != _Py_IS_PARALLEL);
-        assert(_PxPages_NEVER_SEEN(r2));
-        assert(_PxPages_NEVER_SEEN(r3));
-        assert(_PxPages_NEVER_SEEN(r4));
-    }
-
-    for (i = 0; i < 4; i++) {
-        if (pp[i] == _Py_NOT_PARALLEL)
-            y++;
-
-        if (pp[i] == _Py_IS_PARALLEL)
-            x++;
-
-        if (_PxPages_SEEN(rr[i]))
-            s++;
-    }
-
-    is_unknown = (y == 0 && x == 0 && s == 0);
-
-    is_corrupt = (
-        (!is_px && !is_py) && (
-            (s != 0)                        ||
-            (x > 0)                         ||
-            (y > 0 && y < 4)                ||
-            (y == 1 && p2 == NULL)          ||
-            (p2 == _Py_IS_PARALLEL)         ||
-            (p1 == _Py_IS_PARALLEL)
-        )
-    );
-
-    assert(is_py || is_px || is_unknown || is_corrupt);
-
-    if (is_py) {
-        assert(!is_px);
-        assert(!is_corrupt);
-        assert(!is_unknown);
-        signature = _MEMSIG_PY;
-    } else if (is_px) {
-        assert(!is_py);
-        assert(!is_corrupt);
-        assert(!is_unknown);
-        signature = _MEMSIG_PY;
-    } else if (is_corrupt) {
-        assert(!is_px);
-        assert(!is_py);
-        assert(!is_unknown);
-        signature = _MEMSIG_CORRUPT;
-    } else {
-        assert(is_unknown);
-        assert(!is_px);
-        assert(!is_py);
-        assert(!is_corrupt);
-        signature = _MEMSIG_UNKNOWN;
-    }
-
-    Py_DECREF(r1);
-    Py_DECREF(r2);
-    Py_DECREF(r3);
-    Py_DECREF(r4);
+    p = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(m));
+    assert(p);
+    AcquireSRWLockShared(&px->pages_srwlock);
+    signature = (_PxPages_IS_ACTIVE(p) ? _MEMSIG_PX : _MEMSIG_UNKNOWN);
+    ReleaseSRWLockShared(&px->pages_srwlock);
+    Py_DECREF(p);
 
     _Px_MemorySignature_CallDepth--;
 
     return signature;
 }
 
-/*
 unsigned long
 _Px_ObjectSignature(void *m)
 {
-    void *p, *pp[4], *p1, *p2, *p3, *p4;
-    PxObject *px;
-    PyObject *next;
-    PyObject *prev;
-    PxState  *px;
-    PyObject *r1, *r2, *r3, *r4;
-    int signature;
-    int i  = 0;
-    int px = 0;
-    int py = 0;
-    int un = 0;
+    PyObject     *y;
+    Py_uintptr_t  s;
+    unsigned long signature;
 
-    int is_px_obj;
-    int is_px_mem;
-    int is_py_obj;
-    int is_py_mem;
-    int is_corrupt;
-    int is_unknown;
+    if (!m)
+        return _OBJSIG_NULL;
 
-    px = PXSTATE();
+    assert(_Px_ObjectSignature_CallDepth == 0);
+    _Px_ObjectSignature_CallDepth++;
 
-    p1 = p = m;
-    p2 = ++p;
-    p3 = ++p;
-    p4 = ++p;
+    s = -1;
+    y = (PyObject *)m;
 
-    pp[0] = p1;
-    pp[1] = p2;
-    pp[2] = p3;
-    pp[3] = p4;
-
-    r1 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p1));
-    r2 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p2));
-    r3 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p3));
-    r4 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p4));
-
-    px   = (PxObject *)p2;
-    next = (PyObject *)p3;
-    prev = (PyObject *)p4;
-
-    is_py = (
-        p1 == _Py_NOT_PARALLEL &&
-        p2 == _Py_NOT_PARALLEL &&
-        p3 == _Py_NOT_PARALLEL &&
-        p4 == _Py_NOT_PARALLEL
-    );
-
-    is_px_obj = (
-        p1 == _Py_IS_PARALLEL &&
-        p2 != NULL &&
-        p2 != _Py_IS_PARALLEL &&
-        p2 != _Py_NOT_PARALLEL &&
-        px->ctx != NULL && (
-            (next == NULL && ((void *)px->ctx->ob_last == m))   ||
-            (next != NULL && next->is_px == _Py_IS_PARALLEL)
-        ) && (
-            (prev == NULL && ((void *)px->ctx->ob_first == m))  ||
-            (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
-        )
-    );
-
-    for (i = 0; i < 4; i++) {
-        if (pp[i] == _Py_NOT_PARALLEL)
-            py++;
-
-        if (pp[i] == _Py_IS_PARALLEL)
-            px++;
+    __try {
+        s = ((Py_uintptr_t)(y->is_px));
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        s = (Py_uintptr_t)NULL;
     }
 
-    is_corrupt = (
-        (px > 0)                        ||
-        (py > 0 && py < 4)              ||
-        (py == 1 && p2 == NULL)         ||
-        (p2 == _Py_IS_PARALLEL)         ||
-        (p1 == _Py_IS_PARALLEL && (
-            (px->ctx == NULL)           ||
-            (px->ctx != NULL && (
-                (next == NULL && ((void *)px->ctx->ob_last != m))   ||
-                (next != NULL && next->is_px != _Py_IS_PARALLEL)
-            ) && (
-                (prev == NULL && ((void *)px->ctx->ob_first != m))  ||
-                (prev != NULL && prev->is_px != _Py_IS_PARALLEL)
-            ))
-        ))
-    );
+    assert(s != -1);
 
-    is_unknown = (
-        py == 0 && px == 0
+    if (!s) {
+        signature = _OBJSIG_UNKNOWN;
+        goto done;
+    }
+
+    if (s == (Py_uintptr_t)_Py_NOT_PARALLEL) {
+        assert(y->px == _Py_NOT_PARALLEL);
+        signature = _OBJSIG_PY;
+        goto done;
+    }
+
+    if (s == (Py_uintptr_t)_Py_IS_PARALLEL) {
+        assert(y->px != NULL);
+        assert(Py_ASPX(y)->signature == _PxObjectSignature);
+        signature = _OBJSIG_PX;
+        goto done;
+    }
+
+    /* We'll hit this if m is a valid pointer (i.e. dereferencing m->is_px
+     * doesn't trigger the SEH), but it doesn't point to something with a
+     * valid object signature.
+     */
+    signature = _OBJSIG_UNKNOWN;
+done:
+    _Px_ObjectSignature_CallDepth--;
+    return signature;
+}
+
+unsigned long
+_Px_SafeObjectSignatureTest(void *m)
+{
+    PyObject     *y;
+    PxObject     *x;
+    Py_uintptr_t  s;
+    int is_py;
+    int is_px;
+    unsigned long signature;
+
+    if (!m)
+        return _OBJSIG_NULL;
+
+    s = -1;
+    y = (PyObject *)m;
+
+    assert(_Px_SafeObjectSignatureTest_CallDepth == 0);
+    _Px_SafeObjectSignatureTest_CallDepth++;
+
+    __try {
+        s = ((Py_uintptr_t)(y->is_px));
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        s = (Py_uintptr_t)NULL;
+    }
+
+    assert(s != -1);
+
+    if (!s) {
+        signature = _OBJSIG_UNKNOWN;
+        goto done;
+    }
+
+    is_py = (
+        (s == (Py_uintptr_t)_Py_NOT_PARALLEL) &&
+        (y->px == _Py_NOT_PARALLEL)
     );
 
     if (is_py) {
-        assert(!is_px);
-        assert(!is_corrupt);
-        assert(!is_unknown);
-        signature = _MEMSIG_PY;
-    } else if (is_px) {
-        assert(!is_py);
-        assert(!is_corrupt);
-        assert(!is_unknown);
-        signature = _MEMSIG_PY;
-    } else if (is_corrupt) {
-        assert(!is_px);
-        assert(!is_py);
-        assert(!is_unknown);
-        signature = _MEMSIG_CORRUPT;
-    } else {
-        assert(is_unknown);
-        assert(!is_px);
-        assert(!is_py);
-        assert(!is_corrupt);
-        signature = _MEMSIG_UNKNOWN;
+        signature = _OBJSIG_PY;
+        goto done;
     }
 
+    is_px = -1;
+    x = Py_ASPX(y);
+    __try {
+        is_px = (x->signature == _PxObjectSignature);
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        is_px = 0;
+    }
+
+    assert(is_px != -1);
+
+    signature = (is_px ? _OBJSIG_PX : _OBJSIG_UNKNOWN);
+done:
+    _Px_SafeObjectSignatureTest_CallDepth--;
     return signature;
 }
-*/
 
-/*
-#define _PYMEM_GUARD_AGAINST    (1UL <<  4)
-#define _PXMEM_GUARD_AGAINST    (1UL <<  5)
-#define _PYOBJ_GUARD            (1UL <<  6)
-#define _PXOBJ_GUARD            (1UL <<  7)
-#define _PYOBJ_GUARD_AGAINST    (1UL <<  6)
-#define _PXOBJ_GUARD_AGAINST    (1UL <<  7)
-*/
+int
+_PyParallel_GuardObj(const char *function,
+                     const char *filename,
+                     int lineno,
+                     void *m,
+                     unsigned int flags)
+{
+    unsigned long s;
+
+    assert(_OBJTEST(flags));
+
+    if (m) {
+        s = _Px_ObjectSignature(m);
+        assert(s & (_OBJSIG_UNKNOWN | _OBJSIG_PX | _OBJSIG_PY));
+    }
+
+    if (flags & (_PXOBJ_TEST | _PY_ISPX_TEST)) {
+
+        if (!m)
+            return 0;
+
+        if (flags & _PY_ISPX_TEST) {
+            /* Special case for Py_ISPX(o); o must be a valid object. */
+            assert(s & (_OBJSIG_PY | _OBJSIG_PX));
+            return (Py_PXCTX ? 1 : (s & _OBJSIG_PX));
+        }
+
+        return (s & _OBJSIG_PX);
+
+    } else if (flags & _PYOBJ_TEST) {
+
+        if (!m)
+            return 0;
+
+        return (s & _OBJSIG_PY);
+
+    } else {
+        assert(m);
+
+        assert(flags & (_PYOBJ_GUARD | _PXOBJ_GUARD));
+
+        if (flags & _PYOBJ_GUARD)
+            assert(s & _OBJSIG_PY);
+        else
+            assert(s & _OBJSIG_PX);
+
+        return 0;
+    }
+}
+
+__inline
+void
+_PxWarn_PyMemUnknown(void)
+{
+    PySys_FormatStderr(
+        "WARNING! expected _MEMSIG_PY but got _MEMSIG_UNKNOWN\n"
+    );
+}
+
+int
+_PyParallel_GuardMem(const char *function,
+                     const char *filename,
+                     int lineno,
+                     void *m,
+                     unsigned int flags)
+{
+    unsigned long s;
+    unsigned long o;
+
+    assert(_MEMTEST(flags));
+
+    if (m) {
+        o = _Px_SafeObjectSignatureTest(m);
+        s = _Px_MemorySignature(m);
+        if (s & _MEMSIG_NOT_READY || (o > s))
+            s = o;
+    }
+
+    if (flags & (_PYMEM_TEST | _PXMEM_TEST)) {
+
+        if (!m)
+            return 0;
+
+        return (flags & _PYMEM_TEST ? s & _MEMSIG_PY : s & _MEMSIG_PX);
+
+    } else {
+        assert(m);
+
+        assert(flags & (_PYMEM_GUARD | _PXMEM_GUARD));
+
+        if (flags & _PYMEM_GUARD) {
+            if (s & _MEMSIG_UNKNOWN) {
+                //printf("expected _MEMSIG_PY but got _MEMSIG_UNKNOWN\n");
+                return 0;
+            }
+            assert(s & _MEMSIG_PY);
+        } else
+            assert(s & _MEMSIG_PX);
+
+        return 0;
+    }
+}
 
 int
 _PyParallel_Guard(const char *function,
@@ -642,52 +636,14 @@ _PyParallel_Guard(const char *function,
                   void *m,
                   unsigned int flags)
 {
-    unsigned long s;
-
     assert(_Py_UINT32_BITS_SET(flags) == 1);
 
-    if (m) {
-        s = _Px_MemorySignature(m);
-        assert(!(s & _MEMSIG_CORRUPT));
-        if (s & _MEMSIG_NOT_READY)
-            return 0;
+    if (_OBJTEST(flags))
+        return _PyParallel_GuardObj(function, filename, lineno, m, flags);
+    else {
+        assert(_MEMTEST(flags));
+        return _PyParallel_GuardMem(function, filename, lineno, m, flags);
     }
-
-    if (flags & _PX_TEST) {
-        if (!m)
-            return 0;
-
-        assert((s & _MEMSIG_PY) || (s & _MEMSIG_PX));
-
-        if (Py_PXCTX || (s & _MEMSIG_PX))
-            return 1;
-        else
-            return 0;
-
-    } else if (flags & _PY_TEST) {
-        if (!m)
-            return 0;
-
-        assert((s & _MEMSIG_PY) || (s & _MEMSIG_PX));
-
-        return ((s & _MEMSIG_PY) ? 1 : 0);
-
-    } else {
-        assert(m);
-
-        if (flags & _PYMEM_GUARD)
-            assert(s & _MEMSIG_PY);
-
-        else if (flags & _PXMEM_GUARD)
-            assert(s & _MEMSIG_PX);
-
-        else
-            assert(0 == (void *)"unexpected code path");
-
-        return 0;
-    }
-
-    assert(0 == (void *)"unexpected code path");
 }
 
 void
@@ -998,9 +954,11 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     const register size_t total = _Px_SZ(sz);
 
     if (!p)
-        return (PyObject *)_PyHeap_Malloc(c, total, 0);
+        p = (PyObject *)_PyHeap_Malloc(c, total, 0);
+    else
+        Px_GUARD_MEM(p);
 
-    Px_GUARD_MEM(p);
+    p->is_px = _Py_IS_PARALLEL;
 
     Py_TYPE(p)   = tp;
     Py_REFCNT(p) = 1;
@@ -1012,6 +970,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     x->ctx       = c;
     x->size      = sz;
     x->resized   = 0;
+    x->signature = _PxObjectSignature;
     Py_PX(p)     = x;
 
     if (!tp->tp_itemsize) {
@@ -1079,7 +1038,7 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
 {
     PyTypeObject *tp;
     PyVarObject  *r;
-    Px_GUARD_MEM(v);
+    Px_GUARD_OBJ(v);
 
     tp = Py_TYPE(v);
     r = (PyVarObject *)init_object(c, NULL, tp, nitems);
@@ -1356,6 +1315,8 @@ done:
     return px;
 }
 
+Py_TLS static int _PxNewThread = 1;
+
 void
 NTAPI
 _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
@@ -1375,6 +1336,13 @@ _PyParallel_SimpleWorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     InterlockedIncrement(&(px->inflight));
 
     ctx = c;
+
+    if (_PxNewThread) {
+        /* xxx new thread init */
+        _PxNewThread = 0;
+    } else {
+        /* xxx not a new thread */
+    }
 
     c->error = _PyHeap_NewListItem(c);
     c->errback_completed = _PyHeap_NewListItem(c);
@@ -1501,6 +1469,8 @@ _PyParallel_Init(void)
                           "_Py_get_current_thread_id() != "        \
                           "GetCurrentThreadId()");
     }
+
+    _PxObjectSignature = (_Py_rdtsc() ^ Px_PTR(&_PxObjectSignature));
 
     Py_ParallelContextsEnabled = 0;
     _Py_lfence();
@@ -2209,13 +2179,14 @@ _async_submit_work(PyObject *self, PyObject *args)
         goto free_context;
     }
 
-    if (!_PyHeap_Init(c, 0))
-        goto free_heap;
-
     c->tstate = get_main_thread_state();
 
     assert(c->tstate);
     px = c->px = (PxState *)c->tstate->px;
+
+    if (!_PyHeap_Init(c, 0))
+        goto free_heap;
+
     InterlockedIncrement64(&(px->submitted));
     InterlockedIncrement(&(px->pending));
     InterlockedIncrement(&(px->active));
@@ -2540,7 +2511,7 @@ _PyParallel_GetThreadState(void)
 void
 _Px_NewReference(PyObject *op)
 {
-    Px_GUARD_MEM(op);
+    Px_GUARD_OBJ(op);
     Px_GUARD
     op->ob_refcnt = 1;
     Py_ASPX(op)->ctx = ctx;
@@ -2550,7 +2521,7 @@ _Px_NewReference(PyObject *op)
 void
 _Px_ForgetReference(PyObject *op)
 {
-    Px_GUARD_MEM(op);
+    Px_GUARD_OBJ(op);
     Px_GUARD
     assert(Py_ASPX(op)->ctx == ctx);
     ctx->stats.forgetrefs++;
@@ -2559,7 +2530,7 @@ _Px_ForgetReference(PyObject *op)
 void
 _Px_Dealloc(PyObject *op)
 {
-    Px_GUARD_MEM(op);
+    Px_GUARD_OBJ(op);
     Px_GUARD
     assert(Py_ASPX(op)->ctx == ctx);
     ctx->h->deallocs++;
@@ -2620,6 +2591,267 @@ _PxMem_Free(void *p)
     Heap_Free(p);
 }
 
+/*
+unsigned long
+_Px_MemorySignature(void *m)
+{
+    void *p, *pp[4], *p1, *p2, *p3, *p4;
+    PyObject *next;
+    PyObject *prev;
+    PxState  *px;
+    PyObject *rr[4], *r1, *r2, *r3, *r4;
+    int signature;
+    int i = 0;
+    int x = 0;
+    int y = 0;
+    int s = 0;
+
+    int is_px;
+    int is_py;
+    int is_corrupt;
+    int is_unknown;
+
+    if (_Px_MemorySignature_CallDepth == 1)
+        return _MEMSIG_NOT_READY;
+    assert(_Px_MemorySignature_CallDepth == 0);
+    _Px_MemorySignature_CallDepth++;
+
+    px = PXSTATE();
+    if (!px)
+        return _MEMSIG_NOT_READY;
+
+    p1 = p = m;
+    p2 = (void *)Px_PTR_ADD(p, 1);
+    p3 = (void *)Px_PTR_ADD(p, 2);
+    p4 = (void *)Px_PTR_ADD(p, 3);
+
+    pp[0] = p1;
+    pp[1] = p2;
+    pp[2] = p3;
+    pp[3] = p4;
+
+    r1 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p1));
+    r2 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p2));
+    r3 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p3));
+    r4 = PyLong_FromVoidPtr((void *)Px_PAGE_ALIGN_DOWN(p4));
+
+    rr[0] = r1;
+    rr[1] = r2;
+    rr[2] = r3;
+    rr[3] = r4;
+
+    next = (PyObject *)p3;
+    prev = (PyObject *)p4;
+
+    is_py = (p1 == _Py_NOT_PARALLEL && p2 == _Py_NOT_PARALLEL);
+
+    if (is_py) {
+        assert(_PxPages_NEVER_SEEN(r3));
+        assert(_PxPages_NEVER_SEEN(r4));
+    }
+
+    is_px = (
+        p1 == _Py_IS_PARALLEL   &&
+        _PxPages_IS_ACTIVE(r2)  && (
+            (
+                (
+                    (next == NULL && (((PxObject *)p2)->ctx->ob_last == m))   ||
+                    (next != NULL && next->is_px == _Py_IS_PARALLEL)
+                ) && (
+                    (prev == NULL && (((PxObject *)p2)->ctx->ob_first == m))  ||
+                    (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
+                )
+            ) && (
+                (next == NULL || _PxPages_IS_ACTIVE(r3)) &&
+                (prev == NULL || _PxPages_IS_ACTIVE(r4))
+            )
+        )
+    );
+
+    if (!is_px) {
+        assert(p1 != _Py_IS_PARALLEL);
+        assert(_PxPages_NEVER_SEEN(r2));
+        assert(_PxPages_NEVER_SEEN(r3));
+        assert(_PxPages_NEVER_SEEN(r4));
+    }
+
+    for (i = 0; i < 4; i++) {
+        if (pp[i] == _Py_NOT_PARALLEL)
+            y++;
+
+        if (pp[i] == _Py_IS_PARALLEL)
+            x++;
+
+        if (_PxPages_SEEN(rr[i]))
+            s++;
+    }
+
+    is_unknown = (y == 0 && x == 0 && s == 0);
+
+    is_corrupt = (
+        (!is_px && !is_py) && (
+            (s != 0)                        ||
+            (x > 0)                         ||
+            (y > 0 && y < 4)                ||
+            (y == 1 && p2 == NULL)          ||
+            (p2 == _Py_IS_PARALLEL)         ||
+            (p1 == _Py_IS_PARALLEL)
+        )
+    );
+
+    assert(is_py || is_px || is_unknown || is_corrupt);
+
+    if (is_py) {
+        assert(!is_px);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_px) {
+        assert(!is_py);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PX;
+    } else if (is_corrupt) {
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_unknown);
+        signature = _MEMSIG_CORRUPT;
+    } else {
+        assert(is_unknown);
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_corrupt);
+        signature = _MEMSIG_UNKNOWN;
+    }
+
+    Py_DECREF(r1);
+    Py_DECREF(r2);
+    Py_DECREF(r3);
+    Py_DECREF(r4);
+
+    _Px_MemorySignature_CallDepth--;
+
+    return signature;
+}
+unsigned long
+_Px_ObjectSignature(void *m)
+{
+    void *p, *pp[4], *p1, *p2, *p3, *p4;
+    PxObject *px;
+    PyObject *next;
+    PyObject *prev;
+    PxState  *px;
+    PyObject *r1, *r2, *r3, *r4;
+    int signature;
+    int i  = 0;
+    int px = 0;
+    int py = 0;
+    int un = 0;
+
+    int is_px_obj;
+    int is_px_mem;
+    int is_py_obj;
+    int is_py_mem;
+    int is_corrupt;
+    int is_unknown;
+
+    px = PXSTATE();
+
+    p1 = p = m;
+    p2 = ++p;
+    p3 = ++p;
+    p4 = ++p;
+
+    pp[0] = p1;
+    pp[1] = p2;
+    pp[2] = p3;
+    pp[3] = p4;
+
+    r1 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p1));
+    r2 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p2));
+    r3 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p3));
+    r4 = PyLong_FromVoidPtr(Px_PAGE_ALIGN_DOWN(p4));
+
+    px   = (PxObject *)p2;
+    next = (PyObject *)p3;
+    prev = (PyObject *)p4;
+
+    is_py = (
+        p1 == _Py_NOT_PARALLEL &&
+        p2 == _Py_NOT_PARALLEL &&
+        p3 == _Py_NOT_PARALLEL &&
+        p4 == _Py_NOT_PARALLEL
+    );
+
+    is_px_obj = (
+        p1 == _Py_IS_PARALLEL &&
+        p2 != NULL &&
+        p2 != _Py_IS_PARALLEL &&
+        p2 != _Py_NOT_PARALLEL &&
+        px->ctx != NULL && (
+            (next == NULL && ((void *)px->ctx->ob_last == m))   ||
+            (next != NULL && next->is_px == _Py_IS_PARALLEL)
+        ) && (
+            (prev == NULL && ((void *)px->ctx->ob_first == m))  ||
+            (prev != NULL && prev->is_px == _Py_IS_PARALLEL)
+        )
+    );
+
+    for (i = 0; i < 4; i++) {
+        if (pp[i] == _Py_NOT_PARALLEL)
+            py++;
+
+        if (pp[i] == _Py_IS_PARALLEL)
+            px++;
+    }
+
+    is_corrupt = (
+        (px > 0)                        ||
+        (py > 0 && py < 4)              ||
+        (py == 1 && p2 == NULL)         ||
+        (p2 == _Py_IS_PARALLEL)         ||
+        (p1 == _Py_IS_PARALLEL && (
+            (px->ctx == NULL)           ||
+            (px->ctx != NULL && (
+                (next == NULL && ((void *)px->ctx->ob_last != m))   ||
+                (next != NULL && next->is_px != _Py_IS_PARALLEL)
+            ) && (
+                (prev == NULL && ((void *)px->ctx->ob_first != m))  ||
+                (prev != NULL && prev->is_px != _Py_IS_PARALLEL)
+            ))
+        ))
+    );
+
+    is_unknown = (
+        py == 0 && px == 0
+    );
+
+    if (is_py) {
+        assert(!is_px);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_px) {
+        assert(!is_py);
+        assert(!is_corrupt);
+        assert(!is_unknown);
+        signature = _MEMSIG_PY;
+    } else if (is_corrupt) {
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_unknown);
+        signature = _MEMSIG_CORRUPT;
+    } else {
+        assert(is_unknown);
+        assert(!is_px);
+        assert(!is_py);
+        assert(!is_corrupt);
+        signature = _MEMSIG_UNKNOWN;
+    }
+
+    return signature;
+}
+*/
 
 #ifdef __cpplus
 }

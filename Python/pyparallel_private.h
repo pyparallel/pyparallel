@@ -298,6 +298,7 @@ typedef struct _PxObject {
     PyObject    *parent;
     size_t       size;
     int          resized;
+    size_t       signature;
 } PxObject;
 
 //#undef Py_PX

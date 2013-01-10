@@ -239,14 +239,17 @@ static int dictresize(PyDictObject *mp, Py_ssize_t minused);
 #ifndef PyDict_MAXFREELIST
 #define PyDict_MAXFREELIST 80
 #endif
-__declspec(thread) static PyDictObject *free_list[PyDict_MAXFREELIST];
-__declspec(thread) static int numfree = 0;
+static PyDictObject *free_list[PyDict_MAXFREELIST];
+static int numfree = 0;
 
 int
 PyDict_ClearFreeList(void)
 {
     PyDictObject *op;
     int ret = numfree;
+    if (Py_PXCTX)
+        return 0;
+
     while (numfree) {
         op = free_list[--numfree];
         assert(PyDict_CheckExact(op));
@@ -389,7 +392,7 @@ static PyObject *
 new_dict(PyDictKeysObject *keys, PyObject **values)
 {
     PyDictObject *mp;
-    if (numfree) {
+    if (!Py_PXCTX && numfree) {
         mp = free_list[--numfree];
         assert (mp != NULL);
         assert (Py_TYPE(mp) == &PyDict_Type);
@@ -1380,6 +1383,7 @@ dict_dealloc(PyDictObject *mp)
     PyObject **values = mp->ma_values;
     PyDictKeysObject *keys = mp->ma_keys;
     Py_ssize_t i, n;
+    Py_GUARD
     PyObject_GC_UnTrack(mp);
     Py_TRASHCAN_SAFE_BEGIN(mp)
     if (values != NULL) {

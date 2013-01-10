@@ -182,6 +182,11 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
 #define _PyObject_InitHead(o)
 
 #else /* !WITH_PARALLEL */
+#if defined(Py_DEBUG) && defined(WITH_PYMALLOC)
+#define Py_USING_MEMORY_DEBUGGER
+PyAPI_FUNC(int) _PyMem_InRange(void *p);
+#endif
+
 PyAPI_FUNC(PyObject *)    _PxObject_Init(PyObject *op, PyTypeObject *tp);
 PyAPI_FUNC(PyVarObject *) _PxObject_InitVar(PyVarObject *op,
                                             PyTypeObject *tp,
@@ -242,16 +247,6 @@ PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
     return op;
 }
 
-/*
-#define PyObject_INIT(op, typeobj)                             \
-    (Py_PXCTX ?                                                \
-        (_PxObject_Init((op), (typeobj))) :                    \
-        (Py_TYPE(op) = (typeobj), _Py_NewReference((PyObject *)(op)), (op)))
-
-#define PyObject_INIT_VAR(op, typeobj, size)                   \
-    (Py_PXCTX ? (_PxObject_InitVar((op), (typeobj), (size))) : \
-                (Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj))))
-*/
 #endif /* WITH_PARALLEL */
 
 

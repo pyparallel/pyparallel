@@ -204,7 +204,7 @@ void
 _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 {
     char buf[300];
-    Py_GUARD_MEM(op);
+    Py_GUARD_OBJ(op);
 
     PyOS_snprintf(buf, sizeof(buf),
                   "%s:%i object at %p has negative ref count "
@@ -218,7 +218,7 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 void
 Py_IncRef(PyObject *o)
 {
-    Py_GUARD_MEM(o);
+    Py_GUARD_OBJ(o);
     Px_VOID_OP(o)
     Py_XINCREF(o);
 }
@@ -226,7 +226,7 @@ Py_IncRef(PyObject *o)
 void
 Py_DecRef(PyObject *o)
 {
-    Py_GUARD_MEM(o);
+    Py_GUARD_OBJ(o);
     Px_VOID_OP(o)
     Py_XDECREF(o);
 }
@@ -290,7 +290,7 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
 {
     int ret = 0;
     Py_GUARD
-    Py_GUARD_MEM(op);
+    Py_GUARD_OBJ(op);
     if (PyErr_CheckSignals())
         return -1;
 #ifdef USE_STACKCHECK
@@ -1797,6 +1797,7 @@ void
 _Py_NewReference(PyObject *op)
 {
     Px_RETURN_VOID(_Px_NewReference(op))
+    Py_GUARD_OBJ(op);
     _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
     _Py_VerifyObjectHead(op);
@@ -1810,7 +1811,7 @@ _Py_ForgetReference(register PyObject *op)
 #ifdef SLOW_UNREF_CHECK
     register PyObject *p;
 #endif
-    Py_GUARD_MEM(op);
+    Py_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_ForgetReference(op))
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
@@ -1843,6 +1844,7 @@ _Py_Dealloc(PyObject *op)
 {
     destructor dealloc;
     Px_RETURN_VOID(_Px_Dealloc(op))
+    Py_GUARD_OBJ(op);
     dealloc = Py_TYPE(op)->tp_dealloc;
     _Py_ForgetReference(op);
     (*dealloc)(op);
@@ -1856,6 +1858,7 @@ _Py_PrintReferences(FILE *fp)
 {
     PyObject *op;
     Py_GUARD
+    Py_GUARD_OBJ(op);
     fprintf(fp, "Remaining objects:\n");
     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] ", op, op->ob_refcnt);
@@ -1886,6 +1889,11 @@ _Py_GetObjects(PyObject *self, PyObject *args)
     PyObject *t = NULL;
     PyObject *res, *op;
     Py_GUARD
+    if (self)
+        Py_GUARD_OBJ(self);
+
+    if (args)
+        Py_GUARD_OBJ(args);
 
     if (!PyArg_ParseTuple(args, "i|O", &n, &t))
         return NULL;
@@ -1931,6 +1939,7 @@ void *
 PyMem_Realloc(void *p, size_t nbytes)
 {
     Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Py_GUARD_MEM(p);
     return PyMem_REALLOC(p, nbytes);
 }
 
@@ -1938,6 +1947,7 @@ void
 PyMem_Free(void *p)
 {
     Px_RETURN_VOID(_PxMem_Free(p))
+    Py_GUARD_MEM(p);
     PyMem_FREE(p);
 }
 
@@ -1976,6 +1986,8 @@ Py_ReprEnter(PyObject *obj)
     PyObject *list;
     Py_ssize_t i;
 
+    PyPx_GUARD_OBJ(obj);
+
     dict = PyThreadState_GetDict();
     if (dict == NULL)
         return 0;
@@ -2003,6 +2015,8 @@ Py_ReprLeave(PyObject *obj)
     PyObject *dict;
     PyObject *list;
     Py_ssize_t i;
+
+    PyPx_GUARD_OBJ(obj);
 
     dict = PyThreadState_GetDict();
     if (dict == NULL)
@@ -2038,6 +2052,7 @@ void
 _PyTrash_deposit_object(PyObject *op)
 {
     Py_GUARD
+    Py_GUARD_OBJ(op);
     assert(PyObject_IS_GC(op));
     assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
     assert(op->ob_refcnt == 0);
@@ -2051,6 +2066,7 @@ _PyTrash_thread_deposit_object(PyObject *op)
 {
     PyThreadState *tstate;
     Py_GUARD
+    Py_GUARD_OBJ(op);
     tstate = PyThreadState_GET();
     assert(PyObject_IS_GC(op));
     assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
@@ -2122,6 +2138,7 @@ void
 _Py_Dealloc(PyObject *op)
 {
     Px_RETURN(_Px_Dealloc(op))
+    Py_GUARD_OBJ(op);
     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA
     (*Py_TYPE(op)->tp_dealloc)(op);
 }
