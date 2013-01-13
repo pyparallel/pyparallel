@@ -1,17 +1,25 @@
 #ifndef PYPARALLEL_PRIVATE_H
 #define PYPARALLEL_PRIVATE_H
 
+#ifdef __cpplus
+extern "C" {
+#endif
+
 #include <Windows.h>
 #include "pyparallel.h"
+
 
 #ifdef _WIN64
 #define Px_PTR_ALIGN_SIZE 8U
 #define Px_UINTPTR unsigned long long
+#define Px_INTPTR long long
 #else
 #define Px_PTR_ALIGN_SIZE 4U
 #define Px_UINTPTR unsigned long
+#define Px_INTPTR long
 #endif
 #define Px_PAGE_SIZE (4096)
+#define Px_PAGE_SHIFT 12ULL
 #define Px_MEM_ALIGN_RAW MEMORY_ALLOCATION_ALIGNMENT
 #define Px_MEM_ALIGN_SIZE ((Px_UINTPTR)MEMORY_ALLOCATION_ALIGNMENT)
 #define Px_PAGE_ALIGN_SIZE ((Px_UINTPTR)Px_PAGE_SIZE)
@@ -23,14 +31,14 @@
 )
 
 #define Px_ALIGN_DOWN(n, a) (                        \
-    (((Px_UINTPTR)(n)) & (~((Px_UINTPTR)(a))))       \
+    (((Px_UINTPTR)(n)) & (-((Px_INTPTR)(a))))        \
 )
 
 #define Px_PTR_ALIGN(n)         (Px_ALIGN((n), Px_PTR_ALIGN_SIZE))
 #define Px_MEM_ALIGN(n)         (Px_ALIGN((n), Px_MEM_ALIGN_SIZE))
 #define Px_CACHE_ALIGN(n)       (Px_ALIGN((n), Px_CACHE_ALIGN_SIZE))
 #define Px_PAGE_ALIGN(n)        (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
-#define Px_PAGE_ALIGN_DOWN(n)   (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
+#define Px_PAGE_ALIGN_DOWN(n)   (Px_ALIGN_DOWN((n), Px_PAGE_ALIGN_SIZE))
 
 #define Px_PTR(p)           ((Px_UINTPTR)(p))
 #define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
@@ -50,6 +58,14 @@
 
 #define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE) /* 4KB */
 #define Px_MAX_SEM (32768)
+
+#define Px_PTR_IN_HEAP(p, h) (!h ? 0 : (            \
+    (Px_PTR((p)) >= Px_PTR(((Heap *)(h))->base)) && \
+    (Px_PTR((p)) <= Px_PTR(                         \
+        Px_PTR((((Heap *)(h))->base)) +             \
+        Px_PTR((((Heap *)(h))->size))               \
+    ))                                              \
+))
 
 #include "pxlist.h"
 
@@ -153,6 +169,122 @@ typedef struct _PyParallelContextStats {
 #define _PX_OTHER_FREES_SIZE 4
 #define _PX_TMPBUF_SIZE 1024
 
+#define HASH_DEBUG
+#include "uthash.h"
+
+#define _PxPages_MAX_HEAPS 2
+typedef struct _PxPages {
+    Px_UINTPTR  base;
+    Heap       *heaps[_PxPages_MAX_HEAPS];
+    short       count;
+    UT_hash_handle hh;
+} PxPages;
+
+__inline
+int
+_PxPages_LookupHeapPage(PxPages *pages, Px_UINTPTR *value, void *p)
+{
+    PxPages *x;
+    HASH_FIND_INT(pages, value, x);
+    if (x) {
+        Heap *h1, *h2;
+        assert(x->count >= 1 && x->count <= 2);
+        h1 = x->heaps[0];
+        h2 = (x->count == 2 ? x->heaps[1] : NULL);
+        if (Px_PTR_IN_HEAP(p, h1) || (h2 && Px_PTR_IN_HEAP(p, h2)))
+            return 1;
+    }
+    return 0;
+}
+
+__inline
+int
+PxPages_Find(PxPages *pages, void *p)
+{
+    int found;
+    Px_UINTPTR lower, upper;
+
+    lower = Px_PAGE_ALIGN_DOWN(p);
+    upper = Px_PAGE_ALIGN(p);
+
+    found = _PxPages_LookupHeapPage(pages, &lower, p);
+    if (!found && lower != upper)
+        found = _PxPages_LookupHeapPage(pages, &upper, p);
+
+    return found;
+}
+
+static
+void
+_PxPages_RemoveHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
+{
+    PxPages *x;
+    HASH_FIND_INT(*pages, value, x);
+    assert(x);
+    if (x->count == 1) {
+        assert(x->heaps[0] == h);
+        HASH_DEL(*pages, x);
+        free(x);
+    } else {
+        assert(x->count >= 1 && x->count <= 2);
+        if (x->heaps[0] == h)
+            x->heaps[0] = x->heaps[1];
+        else
+            assert(x->heaps[1] == h);
+        x->heaps[1] = NULL;
+        x->count = 1;
+    }
+}
+
+static
+void
+_PxPages_AddHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
+{
+    PxPages *x;
+    HASH_FIND_INT(*pages, value, x);
+    if (x) {
+        assert(x->count == 1);
+        x->heaps[1] = h;
+        x->count++;
+    } else {
+        x = (PxPages *)malloc(sizeof(PxPages));
+        x->heaps[0] = h;
+        x->count = 1;
+        x->base = *value;
+        HASH_ADD_INT(*pages, base, x);
+    }
+}
+
+__inline
+void
+PxPages_Remove(PxPages **pages, PxPages *x)
+{
+    HASH_DEL(*pages, x);
+    free(x);
+}
+
+__inline
+void
+PxPages_Delete(PxPages **pages)
+{
+    PxPages *x, *t;
+    HASH_ITER(hh, *pages, x, t) {
+        HASH_DEL(*pages, x);
+        free(x);
+    }
+}
+
+static void
+PxPages_Dump(PxPages *pages)
+{
+    PxPages *x, *t;
+    int i = 0;
+    HASH_ITER(hh, pages, x, t) {
+        i++;
+        printf("[%d] base: 0x%llx, count: %d\n", i, x->base, x->count);
+    }
+}
+
 typedef struct _PxState {
     PxListHead *errors;
     PxListHead *completed_callbacks;
@@ -163,11 +295,16 @@ typedef struct _PxState {
     //PxListHead *singles;
 
 #ifdef Py_DEBUG
+    /*
     SRWLOCK     pages_srwlock;
     PxListHead *pages_incoming;
     PyObject   *pages_seen;
     PyObject   *pages_freed;
     PyObject   *pages_active;
+    */
+
+    SRWLOCK     pages_srwlock;
+    PxPages    *pages;
 #endif
 
     Context *ctx_first;
@@ -324,5 +461,10 @@ typedef struct _PyAsyncServerSocketObject {
     int preallocated;
 } PyAsyncSocketObject;
 */
+
+
+#ifdef __cpplus
+}
+#endif
 
 #endif /* PYPARALLEL_PRIVATE_H */

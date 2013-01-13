@@ -1565,8 +1565,19 @@ unicode_modifiable(PyObject *unicode)
 {
     assert(_PyUnicode_CHECK(unicode));
 #ifdef WITH_PARALLEL
-    if (Py_ISPY(unicode) && Py_PXCTX || Py_ISPX(unicode))
-        return 0;
+    if (Py_PXCTX) {
+        if (Py_ISPY(unicode))
+            return 0;
+        else {
+            assert(Px_TEST_OBJ(unicode));
+            return 1;
+        }
+    } else {
+        if (!Py_ISPY(unicode)) {
+            assert(Px_TEST_OBJ(unicode));
+            return 0;
+        }
+    }
 #endif
     if (Py_REFCNT(unicode) != 1)
         return 0;

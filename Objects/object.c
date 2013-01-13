@@ -1796,8 +1796,8 @@ _Py_VerifyObjectHead(PyObject *op)
 void
 _Py_NewReference(PyObject *op)
 {
+    PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_NewReference(op))
-    Py_GUARD_OBJ(op);
     _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
     _Py_VerifyObjectHead(op);
@@ -1811,7 +1811,7 @@ _Py_ForgetReference(register PyObject *op)
 #ifdef SLOW_UNREF_CHECK
     register PyObject *p;
 #endif
-    Py_GUARD_OBJ(op);
+    PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_ForgetReference(op))
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
@@ -1843,8 +1843,8 @@ void
 _Py_Dealloc(PyObject *op)
 {
     destructor dealloc;
+    PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_Dealloc(op))
-    Py_GUARD_OBJ(op);
     dealloc = Py_TYPE(op)->tp_dealloc;
     _Py_ForgetReference(op);
     (*dealloc)(op);
@@ -1858,7 +1858,6 @@ _Py_PrintReferences(FILE *fp)
 {
     PyObject *op;
     Py_GUARD
-    Py_GUARD_OBJ(op);
     fprintf(fp, "Remaining objects:\n");
     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] ", op, op->ob_refcnt);

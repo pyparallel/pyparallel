@@ -80,9 +80,9 @@ class TestSubmitWork(unittest.TestCase):
 
     def test_call_from_main_thread_decorator(self):
         @async.call_from_main_thread
-        def f():
+        def f(i):
             self.assertFalse(_async.is_parallel_thread())
-        _async.submit_work(f, None, None, None, None)
+        _async.submit_work(f, 2, None, None, None)
         _async.run()
 
     def test_submit_simple_work_errback_invoked(self):
