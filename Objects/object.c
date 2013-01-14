@@ -1796,8 +1796,8 @@ _Py_VerifyObjectHead(PyObject *op)
 void
 _Py_NewReference(PyObject *op)
 {
-    PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_NewReference(op))
+    Py_GUARD_OBJ(op);
     _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
     _Py_VerifyObjectHead(op);
@@ -1811,8 +1811,8 @@ _Py_ForgetReference(register PyObject *op)
 #ifdef SLOW_UNREF_CHECK
     register PyObject *p;
 #endif
-    PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_ForgetReference(op))
+    Py_GUARD_OBJ(op);
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
     if (op == &refchain ||

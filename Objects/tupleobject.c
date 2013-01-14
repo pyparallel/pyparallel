@@ -154,6 +154,20 @@ PyTuple_GetItem(register PyObject *op, register Py_ssize_t i)
     return ((PyTupleObject *)op) -> ob_item[i];
 }
 
+PyObject **
+PyTuple_GetItemAddr(register PyObject *op, register Py_ssize_t i)
+{
+    if (!PyTuple_Check(op)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    if (i < 0 || i >= Py_SIZE(op)) {
+        PyErr_SetString(PyExc_IndexError, "tuple index out of range");
+        return NULL;
+    }
+    return &(((PyTupleObject *)op)->ob_item[i]);
+}
+
 int
 PyTuple_SetItem(register PyObject *op, register Py_ssize_t i, PyObject *newitem)
 {

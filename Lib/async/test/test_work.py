@@ -80,54 +80,63 @@ class TestSubmitWork(unittest.TestCase):
 
     def test_call_from_main_thread_decorator(self):
         @async.call_from_main_thread
-        def f(i):
+        def f():
             self.assertFalse(_async.is_parallel_thread())
-        _async.submit_work(f, 2, None, None, None)
+        _async.submit_work(f, None, None, None, None)
         _async.run()
 
-    def test_submit_simple_work_errback_invoked(self):
+    def test_submit_simple_work_errback_invoked2(self):
+        #def f():
+        #    i = len(laksjdflaskjdflsakjdfsalkjdf)
+        #    laksjdflaskjdflsakjdfsalkjdf = 'lkasjdflskjdf'
+
+        def f():
+            return laksjdflaskjdflsakjdfsalkjdfaa
+
+        def test_e(et, ev, eb):
+            self.assertFalse(_async.is_parallel_thread())
+            try:
+                f()
+            except NameError as e2:
+                self.assertEqual(et, e2.__class__)
+                self.assertEqual(ev, e2.args[0])
+                self.assertEqual(eb.__class__, e2.__traceback__.__class__)
+            else:
+                self.assertEqual(0, 1)
+
+        def cb(r):
+            _async.call_from_main_thread(self.assertEqual, (0, 1))
+
+        def eb(e):
+            _async.call_from_main_thread_and_wait(test_e, e)
+
+        _async.submit_work(f, None, None, cb, eb)
+        _async.run()
+
+    def test_submit_simple_work_errback_invoked1(self):
         def f():
             return laksjdflaskjdflsakjdfsalkjdf
 
         @async.call_from_main_thread_and_wait
         def test_e(e):
-            print("\n-2\n")
             self.assertFalse(_async.is_parallel_thread())
-            print(repr(e))
+            self.assertIsInstance(e, tuple)
             (et, ev, eb) = e
-            print("\n-1\n")
-            print("*1\n")
-            print(repr(et))
-            print("*2\n")
-            print(repr(ev))
-            print("*3\n")
-            print(repr(eb))
             try:
-                print("\n0\n")
                 f()
             except NameError as e2:
-                print("\n1\n")
-                print(repr(et))
                 self.assertEqual(et, e2.__class__)
-                print("2\n")
-                print(repr(ev))
                 self.assertEqual(ev, e2.args[0])
-                print("3\n")
-                print(repr(eb))
                 self.assertEqual(eb.__class__, e2.__traceback__.__class__)
             else:
                 self.assertEqual(0, 1)
 
-        @async.call_from_main_thread_and_wait
-        def cb(r):
-            self.assertEqual(0, 1)
-
         def eb(e):
             test_e(e)
 
-        _async.submit_work(f, None, None, cb, eb)
-        while _async.is_active():
-            _async.run_once()
+        _async.submit_work(f, None, None, None, eb)
+        _async.run()
+
 
 if __name__ == '__main__':
     unittest.main()

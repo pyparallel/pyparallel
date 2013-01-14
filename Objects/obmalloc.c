@@ -238,6 +238,14 @@ static int running_on_valgrind = -1;
 #define SIMPLELOCK_LOCK(lock)   /* acquire released lock */
 #define SIMPLELOCK_UNLOCK(lock) /* release acquired lock */
 
+#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG)
+#define SRWLOCK_DECL(lock)          static SRWLOCK lock = SRWLOCK_INIT;
+#define SRWLOCK_WRITE_LOCK(lock)    AcquireSRWLockExclusive(&lock)
+#define SRWLOCK_WRITE_UNLOCK(lock)  ReleaseSRWLockExclusive(&lock)
+#define SRWLOCK_READ_LOCK(lock)     AcquireSRWLockShared(&lock)
+#define SRWLOCK_READ_UNLOCK(lock)   ReleaseSRWLockShared(&lock)
+#endif
+
 /*
  * Basic types
  * I don't care if these are defined in <sys/types.h> or elsewhere. Axiom.
@@ -328,11 +336,28 @@ struct arena_object {
 /*
  * This malloc lock
  */
+#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG) && 0
+#include <Windows.h>
+//static SRWLOCK srwlock = SRWLOCK_INIT;
+SRWLOCK_DECL(_malloc_srwlock)
+#define LOCK()          SRWLOCK_WRITE_LOCK(_malloc_srwlock)
+#define UNLOCK()        SRWLOCK_WRITE_UNLOCK(_malloc_srwlock)
+#define WRITE_LOCK()    LOCK()
+#define WRITE_UNLOCK()  UNLOCK()
+#define READ_LOCK()     SRWLOCK_READ_LOCK(_malloc_srwlock)
+#define READ_UNLOCK()   SRWLOCK_READ_UNLOCK(_malloc_srwlock)
+
+#else
 SIMPLELOCK_DECL(_malloc_lock)
 #define LOCK()          SIMPLELOCK_LOCK(_malloc_lock)
 #define UNLOCK()        SIMPLELOCK_UNLOCK(_malloc_lock)
 #define LOCK_INIT()     SIMPLELOCK_INIT(_malloc_lock)
 #define LOCK_FINI()     SIMPLELOCK_FINI(_malloc_lock)
+#define WRITE_LOCK()
+#define WRITE_UNLOCK()
+#define READ_LOCK()
+#define READ_UNLOCK()
+#endif
 
 /*
  * Pool table -- headed, circular, doubly-linked lists of partially used pools.
@@ -525,6 +550,17 @@ static size_t ntimes_arena_allocated = 0;
 /* High water mark (max value ever seen) for narenas_currently_allocated. */
 static size_t narenas_highwater = 0;
 
+static Py_ssize_t _Py_AllocatedBlocks = 0;
+
+Py_ssize_t
+_Py_GetAllocatedBlocks(void)
+{
+    READ_LOCK();
+    return _Py_AllocatedBlocks;
+    READ_UNLOCK();
+}
+
+
 /* Allocate a new arena.  If we run out of memory, return NULL.  Else
  * allocate a new arena, and return the address of an arena_object
  * describing the new arena.  It's expected that the caller will set
@@ -533,7 +569,7 @@ static size_t narenas_highwater = 0;
 static struct arena_object*
 new_arena(void)
 {
-    struct arena_object* arenaobj;
+    struct arena_object* arenaobj = NULL;
     uint excess;        /* number of bytes above pool alignment */
     void *address;
     int err;
@@ -553,15 +589,15 @@ new_arena(void)
          */
         numarenas = maxarenas ? maxarenas << 1 : INITIAL_ARENA_OBJECTS;
         if (numarenas <= maxarenas)
-            return NULL;                /* overflow */
+            goto end;                   /* overflow */
 #if SIZEOF_SIZE_T <= SIZEOF_INT
         if (numarenas > PY_SIZE_MAX / sizeof(*arenas))
-            return NULL;                /* overflow */
+            goto end;                   /* overflow */
 #endif
         nbytes = numarenas * sizeof(*arenas);
         arenaobj = (struct arena_object *)realloc(arenas, nbytes);
         if (arenaobj == NULL)
-            return NULL;
+            goto end;
         arenas = arenaobj;
 
         /* We might need to fix pointers that were copied.  However,
@@ -604,7 +640,7 @@ new_arena(void)
          */
         arenaobj->nextarena = unused_arena_objects;
         unused_arena_objects = arenaobj;
-        return NULL;
+        goto end;
     }
     arenaobj->address = (uptr)address;
 
@@ -625,6 +661,7 @@ new_arena(void)
     }
     arenaobj->ntotalpools = arenaobj->nfreepools;
 
+end:
     return arenaobj;
 }
 
@@ -715,7 +752,6 @@ variable.
      (uptr)(P) - arenas[arenaindex_temp].address < (uptr)ARENA_SIZE && \
      arenas[arenaindex_temp].address != 0)
 
-
 /* This is only useful when running memory debuggers such as
  * Purify or Valgrind.  Uncomment to use.
  *
@@ -786,6 +822,8 @@ PyObject_Malloc(size_t nbytes)
      */
     if (nbytes > PY_SSIZE_T_MAX)
         return NULL;
+
+    _Py_AllocatedBlocks++;
 
     /*
      * This implicitly redirects malloc(0).
@@ -903,6 +941,7 @@ PyObject_Malloc(size_t nbytes)
                  * and free list are already initialized.
                  */
                 bp = pool->freeblock;
+                assert(bp != NULL);
                 pool->freeblock = *(block **)bp;
                 UNLOCK();
                 return (void *)bp;
@@ -960,7 +999,15 @@ redirect:
      */
     if (nbytes == 0)
         nbytes = 1;
-    return (void *)malloc(nbytes);
+    {
+        void *result = malloc(nbytes);
+        if (!result) {
+            LOCK();
+            _Py_AllocatedBlocks--;
+            UNLOCK();
+        }
+        return result;
+    }
 }
 
 /* free */
@@ -980,6 +1027,8 @@ PyObject_Free(void *p)
 
     if (p == NULL)      /* free(NULL) has no effect */
         return;
+
+    _Py_AllocatedBlocks--;
 
 #ifdef WITH_VALGRIND
     if (UNLIKELY(running_on_valgrind > 0))
@@ -1206,11 +1255,10 @@ PyObject_Realloc(void *p, size_t nbytes)
 #ifndef Py_USING_MEMORY_DEBUGGER
     uint arenaindex_temp;
 #endif
-
     if (p == NULL)
         return PyObject_Malloc(nbytes);
 
-    _GUARD_MEM(p);
+    PyPx_GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     /*
@@ -1296,7 +1344,7 @@ PyObject_Malloc(size_t n)
 void *
 PyObject_Realloc(void *p, size_t n)
 {
-    _GUARD_MEM(p);
+    PyPx_GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, n))
     return PyMem_REALLOC(p, n);
 }
@@ -1304,10 +1352,18 @@ PyObject_Realloc(void *p, size_t n)
 void
 PyObject_Free(void *p)
 {
-    _GUARD_MEM(p);
+    PyPx_GUARD_MEM(p);
     Px_RETURN_VOID(_PxMem_Free(p))
     PyMem_FREE(p);
 }
+
+Py_ssize_t
+_Py_GetAllocatedBlocks(void)
+{
+    Py_GUARD
+    return 0;
+}
+
 #endif /* WITH_PYMALLOC */
 
 #ifdef PYMALLOC_DEBUG
@@ -1541,7 +1597,7 @@ _PyObject_DebugReallocApi(char api, void *p, size_t nbytes)
     if (p == NULL)
         return _PyObject_DebugMallocApi(api, nbytes);
 
-    _GUARD_MEM(p);
+    PyPx_GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, nbytes))
 
     _PyObject_DebugCheckAddressApi(api, p);
@@ -1766,7 +1822,7 @@ printone(FILE *out, const char* msg, size_t value)
     k = 3;
     do {
         size_t nextvalue = value / 10;
-        unsigned int digit = (unsigned int)(value - nextvalue * 10);
+        PY_UINT32_T digit = (PY_UINT32_T)(value - nextvalue * 10);
         value = nextvalue;
         buf[i--] = (char)(digit + '0');
         --k;
@@ -1791,7 +1847,7 @@ _PyDebugAllocatorStats(FILE *out,
     char buf2[128];
     Py_GUARD
     PyOS_snprintf(buf1, sizeof(buf1),
-                  "%d %ss * %" PY_FORMAT_SIZE_T "d bytes each",
+                  "%d %ss * %zd bytes each",
                   num_blocks, block_name, sizeof_block);
     PyOS_snprintf(buf2, sizeof(buf2),
                   "%48s ", buf1);
@@ -1976,3 +2032,58 @@ Py_ADDRESS_IN_RANGE(void *P, poolp pool)
            arenas[arenaindex_temp].address != 0;
 }
 #endif
+
+#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG)
+#include <Windows.h>
+int
+_PyMem_InRange(void *m)
+{
+    struct arena_object *arena;
+    uint arenaindex_temp;
+    uptr address;
+    uptr addr2;
+    uptr up;
+    uptr pdiff;
+    poolp pool;
+    int invalid = 0;
+    int result = 0;
+    int result2 = 0;
+    void *v;
+    struct arena_object *ap = NULL;
+
+    up = (uptr)m;
+    pool = POOL_ADDR(m);
+    READ_LOCK();
+    __try {
+        arenaindex_temp = pool->arenaindex;
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        invalid = 1;
+    }
+    if (invalid)
+        goto end;
+
+    if (arenaindex_temp < maxarenas) {
+        v = (void *)arenas[arenaindex_temp].address;
+        ap = (struct arena_object *)v;
+        addr2 = arenas[arenaindex_temp].address;
+        arena = &arenas[arenaindex_temp];
+        address = arena->address;
+        pdiff = up - address;
+        if (pdiff < (uptr)ARENA_SIZE)
+            if (address != 0)
+                result = 1;
+    }
+    result2 = arenaindex_temp < maxarenas &&
+           (uptr)m - arenas[arenaindex_temp].address < (uptr)ARENA_SIZE &&
+           arenas[arenaindex_temp].address != 0;
+    assert(result == result2);
+end:
+    READ_UNLOCK();
+    return result;
+}
+#endif
+

@@ -36,6 +36,8 @@ PyAPI_FUNC(void) _PyParallel_EndAllowThreads(void);
 PyAPI_FUNC(void) _PyParallel_EnteredParallelContext(void *c);
 PyAPI_FUNC(void) _PyParallel_LeavingParallelContext(void);
 
+PyAPI_FUNC(int)  _PyParallel_ExecutingCallbackFromMainThread(void);
+
 PyAPI_FUNC(void) _PyParallel_ContextGuardFailure(const char *function,
                                                  const char *filename,
                                                  int lineno,
@@ -47,6 +49,7 @@ PyAPI_FUNC(int) _PyParallel_Guard(const char *function,
                                   void *m,
                                   unsigned int flags);
 
+PyAPI_FUNC(int)     _Px_TEST(void *p);
 #ifdef Py_DEBUG
 PyAPI_FUNC(int)     _Py_ISPX(void *ob);
 PyAPI_FUNC(int)     _Py_ISPY(void *ob);

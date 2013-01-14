@@ -414,8 +414,8 @@ static PyGetSetDef frame_getsetlist[] = {
    frames could provoke free_list into growing without bound.
 */
 
-__declspec(thread) static PyFrameObject *free_list = NULL;
-__declspec(thread) static int numfree = 0;         /* number of frames currently in free_list */
+static PyFrameObject *free_list = NULL;
+static int numfree = 0;         /* number of frames currently in free_list */
 /* max value for numfree */
 #define PyFrame_MAXFREELIST 200
 
@@ -424,6 +424,7 @@ frame_dealloc(PyFrameObject *f)
 {
     PyObject **p, **valuestack;
     PyCodeObject *co;
+    Py_GUARD
 
     PyObject_GC_UnTrack(f);
     Py_TRASHCAN_SAFE_BEGIN(f)
@@ -637,7 +638,9 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
         assert(builtins != NULL);
         Py_INCREF(builtins);
     }
-    if (code->co_zombieframe != NULL) {
+    if (!Py_PXCTX && code->co_zombieframe != NULL &&
+        !_PyParallel_ExecutingCallbackFromMainThread()) {
+        assert(!_Px_TEST(code->co_zombieframe));
         f = code->co_zombieframe;
         code->co_zombieframe = NULL;
         _Py_NewReference((PyObject *)f);
@@ -647,17 +650,16 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
         Py_ssize_t extras, ncells, nfrees;
         ncells = PyTuple_GET_SIZE(code->co_cellvars);
         nfrees = PyTuple_GET_SIZE(code->co_freevars);
-        extras = code->co_stacksize + code->co_nlocals + ncells +
-            nfrees;
-        if (free_list == NULL) {
-            f = PyObject_GC_NewVar(PyFrameObject, &PyFrame_Type,
-            extras);
+        extras = code->co_stacksize + code->co_nlocals + ncells + nfrees;
+        if (Py_PXCTX || free_list == NULL) {
+            f = PyObject_GC_NewVar(PyFrameObject, &PyFrame_Type, extras);
             if (f == NULL) {
                 Py_DECREF(builtins);
                 return NULL;
             }
         }
         else {
+            Py_GUARD
             assert(numfree > 0);
             --numfree;
             f = free_list;
@@ -937,7 +939,8 @@ int
 PyFrame_ClearFreeList(void)
 {
     int freelist_size = numfree;
-
+    if (Py_PXCTX)
+        return 0;
     while (free_list != NULL) {
         PyFrameObject *f = free_list;
         free_list = free_list->f_back;

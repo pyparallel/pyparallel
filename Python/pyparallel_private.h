@@ -83,6 +83,7 @@ typedef struct _cpuinfo {
 typedef struct _Object Object;
 
 typedef struct _Object {
+    Object   *prev;
     Object   *next;
     PyObject *op;
 } Object;
@@ -100,12 +101,34 @@ append_object(Objects *list, Object *o)
     if (!list->first) {
         list->first = o;
         list->last = o;
+        o->prev = NULL;
     } else {
         n = list->last;
         n->next = o;
+        o->prev = n;
         list->last = o;
     }
-    o->next = 0;
+    o->next = NULL;
+}
+
+static __inline
+void
+remove_object(Objects *list, Object *o)
+{
+    register Object *prev = o->prev;
+    register Object *next = o->next;
+
+    if (list->first == o)
+        list->first = next;
+
+    if (list->last == o)
+        list->last = prev;
+
+    if (prev)
+        prev->next = next;
+
+    if (next)
+        next->prev = prev;
 }
 
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
@@ -122,7 +145,8 @@ typedef struct _PyParallelHeap {
     size_t  last_alignment;
     size_t  mallocs;
     size_t  deallocs;
-    size_t  reallocs;
+    size_t  mem_reallocs;
+    size_t  obj_reallocs;
     size_t  resizes;
     size_t  frees;
     size_t  size;
@@ -144,7 +168,8 @@ typedef struct _PyParallelContextStats {
     int blocking_calls;
 
     size_t mallocs;
-    size_t reallocs;
+    size_t mem_reallocs;
+    size_t obj_reallocs;
     size_t deallocs;
     size_t resizes;
     size_t frees;
@@ -291,18 +316,8 @@ typedef struct _PxState {
     PxListHead *completed_errbacks;
     PxListHead *incoming;
     PxListHead *finished;
-    //PxListHead *freelist;
-    //PxListHead *singles;
 
 #ifdef Py_DEBUG
-    /*
-    SRWLOCK     pages_srwlock;
-    PxListHead *pages_incoming;
-    PyObject   *pages_seen;
-    PyObject   *pages_freed;
-    PyObject   *pages_active;
-    */
-
     SRWLOCK     pages_srwlock;
     PxPages    *pages;
 #endif
@@ -317,6 +332,8 @@ typedef struct _PxState {
     HANDLE wakeup;
 
     CRITICAL_SECTION cs;
+
+    int processing_callback;
 
     long long contexts_created;
     long long contexts_destroyed;
@@ -434,7 +451,8 @@ typedef struct _PxObject {
     Context     *ctx;
     PyObject    *parent;
     size_t       size;
-    int          resized;
+    PyObject    *resized_to;
+    PyObject    *resized_from;
     size_t       signature;
 } PxObject;
 

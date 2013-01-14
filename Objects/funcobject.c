@@ -591,14 +591,17 @@ func_traverse(PyFunctionObject *f, visitproc visit, void *arg)
     return 0;
 }
 
+PyAPI_FUNC(PyObject **) PyTuple_GetItemAddr(register PyObject *op, register Py_ssize_t i);
+
 static PyObject *
 function_call(PyObject *func, PyObject *arg, PyObject *kw)
 {
     PyObject *result;
     PyObject *argdefs;
     PyObject *kwtuple = NULL;
-    PyObject **d, **k;
-    Py_ssize_t nk, nd;
+    PyObject **d, **a, **k;
+    PyObject *f;
+    Py_ssize_t nk, na, nd;
 
     argdefs = PyFunction_GET_DEFAULTS(func);
     if (argdefs != NULL && PyTuple_Check(argdefs)) {
@@ -610,7 +613,7 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
         nd = 0;
     }
 
-    if (kw != NULL && PyDict_Check(kw)) {
+    if (kw != NULL && PyDict_Check(kw) && PyDict_Size(kw) > 0) {
         Py_ssize_t pos, i;
         nk = PyDict_Size(kw);
         kwtuple = PyTuple_New(2*nk);
@@ -630,10 +633,47 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
         nk = 0;
     }
 
+    a = NULL;
+    f = NULL;
+    na = PyTuple_Size(arg);
+    if (na == -1) {
+        assert(PyErr_Occurred());
+        return NULL;
+    } else {
+        assert(na >= 0);
+        if (na > 0) {
+            a = PyTuple_GetItemAddr(arg, 0);
+            if (!a) {
+                assert(PyErr_Occurred());
+                return NULL;
+            }
+        }
+    }
+
+    if (na > 0) {
+        int i;
+        f = a[0];
+        assert(f);
+        for (i = 0; i < na; i++) {
+            int is_py, is_px = 0;
+            PyObject *o = a[i];
+            is_py = Py_TEST_OBJ(o);
+            is_px = Px_TEST_OBJ(o);
+            if (Py_VerboseFlag)
+                printf("[%d/%d] 0x%llx is_px: %d, is_py: %d\n",
+                       i, (int)na, (void *)o, is_px, is_py);
+            if (o && !is_py && !is_px)
+                if (Py_VerboseFlag)
+                    printf("ERROR! !is_px && !is_py\n");
+        }
+    }
+
     result = PyEval_EvalCodeEx(
         PyFunction_GET_CODE(func),
-        PyFunction_GET_GLOBALS(func), (PyObject *)NULL,
-        &PyTuple_GET_ITEM(arg, 0), PyTuple_GET_SIZE(arg),
+        PyFunction_GET_GLOBALS(func),
+        (PyObject *)NULL, /* locals */
+        a, na,
+        /*&PyTuple_GET_ITEM(arg, 0), PyTuple_GET_SIZE(arg),*/
         k, nk, d, nd,
         PyFunction_GET_KW_DEFAULTS(func),
         PyFunction_GET_CLOSURE(func));
