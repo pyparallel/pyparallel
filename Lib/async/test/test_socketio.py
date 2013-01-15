@@ -14,9 +14,6 @@ from socket import (
     SOCK_STREAM,
 )
 
-def tcpsock():
-    return socket.socket(AF_INET, SOCK_STREAM)
-
 CHARGEN = [
 r""" !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefg""",
 r"""!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefgh""",
@@ -25,7 +22,7 @@ r"""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghij""",
 r"""$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijk""",
 ]
 
-QOTD = 'An apple a day keeps the doctor away.\r\n'
+QOTD = b'An apple a day keeps the doctor away.\r\n'
 
 ECHO_HOST    = ('echo.snakebite.net',     7)
 QOTD_HOST    = ('qotd.snakebite.net',    17)
@@ -49,21 +46,29 @@ ADDR = (HOST, 0)
 
 TEMPDIR = None
 
+class TestClient(unittest.TestCase):
+    def test_async_client_data_received(self):
+        @async.call_from_main_thread_and_wait
+        def _check(buf)
+            self.assertEqual(buf, QOTD)
+
+        def data_received(sock, buf):
+            _check(buf)
+
+        async.client(QOTD_IP, data_received=data_received)
+        async.run()
+        self.assertEqual(async.client_count, 0)
+
 class TestConnectSocketIO(unittest.TestCase):
-    def test_backlog(self):
-        sock = tcpsock()
-        port = sock.bind(ADDR)
-        sock.listen(100)
-        self.assertEqual(sock.backlog, 100)
-        sock.close()
 
     def _test_connect(self):
+        sock = async.socket(tcpsock())
+
         @async.call_from_main_thread
         def cb(*args):
-            self.assertEqual(1, 1)
+            self.assertEqual(sock, args[0])
 
-        sock = tcpsock()
-        _async.connect(sock, DISCARD_IP, 1, None, cb, NO_EB)
+        sock.connect_async(DISCARD_IP, None, cb, NO_EB)
         _async.run()
 
     def _test_connect_with_data(self):
@@ -72,7 +77,7 @@ class TestConnectSocketIO(unittest.TestCase):
             self.assertEqual(1, 1)
 
         sock = tcpsock()
-        _async.connect(sock, DISCARD_IP, 1, b'buf', cb, NO_EB)
+        _async.connect(sock, DISCARD_IP, b'buf', cb, NO_EB)
         _async.run()
 
     def _test_connect_with_data(self):
@@ -81,7 +86,7 @@ class TestConnectSocketIO(unittest.TestCase):
             self.assertEqual(1, 1)
 
         sock = tcpsock()
-        _async.connect(sock, DISCARD_IP, 1, b'buf', cb, NO_EB)
+        _async.connect(sock, DISCARD_IP, b'buf', cb, NO_EB)
         _async.run()
 
     def _test_connect_then_recv(self):
@@ -96,7 +101,7 @@ class TestConnectSocketIO(unittest.TestCase):
             _async.recv(sock, read_cb, NO_EB)
 
         sock = tcpsock()
-        _async.connect(sock, QOTD_IP, 1, None, connect_cb, NO_EB)
+        _async.connect(sock, QOTD_IP, None, connect_cb, NO_EB)
         _async.run()
 
     def _test_connect_with_data_then_recv(self):
@@ -111,7 +116,7 @@ class TestConnectSocketIO(unittest.TestCase):
             _async.recv(sock, read_cb, NO_EB)
 
         sock = tcpsock()
-        _async.connect(sock, ECHO_IP, 1, b'hello', connect_cb, NO_EB)
+        _async.connect(sock, ECHO_IP, b'hello', connect_cb, NO_EB)
         _async.run()
 
     def _test_connect_then_send_then_recv(self):
@@ -140,7 +145,7 @@ class TestConnectSocketIO(unittest.TestCase):
 
         sock = tcpsock()
         _async.recv(sock, read_cb, NO_EB)
-        _async.connect(sock, ECHO_IP, 1, b'hello', NO_CB, NO_EB)
+        _async.connect(sock, ECHO_IP, b'hello', NO_CB, NO_EB)
         _async.run()
 
     def _test_recv_before_connect_then_send_then_recv(self):
@@ -156,7 +161,7 @@ class TestConnectSocketIO(unittest.TestCase):
 
         sock = tcpsock()
         _async.recv(sock, read_cb, NO_EB)
-        _async.connect(sock, ECHO_IP, 1, None, connect_cb, NO_EB)
+        _async.connect(sock, ECHO_IP, None, connect_cb, NO_EB)
         _async.run()
 
 class TestAcceptSocketIO(unittest.TestCase):

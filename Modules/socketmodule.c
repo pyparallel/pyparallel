@@ -450,8 +450,10 @@ dup_socket(SOCKET handle)
 #define SEGMENT_SIZE (32 * 1024 -1)
 #endif
 
+#ifndef WITH_PARALLEL
 /* Convert "sock_addr_t *" to "struct sockaddr *". */
 #define SAS2SA(x)       (&((x)->sa))
+#endif
 
 /*
  * Constants for getnameinfo()
@@ -987,7 +989,7 @@ setipaddr(char *name, struct sockaddr *addr_ret, size_t addr_ret_size, int af)
    This is always a string of the form 'dd.dd.dd.dd' (with variable
    size numbers). */
 
-static PyObject *
+PyObject *
 makeipaddr(struct sockaddr *addr, int addrlen)
 {
     char buf[NI_MAXHOST];
@@ -1054,7 +1056,7 @@ makebdaddr(bdaddr_t *bdaddr)
    to determine what kind of address it really is. */
 
 /*ARGSUSED*/
-static PyObject *
+PyObject *
 makesockaddr(SOCKET_T sockfd, struct sockaddr *addr, size_t addrlen, int proto)
 {
     if (addrlen == 0) {
@@ -1292,7 +1294,7 @@ makesockaddr(SOCKET_T sockfd, struct sockaddr *addr, size_t addrlen, int proto)
    0 of not.  The address is returned through addr_ret, its length
    through len_ret. */
 
-static int
+int
 getsockaddrarg(PySocketSockObject *s, PyObject *args,
                struct sockaddr *addr_ret, int *len_ret)
 {
@@ -1786,7 +1788,7 @@ getsockaddrarg(PySocketSockObject *s, PyObject *args,
    Return 1 if the family is known, 0 otherwise.  The length is returned
    through len_ret. */
 
-static int
+int
 getsockaddrlen(PySocketSockObject *s, socklen_t *len_ret)
 {
     switch (s->sock_family) {
@@ -2512,7 +2514,6 @@ PyDoc_STRVAR(connect_doc,
 \n\
 Connect the socket to a remote address.  For IP sockets, the address\n\
 is a pair (host, port).");
-
 
 /* s.connect_ex(sockaddr) method */
 

@@ -8,6 +8,8 @@ extern "C" {
 
 #include "frameobject.h"
 
+#include "structmember.h"
+
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 __declspec(thread) PyParallelContext *ctx = NULL;
 #define _TMPBUF_SIZE 1024
@@ -17,6 +19,7 @@ long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
 size_t _PxObjectSignature = -1;
+size_t _PxSocketSignature = -1;
 
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align);
 
@@ -1336,7 +1339,8 @@ _PyParallel_Init(void)
                           "GetCurrentThreadId()");
     }
 
-    _PxObjectSignature = (_Py_rdtsc() ^ Px_PTR(&_PxObjectSignature));
+    _PxObjectSignature = (Px_PTR(_Py_rdtsc()) ^ Px_PTR(&_PxObjectSignature));
+    _PxSocketSignature = (Px_PTR(_Py_rdtsc()) ^ Px_PTR(&_PxSocketSignature));
 
     Py_ParallelContextsEnabled = 0;
     _Py_lfence();
@@ -1460,9 +1464,9 @@ Returns a list of results.");
 
 #define _METHOD(m, n, a) {#n, (PyCFunction)##m##_##n##, a, m##_##n##_doc }
 #define _PARALLEL(n, a) _METHOD(_parallel, n, a)
-#define _PARALLEL_N(n) _METHOD(_parallel, n, METH_NOARGS)
-#define _PARALLEL_O(n) _METHOD(_parallel, n, METH_O)
-#define _PARALLEL_V(n) _METHOD(_parallel, n, METH_VARARGS)
+#define _PARALLEL_N(n) _PARALLEL(n, METH_NOARGS)
+#define _PARALLEL_O(n) _PARALLEL(n, METH_O)
+#define _PARALLEL_V(n) _PARALLEL(n, METH_VARARGS)
 static PyMethodDef _parallel_methods[] = {
     _PARALLEL_V(map),
 
@@ -2077,12 +2081,38 @@ done:
     return result;
 }
 
+/*
 PyObject *
-_async_connect(PyObject *self, PyObject *args)
+_async_socket(PyObject *self, PyObject *args)
+{
+    PyObject *result = NULL;
+    PySocketSockObject *sock;
+
+    if (!PyArg_ParseTuple(args, "O!:socket", PySocketModule.Sock_Type, &sock))
+        return NULL;
+
+    return sock;
+}
+*/
+
+PyObject *
+_async_enabled(PyObject *self, PyObject *args)
+{
+    /*
+    if (!PyArg_ParseTuple(args, "O!:socket", PySocketModule.Sock_Type, &sock))
+        return NULL;
+        */
+    return NULL;
+}
+
+/*
+PyObject *
+_async_socket(PyObject *self, PyObject *args)
 {
     PyObject *result = NULL;
     return result;
 }
+*/
 
 
 PyObject *
@@ -2348,7 +2378,8 @@ Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
-PyDoc_STRVAR(_async_connect_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_client_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_server_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_active_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
@@ -2364,58 +2395,6 @@ PyDoc_STRVAR(_async_active_contexts_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_parallel_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
-
-#define _ASYNC(n, a) _METHOD(_async, n, a)
-#define _ASYNC_N(n) _METHOD(_async, n, METH_NOARGS)
-#define _ASYNC_O(n) _METHOD(_async, n, METH_O)
-#define _ASYNC_V(n) _METHOD(_async, n, METH_VARARGS)
-PyMethodDef _async_methods[] = {
-    _ASYNC_V(map),
-    _ASYNC_N(run),
-    _ASYNC_N(rdtsc),
-    _ASYNC_V(connect),
-    _ASYNC_N(run_once),
-    _ASYNC_N(is_active),
-    _ASYNC_V(submit_io),
-    _ASYNC_V(submit_work),
-    _ASYNC_V(submit_wait),
-    _ASYNC_N(is_active_ex),
-    _ASYNC_N(active_count),
-    _ASYNC_V(submit_timer),
-    _ASYNC_O(submit_class),
-    _ASYNC_O(submit_client),
-    _ASYNC_O(submit_server),
-    _ASYNC_N(active_contexts),
-    _ASYNC_N(is_parallel_thread),
-    _ASYNC_V(call_from_main_thread),
-    _ASYNC_V(call_from_main_thread_and_wait),
-
-    { NULL, NULL } /* sentinel */
-};
-
-struct PyModuleDef _asyncmodule = {
-    PyModuleDef_HEAD_INIT,
-    "_async",
-    _async_doc,
-    -1, /* multiple "initialization" just copies the module dict. */
-    _async_methods,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
-
-PyObject *
-_PyAsync_ModInit(void)
-{
-    PyObject *m;
-
-    m = PyModule_Create(&_asyncmodule);
-    if (m == NULL)
-        return NULL;
-
-    return m;
-}
 
 /* And now for the exported symbols... */
 PyThreadState *
@@ -2523,6 +2502,293 @@ void
 _PxMem_Free(void *p)
 {
     _PxObject_Free(p);
+}
+
+/* client */
+
+
+/* socket */
+void
+_pxsocket_dealloc(PxSocket *self)
+{
+    Py_TYPE(self)->tp_free((PyObject *)self);
+}
+
+PyObject *
+_pxsocket_new(PyTypeObject *tp, PyObject *args, PyObject *kwds)
+{
+    PxSocket *s;
+
+    s = (PxSocket *)tp->tp_alloc(tp, 0);
+    if (!s)
+        return NULL;
+
+    return (PyObject *)s;
+}
+
+int
+_pxsocket_init(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    PySocketSockObject *sock = (PySocketSockObject *)self;
+    PxSocket *s = (PxSocket *)self;
+
+    PyObject *fdobj = NULL;
+    SOCKET_T fd = INVALID_SOCKET;
+    int family = AF_INET, type = SOCK_STREAM, proto = 0;
+    static char *keywords[] = {"family", "type", "proto", "fileno", 0};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds,
+                                     "|iiiO:socket", keywords,
+                                     &family, &type, &proto, &fdobj))
+        return -1;
+
+
+}
+
+PyDoc_STRVAR(_pxsocket_write_doc, "XXX TODO\n");
+PyObject *
+_pxsocket_write(PxSocket *self, PyObject *args)
+{
+    PyObject *result = NULL;
+
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(_pxsocket_connect_doc, "XXX TODO\n");
+PyObject *
+_pxsocket_connect(PxSocket *s, PyObject *args)
+{
+    PyObject *result = NULL;
+
+
+    if (!s->is_client) {
+        PyErr_SetString(PyExc_RuntimeError, "not a client socket");
+        goto done;
+    }
+
+    if (!getsockaddrarg(PXS2S(s), args, SAS2SA(&s->remote), &(s->addrlen)))
+        return NULL;
+
+done:
+    return result;
+}
+
+#define _PXSOCKET(n, a) _METHOD(_pxsocket, n, a)
+#define _PXSOCKET_N(n) _PXSOCKET(n, METH_NOARGS)
+#define _PXSOCKET_O(n) _PXSOCKET(n, METH_O)
+#define _PXSOCKET_V(n) _PXSOCKET(n, METH_VARARGS)
+
+static PyMethodDef PxSocketMethods[] = {
+    _PXSOCKET_V(write),
+    _PXSOCKET_O(connect),
+    { NULL, NULL }
+};
+
+#define _MEMBER(n, t, c, f, d) {#n, t, offsetof(c, n), f, d}
+#define _PXSOCKETMEM(n, t, f, d)  _MEMBER(n, t, PxSocket, f, d)
+#define _PXSOCKET_CB(n)        _PXSOCKETMEM(n, T_OBJECT, 0, #n " callback")
+#define _PXSOCKET_ATTR_I(n)    _PXSOCKETMEM(n, T_INT,    0, #n " attribute")
+#define _PXSOCKET_ATTR_B(n)    _PXSOCKETMEM(n, T_BOOL,   0, #n " attribute")
+#define _PXSOCKET_ATTR_S(n)    _PXSOCKETMEM(n, T_STRING, 0, #n " attribute")
+
+static PyMemberDef PxSocketMembers[] = {
+    /* callbacks */
+    _PXSOCKET_CB(connected),
+    _PXSOCKET_CB(data_received),
+    _PXSOCKET_CB(lines_received),
+    _PXSOCKET_CB(connection_lost),
+    _PXSOCKET_CB(connection_closed),
+    _PXSOCKET_CB(exception_handler),
+    _PXSOCKET_CB(initial_connection_error),
+
+    /* attributes */
+    _PXSOCKET_ATTR_S(eol),
+    _PXSOCKET_ATTR_B(line_mode),
+    _PXSOCKET_ATTR_I(wait_for_eol),
+    _PXSOCKET_ATTR_I(max_line_length),
+
+    { NULL }
+};
+
+static PyTypeObject PxSocket_Type = {
+    PyVarObject_HEAD_INIT(0, 0)
+    "_async.socket",                            /* tp_name */
+    sizeof(PxSocket),                           /* tp_basicsize */
+    0,                                          /* tp_itemsize */
+    (destructor)_pxsocket_dealloc,              /* tp_dealloc */
+    0,                                          /* tp_print */
+    0,                                          /* tp_getattr */
+    0,                                          /* tp_setattr */
+    0,                                          /* tp_reserved */
+    0,                                          /* tp_repr */
+    0,                                          /* tp_as_number */
+    0,                                          /* tp_as_sequence */
+    0,                                          /* tp_as_mapping */
+    0,                                          /* tp_hash */
+    0,                                          /* tp_call */
+    0,                                          /* tp_str */
+    0,                                          /* tp_getattro */
+    0,                                          /* tp_setattro */
+    0,                                          /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
+    "Asynchronous Socket Objects",              /* tp_doc */
+    0,                                          /* tp_traverse */
+    0,                                          /* tp_clear */
+    0,                                          /* tp_richcompare */
+    0,                                          /* tp_weaklistoffset */
+    0,                                          /* tp_iter */
+    0,                                          /* tp_iternext */
+    PxSocketMethods,                            /* tp_methods */
+    PxSocketMembers,                            /* tp_members */
+    0,                                          /* tp_getset */
+    0,                                          /* tp_base */
+    0,                                          /* tp_dict */
+    0,                                          /* tp_descr_get */
+    0,                                          /* tp_descr_set */
+    0,                                          /* tp_dictoffset */
+    0,                                          /* tp_init */
+    0,                                          /* tp_alloc */
+    0,                                          /* tp_new */
+    0,                                          /* tp_free */
+};
+
+static char *_pxsocket_kwlist[] = {
+    "connected",
+    "data_received",
+    "lines_received",
+    "connection_lost",
+    "connection_closed",
+    "exception_handler",
+    "initial_connection_error",
+
+    "initial_bytes_to_send",
+    "initial_regex_to_expect",
+
+    NULL
+};
+
+PyObject *
+_async_client_or_server(PyObject *self, PyObject *args,
+                        PyObject *kwds, char is_client)
+{
+    PyObject *object;
+    PyObject *dummy;
+    PxSocket *s = PyObject_NEW(PxSocket, &PxSocket_Type);
+    if (!s)
+        return NULL;
+
+    if (!PyArg_ParseTuple(args, "|O", &object))
+        goto error;
+
+    if (!PyArg_ParseTupleAndKeywords(
+            args, kwds,
+            /* callbacks */
+            "|O$OOOOOO"
+            /* attributes */
+            "y*O",
+            _pxsocket_kwlist,
+            &dummy,
+            /* callbacks */
+            &(s->connected),
+            &(s->data_received),
+            &(s->lines_received),
+            &(s->connection_lost),
+            &(s->connection_closed),
+            &(s->exception_handler),
+            &(s->initial_connection_error),
+            /* attributes */
+            &(s->initial_bytes_to_send),
+            &(s->initial_regex_to_expect)))
+        goto error;
+
+    s->is_client = is_client;
+    goto done;
+
+error:
+    Py_DECREF(s);
+    s = NULL;
+
+done:
+    return (PyObject *)s;
+}
+
+/* mod _async */
+PyObject *
+_async_client(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return _async_client_or_server(self, args, kwds, 1);
+}
+
+PyObject *
+_async_server(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return _async_client_or_server(self, args, kwds, 0);
+}
+
+#define _ASYNC(n, a) _METHOD(_async, n, a)
+#define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
+#define _ASYNC_O(n) _ASYNC(n, METH_O)
+#define _ASYNC_V(n) _ASYNC(n, METH_VARARGS)
+#define _ASYNC_K(n) _ASYNC(n, METH_VARARGS | METH_KEYWORDS)
+PyMethodDef _async_methods[] = {
+    _ASYNC_V(map),
+    _ASYNC_N(run),
+    _ASYNC_N(rdtsc),
+    _ASYNC_K(client),
+    _ASYNC_K(server),
+    _ASYNC_N(run_once),
+    _ASYNC_N(is_active),
+    _ASYNC_V(submit_io),
+    _ASYNC_V(submit_work),
+    _ASYNC_V(submit_wait),
+    _ASYNC_N(is_active_ex),
+    _ASYNC_N(active_count),
+    _ASYNC_V(submit_timer),
+    _ASYNC_O(submit_class),
+    _ASYNC_O(submit_client),
+    _ASYNC_O(submit_server),
+    _ASYNC_N(active_contexts),
+    _ASYNC_N(is_parallel_thread),
+    _ASYNC_V(call_from_main_thread),
+    _ASYNC_V(call_from_main_thread_and_wait),
+
+    { NULL, NULL } /* sentinel */
+};
+
+struct PyModuleDef _asyncmodule = {
+    PyModuleDef_HEAD_INIT,
+    "_async",
+    _async_doc,
+    -1, /* multiple "initialization" just copies the module dict. */
+    _async_methods,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+};
+
+PyObject *
+_PyAsync_ModInit(void)
+{
+    PyObject *m;
+    PySocketModule_APIObject *socket_api;
+
+    if (!PyType_Ready(&PxSocket_Type) < 0)
+        return NULL;
+
+    m = PyModule_Create(&_asyncmodule);
+    if (m == NULL)
+        return NULL;
+
+    socket_api = PySocketModule_ImportModuleAndAPI();
+    if (!socket_api)
+        return NULL;
+    PySocketModule = *socket_api;
+
+    if (PyModule_AddObject(m, "socket", (PyObject *)&PxSocket_Type))
+        return NULL;
+
+    return m;
 }
 
 #ifdef __cpplus

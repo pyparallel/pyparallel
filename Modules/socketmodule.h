@@ -114,7 +114,8 @@ typedef int SOCKET_T;
 #       define SIZEOF_SOCKET_T SIZEOF_INT
 #endif
 
-#if defined(WITH_PARALLEL) && defined(MS_WINDOWS)
+#ifdef WITH_PARALLEL
+#ifdef MS_WINDOWS
 static LPFN_ACCEPTEX _AcceptEx;
 static LPFN_CONNECTEX _ConnectEx;
 static LPFN_WSARECVMSG _WSARecvMsg;
@@ -132,7 +133,8 @@ const static GUID _DisconnectEx_GUID = WSAID_DISCONNECTEX;
 const static GUID _TransmitFile_GUID = WSAID_TRANSMITFILE;
 const static GUID _TransmitPackets_GUID = WSAID_TRANSMITPACKETS;
 const static GUID _GetAcceptExSockaddrs_GUID = WSAID_GETACCEPTEXSOCKADDRS;
-#endif
+#endif /* MS_WINDOWS */
+#endif /* WITH_PARALLEL */
 
 #if SIZEOF_SOCKET_T <= SIZEOF_LONG
 #define PyLong_FromSocket_t(fd) PyLong_FromLong((SOCKET_T)(fd))
@@ -253,6 +255,23 @@ typedef struct {
 } PySocketModule_APIObject;
 
 #define PySocketModule_ImportModuleAndAPI() PyCapsule_Import(PySocket_CAPSULE_NAME, 1)
+
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(int) getsockaddrarg(PySocketSockObject *s,
+                               PyObject *args,
+                               struct sockaddr *addr_ret,
+                               int *len_ret);
+
+PyAPI_FUNC(int) getsockaddrlen(PySocketSockObject *s, socklen_t *len_ret);
+
+PyAPI_FUNC(PyObject *) makesockaddr(SOCKET_T sockfd,
+                                    struct sockaddr *addr,
+                                    size_t addrlen,
+                                    int proto);
+PyAPI_FUNC(PyObject *) makeipaddr(struct sockaddr *addr, int addrlen);
+/* Convert "sock_addr_t *" to "struct sockaddr *". */
+#define SAS2SA(x)       (&((x)->sa))
+#endif
 
 #ifdef __cplusplus
 }

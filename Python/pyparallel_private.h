@@ -5,7 +5,9 @@
 extern "C" {
 #endif
 
-#include <Windows.h>
+
+#include "../Modules/socketmodule.h"
+//#include <Windows.h>
 #include "pyparallel.h"
 
 
@@ -66,6 +68,8 @@ extern "C" {
         Px_PTR((((Heap *)(h))->size))               \
     ))                                              \
 ))
+
+#define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
 
 #include "pxlist.h"
 
@@ -347,37 +351,86 @@ typedef struct _PyParallelContext {
 
 typedef struct _PxObject {
     Context     *ctx;
-    PyObject    *parent;
     size_t       size;
     PyObject    *resized_to;
     PyObject    *resized_from;
     size_t       signature;
 } PxObject;
 
-//#undef Py_PX
-#define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
+typedef struct _PxSocket {
+    /* internal */
+    PySocketSockObject _sock;
+    PyObject *socket_weakref;
+    WSAOVERLAPPED overlapped;
+    HANDLE completion_port;
 
-/*
-typedef struct _PyAsyncSocketObject {
-    PySocketSockObject  sock;
-    WSAOVERLAPPED       overlapped;
-    HANDLE              completion_port;
+    sock_addr_t local;
+    sock_addr_t remote;
+    int         addrlen;
 
-    PyObject           *handler;
-    int                 preallocate;
-    PxListHead         *preallocated;
-    PxListHead         *freelist;
+    /* callbacks */
+    SRWLOCK   callbacks_srwlock;
+    PyObject *connected;
+    PyObject *data_received;
+    PyObject *lines_received;
+    PyObject *connection_lost;
+    PyObject *connection_closed;
+    PyObject *exception_handler;
+    PyObject *initial_connection_error;
 
-    __declspec(align(Px_MEM_ALIGN_RAW))
-    Context _context;
-} PyAsyncSocketObject;
+    /* attributes */
+    SRWLOCK   attributes_srwlock;
+    PyObject *initial_bytes_to_send;
+    PyObject *initial_regex_to_expect;
+    char      is_client;
+    char      line_mode;
+    char      wait_for_eol;
+    char     *eol[2];
+    int       max_line_length;
 
-typedef struct _PyAsyncServerSocketObject {
-    PyAsyncSocketObject sock;
-    int preallocated;
-} PyAsyncSocketObject;
-*/
+    /* We want each PxSocket object to fit into a system page (4k) exactly.
+       The buffer sizes below may need to be tweaked upon addition of new
+       struct memebers above. */
 
+#ifndef _WIN64
+#define _PxSocket_BUFSIZE 3584
+#else
+#define _PxSocket_BUFSIZE 3520
+#endif
+
+    __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
+    /* 32-bit offset: 512 */
+    /* 64-bit offset: 576 */
+    char buf[_PxSocket_BUFSIZE];
+} PxSocket;
+
+C_ASSERT(sizeof(PxSocket) == Px_PAGE_SIZE);
+
+typedef struct _PxClientSocket {
+    PxSocket _pxsocket;
+
+    /* attributes */
+    int auto_reconnect;
+} PxClientSocket;
+
+typedef struct _PxServerSocket {
+    PxSocket _pxsocket;
+
+    /* attributes */
+    int auto_reconnect;
+} PxServerSocket;
+
+static PyTypeObject PxSocket_Type;
+static PyTypeObject PxClientSocket_Type;
+static PyTypeObject PxServerSocket_Type;
+
+static PySocketModule_APIObject PySocketModule;
+
+#define PxSocket_Check(v)         (Py_TYPE(v) == &PxSocket_Type)
+#define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)
+#define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
+
+#define PXS2S(s) ((PySocketSockObject *)s)
 
 #ifdef __cpplus
 }
