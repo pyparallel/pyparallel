@@ -18,6 +18,13 @@ class TestSubmitWork(unittest.TestCase):
         _async.run()
         self.assertEqual(1, 1)
 
+    def test_submit_simple_work_args_kwds(self):
+        def f(*args, **kwds):
+            return
+        _async.submit_work(f, None, None, None, None)
+        _async.run()
+        self.assertEqual(1, 1)
+
     def test_submit_simple_work_with_arg(self):
         def f(i):
             return i * 2
@@ -30,6 +37,17 @@ class TestSubmitWork(unittest.TestCase):
         def _check(r):
             self.assertEqual(r, 4)
 
+        def f(i):
+            return i * 2
+        def cb(r):
+            _check(r)
+
+        _async.submit_work(f, 2, None, cb, None)
+        _async.run()
+
+    def test_submit_simple_work_with_callback_no_call_from_main_thread(self):
+        def _check(r):
+            self.assertEqual(r, 4)
         def f(i):
             return i * 2
         def cb(r):
