@@ -1992,20 +1992,21 @@ submit_work(Context *c)
     return retval;
 }
 
-PyObject *
-_async_submit_work(PyObject *self, PyObject *args)
+Context *
+new_context(PyObject *args, PyObject *ob)
 {
-    PyObject *result = NULL;
-    Context  *c = (Context *)malloc(sizeof(Context));
     PxState  *px;
+    Context  *c = (Context *)malloc(sizeof(Context));
 
     if (!c)
-        return PyErr_NoMemory();
+        return (Context *)PyErr_NoMemory();
 
     memset((void *)c, 0, sizeof(Context));
 
-    if (!extract_args(args, c))
-        goto free_context;
+    if (args) {
+        if (!extract_args(args, c))
+            goto free_context;
+    }
 
     c->heap_handle = HeapCreate(HEAP_NO_SERIALIZE, Px_DEFAULT_HEAP_SIZE, 0);
     if (!c->heap_handle) {
@@ -2021,31 +2022,55 @@ _async_submit_work(PyObject *self, PyObject *args)
     if (!_PyHeap_Init(c, 0))
         goto free_heap;
 
+    c->refcnt = 1;
+    c->ttl = px->ctx_ttl;
+
+    if (args)
+        incref_args(c);
+
+    return c;
+
+free_heap:
+    HeapDestroy(c->heap_handle);
+
+free_context:
+    free(c);
+
+    return NULL;
+}
+
+PyObject *
+_async_submit_work(PyObject *self, PyObject *args)
+{
+    PyObject *result = NULL;
+    Context  *c;
+    PxState  *px;
+
+    c = new_context(args, NULL);
+    if (!c)
+        return NULL;
+
+    px = c->px;
+
     InterlockedIncrement64(&(px->submitted));
     InterlockedIncrement(&(px->pending));
     InterlockedIncrement(&(px->active));
     c->stats.submitted = _Py_rdtsc();
 
-    incref_args(c);
-
-    c->refcnt = 1;
-    c->ttl = px->ctx_ttl;
-
     if (!submit_work(c))
-        goto decref_args;
+        goto error;
 
     c->px->contexts_created++;
     c->px->contexts_active++;
     result = (Py_INCREF(Py_None), Py_None);
     goto done;
 
-decref_args:
+error:
+    InterlockedDecrement(&(px->pending));
+    InterlockedDecrement(&(px->active));
+    InterlockedDecrement64(&(px->done));
     decref_args(c);
-
-free_heap:
     HeapDestroy(c->heap_handle);
-
-free_context:
     free(c);
 
 done:
