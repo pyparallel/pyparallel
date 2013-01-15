@@ -36,6 +36,7 @@ CHARGEN_HOST = ('chargen.snakebite.net', 19)
 SERVICES_IP = socket.getaddrinfo(*ECHO_HOST)[0][4][0]
 
 ECHO_IP     = (SERVICES_IP,  7)
+QOTD_IP     = (SERVICES_IP, 17)
 DISCARD_IP  = (SERVICES_IP,  9)
 DAYTIME_IP  = (SERVICES_IP, 13)
 CHARGEN_IP  = (SERVICES_IP, 19)
@@ -58,7 +59,7 @@ class TestConnectSocketIO(unittest.TestCase):
 
     def _test_connect(self):
         @async.call_from_main_thread
-        def cb():
+        def cb(*args):
             self.assertEqual(1, 1)
 
         sock = tcpsock()
