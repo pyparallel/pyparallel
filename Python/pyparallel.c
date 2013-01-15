@@ -1993,7 +1993,7 @@ submit_work(Context *c)
 }
 
 Context *
-new_context(PyObject *args, PyObject *ob)
+new_context(void)
 {
     PxState  *px;
     Context  *c = (Context *)malloc(sizeof(Context));
@@ -2002,11 +2002,6 @@ new_context(PyObject *args, PyObject *ob)
         return (Context *)PyErr_NoMemory();
 
     memset((void *)c, 0, sizeof(Context));
-
-    if (args) {
-        if (!extract_args(args, c))
-            goto free_context;
-    }
 
     c->heap_handle = HeapCreate(HEAP_NO_SERIALIZE, Px_DEFAULT_HEAP_SIZE, 0);
     if (!c->heap_handle) {
@@ -2024,9 +2019,6 @@ new_context(PyObject *args, PyObject *ob)
 
     c->refcnt = 1;
     c->ttl = px->ctx_ttl;
-
-    if (args)
-        incref_args(c);
 
     return c;
 
@@ -2046,11 +2038,14 @@ _async_submit_work(PyObject *self, PyObject *args)
     Context  *c;
     PxState  *px;
 
-    c = new_context(args, NULL);
+    c = new_context();
     if (!c)
         return NULL;
 
     px = c->px;
+
+    if (!extract_args(args, c))
+        goto free_context;
 
     InterlockedIncrement64(&(px->submitted));
     InterlockedIncrement(&(px->pending));
@@ -2059,6 +2054,8 @@ _async_submit_work(PyObject *self, PyObject *args)
 
     if (!submit_work(c))
         goto error;
+
+    incref_args(c);
 
     c->px->contexts_created++;
     c->px->contexts_active++;
@@ -2070,12 +2067,23 @@ error:
     InterlockedDecrement(&(px->active));
     InterlockedDecrement64(&(px->done));
     decref_args(c);
+free_context:
     HeapDestroy(c->heap_handle);
     free(c);
 
 done:
-    return (result ? result : PyErr_NoMemory());
+    if (!result)
+        assert(PyErr_Occurred());
+    return result;
 }
+
+PyObject *
+_async_connect(PyObject *self, PyObject *args)
+{
+    PyObject *result = NULL;
+    return result;
+}
+
 
 PyObject *
 _async_run(PyObject *self, PyObject *args)
@@ -2317,6 +2325,9 @@ submit_timer(timer, func[, args[, kwds[, callback[, errback]]]])\n\
 submit_io(func[, args[, kwds[, callback[, errback]]]])\n\
 submit_server(obj)\n\
 submit_client(obj)\n\
+\n\
+Socket IO functions:\n\
+connect(sock, (host, port)[, buf[, callback[, errback]]])\n\
 ");
 
 PyDoc_STRVAR(_async_run_doc,
@@ -2337,6 +2348,7 @@ Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_connect_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_active_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
@@ -2361,6 +2373,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
     _ASYNC_N(rdtsc),
+    _ASYNC_V(connect),
     _ASYNC_N(run_once),
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
