@@ -20,6 +20,7 @@ long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
 size_t _PxObjectSignature = -1;
 size_t _PxSocketSignature = -1;
+int _PxBlockingCallsThreshold = 5;
 
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align);
 
@@ -56,7 +57,8 @@ _PyParallel_BlockingCall(void)
     Px_GUARD
 
     s->blocking_calls++;
-    _PyParallel_DisassociateCurrentThreadFromCallback();
+    if (!c->disassociated && s->blocking_calls > _PxBlockingCallsThreshold)
+        _PyParallel_DisassociateCurrentThreadFromCallback();
 }
 
 
