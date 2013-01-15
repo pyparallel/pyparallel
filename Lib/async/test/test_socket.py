@@ -49,7 +49,6 @@ class TestClient(unittest.TestCase):
         client = async.client(tcpsock(), data_received=data_received)
         client.connect(QOTD_IP)
         async.run()
-        client.close()
 
     def test_async_client_data_received_cls(self):
         class foo:
@@ -63,25 +62,33 @@ class TestClient(unittest.TestCase):
         client = async.client(tcpsock(), f)
         client.connect(QOTD_IP)
         async.run()
-        client.close()
 
 class TestServer(unittest.TestCase):
     def test_async_server(self):
-        @async.call_from_main_thread_and_wait
-        def _check(buf)
-            self.assertEqual(buf, QOTD)
-
-        def data_received(client, buf):
-            _check(buf)
 
         server = async.server(serversock(), initial_bytes_to_send=QOTD)
         server.accept()
 
-        client = async.client(tcpsock(), data_received=data_received)
+        @async.call_from_main_thread
+        def connection_closed(client):
+            server.shutdown()
+
+        @async.call_from_main_thread_and_wait
+        def _check(buf)
+            self.assertEqual(buf, QOTD)
+            server.shutdown()
+
+        def data_received(client, buf):
+            _check(buf)
+
+        client = async.client(
+            tcpsock(),
+            data_received=data_received,
+            connection_closed=connection_closed,
+        )
+
         client.connect(server.sock.getsockname())
         async.run()
-        client.close()
-        server.shutdown()
 
 
 if __name__ == '__main__':
