@@ -137,6 +137,30 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, None, eb)
         _async.run()
 
+    def test_submit_simple_work_errback_invoked1(self):
+        def f():
+            return laksjdflaskjdflsakjdfsalkjdf
+
+        @async.call_from_main_thread_and_wait
+        def test_e(e):
+            self.assertFalse(_async.is_parallel_thread())
+            self.assertIsInstance(e, tuple)
+            (et, ev, eb) = e
+            try:
+                f()
+            except NameError as e2:
+                self.assertEqual(et, e2.__class__)
+                self.assertEqual(ev, e2.args[0])
+                self.assertEqual(eb.__class__, e2.__traceback__.__class__)
+            else:
+                self.assertEqual(0, 1)
+
+        def eb(e):
+            test_e(e)
+
+        _async.submit_work(f, None, None, None, eb)
+        _async.run()
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -191,9 +191,9 @@ typedef struct _PyParallelContextStats {
     size_t startup_size;
 } PyParallelContextStats, Stats;
 
-#define _PX_OTHER_FREES_SIZE 4
 #define _PX_TMPBUF_SIZE 1024
 
+#ifdef Py_DEBUG
 #define HASH_DEBUG
 #include "uthash.h"
 
@@ -204,111 +204,7 @@ typedef struct _PxPages {
     short       count;
     UT_hash_handle hh;
 } PxPages;
-
-__inline
-int
-_PxPages_LookupHeapPage(PxPages *pages, Px_UINTPTR *value, void *p)
-{
-    PxPages *x;
-    HASH_FIND_INT(pages, value, x);
-    if (x) {
-        Heap *h1, *h2;
-        assert(x->count >= 1 && x->count <= 2);
-        h1 = x->heaps[0];
-        h2 = (x->count == 2 ? x->heaps[1] : NULL);
-        if (Px_PTR_IN_HEAP(p, h1) || (h2 && Px_PTR_IN_HEAP(p, h2)))
-            return 1;
-    }
-    return 0;
-}
-
-__inline
-int
-PxPages_Find(PxPages *pages, void *p)
-{
-    int found;
-    Px_UINTPTR lower, upper;
-
-    lower = Px_PAGE_ALIGN_DOWN(p);
-    upper = Px_PAGE_ALIGN(p);
-
-    found = _PxPages_LookupHeapPage(pages, &lower, p);
-    if (!found && lower != upper)
-        found = _PxPages_LookupHeapPage(pages, &upper, p);
-
-    return found;
-}
-
-static
-void
-_PxPages_RemoveHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
-{
-    PxPages *x;
-    HASH_FIND_INT(*pages, value, x);
-    assert(x);
-    if (x->count == 1) {
-        assert(x->heaps[0] == h);
-        HASH_DEL(*pages, x);
-        free(x);
-    } else {
-        assert(x->count >= 1 && x->count <= 2);
-        if (x->heaps[0] == h)
-            x->heaps[0] = x->heaps[1];
-        else
-            assert(x->heaps[1] == h);
-        x->heaps[1] = NULL;
-        x->count = 1;
-    }
-}
-
-static
-void
-_PxPages_AddHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
-{
-    PxPages *x;
-    HASH_FIND_INT(*pages, value, x);
-    if (x) {
-        assert(x->count == 1);
-        x->heaps[1] = h;
-        x->count++;
-    } else {
-        x = (PxPages *)malloc(sizeof(PxPages));
-        x->heaps[0] = h;
-        x->count = 1;
-        x->base = *value;
-        HASH_ADD_INT(*pages, base, x);
-    }
-}
-
-__inline
-void
-PxPages_Remove(PxPages **pages, PxPages *x)
-{
-    HASH_DEL(*pages, x);
-    free(x);
-}
-
-__inline
-void
-PxPages_Delete(PxPages **pages)
-{
-    PxPages *x, *t;
-    HASH_ITER(hh, *pages, x, t) {
-        HASH_DEL(*pages, x);
-        free(x);
-    }
-}
-
-static void
-PxPages_Dump(PxPages *pages)
-{
-    PxPages *x, *t;
-    int i = 0;
-    HASH_ITER(hh, pages, x, t) {
-        i++;
-        printf("[%d] base: 0x%llx, count: %d\n", i, x->base, x->count);
-    }
-}
+#endif
 
 typedef struct _PxState {
     PxListHead *errors;
@@ -404,6 +300,8 @@ typedef struct _PyParallelContext {
     PxListItem *errback_completed;
 
     PxListHead *outgoing;
+    PxListHead *decrefs;
+    PxListItem *decref;
 
     volatile long refcnt;
 

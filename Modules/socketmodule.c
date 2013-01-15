@@ -4020,21 +4020,19 @@ sock_repr(PySocketSockObject *s)
 
 /* Create a new, uninitialized socket object. */
 
-/*
 static PyObject *
 sock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    PyObject *new;
+    PyObject *n;
 
-    new = type->tp_alloc(type, 0);
-    if (new != NULL) {
-        ((PySocketSockObject *)new)->sock_fd = -1;
-        ((PySocketSockObject *)new)->sock_timeout = -1.0;
-        ((PySocketSockObject *)new)->errorhandler = &set_error;
+    n = type->tp_alloc(type, 0);
+    if (n != NULL) {
+        ((PySocketSockObject *)n)->sock_fd = -1;
+        ((PySocketSockObject *)n)->sock_timeout = -1.0;
+        ((PySocketSockObject *)n)->errorhandler = &set_error;
     }
-    return new;
+    return n;
 }
-*/
 
 
 /* Initialize a new socket object. */
@@ -4054,9 +4052,11 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
                                      &family, &type, &proto, &fdobj))
         return -1;
 
+    /*
     s->sock_fd = -1;
     s->sock_timeout = -1.0;
     s->errorhandler = &set_error;
+    */
 
     if (fdobj != NULL && fdobj != Py_None) {
 #ifdef MS_WINDOWS
@@ -4152,7 +4152,7 @@ static PyTypeObject sock_type = {
     0,                                          /* tp_dictoffset */
     sock_initobj,                               /* tp_init */
     PyType_GenericAlloc,                        /* tp_alloc */
-    0,                                          /* tp_new */
+    sock_new,                                   /* tp_new */
     PyObject_Del,                               /* tp_free */
 };
 
@@ -5651,7 +5651,6 @@ next:
         PyErr_SetFromWindowsErr(0);
         return 0;
     }
-    _WSA_RESOLVE(_WSAPoll);
     _WSA_RESOLVE(_AcceptEx);
     _WSA_RESOLVE(_ConnectEx);
     _WSA_RESOLVE(_WSARecvMsg);

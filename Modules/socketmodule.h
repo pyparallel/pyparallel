@@ -115,7 +115,6 @@ typedef int SOCKET_T;
 #endif
 
 #if defined(WITH_PARALLEL) && defined(MS_WINDOWS)
-static LPFN_WSAPOLL _WSAPoll;
 static LPFN_ACCEPTEX _AcceptEx;
 static LPFN_CONNECTEX _ConnectEx;
 static LPFN_WSARECVMSG _WSARecvMsg;
@@ -125,7 +124,6 @@ static LPFN_TRANSMITFILE _TransmitFile;
 static LPFN_TRANSMITPACKETS _TransmitPackets;
 static LPFN_GETACCEPTEXSOCKADDRS _GetAcceptExSockaddrs;
 
-const static GUID _WSAPoll_GUID = WSAID_WSAPOLL;
 const static GUID _AcceptEx_GUID = WSAID_ACCEPTEX;
 const static GUID _ConnectEx_GUID = WSAID_CONNECTEX;
 const static GUID _WSARecvMsg_GUID = WSAID_WSARECVMSG;
