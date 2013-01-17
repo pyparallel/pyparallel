@@ -787,6 +787,33 @@ _PyHeap_NewList(Context *c)
     return l;
 }
 
+void *
+_PyHeap_Realloc(Context *c, void *p, size_t n)
+{
+    void  *r;
+    Heap  *h = c->h;
+    Stats *s = &c->stats;
+    r = _PyHeap_Malloc(c, n, 0);
+    if (!r)
+        return NULL;
+    h->mem_reallocs++;
+    s->mem_reallocs++;
+    memcpy(r, p, n);
+    return r;
+}
+
+void
+_PyHeap_Free(Context *c, void *p)
+{
+    Heap  *h = c->h;
+    Stats *s = &c->stats;
+    Px_GUARD_MEM(p);
+
+    h->frees++;
+    s->frees++;
+}
+
+
 #define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
 #define _Px_O_OFFSET(n) \
     (Px_PTR_ALIGN((_Px_X_OFFSET(n)) + (Px_PTR_ALIGN(sizeof(PxObject)))))
@@ -811,61 +838,160 @@ _PyHeap_NewList(Context *c)
 PyObject *
 init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 {
-    register PxObject *x;
-    register Object   *o;
-    const register size_t sz = _Px_VSZ(tp, nitems);
-    const register size_t total = _Px_SZ(sz);
+    /* Main use cases:
+     *  1.  Redirect from PyObject_NEW/PyObject_NEW_VAR.  p will be NULL.
+     *  2.  PyObject_MALLOC/PyObject_INIT combo (PyUnicode* does this).
+     *      p will pass Px_GUARD_MEM(p) and everything will be null.  We
+     *      need to allocate x & o manually.
+     *  3.  Redirect from PyObject_GC_Resize.  p shouldn't be NULL, although
+     *      it might not be a PX allocation -- we could be resizing a PY
+     *      allocation.  That's fine, as our realloc doesn't actually free
+     *      anything, so we're, in effect, just copying the existing object.
+     */
+    PyObject *n;
+    PxObject *x;
+    Object   *o;
+    size_t    object_size;
+    size_t    total_size;
+    size_t    bytes_to_copy;
+    int       init_type;
+    int       is_varobj = -1;
+
+#define _INIT_NEW       1
+#define _INIT_INIT      2
+#define _INIT_RESIZE    3
 
     if (!p) {
-        p = (PyObject *)_PyHeap_Malloc(c, total, 0);
-        if (!p)
+        /* Case 1: PyObject_NEW/NEW_VAR (via (Object|VarObject)_New). */
+        init_type = _INIT_NEW;
+        assert(tp);
+
+        object_size = _Px_VSZ(tp, nitems);
+        total_size  = _Px_SZ(object_size);
+        n = (PyObject *)_PyHeap_Malloc(c, total_size, 0);
+        if (!n)
             return PyErr_NoMemory();
-    } else
-        Px_GUARD_MEM(p);
+        x = _Px_X_PTR(n, object_size);
+        o = _Px_O_PTR(n, object_size);
 
-    assert(p);
-    p->is_px = _Py_IS_PARALLEL;
+        Py_TYPE(n) = tp;
+        Py_REFCNT(n) = -1;
+        if (is_varobj = (tp->tp_itemsize > 0)) {
+            (c->stats.varobjs)++;
+            Py_SIZE(n) = nitems;
+        } else
+            (c->stats.objects)++;
 
-    Py_TYPE(p)   = tp;
-    Py_REFCNT(p) = 2;
-
-    o = _Px_O_PTR(p, sz);
-    o->op = p;
-
-    x = _Px_X_PTR(p, sz);
-    x->ctx       = c;
-    x->size      = sz;
-    x->signature = _PxObjectSignature;
-    Py_PX(p)     = x;
-    x->resized_to   = NULL;
-    x->resized_from = NULL;
-
-    if (!tp->tp_itemsize) {
-        append_object(&c->varobjs, o);
-        (c->stats.objects)++;
     } else {
-        Py_SIZE(p) = nitems;
-        append_object(&c->varobjs, o);
-        (c->stats.varobjs)++;
+        if (!Py_TYPE(p)) {
+            /* Case 2: PyObject_INIT/INIT_VAR called against manually
+             * allocated memory (i.e. not allocated via PyObject_NEW). */
+            init_type = _INIT_INIT;
+            assert(tp);
+            Px_GUARD_MEM(p);
+
+            is_varobj = (tp->tp_itemsize > 0);
+
+            /* XXX: I haven't seen GC/varobjects use this approach yet. */
+            assert(!is_varobj);
+
+            /* Need to manually allocate x + o storage. */
+            x = (PxObject *)_PyHeap_Malloc(c, _Px_SZ(0), 0);
+            if (!x)
+                return PyErr_NoMemory();
+            o = _Px_O_PTR(x, 0);
+            n = p;
+
+            Py_TYPE(n) = tp;
+            Py_REFCNT(n) = -1;
+
+            (c->stats.objects)++;
+        } else {
+            /* Case 3: PyObject_GC_Resize called.  Object to resize may or may
+             * not be from a parallel context.  Doesn't matter either way as
+             * we don't really realloc anything behind the scenes -- we just
+             * malloc another, larger chunk from our heap and copy over the
+             * previous data. */
+            init_type = _INIT_RESIZE;
+            assert(!tp);
+            assert(Py_TYPE(p) != NULL);
+            tp = Py_TYPE(p);
+            is_varobj = 1;
+
+            object_size = _Px_VSZ(tp, nitems);
+            total_size  = _Px_SZ(object_size);
+            n = (PyObject *)_PyHeap_Malloc(c, total_size, 0);
+            if (!n)
+                return PyErr_NoMemory();
+            x = _Px_X_PTR(n, object_size);
+            o = _Px_O_PTR(n, object_size);
+
+            /* Just do a blanket copy of everything rather than trying to
+             * isolate the underlying VarObject ob_items.  It doesn't matter
+             * if we pick up old pointers and whatnot (i.e. old px/is_px refs)
+             * as all that stuff is initialized in the next section. */
+            bytes_to_copy = _PyObject_VAR_SIZE(tp, Py_SIZE(p));
+
+            /* (We may need to change this to <= down the track.) */
+            assert(bytes_to_copy < object_size);
+            assert(Py_SIZE(p) < nitems);
+
+            memcpy(n, p, bytes_to_copy);
+
+            Py_TYPE(n) = tp;
+            Py_SIZE(n) = nitems;
+            Py_REFCNT(n) = -1;
+
+            if (Py_PXOBJ(p)) {
+                /* XXX do we really need to do this?  (Original line of
+                 * thinking was that we might need to treat the object
+                 * differently down the track (i.e. during cleanup) if
+                 * it was resized.) */
+                Py_ASPX(p)->resized_to = n;
+                x->resized_from = p;
+            }
+
+            (c->h->resizes)++;
+            (c->stats.resizes)++;
+        }
     }
+    assert(tp);
+    assert(Py_TYPE(n) == tp);
+    assert(Py_REFCNT(n) == -1);
+    assert(is_varobj == 0 || is_varobj == 1);
+
+    Py_PXFLAGS(n) = Py_PXFLAGS_ISPX;
+
+    if (is_varobj)
+        assert(Py_SIZE(n) == nitems);
+
+    n->px = x;
+    n->is_px = _Py_IS_PARALLEL;
+    n->srw_lock = NULL;
+
+    x->ctx = c;
+    x->signature = _PxObjectSignature;
+
+    o->op = n;
+    append_object((is_varobj ? &c->varobjs : &c->objects), o);
 
     if (!c->ob_first) {
-        c->ob_first = p;
-        c->ob_last  = p;
-        p->_ob_next = NULL;
-        p->_ob_prev = NULL;
+        c->ob_first = n;
+        c->ob_last  = n;
+        n->_ob_next = NULL;
+        n->_ob_prev = NULL;
     } else {
         PyObject *last;
         assert(!c->ob_first->_ob_prev);
         assert(!c->ob_last->_ob_next);
         last = c->ob_last;
-        last->_ob_next = p;
-        p->_ob_prev = last;
-        p->_ob_next = NULL;
-        c->ob_last = p;
+        last->_ob_next = n;
+        n->_ob_prev = last;
+        n->_ob_next = NULL;
+        c->ob_last = n;
     }
 
-    return p;
+    return n;
 }
 
 __inline
@@ -898,59 +1024,10 @@ VarObject_New(PyTypeObject *tp, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, NULL, tp, nitems);
 }
 
-void *
-_PyHeap_Realloc(Context *c, void *p, size_t n)
-{
-    void  *r;
-    Heap  *h = c->h;
-    Stats *s = &c->stats;
-    r = _PyHeap_Malloc(c, n, 0);
-    if (!r)
-        return NULL;
-    h->mem_reallocs++;
-    s->mem_reallocs++;
-    memcpy(r, p, n);
-    return r;
-}
-
-void
-_PyHeap_Free(Context *c, void *p)
-{
-    Heap  *h = c->h;
-    Stats *s = &c->stats;
-    Px_GUARD_MEM(p);
-
-    h->frees++;
-    s->frees++;
-}
-
 PyVarObject *
 VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
 {
-    PyTypeObject *tp;
-    PyVarObject  *r, *r2;
-    const register size_t sz = _Px_VSZ(Py_TYPE(v), nitems);
-    const register size_t total = _Px_SZ(sz);
-
-    if (!_Px_TEST(v))
-        printf("\nVarObject_Resize: *v failed _Px_TEST!\n");
-
-    r = (PyVarObject *)_PyHeap_Malloc(c, total, 0);
-    if (!r)
-        return (PyVarObject *)PyErr_NoMemory();
-
-    memcpy(r, v, Py_ASPX(v)->size);
-    tp = Py_TYPE(v);
-    r2 = (PyVarObject *)init_object(c, (PyObject *)r, tp, nitems);
-    assert(r == r2);
-
-    Py_ASPX(v)->resized_to = (PyObject *)r;
-    Py_ASPX(r)->resized_from = v;
-
-    c->h->resizes++;
-    c->stats.resizes++;
-    v = (PyObject *)r;
-    return r;
+    return (PyVarObject *)init_object(c, v, NULL, nitems);
 }
 
 void *
@@ -998,6 +1075,7 @@ _PxObject_Free(void *p)
     }
 }
 
+/*
 __inline
 PyObject *
 _PyHeap_NewTuple(Context *c, Py_ssize_t nitems)
@@ -1011,6 +1089,7 @@ _PyHeap_ResizeTuple(Context *c, PyObject *op, Py_ssize_t nitems)
 {
     return (PyObject *)VarObject_Resize(op, nitems, c);
 }
+*/
 
 __inline
 int
@@ -2344,6 +2423,37 @@ _async_call_from_main_thread_and_wait(PyObject *self, PyObject *args)
     return _call_from_main_thread(self, args, 1);
 }
 
+PyObject *
+_async_protect(PyObject *self, PyObject *obj)
+{
+    if (!(obj->px_flags & Py_PXFLAGS_SRWLOCK)) {
+        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
+        obj->px_flags |= Py_PXFLAGS_SRWLOCK;
+    }
+
+    Py_RETURN_NONE;
+}
+
+PyObject *
+_async_unprotect(PyObject *self, PyObject *obj)
+{
+    if (obj->px_flags & Py_PXFLAGS_SRWLOCK) {
+        obj->px_flags &= ~Py_PXFLAGS_SRWLOCK;
+        obj->srw_lock = NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
+PyObject *
+_async_protected(PyObject *self, PyObject *obj)
+{
+    if (obj->px_flags & Py_PXFLAGS_SRWLOCK)
+        Py_RETURN_TRUE;
+    else
+        Py_RETURN_FALSE;
+}
+
 PyDoc_STRVAR(_async_doc,
 "_async module.\n\
 \n\
@@ -2382,7 +2492,10 @@ PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_server_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_protect_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_unprotect_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_protected_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_active_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_work_doc, "XXX TODO\n");
@@ -2427,8 +2540,8 @@ _Px_NewReference(PyObject *op)
     if (op->is_px != _Py_IS_PARALLEL)
         op->is_px = _Py_IS_PARALLEL;
 
-    assert(Py_TYPE(op));
 #endif
+    assert(Py_TYPE(op));
 
     op->ob_refcnt = 1;
     ctx->stats.newrefs++;
@@ -2510,6 +2623,7 @@ _PxMem_Free(void *p)
 
 
 /* socket */
+
 void
 _pxsocket_dealloc(PxSocket *self)
 {
@@ -2568,8 +2682,10 @@ _pxsocket_connect(PxSocket *s, PyObject *args)
         goto done;
     }
 
-    if (!getsockaddrarg(PXS2S(s), args, SAS2SA(&s->remote), &(s->addrlen)))
+    if (!getsockaddrarg(PXS2S(s), args, SAS2SA(&s->remote), &(s->remote_addrlen)))
         return NULL;
+
+    Py_RETURN_NONE;
 
 done:
     return result;
@@ -2588,12 +2704,21 @@ static PyMethodDef PxSocketMethods[] = {
 
 #define _MEMBER(n, t, c, f, d) {#n, t, offsetof(c, n), f, d}
 #define _PXSOCKETMEM(n, t, f, d)  _MEMBER(n, t, PxSocket, f, d)
-#define _PXSOCKET_CB(n)        _PXSOCKETMEM(n, T_OBJECT, 0, #n " callback")
-#define _PXSOCKET_ATTR_I(n)    _PXSOCKETMEM(n, T_INT,    0, #n " attribute")
-#define _PXSOCKET_ATTR_B(n)    _PXSOCKETMEM(n, T_BOOL,   0, #n " attribute")
-#define _PXSOCKET_ATTR_S(n)    _PXSOCKETMEM(n, T_STRING, 0, #n " attribute")
+#define _PXSOCKET_CB(n)        _PXSOCKETMEM(n, T_OBJECT_EX, 0, #n " callback")
+#define _PXSOCKET_ATTR_O(n)    _PXSOCKETMEM(n, T_OBJECT_EX, 0, #n " callback")
+#define _PXSOCKET_ATTR_OR(n)   _PXSOCKETMEM(n, T_OBJECT_EX, 1, #n " callback")
+#define _PXSOCKET_ATTR_I(n)    _PXSOCKETMEM(n, T_INT,       0, #n " attribute")
+#define _PXSOCKET_ATTR_B(n)    _PXSOCKETMEM(n, T_BOOL,      0, #n " attribute")
+#define _PXSOCKET_ATTR_BR(n)   _PXSOCKETMEM(n, T_BOOL,      1, #n " attribute")
+#define _PXSOCKET_ATTR_S(n)    _PXSOCKETMEM(n, T_STRING,    0, #n " attribute")
 
 static PyMemberDef PxSocketMembers[] = {
+    /* underlying socket (readonly) */
+    _PXSOCKET_ATTR_OR(sock),
+
+    /* handler */
+    _PXSOCKET_ATTR_O(handler),
+
     /* callbacks */
     _PXSOCKET_CB(connected),
     _PXSOCKET_CB(data_received),
@@ -2606,7 +2731,9 @@ static PyMemberDef PxSocketMembers[] = {
     /* attributes */
     _PXSOCKET_ATTR_S(eol),
     _PXSOCKET_ATTR_B(line_mode),
+    _PXSOCKET_ATTR_BR(is_client),
     _PXSOCKET_ATTR_I(wait_for_eol),
+    _PXSOCKET_ATTR_BR(is_connected),
     _PXSOCKET_ATTR_I(max_line_length),
 
     { NULL }
@@ -2629,8 +2756,8 @@ static PyTypeObject PxSocket_Type = {
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
     0,                                          /* tp_str */
-    0,                                          /* tp_getattro */
-    0,                                          /* tp_setattro */
+    PyObject_GenericGetAttr,                    /* tp_getattro */
+    PyObject_GenericSetAttr,                    /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,   /* tp_flags */
     "Asynchronous Socket Objects",              /* tp_doc */
@@ -2655,6 +2782,12 @@ static PyTypeObject PxSocket_Type = {
 };
 
 static char *_pxsocket_kwlist[] = {
+    /* mandatory */
+    "sock",
+
+    /* optional */
+    "handler",
+
     "connected",
     "data_received",
     "lines_received",
@@ -2738,7 +2871,10 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(rdtsc),
     _ASYNC_K(client),
     _ASYNC_K(server),
+    _ASYNC_O(protect),
     _ASYNC_N(run_once),
+    _ASYNC_O(unprotect),
+    _ASYNC_O(protected),
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
     _ASYNC_V(submit_work),
@@ -2789,6 +2925,9 @@ _PyAsync_ModInit(void)
 
     if (PyModule_AddObject(m, "socket", (PyObject *)&PxSocket_Type))
         return NULL;
+
+    if (Py_VerboseFlag)
+        printf("sizeof(PxSocket): %d\n", sizeof(PxSocket));
 
     return m;
 }

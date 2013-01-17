@@ -8,6 +8,10 @@
 extern "C" {
 #endif
 
+#ifdef WITH_PARALLEL
+#include <Windows.h>
+#endif
+
 #ifdef Py_REF_DEBUG
 Py_ssize_t _Py_RefTotal;
 
@@ -46,6 +50,8 @@ static PyObject refchain = {&refchain, &refchain};
 static PyObject refchain = {
     _Py_NOT_PARALLEL,
     _Py_NOT_PARALLEL,
+    0,
+    NULL,
     &refchain,
     &refchain
 };
@@ -1178,11 +1184,27 @@ _PyObject_GenericGetAttrWithDict(PyObject *obj, PyObject *name, PyObject *dict)
     return res;
 }
 
+#ifndef WITH_PARALLEL
 PyObject *
 PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
 {
     return _PyObject_GenericGetAttrWithDict(obj, name, NULL);
 }
+#else
+PyObject *
+PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
+{
+    if (!obj->px_flags & Py_PXFLAGS_SRWLOCK)
+        return _PyObject_GenericGetAttrWithDict(obj, name, NULL);
+
+    AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    __try {
+        return _PyObject_GenericGetAttrWithDict(obj, name, NULL);
+    } __finally {
+        ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    }
+}
+#endif
 
 int
 _PyObject_GenericSetAttrWithDict(PyObject *obj, PyObject *name,
@@ -1260,11 +1282,34 @@ _PyObject_GenericSetAttrWithDict(PyObject *obj, PyObject *name,
     return res;
 }
 
+#ifndef WITH_PARALLEL
 int
 PyObject_GenericSetAttr(PyObject *obj, PyObject *name, PyObject *value)
 {
     return _PyObject_GenericSetAttrWithDict(obj, name, value, NULL);
 }
+#else
+int
+PyObject_GenericSetAttr(PyObject *obj, PyObject *name, PyObject *value)
+{
+    if (Py_ISPY(obj) && value->is_px == _Py_IS_PARALLEL) {
+        PyErr_SetString(
+            PyExc_ValueError,
+            "parallel object cannot be set to non-parallel object"
+        );
+        return -1;
+    }
+    if (!obj->px_flags & Py_PXFLAGS_SRWLOCK)
+        return _PyObject_GenericSetAttrWithDict(obj, name, value, NULL);
+
+    AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    __try {
+        return _PyObject_GenericSetAttrWithDict(obj, name, value, NULL);
+    } __finally {
+        ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    }
+}
+#endif
 
 int
 PyObject_GenericSetDict(PyObject *obj, PyObject *value, void *context)
@@ -1779,6 +1824,7 @@ _Py_VerifyObjectHead(PyObject *op)
     assert(op->ob_refcnt == 1);
     assert(op->is_px    == _Py_NOT_PARALLEL);
     assert(op->px       == _Py_NOT_PARALLEL);
+    assert(op->srw_lock == NULL);
 #ifndef Py_TRACE_REFS
     assert(op->_ob_next == _Py_NOT_PARALLEL);
     assert(op->_ob_prev == _Py_NOT_PARALLEL);

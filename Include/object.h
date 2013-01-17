@@ -85,16 +85,20 @@ whose size is determined when the object is allocated.
 #define _Py_NOT_PARALLEL ((void *)_Py_DEADBEEF)
 #define _Py_IS_PARALLEL  ((void *)_Px_DEADBEEF)
 
-#define _PyObject_HEAD_EXTRA              \
-    void *is_px;                          \
-    void *px;                             \
-    struct _object *_ob_next;             \
+#define _PyObject_HEAD_EXTRA            \
+    void   *is_px;                      \
+    void   *px;                         \
+    size_t  px_flags;                   \
+    void   *srw_lock;                   \
+    struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
-#define _PyObject_EXTRA_INIT              \
-    (void *)_Py_NOT_PARALLEL,             \
-    (void *)_Py_NOT_PARALLEL,             \
-    (struct _object *)_Py_NOT_PARALLEL,   \
+#define _PyObject_EXTRA_INIT            \
+    (void *)_Py_NOT_PARALLEL,           \
+    (void *)_Py_NOT_PARALLEL,           \
+    0,                                  \
+    NULL,                               \
+    (struct _object *)_Py_NOT_PARALLEL, \
     (struct _object *)_Py_NOT_PARALLEL,
 #endif /* WITH_PARALLEL */
 

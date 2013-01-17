@@ -215,6 +215,8 @@ _PyObject_InitHead(PyObject *op)
     assert(Py_TYPE(op));
     op->is_px = _Py_NOT_PARALLEL;
     op->px    = _Py_NOT_PARALLEL;
+    op->px_flags = 0;
+    op->srw_lock = NULL;
 #ifdef Py_TRACE_REFS
     op->_ob_next = NULL;
     op->_ob_prev = NULL;

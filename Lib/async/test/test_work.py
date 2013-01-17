@@ -103,11 +103,7 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, None, None)
         _async.run()
 
-    def test_submit_simple_work_errback_invoked2(self):
-        #def f():
-        #    i = len(laksjdflaskjdflsakjdfsalkjdf)
-        #    laksjdflaskjdflsakjdfsalkjdf = 'lkasjdflskjdf'
-
+    def test_submit_simple_work_errback_invoked1(self):
         def f():
             return laksjdflaskjdflsakjdfsalkjdfaa
 
@@ -131,7 +127,7 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, cb, eb)
         _async.run()
 
-    def test_submit_simple_work_errback_invoked1(self):
+    def test_submit_simple_work_errback_invoked2(self):
         def f():
             return laksjdflaskjdflsakjdfsalkjdf
 
@@ -155,9 +151,29 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, None, eb)
         _async.run()
 
-    def test_submit_simple_work_errback_invoked1(self):
+    def test_submit_simple_work_errback_invoked3(self):
         def f():
             return laksjdflaskjdflsakjdfsalkjdf
+
+        def eb(e):
+            self.assertIsInstance(e, tuple)
+            (et, ev, eb) = e
+            try:
+                f()
+            except NameError as e2:
+                self.assertEqual(et, e2.__class__)
+                self.assertEqual(ev, e2.args[0])
+                self.assertEqual(eb.__class__, e2.__traceback__.__class__)
+            else:
+                self.assertEqual(0, 1)
+
+        _async.submit_work(f, None, None, None, eb)
+        _async.run()
+
+    def test_submit_simple_work_errback_invoked4(self):
+        def f():
+            i = len(laksjdflaskjdflsakjdfsalkjdf)
+            laksjdflaskjdflsakjdfsalkjdf = 'lkasjdflskjdf'
 
         @async.call_from_main_thread_and_wait
         def test_e(e):
@@ -178,6 +194,16 @@ class TestSubmitWork(unittest.TestCase):
 
         _async.submit_work(f, None, None, None, eb)
         _async.run()
+
+class TestProtect(unittest.TestCase):
+
+    def test_protect_basic(self):
+        o = object()
+        async.protect(o)
+        self.assertEqual(async.protected(o), True)
+        async.unprotect(o)
+        self.assertEqual(async.protected(o), False)
+
 
 
 if __name__ == '__main__':

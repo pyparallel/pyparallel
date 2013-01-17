@@ -358,18 +358,20 @@ typedef struct _PxObject {
 } PxObject;
 
 typedef struct _PxSocket {
+    PyObject_HEAD
     /* internal */
-    PySocketSockObject _sock;
-    PyObject *socket_weakref;
+    PySocketSockObject *sock;
     WSAOVERLAPPED overlapped;
     HANDLE completion_port;
 
     sock_addr_t local;
     sock_addr_t remote;
-    int         addrlen;
+    int         local_addrlen;
+    int         remote_addrlen;
 
-    /* callbacks */
-    SRWLOCK   callbacks_srwlock;
+    /* default handler and callbacks */
+    PyObject *handler;
+
     PyObject *connected;
     PyObject *data_received;
     PyObject *lines_received;
@@ -379,28 +381,24 @@ typedef struct _PxSocket {
     PyObject *initial_connection_error;
 
     /* attributes */
-    SRWLOCK   attributes_srwlock;
     PyObject *initial_bytes_to_send;
     PyObject *initial_regex_to_expect;
     char      is_client;
+    char      is_connected;
     char      line_mode;
     char      wait_for_eol;
+    char      auto_reconnect;
     char     *eol[2];
     int       max_line_length;
 
-    /* We want each PxSocket object to fit into a system page (4k) exactly.
-       The buffer sizes below may need to be tweaked upon addition of new
-       struct memebers above. */
+    __declspec(align(64))
 
 #ifndef _WIN64
-#define _PxSocket_BUFSIZE 3584
+#define _PxSocket_BUFSIZE (4096-448)
 #else
-#define _PxSocket_BUFSIZE 3520
+#define _PxSocket_BUFSIZE (4096-512)
 #endif
 
-    __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
-    /* 32-bit offset: 512 */
-    /* 64-bit offset: 576 */
     char buf[_PxSocket_BUFSIZE];
 } PxSocket;
 
@@ -425,6 +423,18 @@ static PyTypeObject PxClientSocket_Type;
 static PyTypeObject PxServerSocket_Type;
 
 static PySocketModule_APIObject PySocketModule;
+
+#define getsockaddrarg          PySocketModule.getsockaddrarg
+#define getsockaddrlen          PySocketModule.getsockaddrlen
+#define makesockaddr            PySocketModule.makesockaddr
+#define AcceptEx                PySocketModule.AcceptEx
+#define ConnectEx               PySocketModule.ConnectEx
+#define WSARecvMsg              PySocketModule.WSARecvMsg
+#define WSASendMsg              PySocketModule.WSASendMsg
+#define DisconnectEx            PySocketModule.DisconnectEx
+#define TransmitFile            PySocketModule.TransmitFile
+#define TransmitPackets         PySocketModule.TransmitPackets
+#define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
 
 #define PxSocket_Check(v)         (Py_TYPE(v) == &PxSocket_Type)
 #define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)

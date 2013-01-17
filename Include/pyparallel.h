@@ -11,6 +11,12 @@ extern "C" {
 #endif
 #include "pyintrinsics.h"
 
+#define Py_PXFLAGS(o)   (((PyObject *)(o))->px_flags)
+
+#define Py_PXFLAGS_DEFAULT              (0)
+#define Py_PXFLAGS_ISPX                 (1UL <<  1)
+#define Py_PXFLAGS_SRWLOCK              (1UL <<  2)
+
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
@@ -51,7 +57,7 @@ PyAPI_FUNC(int) _PyParallel_Guard(const char *function,
 
 PyAPI_FUNC(int)     _Px_TEST(void *p);
 #ifdef Py_DEBUG
-PyAPI_FUNC(int)     _Py_ISPX(void *ob);
+
 PyAPI_FUNC(int)     _Py_ISPY(void *ob);
 PyAPI_FUNC(int)     _Py_PXCTX(void);
 
@@ -135,6 +141,7 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
         m,                         \
         _PYOBJ_TEST                \
     )
+#define Py_PYOBJ(m) Py_TEST_OBJ(m)
 
 #define Px_TEST_OBJ(m)             \
     _PyParallel_Guard(             \
@@ -144,6 +151,7 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
         m,                         \
         _PXOBJ_TEST                \
     )
+#define Py_PXOBJ(m) Px_TEST_OBJ(m)
 
 #define Py_GUARD_OBJ(m)            \
     _PyParallel_Guard(             \

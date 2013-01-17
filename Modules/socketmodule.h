@@ -252,26 +252,42 @@ typedef struct {
     PyTypeObject *Sock_Type;
     PyObject *error;
     PyObject *timeout_error;
+#ifdef WITH_PARALLEL
+    int (*getsockaddrarg)(PySocketSockObject *s,
+                          PyObject *args,
+                          struct sockaddr *addr_ret,
+                          int *len_ret);
+    int (*getsockaddrlen)(PySocketSockObject *s, socklen_t *len_ret);
+    PyObject *(*makesockaddr)(SOCKET_T sockfd,
+                              struct sockaddr *addr,
+                              size_t addrlen,
+                              int proto);
+#ifdef MS_WINDOWS
+    LPFN_ACCEPTEX AcceptEx;
+    LPFN_CONNECTEX ConnectEx;
+    LPFN_WSARECVMSG WSARecvMsg;
+    LPFN_WSASENDMSG WSASendMsg;
+    LPFN_DISCONNECTEX DisconnectEx;
+    LPFN_TRANSMITFILE TransmitFile;
+    LPFN_TRANSMITPACKETS TransmitPackets;
+    LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs;
+#else /* MS_WINDOWS */
+    void (*null01)(void); /* LPFN_ACCEPTEX             */
+    void (*null02)(void); /* LPFN_CONNECTEX            */
+    void (*null03)(void); /* LPFN_WSARECVMSG           */
+    void (*null04)(void); /* LPFN_WSASENDMSG           */
+    void (*null05)(void); /* LPFN_DISCONNECTEX         */
+    void (*null06)(void); /* LPFN_TRANSMITFILE         */
+    void (*null07)(void); /* LPFN_TRANSMITPACKETS      */
+    void (*null08)(void); /* LPFN_GETACCEPTEXSOCKADDRS */
+#endif /* MS_WINDOWS */
+#endif /* WITH_PARALLEL */
 } PySocketModule_APIObject;
 
 #define PySocketModule_ImportModuleAndAPI() PyCapsule_Import(PySocket_CAPSULE_NAME, 1)
 
-#ifdef WITH_PARALLEL
-PyAPI_FUNC(int) getsockaddrarg(PySocketSockObject *s,
-                               PyObject *args,
-                               struct sockaddr *addr_ret,
-                               int *len_ret);
-
-PyAPI_FUNC(int) getsockaddrlen(PySocketSockObject *s, socklen_t *len_ret);
-
-PyAPI_FUNC(PyObject *) makesockaddr(SOCKET_T sockfd,
-                                    struct sockaddr *addr,
-                                    size_t addrlen,
-                                    int proto);
-PyAPI_FUNC(PyObject *) makeipaddr(struct sockaddr *addr, int addrlen);
 /* Convert "sock_addr_t *" to "struct sockaddr *". */
 #define SAS2SA(x)       (&((x)->sa))
-#endif
 
 #ifdef __cplusplus
 }

@@ -13,13 +13,6 @@ from socket import (
 )
 
 import async
-import async.socket
-
-from async.socket import (
-    Socket,
-    ClientSocket,
-    ServerSocket,
-)
 
 from async.test import (
     QOTD,
