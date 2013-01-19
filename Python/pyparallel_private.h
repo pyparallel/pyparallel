@@ -71,12 +71,6 @@ extern "C" {
 
 #define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
 
-#define Py_PXOBJ(ob) (                   \
-    ob != NULL && (                      \
-        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
-    )                                    \
-)
-
 #ifdef MS_WINDOWS
 #define PyEvent     HANDLE
 #define PyEventType HANDLE

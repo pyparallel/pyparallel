@@ -258,6 +258,12 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
     )                                                          \
 )
 
+#define Py_PXOBJ(ob) (                   \
+    ob != NULL && (                      \
+        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+    )                                    \
+)
+
 #define Px_GUARD
 #define Py_GUARD
 #define Py_GUARD_OBJ(o)
