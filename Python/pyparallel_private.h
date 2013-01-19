@@ -269,6 +269,22 @@ typedef struct _PxState {
     //volatile long long  succeeded;
 
     //__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
+    volatile long long  waits_submitted;
+    volatile long       waits_pending;
+    volatile long       waits_inflight;
+    volatile long long  waits_done;
+    //volatile long long  failed;
+    //volatile long long  succeeded;
+
+    //__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
+    volatile long long  timers_submitted;
+    volatile long       timers_pending;
+    volatile long       timers_inflight;
+    volatile long long  timers_done;
+    //volatile long long  failed;
+    //volatile long long  succeeded;
+
+    //__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
     volatile long long  io_submitted;
     volatile long       io_pending;
     volatile long       io_inflight;
@@ -299,12 +315,22 @@ typedef struct _PxState {
 } PxState;
 
 typedef struct _PyParallelContext {
+    PyObject *waitobj;
+    PyObject *waitobj_timeout;
     PyObject *func;
     PyObject *args;
     PyObject *kwds;
     PyObject *callback;
     PyObject *errback;
     PyObject *result;
+
+    TP_WAIT        *tp_wait;
+    TP_WAIT_RESULT  wait_result;
+    PFILETIME       wait_timeout;
+
+    TP_IO    *tp_io;
+
+    TP_TIMER *tp_timer;
 
     Context *prev;
     Context *next;

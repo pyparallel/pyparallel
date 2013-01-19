@@ -23,9 +23,9 @@ def synchronized(f):
 def submit_work(func, args=None, kwds=None, callback=None, errback=None):
     _async.submit_work(func, args, kwds, callback, errback)
 
-def submit_wait(obj, func, args=None, kwds=None, callback=None, errback=None):
-    raise NotImplementedError
-    _async.submit_wait(obj, func, args, kwds, callback, errback)
+def submit_wait(obj, func=None, args=None, kwds=None,
+                callback=None, errback=None, timeout=None):
+    _async.submit_wait(obj, timeout, func, args, kwds, callback, errback)
 
 def wait_any(waits):
     raise NotImplementedError

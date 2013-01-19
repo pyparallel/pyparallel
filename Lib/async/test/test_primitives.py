@@ -92,10 +92,11 @@ class TestAsyncSignalAndWait(unittest.TestCase):
         async.run()
 
 class TestAsyncProtection(unittest.TestCase):
-    def _test_basic(self):
+    def test_basic(self):
         d = {}
-        o = object()
-        async.protect(o)
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
 
         @async.call_from_main_thread_and_wait
         def _timestamp(name):
@@ -103,20 +104,20 @@ class TestAsyncProtection(unittest.TestCase):
 
         def reader(name):
             async.read_lock(o)
-            async.signal(o)         # start writer callback
-            async.wait(o)           # wait for writer callback
+            async.signal(w)         # start writer callback
+            async.wait(r)           # wait for writer callback
             _timestamp(name)
             async.read_unlock(o)
 
         def writer(name):
-            async.signal(o)         # tell the reader we've entered
+            async.signal(r)         # tell the reader we've entered
             async.write_lock(o)     # will be blocked until reader unlocks
             _timestamp(name)
             async.write_unlock(o)
-            async.signal(o)         # tell the main thread we're done
 
-        async.submit_wait(o, writer, 'w')
-        async.submit_work(reader, 'r')
+        async.submit_wait(r, reader, 'r')
+        async.submit_wait(w, writer, 'w')
+        async.signal(r)
         async.run()
         self.assertGreater(d['w'], d['r'])
 
