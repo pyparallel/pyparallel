@@ -70,24 +70,29 @@ class TestProtectionError(unittest.TestCase):
         async.run()
 
 class TestAsyncSignalAndWait(unittest.TestCase):
+    def test_nowaiters_error(self):
+        o = async.protect(object())
+        self.assertRaises(async.NoWaitersError, async.signal, o)
+
     def test_nowaiters_error_from_callback(self):
-        o = _object()
+        o = async.protect(object())
+
         def callback():
             self.assertRaises(async.NoWaitersError, async.signal, o)
-
         async.submit_work(callback)
         async.run()
 
-    def test_nowaiters_error_from_callback(self):
-        o = _object()
+    def test_wait_error_from_callback(self):
+        o = async.protect(object())
+
         def callback():
-            self.assertRaises(async.NoWaitersError, async.signal, o)
+            self.assertRaises(async.WaitError, async.wait, o)
 
         async.submit_work(callback)
         async.run()
 
 class TestAsyncProtection(unittest.TestCase):
-    def test_basic(self):
+    def _test_basic(self):
         d = {}
         o = object()
         async.protect(o)

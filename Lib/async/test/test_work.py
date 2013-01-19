@@ -195,16 +195,6 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, None, eb)
         _async.run()
 
-class TestProtect(unittest.TestCase):
-
-    def test_protect_basic(self):
-        o = object()
-        async.protect(o)
-        self.assertEqual(async.protected(o), True)
-        async.unprotect(o)
-        self.assertEqual(async.protected(o), False)
-
-
 
 if __name__ == '__main__':
     unittest.main()

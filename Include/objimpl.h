@@ -217,6 +217,7 @@ _PyObject_InitHead(PyObject *op)
     op->px    = _Py_NOT_PARALLEL;
     op->px_flags = 0;
     op->srw_lock = NULL;
+    op->event    = NULL;
 #ifdef Py_TRACE_REFS
     op->_ob_next = NULL;
     op->_ob_prev = NULL;

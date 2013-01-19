@@ -52,6 +52,7 @@ static PyObject refchain = {
     _Py_NOT_PARALLEL,
     0,
     NULL,
+    NULL,
     &refchain,
     &refchain
 };
@@ -1194,7 +1195,7 @@ PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
 PyObject *
 PyObject_GenericGetAttr(PyObject *obj, PyObject *name)
 {
-    if (!obj->px_flags & Py_PXFLAGS_SRWLOCK)
+    if (!obj->px_flags & Py_PXFLAGS_RWLOCK)
         return _PyObject_GenericGetAttrWithDict(obj, name, NULL);
 
     AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
@@ -1299,7 +1300,7 @@ PyObject_GenericSetAttr(PyObject *obj, PyObject *name, PyObject *value)
         );
         return -1;
     }
-    if (!obj->px_flags & Py_PXFLAGS_SRWLOCK)
+    if (!obj->px_flags & Py_PXFLAGS_RWLOCK)
         return _PyObject_GenericSetAttrWithDict(obj, name, value, NULL);
 
     AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));

@@ -24,6 +24,11 @@ int _PxBlockingCallsThreshold = 5;
 
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align);
 
+static PyObject *PyExc_AsyncError;
+static PyObject *PyExc_ProtectionError;
+static PyObject *PyExc_NoWaitersError;
+static PyObject *PyExc_WaitError;
+
 __inline
 PyThreadState *
 get_main_thread_state(void)
@@ -960,6 +965,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     assert(Py_REFCNT(n) == -1);
     assert(is_varobj == 0 || is_varobj == 1);
 
+    Py_EVENT(n) = NULL;
     Py_PXFLAGS(n) = Py_PXFLAGS_ISPX;
 
     if (is_varobj)
@@ -1704,6 +1710,7 @@ _PxState_PurgeContexts(PxState *px)
 {
     Heap *h;
     Stats *s;
+    Object *o;
     register Context *c;
     Context *prev, *next;
     PxListItem *item;
@@ -1762,6 +1769,12 @@ _PxState_PurgeContexts(PxState *px)
             Py_XDECREF((PyObject *)item->p4);
             _PyHeap_Free(c, item);
             item = next;
+        }
+
+        for (o = c->events.first; o != NULL; o = o->next) {
+            assert(Py_HAS_EVENT(o));
+            assert(Py_EVENT(o));
+            PyEvent_DESTROY(o);
         }
 
 #ifdef Py_DEBUG
@@ -2423,35 +2436,227 @@ _async_call_from_main_thread_and_wait(PyObject *self, PyObject *args)
     return _call_from_main_thread(self, args, 1);
 }
 
-PyObject *
-_async_protect(PyObject *self, PyObject *obj)
+/* protection */
+
+__inline
+char
+_protected(PyObject *obj)
 {
-    if (!(obj->px_flags & Py_PXFLAGS_SRWLOCK)) {
-        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
-        obj->px_flags |= Py_PXFLAGS_SRWLOCK;
-    }
-
-    Py_RETURN_NONE;
-}
-
-PyObject *
-_async_unprotect(PyObject *self, PyObject *obj)
-{
-    if (obj->px_flags & Py_PXFLAGS_SRWLOCK) {
-        obj->px_flags &= ~Py_PXFLAGS_SRWLOCK;
-        obj->srw_lock = NULL;
-    }
-
-    Py_RETURN_NONE;
+    return (obj->px_flags & Py_PXFLAGS_RWLOCK);
 }
 
 PyObject *
 _async_protected(PyObject *self, PyObject *obj)
 {
-    if (obj->px_flags & Py_PXFLAGS_SRWLOCK)
-        Py_RETURN_TRUE;
+    Py_INCREF(obj);
+    Py_RETURN_BOOL(_protected(obj));
+}
+
+__inline
+PyObject *
+_protect(PyObject *obj)
+{
+    if (!_protected(obj)) {
+        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
+        obj->px_flags |= Py_PXFLAGS_RWLOCK;
+    }
+    return obj;
+}
+
+PyObject *
+_async_protect(PyObject *self, PyObject *obj)
+{
+    Py_INCREF(obj);
+    if (Py_ISPX(obj)) {
+        PyErr_SetNone(PyExc_ProtectionError);
+        return NULL;
+    }
+    return _protect(obj);
+}
+
+__inline
+PyObject *
+_unprotect(PyObject *obj)
+{
+    if (_protected(obj)) {
+        obj->px_flags &= ~Py_PXFLAGS_RWLOCK;
+        obj->srw_lock = NULL;
+    }
+    return obj;
+}
+
+PyObject *
+_async_unprotect(PyObject *self, PyObject *obj)
+{
+    Py_INCREF(obj);
+    if (Py_ISPX(obj)) {
+        PyErr_SetNone(PyExc_ProtectionError);
+        return NULL;
+    }
+    return _unprotect(obj);
+}
+
+__inline
+PyObject *
+_read_lock(PyObject *obj)
+{
+    AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+
+PyObject *
+_async_read_lock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    return _read_lock(obj);
+}
+
+__inline
+PyObject *
+_read_unlock(PyObject *obj)
+{
+    ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+
+PyObject *
+_async_read_unlock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    return _read_unlock(obj);
+}
+
+__inline
+char
+_try_read_lock(PyObject *obj)
+{
+    return TryAcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+}
+
+PyObject *
+_async_try_read_lock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    Py_RETURN_BOOL(_try_read_lock(obj));
+}
+
+__inline
+PyObject *
+_write_lock(PyObject *obj)
+{
+    AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+
+PyObject *
+_async_write_lock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    return _write_lock(obj);
+}
+
+__inline
+PyObject *
+_write_unlock(PyObject *obj)
+{
+    ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+
+PyObject *
+_async_write_unlock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    return _write_unlock(obj);
+}
+
+__inline
+char
+_try_write_lock(PyObject *obj)
+{
+    return TryAcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+}
+
+PyObject *
+_async_try_write_lock(PyObject *self, PyObject *obj)
+{
+    Px_PROTECTION_GUARD(obj);
+    Py_INCREF(obj);
+    Py_RETURN_BOOL(_try_write_lock(obj));
+}
+
+__inline
+char
+_PyEvent_TryCreate(PyObject *o)
+{
+    char result = 0;
+    assert(Py_HAS_RWLOCK(o));
+    _write_lock(o);
+    if (!Py_HAS_EVENT(o)) {
+        result = 1;
+        if (Py_ISPX(o))
+            PyErr_SetNone(PyExc_WaitError);
+        if (!PyEvent_CREATE(o))
+            PyErr_SetFromWindowsErr(0);
+        else
+            result = 0;
+    }
+    _write_unlock(o);
+    return result;
+}
+
+PyObject *
+_async_wait(PyObject *self, PyObject *o)
+{
+    DWORD result;
+    Px_PROTECTION_GUARD(o);
+    Py_INCREF(o);
+    if (!_PyEvent_TryCreate(o))
+        return NULL;
+
+    result = WaitForSingleObject((HANDLE)o->event, INFINITE);
+
+    if (result == WAIT_OBJECT_0)
+        Py_RETURN_NONE;
+
+    else if (result == WAIT_ABANDONED)
+        PyErr_SetString(PyExc_SystemError, "wait abandoned");
+
+    else if (result == WAIT_TIMEOUT)
+        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
+
+    else if (result == WAIT_FAILED)
+        PyErr_SetFromWindowsErr(0);
+
     else
-        Py_RETURN_FALSE;
+        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
+
+    return NULL;
+}
+
+PyObject *
+_async_signal(PyObject *self, PyObject *o)
+{
+    PyObject *result = NULL;
+    Px_PROTECTION_GUARD(o);
+    Py_INCREF(o);
+    _write_lock(o);
+
+    if (!Py_HAS_EVENT(o))
+        PyErr_SetNone(PyExc_NoWaitersError);
+    else if (!PyEvent_SIGNAL(o))
+        PyErr_SetFromWindowsErr(0);
+    else
+        result = Py_None;
+
+    _write_unlock(o);
+    Py_XINCREF(result);
+    return result;
 }
 
 PyDoc_STRVAR(_async_doc,
@@ -2489,14 +2694,22 @@ PyDoc_STRVAR(_async_unregister_doc,
 Unregisters an asynchronous object.");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_wait_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_server_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_signal_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_protect_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_unprotect_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_protected_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_active_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_read_lock_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_read_unlock_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_try_read_lock_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_write_lock_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_write_unlock_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_try_write_lock_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_io_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_work_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_wait_doc, "XXX TODO\n");
@@ -2868,23 +3081,33 @@ _async_server(PyObject *self, PyObject *args, PyObject *kwds)
 PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
+    _ASYNC_O(wait),
     _ASYNC_N(rdtsc),
+    _ASYNC_O(signal),
     _ASYNC_K(client),
     _ASYNC_K(server),
     _ASYNC_O(protect),
+    //_ASYNC_O(wait_any),
+    //_ASYNC_O(wait_all),
     _ASYNC_N(run_once),
     _ASYNC_O(unprotect),
     _ASYNC_O(protected),
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
+    _ASYNC_O(read_lock),
+    _ASYNC_O(write_lock),
     _ASYNC_V(submit_work),
     _ASYNC_V(submit_wait),
+    _ASYNC_O(read_unlock),
+    _ASYNC_O(write_unlock),
     _ASYNC_N(is_active_ex),
     _ASYNC_N(active_count),
     _ASYNC_V(submit_timer),
     _ASYNC_O(submit_class),
     _ASYNC_O(submit_client),
     _ASYNC_O(submit_server),
+    _ASYNC_O(try_read_lock),
+    _ASYNC_O(try_write_lock),
     _ASYNC_N(active_contexts),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_V(call_from_main_thread),
@@ -2926,8 +3149,47 @@ _PyAsync_ModInit(void)
     if (PyModule_AddObject(m, "socket", (PyObject *)&PxSocket_Type))
         return NULL;
 
+    PyExc_AsyncError = PyErr_NewException("_async.AsyncError", NULL, NULL);
+    if (!PyExc_AsyncError)
+        return NULL;
+
+    PyExc_ProtectionError = \
+        PyErr_NewException("_async.ProtectionError", PyExc_AsyncError, NULL);
+    if (!PyExc_ProtectionError)
+        return NULL;
+
+    PyExc_NoWaitersError = \
+        PyErr_NewException("_async.NoWaitersError", PyExc_AsyncError, NULL);
+    if (!PyExc_NoWaitersError)
+        return NULL;
+
+    PyExc_WaitError = \
+        PyErr_NewException("_async.WaitError", PyExc_AsyncError, NULL);
+    if (!PyExc_WaitError)
+        return NULL;
+
+    if (PyModule_AddObject(m, "AsyncError", PyExc_AsyncError))
+        return NULL;
+
+    if (PyModule_AddObject(m, "ProtectionError", PyExc_ProtectionError))
+        return NULL;
+
+    if (PyModule_AddObject(m, "NoWaitersError", PyExc_NoWaitersError))
+        return NULL;
+
+    if (PyModule_AddObject(m, "WaitError", PyExc_WaitError))
+        return NULL;
+
+    Py_INCREF(PyExc_AsyncError);
+    Py_INCREF(PyExc_ProtectionError);
+    Py_INCREF(PyExc_NoWaitersError);
+    Py_INCREF(PyExc_WaitError);
+
+    /* Uncomment the following (during development) as needed. */
+    /*
     if (Py_VerboseFlag)
         printf("sizeof(PxSocket): %d\n", sizeof(PxSocket));
+    */
 
     return m;
 }

@@ -90,6 +90,7 @@ whose size is determined when the object is allocated.
     void   *px;                         \
     size_t  px_flags;                   \
     void   *srw_lock;                   \
+    void   *event;                      \
     struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
@@ -97,6 +98,7 @@ whose size is determined when the object is allocated.
     (void *)_Py_NOT_PARALLEL,           \
     (void *)_Py_NOT_PARALLEL,           \
     0,                                  \
+    NULL,                               \
     NULL,                               \
     (struct _object *)_Py_NOT_PARALLEL, \
     (struct _object *)_Py_NOT_PARALLEL,

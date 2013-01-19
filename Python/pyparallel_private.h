@@ -71,6 +71,24 @@ extern "C" {
 
 #define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
 
+#ifdef MS_WINDOWS
+#define PyEvent     HANDLE
+#define PyEventType HANDLE
+
+#define Py_EVENT(o)         ((PyEventType)(((PyObject *)(o))->event))
+#define PyEvent_CREATE(o)   (Py_EVENT(o) = CreateEvent(0, 0, 0, 0))
+#define PyEvent_INIT(o)     /* N/A */
+#define PyEvent_SIGNAL(o)   (SetEvent(Py_EVENT(o)))
+#define PyEvent_DESTROY(o)  (CloseHandle(Py_EVENT(o)))
+
+#define PyRWLock            SRWLOCK
+#define Py_RWLOCK(o)        ((PyRWLock *)&(((PyObject *)(o))->srw_lock))
+
+#define PyRWLock_CREATE(o)  /* N/A */
+#define PyRWLock_INIT(o)    (InitializeSRWLock((PSRWLOCK)&(o->srw_lock)))
+#define PyRWLock_DESTROY(o) /* N/A */
+#endif
+
 #include "pxlist.h"
 
 typedef struct _cpuinfo {
@@ -321,6 +339,7 @@ typedef struct _PyParallelContext {
 
     Objects objects;
     Objects varobjs;
+    Objects events;
 
     char  tbuf[_PX_TMPBUF_SIZE];
     void *tbuf_base;
@@ -441,6 +460,19 @@ static PySocketModule_APIObject PySocketModule;
 #define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
 
 #define PXS2S(s) ((PySocketSockObject *)s)
+
+#define Py_RETURN_BOOL(expr) return (             \
+    ((expr) ? (Py_INCREF(Py_True), Py_True) :     \
+              (Py_INCREF(Py_False), Py_False))    \
+)
+
+#define Px_PROTECTION_GUARD(o)                    \
+    do {                                          \
+        if (!_protected(o)) {                     \
+            PyErr_SetNone(PyExc_ProtectionError); \
+            return NULL;                          \
+        }                                         \
+    } while (0)
 
 #ifdef __cpplus
 }

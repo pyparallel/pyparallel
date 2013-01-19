@@ -15,7 +15,11 @@ extern "C" {
 
 #define Py_PXFLAGS_DEFAULT              (0)
 #define Py_PXFLAGS_ISPX                 (1UL <<  1)
-#define Py_PXFLAGS_SRWLOCK              (1UL <<  2)
+#define Py_PXFLAGS_RWLOCK               (1UL <<  2)
+#define Py_PXFLAGS_EVENT                (1UL <<  3)
+
+#define Py_HAS_RWLOCK(o)  (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
+#define Py_HAS_EVENT(o)   (Py_PXFLAGS((o)) & Py_PXFLAGS_EVENT)
 
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
@@ -57,7 +61,6 @@ PyAPI_FUNC(int) _PyParallel_Guard(const char *function,
 
 PyAPI_FUNC(int)     _Px_TEST(void *p);
 #ifdef Py_DEBUG
-
 PyAPI_FUNC(int)     _Py_ISPY(void *ob);
 PyAPI_FUNC(int)     _Py_PXCTX(void);
 
