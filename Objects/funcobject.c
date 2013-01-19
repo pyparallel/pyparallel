@@ -636,6 +636,8 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
     a = NULL;
     f = NULL;
     na = PyTuple_Size(arg);
+
+#if defined(Py_DEBUG)
     if (na == -1) {
         assert(PyErr_Occurred());
         return NULL;
@@ -667,6 +669,7 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
                     printf("ERROR! !is_px && !is_py\n");
         }
     }
+#endif
 
     result = PyEval_EvalCodeEx(
         PyFunction_GET_CODE(func),

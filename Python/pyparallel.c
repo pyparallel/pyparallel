@@ -1260,6 +1260,7 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, v, NULL, nitems);
 }
 
+#ifdef Py_DEBUG
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
@@ -1304,6 +1305,23 @@ _PxObject_Free(void *p)
             PyObject_Free(p);
     }
 }
+#else /* Py_DEBUG */
+void *
+_PxObject_Realloc(void *p, size_t nbytes)
+{
+    Px_GUARD
+    return _PyHeap_Realloc(ctx, p, nbytes);
+}
+
+void
+_PxObject_Free(void *p)
+{
+    Px_GUARD
+    if (!p)
+        return;
+    _PyHeap_Free(ctx, p);
+}
+#endif
 
 /*
 __inline

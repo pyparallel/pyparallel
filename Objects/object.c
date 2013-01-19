@@ -2183,7 +2183,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 void
 _Py_Dealloc(PyObject *op)
 {
-    Px_RETURN(_Px_Dealloc(op))
+    Px_RETURN_VOID_OP(op, _Px_Dealloc(op))
     Py_GUARD_OBJ(op);
     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA
     (*Py_TYPE(op)->tp_dealloc)(op);

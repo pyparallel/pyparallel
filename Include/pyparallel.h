@@ -230,7 +230,7 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
 #define Py_PXCTX    (Py_MainThreadId != _Py_get_current_thread_id())
 #define Py_PX(ob)   ((((PyObject*)(ob))->px))
 
-#define Py_ISPX(ob) (                                          \
+#define _Py_ISPX(ob) (                                         \
     Py_PXCTX || (                                              \
         ob != NULL && (                                        \
             ((((PyObject*)(ob))->is_px) == _Py_IS_PARALLEL) && \
@@ -239,7 +239,19 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
     )                                                          \
 )
 
-#define Py_ISPY(ob) (                                          \
+#define Py_ISPX(ob) (                    \
+    Py_PXCTX || (ob != NULL && (         \
+        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+    ))                                   \
+)
+
+#define Py_ISPY(ob) (                    \
+    Py_PXCTX || (ob != NULL && !(        \
+        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+    ))                                   \
+)
+
+#define _Py_ISPY(ob) (                                         \
     ob != NULL && (                                            \
         ((((PyObject*)(ob))->is_px) == _Py_NOT_PARALLEL) &&    \
         ((((PyObject*)(ob))->px)    == _Py_NOT_PARALLEL)       \
@@ -252,6 +264,8 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
 #define Px_GUARD_OBJ(o)
 #define Py_GUARD_MEM(p)
 #define Px_GUARD_MEM(p)
+#define PyPx_GUARD_MEM(m)
+#define PyPx_GUARD_OBJ(o)
 
 #endif /* !Py_DEBUG */
 
@@ -317,6 +331,8 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
 #define Px_RETURN_NULL_OP(op)
 #define Py_PXCTX 0
 #define Py_CTX 0
+#define PyPx_GUARD_OBJECT(o)
+#define PyPx_GUARD_MEM(o)
 #endif
 
 #ifdef __cplusplus
