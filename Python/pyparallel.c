@@ -67,7 +67,6 @@ _PyParallel_BlockingCall(void)
         _PyParallel_DisassociateCurrentThreadFromCallback();
 }
 
-
 __inline
 void *
 _PyHeap_MemAlignedMalloc(Context *c, size_t n)
@@ -89,6 +88,31 @@ _Py_PXCTX(void)
     assert(Py_MainThreadId > 0);
     assert(Py_MainProcessId != -1);
     return active;
+}
+
+static void
+_PyObject_Dealloc(PyObject *o)
+{
+    PyTypeObject *tp;
+#ifdef Py_DEBUG
+    Py_GUARD_OBJ(o);
+    Py_GUARD
+#endif
+    assert(Py_ORIG_TYPE(o));
+    assert(
+        Py_PXFLAGS(o) & (
+            Py_PXFLAGS_EVENT
+        )
+    );
+
+    if (Py_HAS_EVENT(o))
+        PyEvent_DESTROY(o);
+
+    tp = Py_TYPE(o);
+    Py_TYPE(o) = Py_ORIG_TYPE(o);
+    Py_ORIG_TYPE(o) = NULL;
+    (*Py_TYPE(o)->tp_dealloc)(o);
+    PyMem_FREE(tp);
 }
 
 __inline
@@ -243,7 +267,29 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_try_write_lock(obj));
 }
 
-__inline
+char
+_PyObject_PrepOrigType(PyObject *o)
+{
+    PyTypeObject *tp = Py_ORIG_TYPE(o);
+    if (!tp) {
+        tp = (PyTypeObject *)PyMem_MALLOC(sizeof(PyTypeObject));
+        if (!tp) {
+            PyErr_NoMemory();
+            return 0;
+        }
+        memcpy(tp, Py_TYPE(o), sizeof(PyTypeObject));
+        Py_ORIG_TYPE(o) = Py_TYPE(o);
+        Py_TYPE(o) = tp;
+        tp->tp_dealloc = _PyObject_Dealloc;
+    }
+
+    assert(Py_ORIG_TYPE(o));
+    assert(Py_ORIG_TYPE(o)->tp_dealloc);
+    assert(Py_ORIG_TYPE(o)->tp_dealloc != _PyObject_Dealloc);
+    assert(Py_TYPE(o)->tp_dealloc == _PyObject_Dealloc);
+    return 1;
+}
+
 char
 _PyEvent_TryCreate(PyObject *o)
 {
@@ -254,6 +300,8 @@ _PyEvent_TryCreate(PyObject *o)
         success = 0;
         if (Py_ISPX(o))
             PyErr_SetNone(PyExc_WaitError);
+        else if (!_PyObject_PrepOrigType(o))
+            goto done;
         else if (!PyEvent_CREATE(o))
             PyErr_SetFromWindowsErr(0);
         else {
@@ -261,6 +309,9 @@ _PyEvent_TryCreate(PyObject *o)
             success = 1;
         }
     }
+done:
+    if (!success)
+        assert(PyErr_Occurred());
     _write_unlock(o);
     return success;
 }
@@ -1191,6 +1242,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
     Py_EVENT(n) = NULL;
     Py_PXFLAGS(n) = Py_PXFLAGS_ISPX;
+    Py_ORIG_TYPE(n) = NULL;
 
     if (is_varobj)
         assert(Py_SIZE(n) == nitems);
@@ -1323,22 +1375,6 @@ _PxObject_Free(void *p)
 }
 #endif
 
-/*
-__inline
-PyObject *
-_PyHeap_NewTuple(Context *c, Py_ssize_t nitems)
-{
-    return (PyObject *)VarObject_New(&PyTuple_Type, nitems, c);
-}
-
-__inline
-PyObject *
-_PyHeap_ResizeTuple(Context *c, PyObject *op, Py_ssize_t nitems)
-{
-    return (PyObject *)VarObject_Resize(op, nitems, c);
-}
-*/
-
 __inline
 int
 null_with_exc_or_non_none_return_type(PyObject *op, PyThreadState *tstate)
@@ -1466,11 +1502,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     px->ctx_ttl = 1;
 
     goto done;
-
-/*
-free_wakeup:
-    CloseHandle(px->wakeup);
-*/
 
 free_finished:
     PxList_FreeListHead(px->finished);
