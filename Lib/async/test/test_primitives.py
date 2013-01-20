@@ -74,6 +74,15 @@ class TestAsyncSignalAndWait(unittest.TestCase):
         o = async.protect(object())
         self.assertRaises(async.NoWaitersError, async.signal, o)
 
+    def test_nowaiters_error_saw(self):
+        s = async.protect(object())
+        w = async.protect(object())
+        self.assertRaises(async.NoWaitersError, async.signal_and_wait, s, w)
+
+    def test_same_signal_and_wait(self):
+        s = w = async.protect(object())
+        self.assertRaises(async.WaitError, async.signal_and_wait, s, w)
+
     def test_nowaiters_error_from_callback(self):
         o = async.protect(object())
 
@@ -106,6 +115,34 @@ class TestAsyncProtection(unittest.TestCase):
             async.read_lock(o)
             async.signal(w)         # start writer callback
             async.wait(r)           # wait for writer callback
+            _timestamp(name)
+            async.read_unlock(o)
+
+        def writer(name):
+            async.signal(r)         # tell the reader we've entered
+            async.write_lock(o)     # will be blocked until reader unlocks
+            _timestamp(name)
+            async.write_unlock(o)
+
+        async.submit_wait(r, reader, 'r')
+        async.submit_wait(w, writer, 'w')
+        async.signal(r)
+        async.run()
+        self.assertGreater(d['w'], d['r'])
+
+    def test_signal_and_wait(self):
+        d = {}
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
+
+        @async.call_from_main_thread_and_wait
+        def _timestamp(name):
+            d[name] = async.rdtsc()
+
+        def reader(name):
+            async.read_lock(o)
+            async.signal_and_wait(w, r) # start writer callback, wait
             _timestamp(name)
             async.read_unlock(o)
 

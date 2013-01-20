@@ -434,6 +434,65 @@ _async_signal(PyObject *self, PyObject *o)
     return result;
 }
 
+PyObject *
+_async_signal_and_wait(PyObject *self, PyObject *args)
+{
+    PyObject *s, *w;
+    PyObject *result = NULL;
+    DWORD wait_result;
+
+    if (!PyArg_UnpackTuple(args, "signal_and_wait", 2, 2, &s, &w))
+        goto done;
+
+    Px_PROTECTION_GUARD(s);
+    Px_PROTECTION_GUARD(w);
+
+    if (s == w) {
+        PyErr_SetString(PyExc_WaitError,
+                        "signal and wait objects must differ");
+        goto done;
+    }
+
+    if (!_PyEvent_TryCreate(w))
+        goto done;
+
+    if (!Py_HAS_EVENT(s)) {
+        PyErr_SetNone(PyExc_NoWaitersError);
+        goto done;
+    }
+
+    Py_INCREF(s);
+    Py_INCREF(w);
+
+    wait_result = SignalObjectAndWait(Py_EVENT(s), Py_EVENT(w), INFINITE, 0);
+
+    if (wait_result == WAIT_OBJECT_0 || wait_result == WAIT_IO_COMPLETION)
+        result = Py_None;
+
+    else if (wait_result == WAIT_ABANDONED)
+        PyErr_SetString(PyExc_SystemError, "wait abandoned");
+
+    else if (wait_result == WAIT_TIMEOUT)
+        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
+
+    else if (wait_result == WAIT_FAILED)
+        PyErr_SetFromWindowsErr(0);
+
+    else
+        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
+
+    Py_DECREF(s);
+    Py_DECREF(w);
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+    else
+        Py_INCREF(result);
+
+    return result;
+}
+
 __inline
 PyObject *
 _protect(PyObject *obj)
@@ -2874,7 +2933,7 @@ _call_from_main_thread(PyObject *self, PyObject *targs, int wait)
 
     if (kwds) {
         if (!PyDict_CheckExact(kwds)) {
-            PyErr_SetString(PyExc_TypeError, "parameter 3 must be None or dict");
+            PyErr_SetString(PyExc_TypeError, "param 3 must be None or dict");
             goto error;
         }
     }
@@ -3039,6 +3098,7 @@ PyDoc_STRVAR(_async_submit_class_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_server_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_active_contexts_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_signal_and_wait_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_parallel_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
@@ -3214,7 +3274,8 @@ _pxsocket_connect(PxSocket *s, PyObject *args)
         goto done;
     }
 
-    if (!getsockaddrarg(PXS2S(s), args, SAS2SA(&s->remote), &(s->remote_addrlen)))
+    if (!getsockaddrarg(PXS2S(s),
+        args, SAS2SA(&s->remote), &(s->remote_addrlen)))
         return NULL;
 
     Py_RETURN_NONE;
@@ -3308,8 +3369,8 @@ static PyTypeObject PxSocket_Type = {
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
     0,                                          /* tp_init */
-    0,                                          /* tp_alloc */
-    0,                                          /* tp_new */
+    PyType_GenericAlloc,                        /* tp_alloc */
+    PyType_GenericNew,                          /* tp_new */
     0,                                          /* tp_free */
 };
 
@@ -3427,6 +3488,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(submit_server),
     _ASYNC_O(try_read_lock),
     _ASYNC_O(try_write_lock),
+    _ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_V(call_from_main_thread),
