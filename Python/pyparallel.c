@@ -30,6 +30,12 @@ static PyObject *PyExc_NoWaitersError;
 static PyObject *PyExc_WaitError;
 static PyObject *PyExc_WaitTimeoutError;
 
+int _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v);
+int _PyObject_SetAttrString(PyObject *, char *, PyObject *w);
+
+PyObject *_PyObject_GenericGetAttr(PyObject *o, PyObject *n);
+PyObject *_PyObject_GetAttrString(PyObject *, char *);
+
 __inline
 PyThreadState *
 get_main_thread_state(void)
@@ -90,28 +96,25 @@ _Py_PXCTX(void)
     return active;
 }
 
-static void
+void
 _PyObject_Dealloc(PyObject *o)
 {
     PyTypeObject *tp;
+    destructor d;
 #ifdef Py_DEBUG
     Py_GUARD_OBJ(o);
     Py_GUARD
 #endif
     assert(Py_ORIG_TYPE(o));
-    assert(
-        Py_PXFLAGS(o) & (
-            Py_PXFLAGS_EVENT
-        )
-    );
 
     if (Py_HAS_EVENT(o))
         PyEvent_DESTROY(o);
 
     tp = Py_TYPE(o);
+    d = Py_ORIG_TYPE_CAST(o)->tp_dealloc;
     Py_TYPE(o) = Py_ORIG_TYPE(o);
     Py_ORIG_TYPE(o) = NULL;
-    (*Py_TYPE(o)->tp_dealloc)(o);
+    (*d)(o);
     PyMem_FREE(tp);
 }
 
@@ -127,28 +130,6 @@ _async_protected(PyObject *self, PyObject *obj)
 {
     Py_INCREF(obj);
     Py_RETURN_BOOL(_protected(obj));
-}
-
-__inline
-PyObject *
-_protect(PyObject *obj)
-{
-    if (!_protected(obj)) {
-        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
-        obj->px_flags |= Py_PXFLAGS_RWLOCK;
-    }
-    return obj;
-}
-
-PyObject *
-_async_protect(PyObject *self, PyObject *obj)
-{
-    Py_INCREF(obj);
-    if (Py_ISPX(obj)) {
-        PyErr_SetNone(PyExc_ProtectionError);
-        return NULL;
-    }
-    return _protect(obj);
 }
 
 __inline
@@ -267,26 +248,114 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_try_write_lock(obj));
 }
 
+int
+_PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
+{
+    int result;
+    assert(Py_ORIG_TYPE(o));
+    if (Py_HAS_RWLOCK(o))
+        _write_lock(o);
+    result = (*Py_ORIG_TYPE_CAST(o)->tp_setattro)(o, n, v);
+    if (Py_HAS_RWLOCK(o))
+        _write_unlock(o);
+
+    return result;
+}
+
+PyObject *
+_PyObject_GenericGetAttr(PyObject *o, PyObject *n)
+{
+    PyObject *result;
+    assert(Py_ORIG_TYPE(o));
+    if (Py_HAS_RWLOCK(o))
+        _read_lock(o);
+    result = (*Py_ORIG_TYPE_CAST(o)->tp_getattro)(o, n);
+    if (Py_HAS_RWLOCK(o))
+        _read_unlock(o);
+
+    return result;
+}
+
+int
+_PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
+{
+    int result;
+    assert(Py_ORIG_TYPE(o));
+    if (Py_HAS_RWLOCK(o))
+        _write_lock(o);
+    result = (*Py_ORIG_TYPE_CAST(o)->tp_setattr)(o, n, v);
+    if (Py_HAS_RWLOCK(o))
+        _write_unlock(o);
+    return result;
+}
+
+PyObject *
+_PyObject_GetAttrString(PyObject *o, char *n)
+{
+    PyObject *result;
+    assert(Py_ORIG_TYPE(o));
+    if (Py_HAS_RWLOCK(o))
+        _read_lock(o);
+    result = (*Py_ORIG_TYPE_CAST(o)->tp_getattr)(o, n);
+    if (Py_HAS_RWLOCK(o))
+        _read_unlock(o);
+
+    return result;
+}
+
 char
 _PyObject_PrepOrigType(PyObject *o)
 {
-    PyTypeObject *tp = Py_ORIG_TYPE(o);
-    if (!tp) {
-        tp = (PyTypeObject *)PyMem_MALLOC(sizeof(PyTypeObject));
-        if (!tp) {
+    if (!Py_ORIG_TYPE(o)) {
+        PyTypeObject *type = Py_TYPE(o), *tp;
+        size_t size = sizeof(PyTypeObject);
+        void *offset = type;
+        void *m;
+        int is_gc = PyType_IS_GC(type);
+        int is_tracked = 0;
+
+        if (is_gc) {
+            size = sizeof(PyHeapTypeObject) + sizeof(PyGC_Head);
+            offset = _Py_AS_GC(Py_TYPE(o));
+            is_tracked = _PyObject_GC_IS_TRACKED(Py_TYPE(o));
+        }
+
+        m = PyMem_MALLOC(size);
+        if (!m) {
             PyErr_NoMemory();
             return 0;
         }
-        memcpy(tp, Py_TYPE(o), sizeof(PyTypeObject));
-        Py_ORIG_TYPE(o) = Py_TYPE(o);
+
+        if (is_tracked)
+            _PyObject_GC_UNTRACK(type);
+
+        memcpy(m, offset, size);
+
+        if (is_gc)
+            tp = (PyTypeObject *)_Py_FROM_GC(m);
+        else
+            tp = (PyTypeObject *)m;
+
+        if (is_tracked)
+            _PyObject_GC_TRACK(tp);
+
+        Py_ORIG_TYPE(o) = type;
         Py_TYPE(o) = tp;
-        tp->tp_dealloc = _PyObject_Dealloc;
+        tp->tp_dealloc  = _PyObject_Dealloc;
+        tp->tp_setattro = _PyObject_GenericSetAttr;
+        tp->tp_getattro = _PyObject_GenericGetAttr;
+        tp->tp_setattr  = _PyObject_SetAttrString;
+        tp->tp_getattr  = _PyObject_GetAttrString;
     }
 
     assert(Py_ORIG_TYPE(o));
-    assert(Py_ORIG_TYPE(o)->tp_dealloc);
-    assert(Py_ORIG_TYPE(o)->tp_dealloc != _PyObject_Dealloc);
-    assert(Py_TYPE(o)->tp_dealloc == _PyObject_Dealloc);
+    assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc);
+    assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc != _PyObject_Dealloc);
+    assert(Py_TYPE(o)->tp_dealloc  == _PyObject_Dealloc);
+    assert(Py_TYPE(o)->tp_setattro == _PyObject_GenericSetAttr);
+    assert(Py_TYPE(o)->tp_getattro == _PyObject_GenericGetAttr);
+    assert(Py_TYPE(o)->tp_setattr  == _PyObject_SetAttrString);
+    assert(Py_TYPE(o)->tp_getattr  == _PyObject_GetAttrString);
     return 1;
 }
 
@@ -365,6 +434,29 @@ _async_signal(PyObject *self, PyObject *o)
     return result;
 }
 
+__inline
+PyObject *
+_protect(PyObject *obj)
+{
+    if (!_protected(obj)) {
+        if (!_PyObject_PrepOrigType(obj))
+            return NULL;
+        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
+        obj->px_flags |= Py_PXFLAGS_RWLOCK;
+    }
+    return obj;
+}
+
+PyObject *
+_async_protect(PyObject *self, PyObject *obj)
+{
+    Py_INCREF(obj);
+    if (Py_ISPX(obj)) {
+        PyErr_SetNone(PyExc_ProtectionError);
+        return NULL;
+    }
+    return _protect(obj);
+}
 
 #ifdef Py_DEBUG
 int

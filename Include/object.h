@@ -91,7 +91,7 @@ whose size is determined when the object is allocated.
     size_t  px_flags;                   \
     void   *srw_lock;                   \
     void   *event;                      \
-    struct _typeobject *orig_type;      \
+    void   *orig_type;                  \
     struct _object *_ob_next;           \
     struct _object *_ob_prev;
 
@@ -145,6 +145,7 @@ typedef struct {
 #define Py_REFCNT(ob)           (((PyObject*)(ob))->ob_refcnt)
 #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
 #define Py_ORIG_TYPE(ob)        (((PyObject*)(ob))->orig_type)
+#define Py_ORIG_TYPE_CAST(ob)   ((PyTypeObject *)(((PyObject*)(ob))->orig_type))
 #define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
 
 /********************* String Literals ****************************************/

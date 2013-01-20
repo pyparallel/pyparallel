@@ -393,7 +393,8 @@ extern PyGC_Head *_PyGC_generation0;
 #ifndef WITH_PARALLEL
 #define _Py_AS_GC(o) ((PyGC_Head *)(o)-1)
 #else
-#define _Py_AS_GC(o) (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
+#define _Py_AS_GC(o)   (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
+#define _Py_FROM_GC(o) (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)+1))
 #endif
 
 #define _PyGC_REFS_UNTRACKED                    (-2)
