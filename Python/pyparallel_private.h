@@ -5,9 +5,12 @@
 extern "C" {
 #endif
 
+#ifndef UNICODE
+#define UNICODE
+#endif
 
 #include "../Modules/socketmodule.h"
-//#include <Windows.h>
+#include <Windows.h>
 #include "pyparallel.h"
 
 
@@ -88,6 +91,9 @@ extern "C" {
 #define PyRWLock_INIT(o)    (InitializeSRWLock((PSRWLOCK)&(o->srw_lock)))
 #define PyRWLock_DESTROY(o) /* N/A */
 #endif
+
+#define PyAsync_IO_READ      (1UL <<  1)
+#define PyAsync_IO_WRITE     (1UL <<  2)
 
 #include "pxlist.h"
 
@@ -228,12 +234,22 @@ typedef struct _PxPages {
 } PxPages;
 #endif
 
+#define PyAsync_IO_BUFSIZE (64 * 1024)
+
+typedef struct _PxIO {
+    OVERLAPPED  overlapped;
+    char        buf[PyAsync_IO_BUFSIZE];
+} PxIO;
+
 typedef struct _PxState {
     PxListHead *errors;
     PxListHead *completed_callbacks;
     PxListHead *completed_errbacks;
     PxListHead *incoming;
     PxListHead *finished;
+
+    PxListHead *io_inuse;
+    PxListHead *io_free;
 
 #ifdef Py_DEBUG
     SRWLOCK     pages_srwlock;
@@ -328,7 +344,23 @@ typedef struct _PyParallelContext {
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
 
-    TP_IO    *tp_io;
+    int       is_io;
+    int       io_type;
+    PyObject *reader;
+    PyObject *writer;
+    //TP_IO     tp_io_r;
+    //TP_IO     tp_io_w;
+    HANDLE    rhandle;
+    HANDLE    whandle;
+    DWORD     io_status;
+    void     *rbuf;
+    void     *wbuf;
+    long      pending_reads;
+    long      pending_writes;
+
+    PyObject *copy_event;
+    LARGE_INTEGER filesize;
+    LARGE_INTEGER next_read_offset;
 
     TP_TIMER *tp_timer;
 

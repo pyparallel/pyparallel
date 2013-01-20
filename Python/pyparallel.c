@@ -4,6 +4,10 @@
 extern "C" {
 #endif
 
+#include <fcntl.h>
+
+#include "fileio.h"
+
 #include "pyparallel_private.h"
 
 #include "frameobject.h"
@@ -251,25 +255,34 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
 int
 _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
 {
+    PyTypeObject *tp;
     int result;
     assert(Py_ORIG_TYPE(o));
     if (Py_HAS_RWLOCK(o))
         _write_lock(o);
-    result = (*Py_ORIG_TYPE_CAST(o)->tp_setattro)(o, n, v);
+    tp = Py_ORIG_TYPE_CAST(o);
+    if (tp->tp_setattro)
+        result = (*tp->tp_setattro)(o, n, v);
+    else
+        result = PyObject_GenericSetAttr(o, n, v);
     if (Py_HAS_RWLOCK(o))
         _write_unlock(o);
-
     return result;
 }
 
 PyObject *
 _PyObject_GenericGetAttr(PyObject *o, PyObject *n)
 {
+    PyTypeObject *tp;
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
     if (Py_HAS_RWLOCK(o))
         _read_lock(o);
-    result = (*Py_ORIG_TYPE_CAST(o)->tp_getattro)(o, n);
+    tp = Py_ORIG_TYPE_CAST(o);
+    if (tp->tp_getattro)
+        result = (*tp->tp_getattro)(o, n);
+    else
+        result = PyObject_GenericGetAttr(o, n);
     if (Py_HAS_RWLOCK(o))
         _read_unlock(o);
 
@@ -279,11 +292,22 @@ _PyObject_GenericGetAttr(PyObject *o, PyObject *n)
 int
 _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
 {
+    PyTypeObject *tp;
     int result;
     assert(Py_ORIG_TYPE(o));
     if (Py_HAS_RWLOCK(o))
         _write_lock(o);
-    result = (*Py_ORIG_TYPE_CAST(o)->tp_setattr)(o, n, v);
+    tp = Py_ORIG_TYPE_CAST(o);
+    if (tp->tp_setattr)
+        result = (*tp->tp_setattr)(o, n, v);
+    else {
+        PyObject *s;
+        s = PyUnicode_InternFromString(n);
+        if (!s)
+            return -1;
+        result = PyObject_GenericSetAttr(o, s, v);
+        Py_DECREF(s);
+    }
     if (Py_HAS_RWLOCK(o))
         _write_unlock(o);
     return result;
@@ -292,11 +316,22 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
 PyObject *
 _PyObject_GetAttrString(PyObject *o, char *n)
 {
+    PyTypeObject *tp;
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
     if (Py_HAS_RWLOCK(o))
         _read_lock(o);
-    result = (*Py_ORIG_TYPE_CAST(o)->tp_getattr)(o, n);
+    tp = Py_ORIG_TYPE_CAST(o);
+    if (tp->tp_getattr)
+        result = (*tp->tp_getattr)(o, n);
+    else {
+        PyObject *s;
+        s = PyUnicode_InternFromString(n);
+        if (!s)
+            return NULL;
+        result = PyObject_GenericGetAttr(o, s);
+        Py_DECREF(s);
+    }
     if (Py_HAS_RWLOCK(o))
         _read_unlock(o);
 
@@ -308,16 +343,22 @@ _PyObject_PrepOrigType(PyObject *o)
 {
     if (!Py_ORIG_TYPE(o)) {
         PyTypeObject *type = Py_TYPE(o), *tp;
-        size_t size = sizeof(PyTypeObject);
+        size_t size;
         void *offset = type;
         void *m;
+        int is_heap = PyType_HasFeature(type, Py_TPFLAGS_HEAPTYPE);
         int is_gc = PyType_IS_GC(type);
         int is_tracked = 0;
 
-        if (is_gc) {
-            size = sizeof(PyHeapTypeObject) + sizeof(PyGC_Head);
-            offset = _Py_AS_GC(Py_TYPE(o));
-            is_tracked = _PyObject_GC_IS_TRACKED(Py_TYPE(o));
+        if (is_heap)
+            size = sizeof(PyHeapTypeObject);
+        else
+            size = sizeof(PyTypeObject);
+
+        if (is_gc && is_heap) {
+            size += sizeof(PyGC_Head);
+            offset = _Py_AS_GC(type);
+            is_tracked = _PyObject_GC_IS_TRACKED(type);
         }
 
         m = PyMem_MALLOC(size);
@@ -331,7 +372,7 @@ _PyObject_PrepOrigType(PyObject *o)
 
         memcpy(m, offset, size);
 
-        if (is_gc)
+        if (is_gc && is_heap)
             tp = (PyTypeObject *)_Py_FROM_GC(m);
         else
             tp = (PyTypeObject *)m;
@@ -1720,7 +1761,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
         pending = &(px->waits_pending);
         inflight = &(px->waits_inflight);
         done = &(px->waits_done);
-    } else if (c->tp_io) {
+    } else if (c->is_io) {
         pending = &(px->io_pending);
         inflight = &(px->io_inflight);
         done = &(px->io_done);
@@ -1792,7 +1833,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
             PyErr_SetFromWindowsErr(0);
             goto errback;
         }
-    } else if (c->tp_io) {
+    } else if (c->is_io) {
         assert(0);
     } else if (c->tp_timer) {
         assert(0);
@@ -2585,7 +2626,6 @@ extract_args(PyObject *args, Context *c)
     return 1;
 }
 
-__inline
 int
 extract_waitobj_args(PyObject *args, Context *c)
 {
@@ -2633,6 +2673,55 @@ extract_waitobj_args(PyObject *args, Context *c)
 
     return 1;
 }
+
+int
+extract_io_args(PyObject *args, Context *c)
+{
+    if (!PyArg_UnpackTuple(
+            args, "", 2, 7,
+            &(c->waitobj),
+            &(c->waitobj_timeout),
+            &(c->func),
+            &(c->args),
+            &(c->kwds),
+            &(c->callback),
+            &(c->errback)))
+        return 0;
+
+    if (c->waitobj_timeout != Py_None) {
+        PyErr_SetString(PyExc_ValueError, "non-None value for timeout");
+        return 0;
+    }
+
+    if (c->callback == Py_None) {
+        Py_DECREF(c->callback);
+        c->callback = NULL;
+    }
+
+    if (c->errback == Py_None) {
+        Py_DECREF(c->errback);
+        c->errback = NULL;
+    }
+
+    if (c->args == Py_None) {
+        Py_DECREF(c->args);
+        c->args = Py_BuildValue("()");
+    }
+
+    if (c->kwds == Py_None) {
+        Py_DECREF(c->kwds);
+        c->kwds = NULL;
+    }
+
+    if (c->args && !PyTuple_Check(c->args)) {
+        PyObject *tmp = c->args;
+        c->args = Py_BuildValue("(O)", c->args);
+        Py_DECREF(tmp);
+    }
+
+    return 1;
+}
+
 
 __inline
 int
@@ -2856,11 +2945,76 @@ _async_submit_timer(PyObject *self, PyObject *args)
 }
 
 PyObject *
-_async_submit_io(PyObject *self, PyObject *args)
+_async_submit_io(PyObject *self, PyObject *args, int io_type)
 {
+    PyObject *result = NULL;
+    Context  *c;
+    PxState  *px;
+
+    PTP_WIN32_IO_CALLBACK cb;
+
+    c = new_context();
+    if (!c)
+        return NULL;
+
+    px = c->px;
+
+    return result;
+
+    /*
+    if (!extract_io_args(args, c))
+        goto free_context;
+
+
+    
+    cb = _PyParallel_WaitCallback;
+    c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
+    if (!c->tp_wait) {
+        PyErr_SetFromWindowsErr(0);
+        goto free_context;
+    }
+
+    if (!_PyEvent_TryCreate(c->waitobj))
+        goto free_context;
+
+    SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
+
+    InterlockedIncrement64(&(px->waits_submitted));
+    InterlockedIncrement(&(px->waits_pending));
+    InterlockedIncrement(&(px->active));
+    c->stats.submitted = _Py_rdtsc();
+
+    incref_waitobj_args(c);
+
+    c->px->contexts_created++;
+    c->px->contexts_active++;
+    result = (Py_INCREF(Py_None), Py_None);
+    goto done;
+
+free_context:
+    HeapDestroy(c->heap_handle);
+    free(c);
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+    return result;
     PyObject *result = NULL;
 
     return result;
+    */
+}
+
+PyObject *
+_async_submit_write_io(PyObject *self, PyObject *args)
+{
+    return _async_submit_io(self, args, 0);
+}
+
+PyObject *
+_async_submit_read_io(PyObject *self, PyObject *args)
+{
+    return _async_submit_io(self, args, 0);
 }
 
 PyObject *
@@ -3037,6 +3191,276 @@ _async_call_from_main_thread_and_wait(PyObject *self, PyObject *args)
     return _call_from_main_thread(self, args, 1);
 }
 
+PyObject *
+_async_filecloser(PyObject *self, PyObject *args)
+{
+    fileio *f;
+    PyObject *o, *result = NULL;
+
+    if (!PyTuple_Check(args)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    if (!PyArg_ParseTuple(args, "O!", &PyFileIO_Type, &f))
+        return NULL;
+
+    if (!f->h || f->h == INVALID_HANDLE_VALUE) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    o = (PyObject *)f;
+
+    _write_lock(o);
+    if (f->size > 0 && f->writable) {
+        LPCWSTR n;
+        Py_UNICODE *u;
+        LARGE_INTEGER i;
+
+        //u = PyUnicode_AsUnicode(PyObject_GetAttrString(o, "name"));
+        //n = (LPCWSTR)u;
+        u = f->name;
+        n = (LPCWSTR)u;
+
+        Px_PROTECTION_GUARD(o);
+        /* Close the file and re-open without FILE_FLAG_NO_BUFFERING in order
+         * to set the EOF marker to the correct position (as opposed to the
+         * sector-aligned position we set it to as part of _async_fileopener).
+         */
+        CloseHandle(f->h);
+        f->h = CreateFile(n, GENERIC_WRITE,
+                          FILE_SHARE_READ | FILE_SHARE_WRITE,
+                          NULL, OPEN_EXISTING, 0, NULL);
+
+        if (!f->h || f->h == INVALID_HANDLE_VALUE) {
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, u);
+            goto done;
+        }
+
+        i.QuadPart = f->size;
+        if (!SetFilePointerEx(f->h, i, NULL, FILE_BEGIN)) {
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, u);
+            goto done;
+        }
+
+        if (!SetEndOfFile(f->h)) {
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, u);
+            goto done;
+        }
+    }
+
+    CloseHandle(f->h);
+    f->fd = -1;
+    result = Py_True;
+
+done:
+    _write_unlock(o);
+    if (!result)
+        assert(PyErr_Occurred());
+
+    Py_XINCREF(result);
+    return result;
+}
+
+PyObject *
+_async_fileopener(PyObject *self, PyObject *args)
+{
+    LPCWSTR name;
+    Py_UNICODE *uname;
+    int namelen;
+    int flags;
+    int caching_behavior;
+
+    int access = 0;
+    int share = 0;
+
+    int create_flags = 0;
+    int file_flags = FILE_FLAG_OVERLAPPED;
+
+    int exists = 1;
+
+    Py_ssize_t size = 0;
+
+    PyObject *templ;
+    PyObject *result = NULL;
+    PyObject *fileobj;
+    fileio   *f;
+
+    HANDLE h;
+    WIN32_FIND_DATA d;
+
+    if (!PyArg_ParseTuple(args, "inOu#iO:fileopener", &caching_behavior,
+                          &size, &templ, &uname, &namelen, &flags, &fileobj))
+        return NULL;
+
+    name = (LPCWSTR)uname;
+
+    h = FindFirstFile(name, &d);
+    if (h && h != INVALID_HANDLE_VALUE) {
+        if (!FindClose(h)) {
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+            goto done;
+        }
+    } else
+        exists = 0;
+
+    if (exists && (flags & O_EXCL)) {
+        assert(!(flags & O_APPEND));
+        PyErr_SetExcFromWindowsErrWithUnicodeFilename(
+            PyExc_OSError,
+            EEXIST,
+            uname
+        );
+        goto done;
+    } else if (!exists && (flags & O_RDONLY)) {
+        assert(!(flags & O_APPEND));
+        PyErr_SetExcFromWindowsErrWithUnicodeFilename(
+            PyExc_OSError,
+            ENOENT,
+            uname
+        );
+        goto done;
+    }
+
+    if (flags & O_RDONLY)
+        file_flags |= FILE_ATTRIBUTE_READONLY;
+
+    if (flags & (O_RDWR | O_RDONLY)) {
+        access |= GENERIC_READ;
+        share  |= FILE_SHARE_READ;
+    }
+
+    if (flags & (O_RDWR | O_WRONLY)) {
+        access |= GENERIC_WRITE;
+        share  |= FILE_SHARE_WRITE;
+    }
+
+    if (flags & O_APPEND) {
+        access |= FILE_APPEND_DATA;
+        share  |= FILE_SHARE_WRITE;
+    }
+
+    /* There's not a 1:1 mapping between create flags and POSIX flags, so
+     * the following code is a bit fiddly. */
+    if (flags & O_RDONLY)
+        create_flags = OPEN_EXISTING;
+
+    else if (flags & O_WRONLY)
+        create_flags = (exists ? TRUNCATE_EXISTING : CREATE_ALWAYS);
+
+    else if ((flags & O_RDWR) || (flags & O_APPEND))
+        create_flags = (exists ? OPEN_EXISTING : CREATE_ALWAYS);
+
+    else if (flags & O_EXCL)
+        create_flags = CREATE_NEW;
+
+    else if (flags & O_APPEND)
+        create_flags = (exists ? OPEN_EXISTING : CREATE_ALWAYS);
+
+    else {
+        PyErr_SetString(PyExc_ValueError, "unexpected value for flags");
+        goto done;
+    }
+
+    switch (caching_behavior) {
+        case PyAsync_CACHING_DEFAULT:
+            file_flags |= FILE_FLAG_NO_BUFFERING;
+            break;
+
+        case PyAsync_CACHING_BUFFERED:
+            break;
+
+        case PyAsync_CACHING_RANDOMACCESS:
+            file_flags |= FILE_FLAG_RANDOM_ACCESS;
+            break;
+
+        case PyAsync_CACHING_SEQUENTIALSCAN:
+            file_flags |= FILE_FLAG_SEQUENTIAL_SCAN;
+            break;
+
+        case PyAsync_CACHING_WRITETHROUGH:
+            file_flags |= FILE_FLAG_WRITE_THROUGH;
+            break;
+
+        case PyAsync_CACHING_TEMPORARY:
+            file_flags |= FILE_ATTRIBUTE_TEMPORARY;
+            break;
+
+        default:
+            PyErr_Format(PyExc_ValueError,
+                         "invalid caching behavior: %d",
+                         caching_behavior);
+            goto done;
+    }
+
+    h = CreateFile(name, access, share, 0, create_flags, file_flags, 0);
+    if (!h || h == INVALID_HANDLE_VALUE) {
+        PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+        goto done;
+    } else if (size > 0) {
+        LARGE_INTEGER i;
+        i.QuadPart = Px_PAGE_ALIGN(size);
+        if (!SetFilePointerEx(h, i, NULL, FILE_BEGIN)) {
+            CloseHandle(h);
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+            goto done;
+        }
+        if (!SetEndOfFile(h)) {
+            CloseHandle(h);
+            PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+            goto done;
+        }
+    }
+
+    if (!_protect(fileobj))
+        goto done;
+
+    f = (fileio *)fileobj;
+    f->h = h;
+    f->native = 1;
+    f->istty = 0;
+    f->name = uname;
+    f->caching = caching_behavior;
+
+    result = PyLong_FromVoidPtr(h);
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+
+    return result;
+}
+
+PyObject *
+_async__post_open(PyObject *self, PyObject *args)
+{
+    fileio     *f;
+    PyObject   *o;
+    Py_ssize_t  size;
+    int         caching;
+    int         is_write;
+
+    if (!PyArg_ParseTuple(args, "Onii", &o, &caching, &size, &is_write))
+        return NULL;
+
+    f = (fileio *)o;
+    f->size = size;
+    f->caching = caching;
+
+    if (is_write)
+        assert(f->writable);
+
+    if (size > 0 && !is_write) {
+        PyErr_SetString(PyExc_ValueError,
+                        "non-zero size invalid for read-only files");
+            return NULL;
+    }
+
+    Py_RETURN_NONE;
+}
+
+
+
 PyDoc_STRVAR(_async_doc,
 "_async module.\n\
 \n\
@@ -3070,6 +3494,15 @@ PyDoc_STRVAR(_async_unregister_doc,
 "unregister(object) -> None\n\
 \n\
 Unregisters an asynchronous object.");
+
+
+PyDoc_STRVAR(_async_read_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_open_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_pipe_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_write_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_fileopener_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_filecloser_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async__post_open_doc,"XXX TODO\n");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_wait_doc, "XXX TODO\n");
@@ -3453,6 +3886,18 @@ _async_server(PyObject *self, PyObject *args, PyObject *kwds)
     return _async_client_or_server(self, args, kwds, 0);
 }
 
+PyObject *
+_async_read(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return NULL;
+}
+
+PyObject *
+_async_write(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    return NULL;
+}
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -3462,6 +3907,9 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
     _ASYNC_O(wait),
+    _ASYNC_V(read),
+    //_ASYNC_V(open),
+    _ASYNC_V(write),
     _ASYNC_N(rdtsc),
     _ASYNC_O(signal),
     _ASYNC_K(client),
@@ -3475,6 +3923,9 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
     _ASYNC_O(read_lock),
+    _ASYNC_V(_post_open),
+    _ASYNC_V(fileopener),
+    _ASYNC_V(filecloser),
     _ASYNC_O(write_lock),
     _ASYNC_V(submit_work),
     _ASYNC_V(submit_wait),
