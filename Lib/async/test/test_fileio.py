@@ -38,9 +38,9 @@ class TestFileIO(unittest.TestCase):
         f = async.open(n, 'wb')
         f.close()
 
-    def _test_write(self):
+    def test_write(self):
         n = tempfilename()
-        f = async.open(n, 'w')
+        f = async.open(n, 'wb')
         async.write(f, b'foo')
         async.run()
         f.close()

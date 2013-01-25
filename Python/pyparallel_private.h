@@ -160,8 +160,10 @@ remove_object(Objects *list, Object *o)
 }
 
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
-typedef struct _PyParallelContext PyParallelContext, Context;
+typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
+typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
 typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
+typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
 
 typedef struct _PyParallelHeap {
@@ -236,9 +238,15 @@ typedef struct _PxPages {
 
 #define PyAsync_IO_BUFSIZE (64 * 1024)
 
+#define PyAsync_NUM_BUFS (32)
+
 typedef struct _PxIO {
+    __declspec(align(Px_MEM_ALIGN_RAW))
+    PxListEntry entry;
     OVERLAPPED  overlapped;
-    char        buf[PyAsync_IO_BUFSIZE];
+    PyObject   *obj;
+    char       *buf;
+    Py_ssize_t  size;
 } PxIO;
 
 typedef struct _PxState {
@@ -250,6 +258,9 @@ typedef struct _PxState {
 
     PxListHead *io_inuse;
     PxListHead *io_free;
+    HANDLE      io_free_wakeup;
+
+    Context    *ioctx;
 
 #ifdef Py_DEBUG
     SRWLOCK     pages_srwlock;
@@ -262,6 +273,9 @@ typedef struct _PxState {
     unsigned short ctx_curfree;
     unsigned short ctx_maxfree;
     unsigned short ctx_ttl;
+
+    IOContext *ioctx_first;
+    IOContext *ioctx_last;
 
     HANDLE wakeup;
 
@@ -348,6 +362,8 @@ typedef struct _PyParallelContext {
     int       io_type;
     PyObject *reader;
     PyObject *writer;
+    fileio   *fwriter;
+    fileio   *freader;
     //TP_IO     tp_io_r;
     //TP_IO     tp_io_w;
     HANDLE    rhandle;
@@ -424,7 +440,14 @@ typedef struct _PyParallelContext {
 
     int times_finished;
 
-} PyParallelContext, Context;
+} PyParallelContext, WorkContext, Context;
+
+typedef struct _PyParallelIOContext {
+    PyObject        *o;
+    WorkContext     *work_ctx;
+
+} PyParallelIOContext, IOContext;
+
 
 typedef struct _PxObject {
     Context     *ctx;

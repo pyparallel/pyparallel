@@ -35,6 +35,8 @@ typedef struct _fileio {
     int         caching;
     int         native;
     int         istty;
+    PyObject   *callback;
+    PyObject   *errback;
 #endif
 } fileio;
 

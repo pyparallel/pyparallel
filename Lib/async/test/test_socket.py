@@ -33,7 +33,7 @@ def serversock(bind=ADDR, listen=10):
 class TestClient(unittest.TestCase):
     def test_async_client_data_received_kwd(self):
         @async.call_from_main_thread_and_wait
-        def _check(buf)
+        def _check(buf):
             self.assertEqual(buf, QOTD)
 
         def data_received(client, buf):
@@ -67,7 +67,7 @@ class TestServer(unittest.TestCase):
             server.shutdown()
 
         @async.call_from_main_thread_and_wait
-        def _check(buf)
+        def _check(buf):
             self.assertEqual(buf, QOTD)
             server.shutdown()
 

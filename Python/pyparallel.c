@@ -19,6 +19,9 @@ __declspec(thread) PyParallelContext *ctx = NULL;
 #define _TMPBUF_SIZE 1024
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
+__declspec(thread) PyParallelIOContext *ioctx = NULL;
+
+__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
@@ -26,7 +29,7 @@ size_t _PxObjectSignature = -1;
 size_t _PxSocketSignature = -1;
 int _PxBlockingCallsThreshold = 5;
 
-void *_PyHeap_Malloc(Context *c, size_t n, size_t align);
+void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
 
 static PyObject *PyExc_AsyncError;
 static PyObject *PyExc_ProtectionError;
@@ -81,7 +84,7 @@ __inline
 void *
 _PyHeap_MemAlignedMalloc(Context *c, size_t n)
 {
-    return _PyHeap_Malloc(c, n, Px_MEM_ALIGN_SIZE);
+    return _PyHeap_Malloc(c, n, Px_MEM_ALIGN_SIZE, 0);
 }
 
 __inline
@@ -852,10 +855,7 @@ _Px_SafeObjectSignatureTest(void *m)
         goto done;
     }
 
-    is_py = (
-        (s == (Py_uintptr_t)_Py_NOT_PARALLEL) &&
-        (y->px == _Py_NOT_PARALLEL)
-    );
+    is_py = (s == (Py_uintptr_t)_Py_NOT_PARALLEL);
 
     if (is_py) {
         signature = _OBJSIG_PY;
@@ -1096,7 +1096,7 @@ Heap_Init(Context *c, size_t n)
     s->size += size;
     s->heaps++;
     c->h = h;
-    h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), Px_SIZEOF_HEAP);
+    h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), Px_SIZEOF_HEAP, 0);
     assert(h->sle_next);
 #ifdef Py_DEBUG
     _PxState_RegisterHeap(c->px, h, c);
@@ -1175,7 +1175,7 @@ Heap_LocalMalloc(Context *c, size_t n, size_t align)
 }
 
 void *
-_PyHeap_Malloc(Context *c, size_t n, size_t align)
+_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 {
     void  *next;
     Heap  *h;
@@ -1232,6 +1232,9 @@ begin:
         return next;
     }
 
+    if (no_realloc)
+        NULL;
+
     /* Force a resize. */
     if (!_PyHeap_Init(c, Px_NEW_HEAP_SIZE(aligned_size)))
         return Heap_LocalMalloc(c, aligned_size, alignment);
@@ -1266,7 +1269,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
     void  *r;
     Heap  *h = c->h;
     Stats *s = &c->stats;
-    r = _PyHeap_Malloc(c, n, 0);
+    r = _PyHeap_Malloc(c, n, 0, 0);
     if (!r)
         return NULL;
     h->mem_reallocs++;
@@ -1341,7 +1344,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
         object_size = _Px_VSZ(tp, nitems);
         total_size  = _Px_SZ(object_size);
-        n = (PyObject *)_PyHeap_Malloc(c, total_size, 0);
+        n = (PyObject *)_PyHeap_Malloc(c, total_size, 0, 0);
         if (!n)
             return PyErr_NoMemory();
         x = _Px_X_PTR(n, object_size);
@@ -1369,7 +1372,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             assert(!is_varobj);
 
             /* Need to manually allocate x + o storage. */
-            x = (PxObject *)_PyHeap_Malloc(c, _Px_SZ(0), 0);
+            x = (PxObject *)_PyHeap_Malloc(c, _Px_SZ(0), 0, 0);
             if (!x)
                 return PyErr_NoMemory();
             o = _Px_O_PTR(x, 0);
@@ -1393,7 +1396,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
             object_size = _Px_VSZ(tp, nitems);
             total_size  = _Px_SZ(object_size);
-            n = (PyObject *)_PyHeap_Malloc(c, total_size, 0);
+            n = (PyObject *)_PyHeap_Malloc(c, total_size, 0, 0);
             if (!n)
                 return PyErr_NoMemory();
             x = _Px_X_PTR(n, object_size);
@@ -1647,9 +1650,88 @@ Px_DECCTX(Context *c)
     return 0;
 }
 
+int
+_PxState_AllocIOBufs(PxState *px, Context *c, int count, int size)
+{
+    size_t   nbufs;
+    size_t   bufsize;
+    size_t   heapsize;
+    size_t   all_io;
+    size_t   all_bufs;
+    size_t   iosize;
+    void    *io_first;
+    void    *buf_first;
+    int      i;
+    int      result = 0;
+    PxIO    *io;
+    char    *buf;
+
+    assert(px);
+
+    nbufs = count;
+    bufsize = size;
+    iosize = Px_MEM_ALIGN(sizeof(PxIO));
+
+    all_io = nbufs * iosize;
+    all_bufs = nbufs * bufsize;
+
+    heapsize = all_io + all_bufs;
+
+    c->heap_handle = HeapCreate(HEAP_NO_SERIALIZE, heapsize, 0);
+    if (!c->heap_handle) {
+        PyErr_SetFromWindowsErr(0);
+        goto done;
+    }
+
+    if (!_PyHeap_Init(c, heapsize))
+        goto free_heap;
+
+    io_first = _PyHeap_Malloc(c, all_io, Px_MEM_ALIGN_SIZE, 1);
+    if (!io_first)
+        goto free_heap;
+
+    do {
+        buf_first = _PyHeap_Malloc(c, all_bufs, Px_MEM_ALIGN_SIZE, 1);
+        if (buf_first)
+            break;
+
+        all_bufs -= bufsize;
+        nbufs--;
+
+    } while (all_bufs > 0);
+
+    for (i = 0; i < nbufs; i++) {
+        io =  (PxIO *)Px_PTR_ADD(io_first,  (i * iosize));
+        buf = (char *)Px_PTR_ADD(buf_first, (i * bufsize));
+
+        assert(Px_PTR(io) ==  Px_ALIGN(io,  Px_MEM_ALIGN_SIZE));
+        assert(Px_PTR(buf) == Px_ALIGN(buf, Px_MEM_ALIGN_SIZE));
+
+        io->size = bufsize;
+        io->buf  = buf;
+
+        PxList_Push(px->io_free, E2I(io));
+    }
+
+    assert(PxList_QueryDepth(px->io_free) == nbufs);
+
+    result = 1;
+    goto done;
+
+free_heap:
+    HeapDestroy(c->heap_handle);
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+
+    return result;
+}
+
 void *
 _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
 {
+    Context *c;
     PxState *px;
 
     px = (PxState *)malloc(sizeof(PxState));
@@ -1678,9 +1760,21 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->finished)
         goto free_incoming;
 
+    px->io_inuse = PxList_New();
+    if (!px->io_inuse)
+        goto free_finished;
+
+    px->io_free  = PxList_New();
+    if (!px->io_free)
+        goto free_io_inuse;
+
+    px->io_free_wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!px->io_free_wakeup)
+        goto free_io_free;
+
     px->wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->wakeup)
-        goto free_finished;
+        goto free_io_wakeup;
 
 #ifdef Py_DEBUG
     _PxState_InitPxPages(px);
@@ -1693,7 +1787,35 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     tstate->is_parallel_thread = 0;
     px->ctx_ttl = 1;
 
+    c = (Context *)malloc(sizeof(Context));
+    if (!c)
+        goto free_wakeup;
+    memset((void *)c, 0, sizeof(Context));
+
+    c->tstate = tstate;
+    c->px = px;
+
+    px->ioctx = c;
+
+    if (!_PxState_AllocIOBufs(px, c, PyAsync_NUM_BUFS, PyAsync_IO_BUFSIZE))
+        goto free_context;
+
     goto done;
+
+free_context:
+    free(c);
+
+free_wakeup:
+    CloseHandle(px->wakeup);
+
+free_io_wakeup:
+    CloseHandle(px->io_free_wakeup);
+
+free_io_free:
+    PxList_FreeListHead(px->io_free);
+
+free_io_inuse:
+    PxList_FreeListHead(px->io_inuse);
 
 free_finished:
     PxList_FreeListHead(px->finished);
@@ -1794,7 +1916,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     c->outgoing = _PyHeap_NewList(c);
     c->decrefs  = _PyHeap_NewList(c);
 
-    c->pstate = (PyThreadState *)_PyHeap_Malloc(c, sizeof(PyThreadState), 0);
+    c->pstate = (PyThreadState *)_PyHeap_Malloc(c, sizeof(PyThreadState), 0, 0);
 
     assert(
         c->error                &&
@@ -1919,6 +2041,13 @@ _PyParallel_WaitCallback(
 }
 
 void
+NTAPI
+_PyParallel_IOCallback(PTP_CALLBACK_INSTANCE instance, void *context)
+{
+
+}
+
+void
 _PyParallel_Init(void)
 {
     _Py_sfence();
@@ -1958,6 +2087,7 @@ _PyParallel_Init(void)
     Py_ParallelContextsEnabled = 0;
     _Py_lfence();
     _Py_clflush(&Py_MainThreadId);
+
 }
 
 void
@@ -2587,7 +2717,6 @@ _async_map(PyObject *self, PyObject *args)
     return result;
 }
 
-__inline
 int
 extract_args(PyObject *args, Context *c)
 {
@@ -2628,54 +2757,6 @@ extract_args(PyObject *args, Context *c)
 
 int
 extract_waitobj_args(PyObject *args, Context *c)
-{
-    if (!PyArg_UnpackTuple(
-            args, "", 2, 7,
-            &(c->waitobj),
-            &(c->waitobj_timeout),
-            &(c->func),
-            &(c->args),
-            &(c->kwds),
-            &(c->callback),
-            &(c->errback)))
-        return 0;
-
-    if (c->waitobj_timeout != Py_None) {
-        PyErr_SetString(PyExc_ValueError, "non-None value for timeout");
-        return 0;
-    }
-
-    if (c->callback == Py_None) {
-        Py_DECREF(c->callback);
-        c->callback = NULL;
-    }
-
-    if (c->errback == Py_None) {
-        Py_DECREF(c->errback);
-        c->errback = NULL;
-    }
-
-    if (c->args == Py_None) {
-        Py_DECREF(c->args);
-        c->args = Py_BuildValue("()");
-    }
-
-    if (c->kwds == Py_None) {
-        Py_DECREF(c->kwds);
-        c->kwds = NULL;
-    }
-
-    if (c->args && !PyTuple_Check(c->args)) {
-        PyObject *tmp = c->args;
-        c->args = Py_BuildValue("(O)", c->args);
-        Py_DECREF(tmp);
-    }
-
-    return 1;
-}
-
-int
-extract_io_args(PyObject *args, Context *c)
 {
     if (!PyArg_UnpackTuple(
             args, "", 2, 7,
@@ -2945,8 +3026,15 @@ _async_submit_timer(PyObject *self, PyObject *args)
 }
 
 PyObject *
-_async_submit_io(PyObject *self, PyObject *args, int io_type)
+_async_submit_io(PyObject *self, PyObject *args)
 {
+    return NULL;
+}
+
+PyObject *
+_submit_io(PyObject *self, PyObject *args, int io_type)
+{
+    PyObject *o;
     PyObject *result = NULL;
     Context  *c;
     PxState  *px;
@@ -2959,14 +3047,103 @@ _async_submit_io(PyObject *self, PyObject *args, int io_type)
 
     px = c->px;
 
-    return result;
-
     /*
-    if (!extract_io_args(args, c))
+    if (!extract_writeio_args(args, c))
         goto free_context;
 
+    cb = _PyParallel_IOCallback;
+    c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
+    if (!c->tp_wait) {
+        PyErr_SetFromWindowsErr(0);
+        goto free_context;
+    }
 
-    
+    if (!_PyEvent_TryCreate(c->waitobj))
+        goto free_context;
+
+    SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
+
+    InterlockedIncrement64(&(px->waits_submitted));
+    InterlockedIncrement(&(px->waits_pending));
+    InterlockedIncrement(&(px->active));
+    c->stats.submitted = _Py_rdtsc();
+
+    incref_waitobj_args(c);
+
+    c->px->contexts_created++;
+    c->px->contexts_active++;
+    result = (Py_INCREF(Py_None), Py_None);
+    goto done;
+
+free_context:
+    HeapDestroy(c->heap_handle);
+    free(c);
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+    return result;
+    PyObject *result = NULL;
+    */
+    return result;
+}
+
+#define PxSocketIO_Check(o) (0)
+
+PyObject *
+_async_submit_write_io(PyObject *self, PyObject *args)
+{
+    PyObject *o, *cb, *eb, *result = NULL;
+    Py_buffer buf;
+    fileio   *f;
+    Context  *c;
+    PxState  *px;
+    int is_file = 0;
+    int is_socket = 0;
+    PTP_WIN32_IO_CALLBACK callback;
+
+    if (!PyArg_ParseTuple(args, "Oy*OO", &o, &buf, &cb, &eb))
+        return NULL;
+
+    is_file = PyFileIO_Check(o);
+    is_socket = PxSocketIO_Check(o);
+    assert(!(is_file && is_socket));
+
+    if (is_socket) {
+        PyErr_SetString(PyExc_ValueError, "sockets not supported yet");
+        return NULL;
+    } else {
+        assert(is_file);
+        f = (fileio *)o;
+        if (!f->native) {
+            PyErr_SetString(PyExc_ValueError,
+                            "file was not opened with async.open()");
+            return NULL;
+        }
+    }
+
+    Px_PROTECTION_GUARD(o);
+
+    if (!_PyEvent_TryCreate(o))
+        return NULL;
+
+    c = new_context();
+    if (!c)
+        return NULL;
+
+    px = c->px;
+
+    c->callback = cb;
+    c->errback  = eb;
+    c->func = NULL;
+    c->args = NULL;
+    c->kwds = NULL;
+
+    /*
+
+    if (!extract_writeio_args(args, c))
+        goto free_context;
+
     cb = _PyParallel_WaitCallback;
     c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
     if (!c->tp_wait) {
@@ -3002,19 +3179,16 @@ done:
     PyObject *result = NULL;
 
     return result;
+    return _submit_io(self, args, PyAsync_IO_WRITE);
     */
-}
-
-PyObject *
-_async_submit_write_io(PyObject *self, PyObject *args)
-{
-    return _async_submit_io(self, args, 0);
+    return NULL;
 }
 
 PyObject *
 _async_submit_read_io(PyObject *self, PyObject *args)
 {
-    return _async_submit_io(self, args, 0);
+    //return _async_submit_io(self, args, 0);
+    return NULL;
 }
 
 PyObject *
@@ -3218,8 +3392,6 @@ _async_filecloser(PyObject *self, PyObject *args)
         Py_UNICODE *u;
         LARGE_INTEGER i;
 
-        //u = PyUnicode_AsUnicode(PyObject_GetAttrString(o, "name"));
-        //n = (LPCWSTR)u;
         u = f->name;
         n = (LPCWSTR)u;
 
@@ -3629,7 +3801,7 @@ void *
 _PxMem_Malloc(size_t n)
 {
     Px_GUARD
-    return _PyHeap_Malloc(ctx, n, 0);
+    return _PyHeap_Malloc(ctx, n, 0, 0);
 }
 
 void *

@@ -71,15 +71,13 @@ def open(filename, mode, caching=0, size=0, template=None):
         opener=fileopener,
         closer=_async.filecloser
     )
-    #is_write = (any(m in mode for m in { '+', 'w', 'x', 'a' }))
-    #_async._post_open(f, caching, size, is_write)
     return f
 
 def write(obj, buf, callback=None, errback=None):
     _async.submit_write_io(obj, buf, callback, errback)
 
 def read(obj, callback, nbytes=0, errback=None):
-    _async.submit_write_io(obj.write, buf, callback, errback)
+    _async.submit_read_io(obj.write, buf, callback, errback)
 
 def pipe(reader, writer, bufsize=0, callback=None, errback=None):
     raise NotImplementedError

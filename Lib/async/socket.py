@@ -37,7 +37,7 @@ def set_default_bufsize(size):
 
 class Socket(socket):
     def __init__(self, sock=None, family=AF_INET, type=SOCK_STREAM, proto=0,
-                 fileno=None, bufsize=_BUFSIZE):
+                 fileno=None):
 
         validate_bufsize(bufsize)
 
