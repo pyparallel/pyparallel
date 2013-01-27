@@ -100,6 +100,19 @@ class TestAsyncSignalAndWait(unittest.TestCase):
         async.submit_work(callback)
         async.run()
 
+    def test_prewait1(self):
+        o = async.protect(object())
+        async.prewait(o)
+        async.signal(o)
+        async.wait(o)
+        self.assertTrue(True)
+
+    def test_prewait2(self):
+        o = async.prewait(async.protect(object()))
+        async.signal(o)
+        async.wait(o)
+        self.assertTrue(True)
+
 class TestAsyncProtection(unittest.TestCase):
     def test_basic(self):
         d = {}
@@ -157,6 +170,77 @@ class TestAsyncProtection(unittest.TestCase):
         async.signal(r)
         async.run()
         self.assertGreater(d['w'], d['r'])
+
+    def test_prewait(self):
+        d = {}
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
+        m = async.protect(object())
+
+        @async.call_from_main_thread_and_wait
+        def _timestamp(name):
+            d[name] = async.rdtsc()
+
+        def reader(name):
+            async.wait(r)
+            async.signal(m)
+            async.read_lock(o)
+            async.signal(w)         # start writer callback
+            async.wait(r)           # wait for writer callback
+            _timestamp(name)
+            async.read_unlock(o)
+
+        def writer(name):
+            async.wait(w)
+            async.signal(r)         # tell the reader we've entered
+            async.write_lock(o)     # will be blocked until reader unlocks
+            _timestamp(name)
+            async.write_unlock(o)
+
+        async.prewait(w)
+        async.prewait(r)
+        async.prewait(m)
+
+        async.submit_work(reader, 'r')
+        async.submit_work(writer, 'w')
+
+        async.signal_and_wait(r, m)
+        async.run()
+        self.assertGreater(d['w'], d['r'])
+
+    def _test_multiple_prewaits(self, num):
+        first = 0
+        last = num
+        indexes = range(first, last)
+        objs = [ async.prewait(async.object()) for _ in indexes ]
+        d = {}
+
+        @async.call_from_main_thread_and_wait
+        def _timestamp(index):
+            d[index] = async.rdtsc()
+
+        def cb(index, wait, signal):
+            async.wait(wait)
+            #_timestamp(index)
+            if signal:
+                async.signal(signal)
+
+        for i in indexes:
+            wait = objs[i]
+            signal = None if i == indexes[-1] else objs[i+1]
+            async.submit_work(cb, (i, wait, signal))
+
+        self.assertEqual(async.active_contexts(), last)
+        async.signal(objs[first])
+        async.run()
+        self.assertEqual(async.active_contexts(), 0)
+
+        #for i in indexes[1:]:
+        #    self.assertGreater(d[i], d[i-1])
+
+    def test_multiple_prewaits_4(self):
+        self._test_multiple_prewaits(4)
 
 if __name__ == '__main__':
     unittest.main()

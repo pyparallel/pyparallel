@@ -38,15 +38,90 @@ class TestFileIO(unittest.TestCase):
         f = async.open(n, 'wb')
         f.close()
 
-    def test_write(self):
+    def _write(self, size, callback=None, errback=None):
+        buf = b'0' * size
         n = tempfilename()
-        f = async.open(n, 'wb')
-        async.write(f, b'foo')
+        f = async.open(n, 'wb', size=size)
+        async.write(f, buf, callback=callback, errback=errback)
         async.run()
         f.close()
 
-        with open(n, 'r') as f:
-            self.assertEqual(f.read(), b'foo')
+        with open(n, 'rb') as f:
+            self.assertEqual(f.read(), buf)
+
+    def _writefile(self, size):
+        buf = b'0' * size
+        n = tempfilename()
+        async.writefile(n, buf)
+        async.run()
+
+        with open(n, 'rb') as f:
+            self.assertEqual(f.read(), buf)
+
+    def test_write_using_page_size_multiple_8192(self):
+        self._write(8192)
+
+    def test_write_using_page_size_multiple_4096(self):
+        self._write(4096)
+
+    def test_write_with_callback(self):
+        buf = b'0' * 4096
+        n = tempfilename()
+        d = {}
+
+        def cb(f, nbytes):
+            _async.call_from_main_thread_and_wait(
+                d.__setitem__, (1, 1))
+
+        fileobj = async.open(n, 'wb', size=4096)
+        async.write(fileobj, buf, callback=cb)
+        async.run()
+        fileobj.close()
+        self.assertEqual(d[1], 1)
+
+        with open(n, 'rb') as f2:
+            self.assertEqual(f2.read(), buf)
+
+    def test_write_with_callback2(self):
+        buf = b'0' * 4096
+        n = tempfilename()
+        o = async.object(nbytes=None)
+
+        def cb(f, nbytes):
+            o.nbytes = nbytes
+            async.signal(o)
+
+        fileobj = async.open(n, 'wb', size=4096)
+        async.write(fileobj, buf, callback=cb)
+        async.run()
+        fileobj.close()
+        self.assertEqual(d[1], 1)
+
+        with open(n, 'rb') as f2:
+            self.assertEqual(f2.read(), buf)
+
+    def test_write__fileobj_signalled_when_no_callback(self):
+        o = async.object()
+        o = async.protect(object())
+
+        @async.call_from_main_thread_and_wait
+        def cb(f, nbytes):
+            f.close()
+            self.assertEqual(nbytes, 4096)
+            async.signal(o)
+
+        buf = b'0' * 4096
+        n = tempfilename()
+        f = async.open(n, 'wb', size=size)
+        async.write(f, buf, callback=callback, errback=errback)
+        async.run()
+        f.close()
+
+        with open(n, 'rb') as f:
+            self.assertEqual(f.read(), buf)
+
+
+
 
     def _test_read(self):
         @async.call_from_main_thread_and_wait

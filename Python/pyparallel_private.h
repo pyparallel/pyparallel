@@ -188,6 +188,7 @@ typedef struct _PyParallelHeap {
 
 typedef struct _PyParallelContextStats {
     unsigned __int64 submitted;
+    unsigned __int64 entered;
     unsigned __int64 start;
     unsigned __int64 end;
     double runtime;
@@ -240,13 +241,35 @@ typedef struct _PxPages {
 
 #define PyAsync_NUM_BUFS (32)
 
+#define PxIO_PREALLOCATED (0)
+#define PxIO_ONDEMAND     (1)
+
+#define PxIO_FLAGS(i) (((PxIO *)i)->flags)
+#define PxIO_IS_PREALLOC(i) (PxIO_FLAGS(i) == PxIO_PREALLOCATED)
+#define PxIO_IS_ONDEMAND(i) (PxIO_FLAGS(i) == PxIO_ONDEMAND)
+
+typedef struct _PxIO PxIO;
+
+typedef struct _PxIOEntry {
+    OVERLAPPED  overlapped;
+    PyObject   *obj;
+    char       *buf;
+    Py_ssize_t  size;
+    Py_ssize_t  bufsize;
+    int         flags;
+    PxIO       *self;
+} PxIOEntry;
+
 typedef struct _PxIO {
     __declspec(align(Px_MEM_ALIGN_RAW))
     PxListEntry entry;
     OVERLAPPED  overlapped;
     PyObject   *obj;
     char       *buf;
-    Py_ssize_t  size;
+    int         size;
+    Py_ssize_t  bufsize;
+    int         flags;
+    PxIO       *self;
 } PxIO;
 
 typedef struct _PxState {
@@ -256,11 +279,11 @@ typedef struct _PxState {
     PxListHead *incoming;
     PxListHead *finished;
 
-    PxListHead *io_inuse;
+    PxListHead *io_ondemand;
     PxListHead *io_free;
     HANDLE      io_free_wakeup;
 
-    Context    *ioctx;
+    Context    *iob_ctx;
 
 #ifdef Py_DEBUG
     SRWLOCK     pages_srwlock;
@@ -286,6 +309,8 @@ typedef struct _PxState {
     long long contexts_created;
     long long contexts_destroyed;
     long contexts_active;
+
+    volatile long long io_stalls;
 
     volatile long active;
     volatile long persistent;
@@ -319,6 +344,9 @@ typedef struct _PxState {
     volatile long       io_pending;
     volatile long       io_inflight;
     volatile long long  io_done;
+
+    volatile long long  async_writes_completed_synchronously;
+    volatile long long  async_reads_completed_synchronously;
 
     //__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
     volatile long long  sync_wait_submitted;
@@ -358,21 +386,13 @@ typedef struct _PyParallelContext {
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
 
-    int       is_io;
-    int       io_type;
-    PyObject *reader;
-    PyObject *writer;
-    fileio   *fwriter;
-    fileio   *freader;
-    //TP_IO     tp_io_r;
-    //TP_IO     tp_io_w;
-    HANDLE    rhandle;
-    HANDLE    whandle;
-    DWORD     io_status;
-    void     *rbuf;
-    void     *wbuf;
-    long      pending_reads;
-    long      pending_writes;
+    int         io_type;
+    TP_IO      *tp_io;
+    DWORD       io_status;
+    ULONG       io_result;
+    ULONG_PTR   io_nbytes;
+    OVERLAPPED *overlapped;
+    PxIO       *io;
 
     PyObject *copy_event;
     LARGE_INTEGER filesize;

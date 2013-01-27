@@ -163,6 +163,9 @@ WIN32 is still required for the locale module.
 #ifdef WITH_PARALLEL
 #define Py_WINVER 0x0600
 #define Py_NTDDI NTDDI_VISTA
+#ifdef Py_DEBUG
+#define WITH_TSC 1
+#endif
 #else
 
 /* set the version macros for the windows headers */

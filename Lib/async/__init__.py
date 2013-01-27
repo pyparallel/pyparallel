@@ -2,6 +2,12 @@ import _async
 
 from _async import *
 
+_object = object
+class object:
+    def __init__(self, **kwds):
+        self.__dict__.update(**kwds)
+        _async.protect(self)
+
 class Constant(dict):
     def __init__(self):
         items = self.__class__.__dict__.items()
@@ -48,11 +54,11 @@ def submit_wait(obj, func=None, args=None, kwds=None,
                 callback=None, errback=None, timeout=None):
     _async.submit_wait(obj, timeout, func, args, kwds, callback, errback)
 
-def submit_write_io(writeiofunc, buf, callback=None, errback=None):
-    _async.submit_write_io(writeiofunc, buf, callback, errback)
+#def submit_write_io(writeiofunc, buf, callback=None, errback=None):
+#    _async.submit_write_io(writeiofunc, buf, callback, errback)
 
-def submit_read_io(readiofunc, callback, nbytes=0, errback=None):
-    _async.submit_read_io(readiofunc, nbytes, callback, errback)
+#def submit_read_io(readiofunc, callback, nbytes=0, errback=None):
+#    _async.submit_read_io(readiofunc, nbytes, callback, errback)
 
 _open = open
 def open(filename, mode, caching=0, size=0, template=None):
@@ -71,10 +77,22 @@ def open(filename, mode, caching=0, size=0, template=None):
         opener=fileopener,
         closer=_async.filecloser
     )
-    return f
+    r = _async._rawfile(f)
+    p = _async.protect(r)
+    return p
+_async_open = open
+
+def close(obj):
+    _async._close(obj)
+    obj.close()
 
 def write(obj, buf, callback=None, errback=None):
     _async.submit_write_io(obj, buf, callback, errback)
+
+def writefile(filename, buf, callback=None, errback=None):
+    f = open(filename, 'wb', size=len(buf))
+    _async.submit_write_io(f, buf, callback, errback)
+    f.close()
 
 def read(obj, callback, nbytes=0, errback=None):
     _async.submit_read_io(obj.write, buf, callback, errback)

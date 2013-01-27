@@ -6,12 +6,9 @@ extern "C" {
 
 #include <fcntl.h>
 
-#include "fileio.h"
-
 #include "pyparallel_private.h"
-
+#include "fileio.h"
 #include "frameobject.h"
-
 #include "structmember.h"
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
@@ -36,6 +33,7 @@ static PyObject *PyExc_ProtectionError;
 static PyObject *PyExc_NoWaitersError;
 static PyObject *PyExc_WaitError;
 static PyObject *PyExc_WaitTimeoutError;
+static PyObject *PyExc_AsyncIOBuffersExhaustedError;
 
 int _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v);
 int _PyObject_SetAttrString(PyObject *, char *, PyObject *w);
@@ -459,6 +457,17 @@ _async_wait(PyObject *self, PyObject *o)
 }
 
 PyObject *
+_async_prewait(PyObject *self, PyObject *o)
+{
+    Px_PROTECTION_GUARD(o);
+    Py_INCREF(o);
+    if (!_PyEvent_TryCreate(o))
+        return NULL;
+
+    return o;
+}
+
+PyObject *
 _async_signal(PyObject *self, PyObject *o)
 {
     PyObject *result = NULL;
@@ -559,6 +568,33 @@ _async_protect(PyObject *self, PyObject *obj)
         return NULL;
     }
     return _protect(obj);
+}
+
+PyObject *
+_async__rawfile(PyObject *self, PyObject *obj)
+{
+    PyObject *raw;
+    fileio   *f;
+
+    Py_INCREF(obj);
+    if (PyFileIO_Check(obj))
+        return obj;
+
+    raw = PyObject_GetAttrString(obj, "raw");
+    if (!raw) {
+        PyErr_SetString(PyExc_ValueError, "not an io file object");
+        return NULL;
+    }
+
+    if (!PyFileIO_Check(raw)) {
+        PyErr_SetString(PyExc_ValueError, "invalid type for raw attribute");
+        return NULL;
+    }
+
+    f = (fileio *)raw;
+    Py_INCREF(f);
+    f->owner = obj;
+    return (PyObject *)f;
 }
 
 #ifdef Py_DEBUG
@@ -1707,7 +1743,7 @@ _PxState_AllocIOBufs(PxState *px, Context *c, int count, int size)
         assert(Px_PTR(io) ==  Px_ALIGN(io,  Px_MEM_ALIGN_SIZE));
         assert(Px_PTR(buf) == Px_ALIGN(buf, Px_MEM_ALIGN_SIZE));
 
-        io->size = bufsize;
+        io->size = (int)bufsize;
         io->buf  = buf;
 
         PxList_Push(px->io_free, E2I(io));
@@ -1760,13 +1796,9 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->finished)
         goto free_incoming;
 
-    px->io_inuse = PxList_New();
-    if (!px->io_inuse)
-        goto free_finished;
-
     px->io_free  = PxList_New();
     if (!px->io_free)
-        goto free_io_inuse;
+        goto free_finished;
 
     px->io_free_wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->io_free_wakeup)
@@ -1795,7 +1827,7 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     c->tstate = tstate;
     c->px = px;
 
-    px->ioctx = c;
+    px->iob_ctx = c;
 
     if (!_PxState_AllocIOBufs(px, c, PyAsync_NUM_BUFS, PyAsync_IO_BUFSIZE))
         goto free_context;
@@ -1813,9 +1845,6 @@ free_io_wakeup:
 
 free_io_free:
     PxList_FreeListHead(px->io_free);
-
-free_io_inuse:
-    PxList_FreeListHead(px->io_inuse);
 
 free_finished:
     PxList_FreeListHead(px->finished);
@@ -1874,6 +1903,8 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     volatile long       *inflight;
     volatile long long  *done;
 
+    s = &(c->stats);
+    s->entered = _Py_rdtsc();
     assert(c->tstate);
     assert(c->heap_handle);
 
@@ -1883,7 +1914,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
         pending = &(px->waits_pending);
         inflight = &(px->waits_inflight);
         done = &(px->waits_done);
-    } else if (c->is_io) {
+    } else if (c->tp_io) {
         pending = &(px->io_pending);
         inflight = &(px->io_inflight);
         done = &(px->io_done);
@@ -1937,7 +1968,6 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     c->tbuf_next = c->tbuf_base = (void *)c->tbuf[0];
     c->tbuf_remaining = _PX_TMPBUF_SIZE;
 
-    s = &(c->stats);
     s->startup_size = s->allocated;
 
     if (c->tp_wait) {
@@ -1955,8 +1985,47 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
             PyErr_SetFromWindowsErr(0);
             goto errback;
         }
-    } else if (c->is_io) {
-        assert(0);
+    } else if (c->tp_io) {
+        PxListItem *item;
+        PyObject *obj;
+        PxIO *io;
+        ULONG_PTR nbytes;
+        assert(
+            (c->io_type & (PyAsync_IO_WRITE)) &&
+            c->overlapped != NULL &&
+            c->io != NULL
+        );
+        io = c->io;
+        obj = io->obj;
+        nbytes = c->io_nbytes;
+        if (PxIO_IS_ONDEMAND(io))
+            PxList_Push(px->io_ondemand, E2I(io));
+        else {
+            assert(PxIO_IS_PREALLOC(io));
+            memset(&(io->overlapped), 0, sizeof(OVERLAPPED));
+            io->obj = NULL;
+            PxList_Push(px->io_free, E2I(io));
+            SetEvent(px->io_free_wakeup);
+        }
+
+        item = _PyHeap_NewListItem(c);
+        if (!item) {
+            PyErr_NoMemory();
+            goto error;
+        }
+        item->p1 = obj;
+        PxList_Push(c->decrefs, item);
+
+        if (c->io_result == NO_ERROR) {
+            if (!c->callback)
+                goto after_callback;
+            args = PyTuple_Pack(2, obj, nbytes);
+            goto start_callback;
+        } else {
+            PyErr_SetFromWindowsErr(c->io_result);
+            goto errback;
+        }
+        assert(0); /* unreachable */
     } else if (c->tp_timer) {
         assert(0);
     }
@@ -1967,13 +2036,16 @@ start:
     s->end = _Py_rdtsc();
 
     if (c->result) {
+start_callback:
         assert(!pstate->curexc_type);
         if (c->callback) {
-            args = Py_BuildValue("(O)", c->result);
+            if (!args)
+                args = Py_BuildValue("(O)", c->result);
             r = PyObject_CallObject(c->callback, args);
             if (null_with_exc_or_non_none_return_type(r, pstate))
                 goto errback;
         }
+after_callback:
         c->callback_completed->from = c;
         PxList_TimestampItem(c->callback_completed);
         InterlockedExchange(&(c->done), 1);
@@ -2037,14 +2109,27 @@ _PyParallel_WaitCallback(
     assert(wait == c->tp_wait);
     c->wait_result = wait_result;
 
-    _PyParallel_WorkCallback(instance, context);
+    _PyParallel_WorkCallback(instance, c);
 }
 
 void
 NTAPI
-_PyParallel_IOCallback(PTP_CALLBACK_INSTANCE instance, void *context)
+_PyParallel_IOCallback(
+    PTP_CALLBACK_INSTANCE instance,
+    void *context,
+    void *overlapped,
+    ULONG result,
+    ULONG_PTR nbytes,
+    TP_IO *tp_io
+)
 {
-
+    Context *c = (Context *)context;
+    assert(tp_io == c->tp_io);
+    c->io_result = result;
+    c->io_nbytes = nbytes;
+    c->overlapped = (OVERLAPPED *)overlapped;
+    c->io = (PxIO *)(((PxIOEntry *)overlapped)->self);
+    _PyParallel_WorkCallback(instance, c);
 }
 
 void
@@ -2364,7 +2449,7 @@ __inline
 void
 decref_args(Context *c)
 {
-    Py_DECREF(c->func);
+    Py_XDECREF(c->func);
     Py_XDECREF(c->args);
     Py_XDECREF(c->kwds);
     Py_XDECREF(c->callback);
@@ -2531,7 +2616,8 @@ _async_run_once(PyObject *self, PyObject *args)
 
     if (px->submitted == 0 &&
         px->waits_submitted == 0 &&
-        px->persistent == 0)
+        px->persistent == 0 &&
+        px->contexts_active == 0)
     {
         PyErr_SetNone(PyExc_AsyncRunCalledWithoutEventsError);
         return NULL;
@@ -2621,11 +2707,16 @@ start:
 
                 assert(tstate->curexc_type);
 
-                d->p1 = exc_type  = (PyObject *)item->p1;
-                d->p2 = exc_value = (PyObject *)item->p2;
-                d->p3 = exc_tb    = (PyObject *)item->p3;
-
                 PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+                
+                assert(exc_type);
+                assert(exc_value);
+                assert(exc_tb);
+
+                item->p1 = d->p1 = exc_type;
+                item->p2 = d->p2 = exc_value;
+                item->p3 = d->p3 = exc_tb;
+
                 PyErr_Clear();
 
             } else {
@@ -2891,7 +2982,7 @@ _async_submit_work(PyObject *self, PyObject *args)
 error:
     InterlockedDecrement(&(px->pending));
     InterlockedDecrement(&(px->active));
-    InterlockedDecrement64(&(px->done));
+    InterlockedIncrement64(&(px->done));
     decref_args(c);
 free_context:
     HeapDestroy(c->heap_handle);
@@ -3031,6 +3122,7 @@ _async_submit_io(PyObject *self, PyObject *args)
     return NULL;
 }
 
+/*
 PyObject *
 _submit_io(PyObject *self, PyObject *args, int io_type)
 {
@@ -3047,7 +3139,6 @@ _submit_io(PyObject *self, PyObject *args, int io_type)
 
     px = c->px;
 
-    /*
     if (!extract_writeio_args(args, c))
         goto free_context;
 
@@ -3084,9 +3175,9 @@ done:
         assert(PyErr_Occurred());
     return result;
     PyObject *result = NULL;
-    */
     return result;
 }
+*/
 
 #define PxSocketIO_Check(o) (0)
 
@@ -3094,15 +3185,19 @@ PyObject *
 _async_submit_write_io(PyObject *self, PyObject *args)
 {
     PyObject *o, *cb, *eb, *result = NULL;
-    Py_buffer buf;
+    Py_buffer pybuf;
     fileio   *f;
     Context  *c;
     PxState  *px;
+    PxIO     *io;
+    char     *buf;
+    char      success;
     int is_file = 0;
     int is_socket = 0;
+    int io_attempt = 0;
     PTP_WIN32_IO_CALLBACK callback;
 
-    if (!PyArg_ParseTuple(args, "Oy*OO", &o, &buf, &cb, &eb))
+    if (!PyArg_ParseTuple(args, "Oy*OO", &o, &pybuf, &cb, &eb))
         return NULL;
 
     is_file = PyFileIO_Check(o);
@@ -3133,55 +3228,142 @@ _async_submit_write_io(PyObject *self, PyObject *args)
 
     px = c->px;
 
-    c->callback = cb;
-    c->errback  = eb;
+    c->callback = (cb == Py_None ? NULL : cb);
+    c->errback  = (eb == Py_None ? NULL : eb);
     c->func = NULL;
     c->args = NULL;
     c->kwds = NULL;
 
-    /*
+    Py_XINCREF(c->callback);
+    Py_XINCREF(c->errback);
 
-    if (!extract_writeio_args(args, c))
-        goto free_context;
-
-    cb = _PyParallel_WaitCallback;
-    c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
-    if (!c->tp_wait) {
+    callback = _PyParallel_IOCallback;
+    c->tp_io = CreateThreadpoolIo(f->h, callback, c, NULL);
+    if (!c->tp_io) {
         PyErr_SetFromWindowsErr(0);
         goto free_context;
     }
 
-    if (!_PyEvent_TryCreate(c->waitobj))
-        goto free_context;
+    if (pybuf.len > PyAsync_IO_BUFSIZE) {
+alloc_io:
+        io = (PxIO *)PxList_Malloc(sizeof(PxIO));
+        if (!io) {
+            PyErr_NoMemory();
+            goto free_context;
+        }
+        io->flags = PxIO_ONDEMAND;
+        buf = (char *)malloc(pybuf.len);
+        if (!buf) {
+            PxList_Free(io);
+            PyErr_NoMemory();
+            goto free_context;
+        }
+        io->buf = buf;
+    } else {
+try_io:
+        io_attempt++;
+        io = (PxIO *)PxList_Pop(px->io_free);
+        if (!io) {
+            if (io_attempt > 1)
+                goto alloc_io;
+            else {
+                int r;
+                InterlockedIncrement64(&(px->io_stalls));
+                /* XXX TODO create more buffers or wait for existing buffers. */
+                /* xxx todo: convert to submit_wait */
+                r = WaitForSingleObject(px->io_free_wakeup, 100);
+                if (r == WAIT_OBJECT_0 || r == WAIT_TIMEOUT)
+                    goto try_io;
+                else {
+                    PyErr_SetExcFromWindowsErr(
+                        PyExc_AsyncIOBuffersExhaustedError, 0);
+                    goto free_context;
+                }
+            }
+        }
+        assert(io);
+        assert(PxIO_IS_PREALLOC(io));
+    }
+    assert(io);
 
-    SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
+    /* Ugh.  This is ass-backwards.  Need to refactor PxIO to support
+     * Py_buffer natively. */
+    io->size = (int)pybuf.len;
+    memcpy(io->buf, pybuf.buf, pybuf.len);
+    PyBuffer_Release(&pybuf);
 
-    InterlockedIncrement64(&(px->waits_submitted));
-    InterlockedIncrement(&(px->waits_pending));
+    io->obj = o;
+    io->self = io;
+    c->io_type = PyAsync_IO_WRITE;
+
+    Py_INCREF(io->obj);
+    _write_lock(o);
+    io->overlapped.Offset = f->write_offset.LowPart;
+    io->overlapped.OffsetHigh = f->write_offset.HighPart;
+    f->write_offset.QuadPart += io->size;
+    _write_unlock(o);
+
+    StartThreadpoolIo(c->tp_io);
+
+    InterlockedIncrement64(&(px->io_submitted));
+    InterlockedIncrement(&(px->io_pending));
     InterlockedIncrement(&(px->active));
     c->stats.submitted = _Py_rdtsc();
-
-    incref_waitobj_args(c);
-
     c->px->contexts_created++;
     c->px->contexts_active++;
-    result = (Py_INCREF(Py_None), Py_None);
-    goto done;
+
+    success = WriteFile(f->h, io->buf, io->size, NULL, &(io->overlapped));
+    if (!success) {
+        int last_error = GetLastError();
+        if (last_error != ERROR_IO_PENDING) {
+            CancelThreadpoolIo(c->tp_io);
+            InterlockedDecrement(&(px->io_pending));
+            InterlockedDecrement(&(px->active));
+            InterlockedIncrement64(&(px->done));
+            if (c->errback)
+                PyErr_Warn(PyExc_RuntimeWarning,
+                           "file io errbacks not yet supported");
+            PyErr_SetFromWindowsErr(0);
+            goto free_io;
+        } else {
+            result = Py_None;
+            goto done;
+        }
+    } else {
+        CancelThreadpoolIo(c->tp_io);
+        InterlockedDecrement(&(px->io_pending));
+        InterlockedDecrement(&(px->active));
+        InterlockedIncrement64(&(px->done));
+        InterlockedIncrement64(&(px->async_writes_completed_synchronously));
+        PySys_WriteStdout("_async.write() completed synchronously\n");
+        result = Py_True;
+        if (c->callback)
+            PyErr_Warn(PyExc_RuntimeWarning,
+                       "file io callbacks not yet supported");
+        goto free_io;
+    }
+
+    assert(0); /* unreachable */
+
+free_io:
+    if (PxIO_IS_ONDEMAND(io)) {
+        free(io->buf);
+        PxList_Free(io);
+    }
 
 free_context:
-    HeapDestroy(c->heap_handle);
+    px->contexts_active--;
+    px->contexts_destroyed++;
     free(c);
 
 done:
     if (!result)
         assert(PyErr_Occurred());
+    else {
+        assert(result == Py_None || result == Py_True);
+        Py_INCREF(result);
+    }
     return result;
-    PyObject *result = NULL;
-
-    return result;
-    return _submit_io(self, args, PyAsync_IO_WRITE);
-    */
-    return NULL;
 }
 
 PyObject *
@@ -3435,6 +3617,24 @@ done:
     return result;
 }
 
+
+PyObject *
+_async__close(PyObject *self, PyObject *obj)
+{
+    fileio   *f;
+
+    Py_INCREF(obj);
+    if (!PyFileIO_Check(obj)) {
+        PyErr_SetString(PyExc_ValueError, "not an io file object");
+        return NULL;
+    }
+
+    f = (fileio *)obj;
+    Py_DECREF(f->owner);
+
+    Py_RETURN_NONE;
+}
+
 PyObject *
 _async_fileopener(PyObject *self, PyObject *args)
 {
@@ -3446,6 +3646,7 @@ _async_fileopener(PyObject *self, PyObject *args)
 
     int access = 0;
     int share = 0;
+    char notif_flags;
 
     int create_flags = 0;
     int file_flags = FILE_FLAG_OVERLAPPED;
@@ -3585,6 +3786,15 @@ _async_fileopener(PyObject *self, PyObject *args)
         }
     }
 
+    notif_flags = (
+        FILE_SKIP_COMPLETION_PORT_ON_SUCCESS |
+        FILE_SKIP_SET_EVENT_ON_HANDLE
+    );
+    if (!SetFileCompletionNotificationModes(h, notif_flags)) {
+        CloseHandle(h);
+        PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+    }
+
     if (!_protect(fileobj))
         goto done;
 
@@ -3674,7 +3884,10 @@ PyDoc_STRVAR(_async_pipe_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_write_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_fileopener_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_filecloser_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async__close_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async__rawfile_doc,"XXX TODO\n");
 PyDoc_STRVAR(_async__post_open_doc,"XXX TODO\n");
+PyDoc_STRVAR(_async_submit_write_io_doc, "XXX TODO\n");
 
 PyDoc_STRVAR(_async_map_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_wait_doc, "XXX TODO\n");
@@ -3682,6 +3895,7 @@ PyDoc_STRVAR(_async_rdtsc_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_server_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_signal_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_prewait_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_protect_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_run_once_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_unprotect_doc, "XXX TODO\n");
@@ -4083,12 +4297,15 @@ PyMethodDef _async_methods[] = {
     //_ASYNC_V(open),
     _ASYNC_V(write),
     _ASYNC_N(rdtsc),
+    _ASYNC_O(_close),
     _ASYNC_O(signal),
     _ASYNC_K(client),
     _ASYNC_K(server),
     _ASYNC_O(protect),
     //_ASYNC_O(wait_any),
     //_ASYNC_O(wait_all),
+    _ASYNC_O(prewait),
+    _ASYNC_O(_rawfile),
     _ASYNC_N(run_once),
     _ASYNC_O(unprotect),
     _ASYNC_O(protected),
@@ -4111,6 +4328,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(submit_server),
     _ASYNC_O(try_read_lock),
     _ASYNC_O(try_write_lock),
+    _ASYNC_V(submit_write_io),
     _ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
     _ASYNC_N(is_parallel_thread),
@@ -4177,6 +4395,13 @@ _PyAsync_ModInit(void)
     if (!PyExc_WaitTimeoutError)
         return NULL;
 
+    PyExc_AsyncIOBuffersExhaustedError = \
+        PyErr_NewException("_async.AsyncIOBuffersExhaustedError",
+                           PyExc_AsyncError,
+                           NULL);
+    if (!PyExc_AsyncIOBuffersExhaustedError)
+        return NULL;
+
     if (PyModule_AddObject(m, "AsyncError", PyExc_AsyncError))
         return NULL;
 
@@ -4192,11 +4417,16 @@ _PyAsync_ModInit(void)
     if (PyModule_AddObject(m, "WaitTimeoutError", PyExc_WaitTimeoutError))
         return NULL;
 
+    if (PyModule_AddObject(m, "AsyncIOBuffersExhaustedError",
+                           PyExc_AsyncIOBuffersExhaustedError))
+        return NULL;
+
     Py_INCREF(PyExc_AsyncError);
     Py_INCREF(PyExc_ProtectionError);
     Py_INCREF(PyExc_NoWaitersError);
     Py_INCREF(PyExc_WaitError);
     Py_INCREF(PyExc_WaitTimeoutError);
+    Py_INCREF(PyExc_AsyncIOBuffersExhaustedError);
 
     /* Uncomment the following (during development) as needed. */
     /*

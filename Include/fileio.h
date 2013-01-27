@@ -37,6 +37,9 @@ typedef struct _fileio {
     int         istty;
     PyObject   *callback;
     PyObject   *errback;
+    PyObject   *owner;
+    LARGE_INTEGER read_offset;
+    LARGE_INTEGER write_offset;
 #endif
 } fileio;
 

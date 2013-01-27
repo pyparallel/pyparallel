@@ -70,6 +70,10 @@ ppc_getcounter(uint64 *v)
                          "=a" (((int*)&(val))[0]), "=d" (((int*)&(val))[1]));
 
 
+#elif defined(WITH_INTRINSICS)
+
+#define READ_TIMESTAMP(var) (var = _Py_rdtsc())
+
 #else
 
 #error "Don't know how to implement timestamp counter for this architecture"
@@ -328,7 +332,7 @@ void
 PyEval_AcquireLock(void)
 {
     PyThreadState *tstate = PyThreadState_GET();
-    Py_GUARD 
+    Py_GUARD
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
     take_gil(tstate);
