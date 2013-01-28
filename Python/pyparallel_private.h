@@ -562,17 +562,25 @@ static PySocketModule_APIObject PySocketModule;
 
 #define PXS2S(s) ((PySocketSockObject *)s)
 
-#define Py_RETURN_BOOL(expr) return (             \
-    ((expr) ? (Py_INCREF(Py_True), Py_True) :     \
-              (Py_INCREF(Py_False), Py_False))    \
+#define Py_RETURN_BOOL(expr) return (              \
+    ((expr) ? (Py_INCREF(Py_True), Py_True) :      \
+              (Py_INCREF(Py_False), Py_False))     \
 )
 
-#define Px_PROTECTION_GUARD(o)                    \
-    do {                                          \
-        if (!_protected(o)) {                     \
-            PyErr_SetNone(PyExc_ProtectionError); \
-            return NULL;                          \
-        }                                         \
+#define Px_PROTECTION_GUARD(o)                     \
+    do {                                           \
+        if (!_protected(o)) {                      \
+            PyErr_SetNone(PyExc_ProtectionError);  \
+            return NULL;                           \
+        }                                          \
+    } while (0)
+
+#define Px_PERSISTENCE_GUARD(o)                    \
+    do {                                           \
+        if (!_persistent(o)) {                     \
+            PyErr_SetNone(PyExc_PersistenceError); \
+            return NULL;                           \
+        }                                          \
     } while (0)
 
 #ifdef __cpplus

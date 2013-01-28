@@ -17,9 +17,11 @@ extern "C" {
 #define Py_PXFLAGS_ISPX                 (1UL <<  1)
 #define Py_PXFLAGS_RWLOCK               (1UL <<  2)
 #define Py_PXFLAGS_EVENT                (1UL <<  3)
+#define Py_PXFLAGS_WASPX                (1UL <<  4)
 
 #define Py_HAS_RWLOCK(o)  (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
 #define Py_HAS_EVENT(o)   (Py_PXFLAGS((o)) & Py_PXFLAGS_EVENT)
+#define Py_WASPX(o)       (Py_PXFLAGS((o)) & Py_PXFLAGS_WASPX)
 
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
@@ -241,13 +243,19 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
 
 #define Py_ISPX(ob) (                    \
     Py_PXCTX || (ob != NULL && (         \
-        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+        Py_PXFLAGS(ob) & (               \
+            Py_PXFLAGS_ISPX |            \
+            Py_PXFLAGS_WASPX             \
+        )                                \
     ))                                   \
 )
 
 #define Py_ISPY(ob) (                    \
     Py_PXCTX || (ob != NULL && !(        \
-        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+        Py_PXFLAGS(ob) & (               \
+            Py_PXFLAGS_ISPX |            \
+            Py_PXFLAGS_WASPX             \
+        )                                \
     ))                                   \
 )
 
@@ -260,7 +268,10 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
 
 #define Py_PXOBJ(ob) (                   \
     ob != NULL && (                      \
-        Py_PXFLAGS(ob) & Py_PXFLAGS_ISPX \
+        Py_PXFLAGS(ob) & (               \
+            Py_PXFLAGS_ISPX |            \
+            Py_PXFLAGS_WASPX             \
+        )                                \
     )                                    \
 )
 

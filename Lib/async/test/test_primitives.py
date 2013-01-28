@@ -191,6 +191,21 @@ class TestPrewait(unittest.TestCase):
     def test_multiple_prewaits_8(self):
         self._test_multiple_prewaits(4)
 
+class TestPersistence(unittest.TestCase):
+    def test_nopersistence_raises_error(self):
+        success = False
+        def cb(o):
+            try:
+                o.foo = 'bar'
+            except async.PersistenceError:
+                success = True
+
+        o = async.object(foo=None)
+        async.submit_work(cb, o)
+        async.run()
+        self.assertTrue(success)
+        self.assertEqual(o.foo, None)
+
 class TestAsyncProtection(unittest.TestCase):
     def test_basic(self):
         d = {}

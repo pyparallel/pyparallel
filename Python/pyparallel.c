@@ -34,6 +34,7 @@ static PyObject *PyExc_NoWaitersError;
 static PyObject *PyExc_WaitError;
 static PyObject *PyExc_WaitTimeoutError;
 static PyObject *PyExc_AsyncIOBuffersExhaustedError;
+static PyObject *PyExc_PersistenceError;
 
 int _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v);
 int _PyObject_SetAttrString(PyObject *, char *, PyObject *w);
@@ -155,6 +156,7 @@ _async_unprotect(PyObject *self, PyObject *obj)
         PyErr_SetNone(PyExc_ProtectionError);
         return NULL;
     }
+    _unprotect(obj);
     Py_RETURN_NONE;
 }
 
@@ -1325,7 +1327,6 @@ _PyHeap_Free(Context *c, void *p)
     h->frees++;
     s->frees++;
 }
-
 
 #define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
 #define _Px_O_OFFSET(n) \
@@ -4048,6 +4049,24 @@ _PxMem_Free(void *p)
     _PxObject_Free(p);
 }
 
+void
+Px_DecRef(PyObject *o)
+{
+    assert(!Py_PXCTX);
+    assert(Py_WASPX(o));
+
+    _Py_DEC_REFTOTAL;
+    if ((--((PyObject *)(o))->ob_refcnt) != 0) {
+        _Py_CHECK_REFCNT(o);
+    } else {
+        /* Check whether or not the object needs to be promoted.
+         * Is it the last object marked persistent?  If so, decref the
+         * context.
+         */
+        assert(0);
+    }
+}
+
 /* client */
 
 
@@ -4400,6 +4419,11 @@ _PyAsync_ModInit(void)
     if (!PyExc_ProtectionError)
         return NULL;
 
+    PyExc_PersistenceError = \
+        PyErr_NewException("_async.PersistenceError", PyExc_AsyncError, NULL);
+    if (!PyExc_PersistenceError)
+        return NULL;
+
     PyExc_NoWaitersError = \
         PyErr_NewException("_async.NoWaitersError", PyExc_AsyncError, NULL);
     if (!PyExc_NoWaitersError)
@@ -4428,6 +4452,9 @@ _PyAsync_ModInit(void)
     if (PyModule_AddObject(m, "ProtectionError", PyExc_ProtectionError))
         return NULL;
 
+    if (PyModule_AddObject(m, "PersistenceError", PyExc_PersistenceError))
+        return NULL;
+
     if (PyModule_AddObject(m, "NoWaitersError", PyExc_NoWaitersError))
         return NULL;
 
@@ -4443,6 +4470,7 @@ _PyAsync_ModInit(void)
 
     Py_INCREF(PyExc_AsyncError);
     Py_INCREF(PyExc_ProtectionError);
+    Py_INCREF(PyExc_PersistenceError);
     Py_INCREF(PyExc_NoWaitersError);
     Py_INCREF(PyExc_WaitError);
     Py_INCREF(PyExc_WaitTimeoutError);

@@ -838,36 +838,43 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #endif /* !Py_TRACE_REFS */
 
 #ifndef WITH_PARALLEL
-#define Py_INCREF(op) (                         \
-    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
+#define Py_INCREF(op) (                                       \
+    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA                     \
     ((PyObject*)(op))->ob_refcnt++)
 
-#define Py_DECREF(op)                                   \
-    do {                                                \
-        if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
-        --((PyObject*)(op))->ob_refcnt != 0)            \
-            _Py_CHECK_REFCNT(op)                        \
-        else                                            \
-        _Py_Dealloc((PyObject *)(op));                  \
+#define Py_DECREF(op)                                         \
+    do {                                                      \
+        if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
+        --((PyObject*)(op))->ob_refcnt != 0)                  \
+            _Py_CHECK_REFCNT(op)                              \
+        else                                                  \
+        _Py_Dealloc((PyObject *)(op));                        \
     } while (0)
 
 #else /* !WITH_PARALLEL */
 
-#define Py_INCREF(op)                             \
-    (Py_ISPX(op) ? (void)0 : (                    \
-        _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA     \
-        ((PyObject*)(op))->ob_refcnt++))
+#define Py_INCREF(op)                                         \
+    (!(!Py_PXCTX && (Py_ISPY(op) || Py_WASPX(op))) ?          \
+        ((void)0) : (                                         \
+            _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
+            (((PyObject*)(op))->ob_refcnt++)                  \
+        )                                                     \
+    )
 
-#define Py_DECREF(op)                                     \
-    do {                                                  \
-        if (!Py_ISPX(op)) {                               \
-            _Py_DEC_REFTOTAL;                             \
-            if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
-                _Py_CHECK_REFCNT(op);                     \
-            } else {                                      \
-                _Py_Dealloc((PyObject *)(op));            \
-            }                                             \
-        }                                                 \
+#define Py_DECREF(op)                                         \
+    do {                                                      \
+        if (!Py_PXCTX) {                                      \
+            if (Py_WASPX(op))                                 \
+                Px_DECREF(op);                                \
+            else if (!(Py_PXFLAGS(op) & Py_PXFLAGS_ISPX)) {   \
+                _Py_DEC_REFTOTAL;                             \
+                if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
+                    _Py_CHECK_REFCNT(op);                     \
+                } else {                                      \
+                    _Py_Dealloc((PyObject *)(op));            \
+                }                                             \
+            }                                                 \
+        }                                                     \
     } while (0)
 
 
@@ -933,8 +940,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
         }                                         \
     } while (0)
 
-#define Py_XINCREF(op) do { if (op && !Py_ISPX(op)) Py_INCREF(op); } while (0)
-#define Py_XDECREF(op) do { if (op && !Py_ISPX(op)) Py_DECREF(op); } while (0)
+#define Py_XINCREF(op) do { if (op) Py_INCREF(op); } while (0)
+#define Py_XDECREF(op) do { if (op) Py_DECREF(op); } while (0)
 
 #endif /* WITH_PARALLEL */
 
@@ -944,6 +951,12 @@ they can have object code that is not dependent on Python compilation flags.
 */
 PyAPI_FUNC(void) Py_IncRef(PyObject *);
 PyAPI_FUNC(void) Py_DecRef(PyObject *);
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void) Px_DecRef(PyObject *o);
+#ifndef Py_LIMITED_API
+#define Px_DECREF(o) (Px_DecRef((PyObject *)o))
+#endif
+#endif
 
 PyAPI_DATA(PyTypeObject) _PyNone_Type;
 PyAPI_DATA(PyTypeObject) _PyNotImplemented_Type;

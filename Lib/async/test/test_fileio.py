@@ -64,7 +64,7 @@ class TestFileIO(unittest.TestCase):
     def test_write_using_page_size_multiple_8192(self):
         self._write(8192)
 
-    def _test_write_with_callback(self):
+    def test_write_with_callback(self):
         buf = b'0' * 4096
         n = tempfilename()
         d = {}
@@ -78,6 +78,63 @@ class TestFileIO(unittest.TestCase):
         async.run()
         fileobj.close()
         self.assertEqual(d[1], 1)
+
+        with open(n, 'rb') as f2:
+            self.assertEqual(f2.read(), buf)
+
+    def test_write_with_callback2(self):
+        buf = b'0' * 4096
+        n = tempfilename()
+        d = {}
+
+        @async.call_from_main_thread
+        def cb(f, nbytes):
+            d[f.name] = nbytes
+
+        fileobj = async.open(n, 'wb', size=4096)
+        async.write(fileobj, buf, callback=cb)
+        async.run()
+        fileobj.close()
+        self.assertEqual(d[n], 4096)
+
+        with open(n, 'rb') as f2:
+            self.assertEqual(f2.read(), buf)
+
+    def test_write_with_callback3(self):
+        buf = b'0' * 4096
+        n = tempfilename()
+        d = {}
+
+        def cb(f, nbytes):
+            _async.call_from_main_thread_and_wait(
+                d.__setitem__, (1, nbytes))
+
+        fileobj = async.open(n, 'wb', size=4096)
+        print(fileobj.name)
+        async.write(fileobj, buf, callback=cb)
+        async.run()
+        fileobj.close()
+        print(d)
+        self.assertEqual(d[1], 4096)
+
+        with open(n, 'rb') as f2:
+            self.assertEqual(f2.read(), buf)
+
+    def test_write_with_callback4(self):
+        buf = b'0' * 4096
+        n = tempfilename()
+        o = async.object(name=None, nbytes=None)
+
+        def cb(f, nbytes):
+            o.name = n
+            o.nbytes = 4096
+
+        fileobj = async.open(n, 'wb', size=4096)
+        async.write(fileobj, buf, callback=cb)
+        async.run()
+        fileobj.close()
+        self.assertEqual(o.name, n)
+        self.assertEqual(o.nbytes, 4096)
 
         with open(n, 'rb') as f2:
             self.assertEqual(f2.read(), buf)
