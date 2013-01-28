@@ -1896,7 +1896,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
     Stats    *s;
     PxState  *px;
     PyObject *r;
-    PyObject *args;
+    PyObject *args = NULL;
     PyThreadState *pstate;
 
     volatile long       *pending;
@@ -2708,7 +2708,7 @@ start:
                 assert(tstate->curexc_type);
 
                 PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
-                
+
                 assert(exc_type);
                 assert(exc_value);
                 assert(exc_tb);
