@@ -138,14 +138,13 @@ _async_protected(PyObject *self, PyObject *obj)
 }
 
 __inline
-PyObject *
+void
 _unprotect(PyObject *obj)
 {
     if (_protected(obj)) {
         obj->px_flags &= ~Py_PXFLAGS_RWLOCK;
         obj->srw_lock = NULL;
     }
-    return obj;
 }
 
 PyObject *
@@ -156,7 +155,7 @@ _async_unprotect(PyObject *self, PyObject *obj)
         PyErr_SetNone(PyExc_ProtectionError);
         return NULL;
     }
-    return _unprotect(obj);
+    Py_RETURN_NONE;
 }
 
 __inline
@@ -464,6 +463,7 @@ _async_prewait(PyObject *self, PyObject *o)
     if (!_PyEvent_TryCreate(o))
         return NULL;
 
+    Py_INCREF(o);
     return o;
 }
 
@@ -567,6 +567,7 @@ _async_protect(PyObject *self, PyObject *obj)
         PyErr_SetNone(PyExc_ProtectionError);
         return NULL;
     }
+    Py_INCREF(obj);
     return _protect(obj);
 }
 
@@ -3841,7 +3842,22 @@ _async__post_open(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
+PyObject *
+_async__address(PyObject *self, PyObject *o)
+{
+    Py_INCREF(o);
+    return PyLong_FromVoidPtr(o);
+}
 
+PyObject *
+_async__dbg_address(PyObject *self, PyObject *addr)
+{
+    PyObject *o;
+    Py_INCREF(addr);
+    o = (PyObject *)PyLong_AsVoidPtr(addr);
+    PySys_FormatStdout("address: 0x%x, refcnt: %d\n", o, Py_REFCNT(o));
+    Py_RETURN_NONE;
+}
 
 PyDoc_STRVAR(_async_doc,
 "_async module.\n\
@@ -3884,6 +3900,8 @@ PyDoc_STRVAR(_async_pipe_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_write_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_fileopener_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_filecloser_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async__address_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async__dbg_address_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async__close_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async__rawfile_doc,"XXX TODO\n");
 PyDoc_STRVAR(_async__post_open_doc,"XXX TODO\n");
@@ -4305,6 +4323,7 @@ PyMethodDef _async_methods[] = {
     //_ASYNC_O(wait_any),
     //_ASYNC_O(wait_all),
     _ASYNC_O(prewait),
+    _ASYNC_O(_address),
     _ASYNC_O(_rawfile),
     _ASYNC_N(run_once),
     _ASYNC_O(unprotect),
@@ -4322,6 +4341,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(write_unlock),
     _ASYNC_N(is_active_ex),
     _ASYNC_N(active_count),
+    _ASYNC_O(_dbg_address),
     _ASYNC_V(submit_timer),
     _ASYNC_O(submit_class),
     _ASYNC_O(submit_client),

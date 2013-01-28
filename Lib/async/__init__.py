@@ -2,7 +2,7 @@ import _async
 
 from _async import *
 
-_object = object
+_baseobject = object
 class object:
     def __init__(self, **kwds):
         self.__dict__.update(**kwds)
