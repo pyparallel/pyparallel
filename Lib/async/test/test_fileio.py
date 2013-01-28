@@ -58,13 +58,13 @@ class TestFileIO(unittest.TestCase):
         with open(n, 'rb') as f:
             self.assertEqual(f.read(), buf)
 
-    def test_write_using_page_size_multiple_8192(self):
-        self._write(8192)
-
     def test_write_using_page_size_multiple_4096(self):
         self._write(4096)
 
-    def test_write_with_callback(self):
+    def test_write_using_page_size_multiple_8192(self):
+        self._write(8192)
+
+    def _test_write_with_callback(self):
         buf = b'0' * 4096
         n = tempfilename()
         d = {}
@@ -82,7 +82,7 @@ class TestFileIO(unittest.TestCase):
         with open(n, 'rb') as f2:
             self.assertEqual(f2.read(), buf)
 
-    def test_write_with_callback2(self):
+    def _test_write_with_callback2(self):
         buf = b'0' * 4096
         n = tempfilename()
         o = async.object(nbytes=None)
@@ -100,7 +100,7 @@ class TestFileIO(unittest.TestCase):
         with open(n, 'rb') as f2:
             self.assertEqual(f2.read(), buf)
 
-    def test_write__fileobj_signalled_when_no_callback(self):
+    def _test_write__fileobj_signalled_when_no_callback(self):
         o = async.object()
         o = async.protect(object())
 
@@ -119,9 +119,6 @@ class TestFileIO(unittest.TestCase):
 
         with open(n, 'rb') as f:
             self.assertEqual(f.read(), buf)
-
-
-
 
     def _test_read(self):
         @async.call_from_main_thread_and_wait
