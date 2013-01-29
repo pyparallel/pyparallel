@@ -29,15 +29,3 @@ NO_EB = None
 HOST = '127.0.0.1'
 ADDR = (HOST, 0)
 
-def main():
-    import unittest
-    import async.test.test_primitives
-    import async.test.test_work
-    import async.test.test_fileio
-
-    unittest.testmod(async.test.test_primitives)
-    unittest.testmod(async.test.test_work)
-    unittest.testmod(async.test.test_fileio)
-
-if __name__ == '__main__':
-    main()

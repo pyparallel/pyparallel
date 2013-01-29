@@ -444,8 +444,6 @@ typedef struct _PyParallelContext {
     Objects objects;
     Objects varobjs;
     Objects events;
-    Objects persist;
-    Objects promote;
 
     char  tbuf[_PX_TMPBUF_SIZE];
     void *tbuf_base;
@@ -489,6 +487,7 @@ typedef struct _PxObject {
     size_t       size;
     PyObject    *resized_to;
     PyObject    *resized_from;
+    INIT_ONCE    persist;
     size_t       signature;
 } PxObject;
 

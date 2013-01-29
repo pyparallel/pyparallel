@@ -250,23 +250,9 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
     )                                                          \
 )
 
-#define Py_ISPX(ob) (                    \
-    Py_PXCTX || (ob != NULL && (         \
-        Py_PXFLAGS(ob) & (               \
-            Py_PXFLAGS_ISPX |            \
-            Py_PXFLAGS_WASPX             \
-        )                                \
-    ))                                   \
-)
+#define Py_ISPX(ob) (Py_PXCTX || ((ob) && (Px_ISPX(ob))))
 
-#define Py_ISPY(ob) (                    \
-    Py_PXCTX || (ob != NULL && !(        \
-        Py_PXFLAGS(ob) & (               \
-            Py_PXFLAGS_ISPX |            \
-            Py_PXFLAGS_WASPX             \
-        )                                \
-    ))                                   \
-)
+#define Py_ISPY(ob) ((ob) && !Px_ISPY(ob))
 
 #define _Py_ISPY(ob) (                                         \
     ob != NULL && (                                            \
@@ -275,14 +261,7 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
     )                                                          \
 )
 
-#define Py_PXOBJ(ob) (                   \
-    ob != NULL && (                      \
-        Py_PXFLAGS(ob) & (               \
-            Py_PXFLAGS_ISPX |            \
-            Py_PXFLAGS_WASPX             \
-        )                                \
-    )                                    \
-)
+#define Py_PXOBJ(ob) ((ob) && Px_ISPX(ob))
 
 #define Px_GUARD
 #define Py_GUARD

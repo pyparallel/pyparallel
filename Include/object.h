@@ -895,9 +895,9 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #define Py_DECREF(op)                                         \
     do {                                                      \
         if (!Py_PXCTX) {                                      \
-            if (Py_WASPX(op))                                 \
+            if (Px_PERSISTED(op))                             \
                 Px_DECREF(op);                                \
-            else if (!(Py_PXFLAGS(op) & Py_PXFLAGS_ISPX)) {   \
+            else if (!Px_ISPX(op)) {                          \
                 _Py_DEC_REFTOTAL;                             \
                 if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
                     _Py_CHECK_REFCNT(op);                     \

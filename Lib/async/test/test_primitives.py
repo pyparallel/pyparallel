@@ -1,4 +1,3 @@
-import gc
 import unittest
 import _async
 import async
@@ -296,10 +295,8 @@ class TestPersistence(unittest.TestCase):
         delattr(o, 'foo')
         self.assertEqual(async.persisted_contexts(), 0)
 
-    def _test_protection_and_persistence(self):
+    def test_protection_and_persistence(self):
         self.assertEqual(async.persisted_contexts(), 0)
-
-        gc.disable()
 
         o = async.protect(object())
         r = async.protect(object())
@@ -355,6 +352,37 @@ class TestPersistence(unittest.TestCase):
         delattr(d, 'w')
         self.assertEqual(async.persisted_contexts(), 1)
         delattr(d, 'r')
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_protect_against_dict(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
+
+        def reader(d, name):
+            async.read_lock(o)
+            async.signal(w)         # start writer callback
+            async.wait(r)           # wait for writer callback
+            d[name] = async.rdtsc()
+            async.read_unlock(o)
+
+        def writer(d, name):
+            async.signal(r)         # tell the reader we've entered
+            async.write_lock(o)     # will be blocked until reader unlocks
+            d[name] = async.rdtsc()
+            async.write_unlock(o)
+
+        d = {}
+        async.protect(d)
+        async.submit_wait(r, reader, (d, 'r'))
+        async.submit_wait(w, writer, (d, 'w'))
+        async.signal(r)
+        async.run()
+        #self.assertGreater(d['w'], d['r'])
+        self.assertEqual(async.persisted_contexts(), 2)
+        del d
         self.assertEqual(async.persisted_contexts(), 0)
 
 

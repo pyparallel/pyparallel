@@ -109,6 +109,8 @@ void
 _PyObject_Dealloc(PyObject *o)
 {
     PyTypeObject *tp;
+    PyMappingMethods *mm;
+    PySequenceMethods *sm;
     destructor d;
 #ifdef Py_DEBUG
     Py_GUARD_OBJ(o);
@@ -120,11 +122,15 @@ _PyObject_Dealloc(PyObject *o)
         PyEvent_DESTROY(o);
 
     tp = Py_TYPE(o);
+    mm = tp->tp_as_mapping;
+    sm = tp->tp_as_sequence;
     d = Py_ORIG_TYPE_CAST(o)->tp_dealloc;
     Py_TYPE(o) = Py_ORIG_TYPE(o);
     Py_ORIG_TYPE(o) = NULL;
     (*d)(o);
     PyMem_FREE(tp);
+    PyMem_FREE(mm);
+    PyMem_FREE(sm);
 }
 
 __inline
@@ -264,57 +270,68 @@ _PyHeap_NewObject(Context *c)
     return (Object *)_PyHeap_Malloc(c, sizeof(Object), 0, 0);
 }
 
-__inline
-int
-_PxContext_PersistObject(Context *c, PyObject *p)
-{
-    Object *o;
-    if (Px_PERSISTED(p))
-        return 1;
-
-    o = _PyHeap_NewObject(c);
-    if (!o)
-        return 0;
-
-    if (!c->is_persisted) {
-        c->is_persisted = 1;
-        InterlockedIncrement(&(c->persisted_count));
-    }
-    o->op = p;
-    Py_PXFLAGS(p) |= Py_PXFLAGS_PERSISTED;
-    Py_REFCNT(p) = 1;
-    append_object(&(c->persist), o);
-    return 1;
-}
+#define _Px_READ_LOCK(o)    if (Py_HAS_RWLOCK(o)) _read_lock(o)
+#define _Px_READ_UNLOCK(o)  if (Py_HAS_RWLOCK(o)) _read_unlock(o)
+#define _Px_WRITE_LOCK(o)   if (Py_HAS_RWLOCK(o)) _write_lock(o)
+#define _Px_WRITE_UNLOCK(o) if (Py_HAS_RWLOCK(o)) _write_unlock(o)
 
 #define Py_PXCB (_PyParallel_ExecutingCallbackFromMainThread())
 #define Px_XISPX(o) ((o) ? Px_ISPX(o) : 0)
 
+__inline
 int
-Px_PersistenceCheck(PyObject *o, PyObject *n, PyObject *v)
+_Px_TryPersist(PyObject *o)
+{
+    BOOL pending;
+    Context  *c;
+    PxObject *x;
+    if (!o || (!(Px_ISPX(o))) || Px_PERSISTED(o))
+        return 1;
+
+    x = Py_ASPX(o);
+    if (!InitOnceBeginInitialize(&(x->persist), 0, &pending, NULL)) {
+        PyErr_SetFromWindowsErr(0);
+        return 0;
+    }
+    if (!pending)
+        return 1;
+
+    assert(!(Px_PERSISTED(o)));
+
+    c = x->ctx;
+    if (!c->is_persisted)
+        c->is_persisted = 1;
+
+    c->persisted_count++;
+
+    Py_PXFLAGS(o) |= Py_PXFLAGS_PERSISTED;
+    Py_REFCNT(o) = 1;
+
+    if (!InitOnceComplete(&(x->persist), 0, NULL)) {
+        PyErr_SetFromWindowsErr(0);
+        return 0;
+    }
+
+    return 1;
+}
+
+__inline
+int
+_Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
 {
 #ifdef Py_DEBUG
     if (!Py_PXCTX && !Py_PXCB) {
         assert(!Px_ISPX(o));
+        assert(!Px_ISPX(k));
         assert(!Px_XISPX(v));
-        assert(!Px_XISPX(n));
     }
 #endif
+    if (!Px_ISPY(o) || (!Py_PXCTX && !Py_PXCB))
+        return 1;
 
-    if ((Py_PXCTX || Py_PXCB)) {
-        if (Px_ISPY(o)) {
-            if (Px_XISPX(n)) {
-                if (!_PxContext_PersistObject(Py_ASPX(n)->ctx, n))
-                    return 0;
-            }
-            if (Px_XISPX(v)) {
-                if (!_PxContext_PersistObject(Py_ASPX(v)->ctx, v))
-                    return 0;
-            }
-        }
-    }
-    return 1;
+    return !(!_Px_TryPersist(k) || !_Px_TryPersist(v));
 }
+
 
 int
 _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
@@ -323,18 +340,16 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
     int result;
     assert(Py_ORIG_TYPE(o));
 
-    if (!Px_PersistenceCheck(o, n, v))
+    if (!_Px_objobjargproc_ass(o, n, v))
         return -1;
 
-    if (Py_HAS_RWLOCK(o))
-        _write_lock(o);
+    _Px_WRITE_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_setattro)
         result = (*tp->tp_setattro)(o, n, v);
     else
         result = PyObject_GenericSetAttr(o, n, v);
-    if (Py_HAS_RWLOCK(o))
-        _write_unlock(o);
+    _Px_WRITE_UNLOCK(o);
     return result;
 }
 
@@ -345,15 +360,13 @@ _PyObject_GenericGetAttr(PyObject *o, PyObject *n)
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
 
-    if (Py_HAS_RWLOCK(o))
-        _read_lock(o);
+    _Px_READ_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_getattro)
         result = (*tp->tp_getattro)(o, n);
     else
         result = PyObject_GenericGetAttr(o, n);
-    if (Py_HAS_RWLOCK(o))
-        _read_unlock(o);
+    _Px_READ_UNLOCK(o);
 
     return result;
 }
@@ -365,11 +378,10 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
     int result;
     assert(Py_ORIG_TYPE(o));
 
-    if (!Px_PersistenceCheck(o, NULL, v))
+    if (!_Px_objobjargproc_ass(o, NULL, v))
         return -1;
 
-    if (Py_HAS_RWLOCK(o))
-        _write_lock(o);
+    _Px_WRITE_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_setattr)
         result = (*tp->tp_setattr)(o, n, v);
@@ -381,8 +393,7 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
         result = PyObject_GenericSetAttr(o, s, v);
         Py_DECREF(s);
     }
-    if (Py_HAS_RWLOCK(o))
-        _write_unlock(o);
+    _Px_WRITE_UNLOCK(o);
     return result;
 }
 
@@ -392,8 +403,8 @@ _PyObject_GetAttrString(PyObject *o, char *n)
     PyTypeObject *tp;
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
-    if (Py_HAS_RWLOCK(o))
-        _read_lock(o);
+
+    _Px_READ_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_getattr)
         result = (*tp->tp_getattr)(o, n);
@@ -405,15 +416,66 @@ _PyObject_GetAttrString(PyObject *o, char *n)
         result = PyObject_GenericGetAttr(o, s);
         Py_DECREF(s);
     }
-    if (Py_HAS_RWLOCK(o))
-        _read_unlock(o);
+    _Px_READ_UNLOCK(o);
 
     return result;
 }
 
+/* MappingMethods */
+Py_ssize_t
+_Px_mp_length(PyObject *o)
+{
+    Py_ssize_t result;
+    assert(Py_ORIG_TYPE(o));
+    _Px_READ_LOCK(o);
+    result = Py_ORIG_TYPE_CAST(o)->tp_as_mapping->mp_length(o);
+    _Px_READ_UNLOCK(o);
+    return result;
+}
+
+PyObject *
+_Px_mp_subcript(PyObject *o, PyObject *k)
+{
+    PyObject *result;
+    assert(Py_ORIG_TYPE(o));
+    _Px_READ_LOCK(o);
+    result = Py_ORIG_TYPE_CAST(o)->tp_as_mapping->mp_subscript(o, k);
+    _Px_READ_UNLOCK(o);
+    return result;
+}
+
+int
+_Px_mp_ass_subscript(PyObject *o, PyObject *k, PyObject *v)
+{
+    int result;
+    assert(Py_ORIG_TYPE(o));
+    if (!_Px_objobjargproc_ass(o, k, v))
+        return -1;
+    _Px_WRITE_LOCK(o);
+    result = Py_ORIG_TYPE_CAST(o)->tp_as_mapping->mp_ass_subscript(o, k, v);
+    _Px_WRITE_UNLOCK(o);
+    return result;
+}
+
+/* SequenceMethods */
+Py_ssize_t
+_Px_sq_length(PyObject *o)
+{
+    Py_ssize_t result;
+    assert(Py_ORIG_TYPE(o));
+    _Px_READ_LOCK(o);
+    result = Py_ORIG_TYPE_CAST(o)->tp_as_sequence->sq_length(o);
+    _Px_READ_UNLOCK(o);
+    return result;
+}
+
+
 char
 _PyObject_PrepOrigType(PyObject *o)
 {
+    PyMappingMethods *old_mm, *new_mm;
+    /*PySequenceMethods *old_sm, *new_sm;*/
+
     if (!Py_ORIG_TYPE(o)) {
         PyTypeObject *type = Py_TYPE(o), *tp;
         size_t size;
@@ -460,8 +522,72 @@ _PyObject_PrepOrigType(PyObject *o)
         tp->tp_getattro = _PyObject_GenericGetAttr;
         tp->tp_setattr  = _PyObject_SetAttrString;
         tp->tp_getattr  = _PyObject_GetAttrString;
+
+        old_mm = type->tp_as_mapping;
+        if (old_mm && old_mm->mp_subscript) {
+            size = sizeof(PyMappingMethods);
+            new_mm = (PyMappingMethods *)PyMem_MALLOC(size);
+            if (!new_mm)
+                goto free_m;
+
+            memcpy(new_mm, old_mm, size);
+
+            new_mm->mp_subscript = _Px_mp_subcript;
+
+            new_mm->mp_length = (old_mm->mp_length ? _Px_mp_length : 0);
+            new_mm->mp_ass_subscript = (
+                old_mm->mp_ass_subscript ? _Px_mp_ass_subscript : 0
+            );
+
+            tp->tp_as_mapping = new_mm;
+        }
+
+        /*
+        old_sm = type->tp_as_sequence;
+        if (old_sm) {
+            assert(old_sm->sq_item);
+            size = sizeof(PySequenceMethods);
+            new_sm = (PySequenceMethods *)PyMem_MALLOC(size);
+            if (!new_sm)
+                goto free_new_mm;
+
+            memcpy(new_sm, old_sm, size);
+
+            new_sm->sq_item = _Px_sq_item;
+
+            new_sm->sq_length = (old_sm->sq_length ? _Px_sq_length : 0);
+            new_sm->sq_concat = (old_sm->sq_concat ? _Px_sq_concat : 0);
+            new_sm->sq_repeat = (old_sm->sq_repeat ? _Px_sq_repeat : 0);
+            new_sm->sq_ass_item = (old_sm->sq_ass_item ? _Px_sq_ass_item : 0);
+            new_sm->sq_contains = (old_sm->sq_contains ? _Px_sq_contains : 0);
+            new_sm->sq_inplace_concat = (
+                old_sm->sq_inplace_concat ? _Px_sq_inplace_concat : 0
+            );
+            new_sm->sq_inplace_repeat = (
+                old_sm->sq_inplace_repeat ? _Px_sq_inplace_repeat : 0
+            );
+
+            tp->tp_as_sequence = new_sm;
+        }
+        */
+
+        goto check_invariants;
+
+        /*
+    free_new_mm:
+        PyMem_FREE(new_mm);
+        */
+
+    free_m:
+        PyMem_FREE(m);
+
+        PyErr_NoMemory();
+        goto error;
+
     }
 
+check_invariants:
+#ifdef Py_DEBUG
     assert(Py_ORIG_TYPE(o));
     assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc);
     assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc != _PyObject_Dealloc);
@@ -470,7 +596,45 @@ _PyObject_PrepOrigType(PyObject *o)
     assert(Py_TYPE(o)->tp_getattro == _PyObject_GenericGetAttr);
     assert(Py_TYPE(o)->tp_setattr  == _PyObject_SetAttrString);
     assert(Py_TYPE(o)->tp_getattr  == _PyObject_GetAttrString);
+    old_mm = (Py_ORIG_TYPE_CAST(o)->tp_as_mapping);
+    if (old_mm && old_mm->mp_subscript) {
+        new_mm = Py_TYPE(o)->tp_as_mapping;
+        assert(new_mm->mp_subscript == _Px_mp_subcript);
+        assert(old_mm->mp_length ? (new_mm->mp_length == _Px_mp_length) : 1);
+        assert(
+            !old_mm->mp_ass_subscript ? 1 : (
+                new_mm->mp_ass_subscript == _Px_mp_ass_subscript
+            )
+        );
+    }
+    /*
+    old_sm = (Py_ORIG_TYPE_CAST(o)->tp_as_sequence);
+    if (old_sm) {
+        new_sm = Py_TYPE(o)->tp_as_sequence;
+        assert(new_sm->sq_item);
+        assert(new_sm->sq_item == _Px_sq_item);
+        assert(old_sm->sq_length ? (new_sm->sq_length == _Px_sq_length) : 1);
+        assert(old_sm->sq_concat ? (new_sm->sq_concat == _Px_sq_concat) : 1);
+        assert(old_sm->sq_repeat ? (new_sm->sq_repeat == _Px_sq_repeat) : 1);
+        assert(old_sm->sq_ass_item ? (new_sm->sq_ass_item == _Px_sq_ass_item) : 1);
+        assert(old_sm->sq_contains ? (new_sm->sq_contains == _Px_sq_contains) : 1);
+        assert(
+            !old_sm->sq_inplace_concat ? 1 : (
+                new_sm->sq_inplace_concat == _Px_sq_inplace_concat
+            )
+        );
+        assert(
+            !old_sm->sq_inplace_repeat ? 1 : (
+                new_sm->sq_inplace_repeat == _Px_sq_inplace_repeat
+            )
+        );
+    }
+    */
+#endif
     return 1;
+error:
+    assert(PyErr_Occurred());
+    return 0;
 }
 
 char
@@ -1730,7 +1894,8 @@ _PxState_ReleaseContext(PxState *px, Context *c)
     register Context *last;
     assert(c->refcnt == 0);
     if (c->persisted_count > 0) {
-        Object *o;
+
+        assert(c->is_persisted);
 
         InterlockedIncrement(&(px->contexts_persisted));
         InterlockedDecrement(&(px->active));
@@ -1738,11 +1903,6 @@ _PxState_ReleaseContext(PxState *px, Context *c)
 
         c->is_persisted = 0;
         c->was_persisted = 1;
-
-        for (o = c->persist.first; o; o = o->next) {
-            Py_PXFLAGS(o->op) &= ~Py_PXFLAGS_ISPX;
-            Py_PXFLAGS(o->op) |= Py_PXFLAGS_WASPX;
-        }
 
         return;
     }
@@ -4135,7 +4295,7 @@ void
 Px_DecRef(PyObject *o)
 {
     assert(!Py_PXCTX);
-    assert(Py_WASPX(o));
+    assert(Px_PERSISTED(o));
 
     _Py_DEC_REFTOTAL;
     if ((--((PyObject *)(o))->ob_refcnt) != 0) {
@@ -4156,9 +4316,6 @@ Px_DecRef(PyObject *o)
         assert(0);
     }
 }
-
-/* client */
-
 
 /* socket */
 
