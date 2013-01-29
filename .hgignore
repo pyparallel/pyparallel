@@ -91,3 +91,4 @@ Modules/_testembed
 .coverage
 coverage/
 htmlcov/
+Lib/distutils/command/wininst-*
