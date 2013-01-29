@@ -14,7 +14,8 @@ DISCARD_HOST = ('discard.snakebite.net',  9)
 DAYTIME_HOST = ('daytime.snakebite.net', 13)
 CHARGEN_HOST = ('chargen.snakebite.net', 19)
 
-SERVICES_IP = socket.getaddrinfo(*ECHO_HOST)[0][4][0]
+#SERVICES_IP = socket.getaddrinfo(*ECHO_HOST)[0][4][0]
+SERVICES_IP = '10.31.8.61'
 
 ECHO_IP     = (SERVICES_IP,  7)
 QOTD_IP     = (SERVICES_IP, 17)
@@ -28,3 +29,15 @@ NO_EB = None
 HOST = '127.0.0.1'
 ADDR = (HOST, 0)
 
+def main():
+    import unittest
+    import async.test.test_primitives
+    import async.test.test_work
+    import async.test.test_fileio
+
+    unittest.testmod(async.test.test_primitives)
+    unittest.testmod(async.test.test_work)
+    unittest.testmod(async.test.test_fileio)
+
+if __name__ == '__main__':
+    main()

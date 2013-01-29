@@ -1274,28 +1274,11 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
 
 #ifdef WITH_PARALLEL
-#define IS_PX  (tstate->is_parallel_thread)
         /* Parallel threads skip the normal thread periodic tasks below. */
 
         if (tstate->is_parallel_thread) {
-            /*
-             * What sort of things will be posted to a parallel thread's
-             * inbox?  Perhaps watchdog inquiries from the parent thread?
-             * Stats requests?
-             */
-
-            /* ....for now, nothing. */
-
-            /*
-             * (And would we really need to do these things every loop
-             *  invocation?  Probably not.)
-             */
-            goto fast_next_opcode;
+            goto fast_next_opcode_notracing;
         }
-
-#else
-#define IS_PX  (0)
-#define HAS_PX (0)
 #endif /* WITH_PARALLEL */
 
 
@@ -1377,7 +1360,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         }
 
         /* Extract opcode and argument */
-
+    fast_next_opcode_notracing:
         opcode = NEXTOP();
         oparg = 0;   /* allows oparg to be stored in a register because
             it doesn't have to be remembered across a full loop */

@@ -13,15 +13,24 @@ extern "C" {
 
 #define Py_PXFLAGS(o)   (((PyObject *)(o))->px_flags)
 
-#define Py_PXFLAGS_DEFAULT              (0)
+#define Py_PXFLAGS_INVALID              (0)
+#define Py_PXFLAGS_ISPY                 (1)
 #define Py_PXFLAGS_ISPX                 (1UL <<  1)
 #define Py_PXFLAGS_RWLOCK               (1UL <<  2)
 #define Py_PXFLAGS_EVENT                (1UL <<  3)
 #define Py_PXFLAGS_WASPX                (1UL <<  4)
+#define Py_PXFLAGS_PERSISTED            (1UL <<  5)
+#define Py_PXFLAGS_PROMOTED             (1UL <<  6)
 
-#define Py_HAS_RWLOCK(o)  (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
-#define Py_HAS_EVENT(o)   (Py_PXFLAGS((o)) & Py_PXFLAGS_EVENT)
-#define Py_WASPX(o)       (Py_PXFLAGS((o)) & Py_PXFLAGS_WASPX)
+#define Py_HAS_RWLOCK(o)    (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
+#define Py_HAS_EVENT(o)     (Py_PXFLAGS((o)) & Py_PXFLAGS_EVENT)
+#define Py_WASPX(o)         (Py_PXFLAGS((o)) & Py_PXFLAGS_WASPX)
+
+#define Px_ISPY(o)          (Py_PXFLAGS((o)) & Py_PXFLAGS_ISPY)
+#define Px_ISPX(o)          (Py_PXFLAGS((o)) & Py_PXFLAGS_ISPX)
+#define Px_WASPX(o)         (Py_PXFLAGS((o)) & Py_PXFLAGS_WASPX)
+#define Px_PERSISTED(o)     (Py_PXFLAGS((o)) & Py_PXFLAGS_PERSISTED)
+#define Px_PROMOTED(o)      (Py_PXFLAGS((o)) & Py_PXFLAGS_PROMOTED)
 
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;

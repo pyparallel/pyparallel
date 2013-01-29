@@ -1,4 +1,6 @@
+import gc
 import unittest
+import _async
 import async
 import time
 
@@ -169,6 +171,8 @@ class TestPrewait(unittest.TestCase):
             if signal:
                 async.signal(signal)
 
+        self.assertEqual(async.active_contexts(), 0)
+
         for i in indexes:
             wait = objs[i]
             signal = None if i == indexes[-1] else objs[i+1]
@@ -191,20 +195,6 @@ class TestPrewait(unittest.TestCase):
     def test_multiple_prewaits_8(self):
         self._test_multiple_prewaits(4)
 
-class TestPersistence(unittest.TestCase):
-    def test_nopersistence_raises_error(self):
-        success = False
-        def cb(o):
-            try:
-                o.foo = 'bar'
-            except async.PersistenceError:
-                success = True
-
-        o = async.object(foo=None)
-        async.submit_work(cb, o)
-        async.run()
-        self.assertTrue(success)
-        self.assertEqual(o.foo, None)
 
 class TestAsyncProtection(unittest.TestCase):
     def test_basic(self):
@@ -264,7 +254,114 @@ class TestAsyncProtection(unittest.TestCase):
         async.run()
         self.assertGreater(d['w'], d['r'])
 
-if __name__ == '__main__':
+class TestPersistence(unittest.TestCase):
+    def test_persistence_basic(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        def cb(w, o):
+            async.wait(w)
+            o.foo = async.rdtsc()
+
+        w = async.prewait(async.object())
+        o = async.object(foo=None)
+        self.assertTrue(async.protected(o))
+        async.submit_work(cb, (w, o))
+        self.assertEqual(async.active_contexts(), 1)
+        self.assertEqual(async.persisted_contexts(), 0)
+        async.signal(w)
+        async.run()
+        self.assertEqual(async.active_contexts(), 0)
+        self.assertEqual(async.persisted_contexts(), 1)
+        del o.foo
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_persistence_via_setattr(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        def cb(w, o):
+            async.wait(w)
+            setattr(o, 'foo', async.rdtsc())
+
+        w = async.prewait(async.object())
+        o = async.object(foo=None)
+        self.assertTrue(async.protected(o))
+        self.assertEqual(async.active_contexts(), 0)
+        async.submit_work(cb, (w, o))
+        self.assertEqual(async.active_contexts(), 1)
+        self.assertEqual(async.persisted_contexts(), 0)
+        async.signal(w)
+        async.run()
+        self.assertEqual(async.active_contexts(), 0)
+        self.assertEqual(async.persisted_contexts(), 1)
+        delattr(o, 'foo')
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def _test_protection_and_persistence(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        gc.disable()
+
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
+
+        def reader(d, name):
+            async.read_lock(o)
+            async.signal(w)         # start writer callback
+            async.wait(r)           # wait for writer callback
+            setattr(d, name, async.rdtsc())
+            async.read_unlock(o)
+
+        def writer(d, name):
+            async.signal(r)         # tell the reader we've entered
+            async.write_lock(o)     # will be blocked until reader unlocks
+            setattr(d, name, async.rdtsc())
+            async.write_unlock(o)
+
+        d = async.object(r=None, w=None)
+        async.submit_wait(r, reader, (d, 'r'))
+        async.submit_wait(w, writer, (d, 'w'))
+        async.signal(r)
+        async.run()
+        self.assertGreater(d.w, d.r)
+        self.assertEqual(async.persisted_contexts(), 2)
+
+    def test_protection_and_persistence2(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        o = async.protect(object())
+        r = async.protect(object())
+        w = async.protect(object())
+
+        def reader(d, name):
+            async.read_lock(o)
+            async.signal(w)         # start writer callback
+            async.wait(r)           # wait for writer callback
+            setattr(d, name, async.rdtsc())
+            async.read_unlock(o)
+
+        def writer(d, name):
+            async.signal(r)         # tell the reader we've entered
+            async.write_lock(o)     # will be blocked until reader unlocks
+            setattr(d, name, async.rdtsc())
+            async.write_unlock(o)
+
+        d = async.object(r=None, w=None)
+        async.submit_wait(r, reader, (d, 'r'))
+        async.submit_wait(w, writer, (d, 'w'))
+        async.signal(r)
+        async.run()
+        self.assertEqual(async.persisted_contexts(), 2)
+        delattr(d, 'w')
+        self.assertEqual(async.persisted_contexts(), 1)
+        delattr(d, 'r')
+        self.assertEqual(async.persisted_contexts(), 0)
+
+
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

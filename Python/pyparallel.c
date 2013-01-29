@@ -26,6 +26,9 @@ size_t _PxObjectSignature = -1;
 size_t _PxSocketSignature = -1;
 int _PxBlockingCallsThreshold = 5;
 
+int _Py_CtrlCPressed = 0;
+int _Py_InstalledCtrlCHandler = 0;
+
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
 
 static PyObject *PyExc_AsyncError;
@@ -254,12 +257,75 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_try_write_lock(obj));
 }
 
+__inline
+Object *
+_PyHeap_NewObject(Context *c)
+{
+    return (Object *)_PyHeap_Malloc(c, sizeof(Object), 0, 0);
+}
+
+__inline
+int
+_PxContext_PersistObject(Context *c, PyObject *p)
+{
+    Object *o;
+    if (Px_PERSISTED(p))
+        return 1;
+
+    o = _PyHeap_NewObject(c);
+    if (!o)
+        return 0;
+
+    if (!c->is_persisted) {
+        c->is_persisted = 1;
+        InterlockedIncrement(&(c->persisted_count));
+    }
+    o->op = p;
+    Py_PXFLAGS(p) |= Py_PXFLAGS_PERSISTED;
+    Py_REFCNT(p) = 1;
+    append_object(&(c->persist), o);
+    return 1;
+}
+
+#define Py_PXCB (_PyParallel_ExecutingCallbackFromMainThread())
+#define Px_XISPX(o) ((o) ? Px_ISPX(o) : 0)
+
+int
+Px_PersistenceCheck(PyObject *o, PyObject *n, PyObject *v)
+{
+#ifdef Py_DEBUG
+    if (!Py_PXCTX && !Py_PXCB) {
+        assert(!Px_ISPX(o));
+        assert(!Px_XISPX(v));
+        assert(!Px_XISPX(n));
+    }
+#endif
+
+    if ((Py_PXCTX || Py_PXCB)) {
+        if (Px_ISPY(o)) {
+            if (Px_XISPX(n)) {
+                if (!_PxContext_PersistObject(Py_ASPX(n)->ctx, n))
+                    return 0;
+            }
+            if (Px_XISPX(v)) {
+                if (!_PxContext_PersistObject(Py_ASPX(v)->ctx, v))
+                    return 0;
+            }
+        }
+    }
+    return 1;
+}
+
 int
 _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
 {
     PyTypeObject *tp;
     int result;
     assert(Py_ORIG_TYPE(o));
+
+    if (!Px_PersistenceCheck(o, n, v))
+        return -1;
+
     if (Py_HAS_RWLOCK(o))
         _write_lock(o);
     tp = Py_ORIG_TYPE_CAST(o);
@@ -278,6 +344,7 @@ _PyObject_GenericGetAttr(PyObject *o, PyObject *n)
     PyTypeObject *tp;
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
+
     if (Py_HAS_RWLOCK(o))
         _read_lock(o);
     tp = Py_ORIG_TYPE_CAST(o);
@@ -297,6 +364,10 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
     PyTypeObject *tp;
     int result;
     assert(Py_ORIG_TYPE(o));
+
+    if (!Px_PersistenceCheck(o, NULL, v))
+        return -1;
+
     if (Py_HAS_RWLOCK(o))
         _write_lock(o);
     tp = Py_ORIG_TYPE_CAST(o);
@@ -557,6 +628,8 @@ _protect(PyObject *obj)
             return NULL;
         InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
         obj->px_flags |= Py_PXFLAGS_RWLOCK;
+        if (!(Px_ISPX(obj) && !(Px_ISPY(obj))))
+            Py_PXFLAGS(obj) |= Py_PXFLAGS_ISPY;
     }
     return obj;
 }
@@ -1311,6 +1384,8 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
     r = _PyHeap_Malloc(c, n, 0, 0);
     if (!r)
         return NULL;
+    if (!p)
+        return r;
     h->mem_reallocs++;
     s->mem_reallocs++;
     memcpy(r, p, n);
@@ -1404,22 +1479,23 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             assert(tp);
             Px_GUARD_MEM(p);
 
-            is_varobj = (tp->tp_itemsize > 0);
-
-            /* XXX: I haven't seen GC/varobjects use this approach yet. */
-            assert(!is_varobj);
-
             /* Need to manually allocate x + o storage. */
             x = (PxObject *)_PyHeap_Malloc(c, _Px_SZ(0), 0, 0);
             if (!x)
                 return PyErr_NoMemory();
+
             o = _Px_O_PTR(x, 0);
             n = p;
 
             Py_TYPE(n) = tp;
             Py_REFCNT(n) = -1;
 
-            (c->stats.objects)++;
+            if (is_varobj = (tp->tp_itemsize > 0)) {
+                (c->stats.varobjs)++;
+                Py_SIZE(n) = nitems;
+            } else
+                (c->stats.objects)++;
+
         } else {
             /* Case 3: PyObject_GC_Resize called.  Object to resize may or may
              * not be from a parallel context.  Doesn't matter either way as
@@ -1653,6 +1729,24 @@ _PxState_ReleaseContext(PxState *px, Context *c)
 {
     register Context *last;
     assert(c->refcnt == 0);
+    if (c->persisted_count > 0) {
+        Object *o;
+
+        InterlockedIncrement(&(px->contexts_persisted));
+        InterlockedDecrement(&(px->active));
+        InterlockedDecrement(&(px->contexts_active));
+
+        c->is_persisted = 0;
+        c->was_persisted = 1;
+
+        for (o = c->persist.first; o; o = o->next) {
+            Py_PXFLAGS(o->op) &= ~Py_PXFLAGS_ISPX;
+            Py_PXFLAGS(o->op) |= Py_PXFLAGS_WASPX;
+        }
+
+        return;
+    }
+
     assert(c->ttl >= 1 && c->ttl <= 4);
     assert(c->next == NULL);
     assert(c->prev == NULL);
@@ -2426,6 +2520,12 @@ _async_active_contexts(PyObject *self, PyObject *args)
     return PyLong_FromLong(PXSTATE()->contexts_active);
 }
 
+PyObject *
+_async_persisted_contexts(PyObject *self, PyObject *args)
+{
+    return PyLong_FromLong(PXSTATE()->contexts_persisted);
+}
+
 __inline
 void
 incref_args(Context *c)
@@ -2466,15 +2566,88 @@ decref_waitobj_args(Context *c)
     Py_DECREF(c->waitobj_timeout);
 }
 
-int
-_PxState_PurgeContexts(PxState *px)
+Context *
+_PxState_FreeContext(PxState *px, Context *c)
 {
     Heap *h;
     Stats *s;
     Object *o;
-    register Context *c;
-    Context *prev, *next;
     PxListItem *item;
+    Context *prev, *next;
+
+    assert(c->px == px);
+
+    prev = c->prev;
+    next = c->next;
+
+    if (px->ctx_first == c)
+        px->ctx_first = next;
+
+    if (px->ctx_last == c)
+        px->ctx_last = prev;
+
+    if (prev)
+        prev->next = next;
+
+    if (next)
+        next->prev = prev;
+
+    /* xxx todo: check refcnts of func/args/kwds etc? */
+    decref_args(c);
+
+    if (c->tp_wait)
+        decref_waitobj_args(c);
+
+    h = c->h;
+    s = &(c->stats);
+    _PyHeap_FastFree(h, s, c->error);
+    _PyHeap_FastFree(h, s, c->errback_completed);
+    _PyHeap_FastFree(h, s, c->callback_completed);
+    _PyHeap_FastFree(h, s, c->outgoing);
+
+    if (c->last_leak)
+        free(c->last_leak);
+
+    if (c->errors_tuple)
+        _PyHeap_FastFree(h, s, c->errors_tuple);
+
+    item = PxList_Flush(c->decrefs);
+    while (item) {
+        PxListItem *next = PxList_Next(item);
+        Py_XDECREF((PyObject *)item->p1);
+        Py_XDECREF((PyObject *)item->p2);
+        Py_XDECREF((PyObject *)item->p3);
+        Py_XDECREF((PyObject *)item->p4);
+        _PyHeap_Free(c, item);
+        item = next;
+    }
+
+    for (o = c->events.first; o; o = o->next) {
+        assert(Py_HAS_EVENT(o));
+        assert(Py_EVENT(o));
+        PyEvent_DESTROY(o);
+    }
+
+    px->contexts_destroyed++;
+
+    if (!c->was_persisted) {
+        InterlockedDecrement(&(px->active));
+        InterlockedDecrement(&(px->contexts_active));
+    }
+
+#ifdef Py_DEBUG
+    _PxContext_UnregisterHeaps(c);
+#endif
+
+    HeapDestroy(c->heap_handle);
+    free(c);
+    return next;
+}
+
+int
+_PxState_PurgeContexts(PxState *px)
+{
+    Context *c;
     int destroyed = 0;
 
     if (!px->ctx_first)
@@ -2489,103 +2662,38 @@ _PxState_PurgeContexts(PxState *px)
         }
         assert(c->ttl == 0);
 
-        /* xxx todo: check refcnts of func/args/kwds etc? */
-        decref_args(c);
-
-        if (c->tp_wait)
-            decref_waitobj_args(c);
-
-        h = c->h;
-        s = &(c->stats);
-        _PyHeap_FastFree(h, s, c->error);
-        _PyHeap_FastFree(h, s, c->errback_completed);
-        _PyHeap_FastFree(h, s, c->callback_completed);
-        _PyHeap_FastFree(h, s, c->outgoing);
-
-        if (c->last_leak)
-            free(c->last_leak);
-
-        if (c->errors_tuple)
-            _PyHeap_FastFree(h, s, c->errors_tuple);
-
-        /* xxx todo: iterate over objects and check for any __dels__? */
-        prev = c->prev;
-        next = c->next;
-
-        if (px->ctx_first == c)
-            px->ctx_first = next;
-
-        if (px->ctx_last == c)
-            px->ctx_last = prev;
-
-        if (prev)
-            prev->next = next;
-
-        if (next)
-            next->prev = prev;
-
-        item = PxList_Flush(c->decrefs);
-        while (item) {
-            PxListItem *next = PxList_Next(item);
-            Py_XDECREF((PyObject *)item->p1);
-            Py_XDECREF((PyObject *)item->p2);
-            Py_XDECREF((PyObject *)item->p3);
-            Py_XDECREF((PyObject *)item->p4);
-            _PyHeap_Free(c, item);
-            item = next;
-        }
-
-        for (o = c->events.first; o != NULL; o = o->next) {
-            assert(Py_HAS_EVENT(o));
-            assert(Py_EVENT(o));
-            PyEvent_DESTROY(o);
-        }
-
-#ifdef Py_DEBUG
-        _PxContext_UnregisterHeaps(c);
-#endif
-
-        HeapDestroy(c->heap_handle);
-        free(c);
+        c = _PxState_FreeContext(px, c);
         destroyed++;
-        c = next;
-        InterlockedDecrement(&(px->active));
     }
 
-    if (destroyed) {
-        px->contexts_destroyed += destroyed;
-        px->contexts_active -= destroyed;
-    }
     return destroyed;
 }
 
-__inline
-int
-_is_nowait_item(PxListItem *item)
+BOOL
+_Py_HandleCtrlC(DWORD ctrltype)
 {
-    Context *c = (Context *)item->from;
-    if (c->error != item || (void *)item->when == item->p4) {
-        assert(c->error != item);
-        assert((void *)item->when == item->p4);
-        return 1;
+    if (ctrltype == CTRL_C_EVENT) {
+        _Py_sfence();
+        _Py_CtrlCPressed = 1;
+        _Py_lfence();
+        _Py_clflush(&_Py_CtrlCPressed);
+        return TRUE;
     }
-    return 0;
+    return FALSE;
 }
 
-PyObject *
-_handle_parallel_error_item(PxListItem *item)
+int
+_Py_CheckCtrlC(void)
 {
-    PxState *px = PXSTATE();
+    Py_GUARD
 
-    assert(PyExceptionClass_Check((PyObject *)item->p1));
-    PyErr_Restore((PyObject *)item->p1,
-                  (PyObject *)item->p2,
-                  (PyObject *)item->p3);
+    if (_Py_CtrlCPressed) {
+        _Py_CtrlCPressed = 0;
+        PyErr_SetNone(PyExc_KeyboardInterrupt);
+        return 1;
+    }
 
-    PxList_Transfer(px->finished, item);
-    InterlockedIncrement64(&(px->done));
-
-    return NULL;
+    return 0;
 }
 
 PyObject *
@@ -2612,6 +2720,17 @@ _async_run_once(PyObject *self, PyObject *args)
     PyFrameObject *old_frame;
     Py_GUARD
 
+    if (PyErr_CheckSignals() || _Py_CheckCtrlC())
+        return NULL;
+
+    if (!_Py_InstalledCtrlCHandler) {
+        if (!SetConsoleCtrlHandler(_Py_HandleCtrlC, TRUE)) {
+            PyErr_SetFromWindowsErr(0);
+            return NULL;
+        }
+        _Py_InstalledCtrlCHandler = 1;
+    }
+
     tstate = get_main_thread_state();
 
     px = (PxState *)tstate->px;
@@ -2619,6 +2738,7 @@ _async_run_once(PyObject *self, PyObject *args)
     if (px->submitted == 0 &&
         px->waits_submitted == 0 &&
         px->persistent == 0 &&
+        px->contexts_persisted == 0 &&
         px->contexts_active == 0)
     {
         PyErr_SetNone(PyExc_AsyncRunCalledWithoutEventsError);
@@ -2649,6 +2769,8 @@ _async_run_once(PyObject *self, PyObject *args)
     }
 
 start:
+    if (PyErr_CheckSignals())
+        return NULL;
     /* First error wins. */
     item = PxList_Pop(px->errors);
     if (item) {
@@ -2977,7 +3099,7 @@ _async_submit_work(PyObject *self, PyObject *args)
     incref_args(c);
 
     c->px->contexts_created++;
-    c->px->contexts_active++;
+    InterlockedIncrement(&(c->px->contexts_active));
     result = (Py_INCREF(Py_None), Py_None);
     goto done;
 
@@ -3037,11 +3159,14 @@ _async_run(PyObject *self, PyObject *args)
     PxState *px = PXSTATE();
     int i = 0;
     long active_contexts = 0;
+    long persisted_contexts = 0;
     do {
         i++;
         active_contexts = px->contexts_active;
+        persisted_contexts = px->contexts_persisted;
         if (Py_VerboseFlag)
-            PySys_FormatStdout("_async.run(%d) [%d]\n", i, active_contexts);
+            PySys_FormatStdout("_async.run(%d) [%d/%d]\n", i,
+                               active_contexts, persisted_contexts);
         assert(active_contexts >= 0);
         if (active_contexts == 0)
             break;
@@ -3096,7 +3221,7 @@ _async_submit_wait(PyObject *self, PyObject *args)
     incref_waitobj_args(c);
 
     c->px->contexts_created++;
-    c->px->contexts_active++;
+    InterlockedIncrement(&(c->px->contexts_active));
     result = (Py_INCREF(Py_None), Py_None);
     goto done;
 
@@ -3123,63 +3248,6 @@ _async_submit_io(PyObject *self, PyObject *args)
 {
     return NULL;
 }
-
-/*
-PyObject *
-_submit_io(PyObject *self, PyObject *args, int io_type)
-{
-    PyObject *o;
-    PyObject *result = NULL;
-    Context  *c;
-    PxState  *px;
-
-    PTP_WIN32_IO_CALLBACK cb;
-
-    c = new_context();
-    if (!c)
-        return NULL;
-
-    px = c->px;
-
-    if (!extract_writeio_args(args, c))
-        goto free_context;
-
-    cb = _PyParallel_IOCallback;
-    c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
-    if (!c->tp_wait) {
-        PyErr_SetFromWindowsErr(0);
-        goto free_context;
-    }
-
-    if (!_PyEvent_TryCreate(c->waitobj))
-        goto free_context;
-
-    SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
-
-    InterlockedIncrement64(&(px->waits_submitted));
-    InterlockedIncrement(&(px->waits_pending));
-    InterlockedIncrement(&(px->active));
-    c->stats.submitted = _Py_rdtsc();
-
-    incref_waitobj_args(c);
-
-    c->px->contexts_created++;
-    c->px->contexts_active++;
-    result = (Py_INCREF(Py_None), Py_None);
-    goto done;
-
-free_context:
-    HeapDestroy(c->heap_handle);
-    free(c);
-
-done:
-    if (!result)
-        assert(PyErr_Occurred());
-    return result;
-    PyObject *result = NULL;
-    return result;
-}
-*/
 
 #define PxSocketIO_Check(o) (0)
 
@@ -3312,7 +3380,7 @@ try_io:
     InterlockedIncrement(&(px->active));
     c->stats.submitted = _Py_rdtsc();
     c->px->contexts_created++;
-    c->px->contexts_active++;
+    InterlockedIncrement(&(c->px->contexts_active));
 
     success = WriteFile(f->h, io->buf, io->size, NULL, &(io->overlapped));
     if (!success) {
@@ -3354,7 +3422,7 @@ free_io:
     }
 
 free_context:
-    px->contexts_active--;
+    InterlockedDecrement(&(px->contexts_active));
     px->contexts_destroyed++;
     free(c);
 
@@ -3936,6 +4004,7 @@ PyDoc_STRVAR(_async_submit_class_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_client_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_submit_server_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_active_contexts_doc, "XXX TODO\n");
+PyDoc_STRVAR(_async_persisted_contexts_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_signal_and_wait_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_is_parallel_thread_doc, "XXX TODO\n");
 PyDoc_STRVAR(_async_call_from_main_thread_doc, "XXX TODO\n");
@@ -4050,6 +4119,19 @@ _PxMem_Free(void *p)
 }
 
 void
+_Px_NegativePersistedCount(const char *fname, int lineno, Context *c, int count)
+{
+    char buf[300];
+
+    PyOS_snprintf(buf, sizeof(buf),
+                  "%s:%i context at %p has negative ref count "
+                  "%" PY_FORMAT_SIZE_T "d",
+                  fname, lineno, c, count);
+    Py_FatalError(buf);
+}
+
+
+void
 Px_DecRef(PyObject *o)
 {
     assert(!Py_PXCTX);
@@ -4059,10 +4141,18 @@ Px_DecRef(PyObject *o)
     if ((--((PyObject *)(o))->ob_refcnt) != 0) {
         _Py_CHECK_REFCNT(o);
     } else {
-        /* Check whether or not the object needs to be promoted.
-         * Is it the last object marked persistent?  If so, decref the
-         * context.
-         */
+        if (Px_PERSISTED(o)) {
+            Context *c = Py_ASPX(o)->ctx;
+            int count = InterlockedDecrement(&(c->persisted_count));
+            if (count < 0)
+                _Px_NegativePersistedCount(__FILE__, __LINE__, c, count);
+            else if (count == 0) {
+                InterlockedDecrement(&(c->px->contexts_persisted));
+                _PxState_FreeContext(c->px, c);
+            }
+            return;
+        }
+
         assert(0);
     }
 }
@@ -4371,6 +4461,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
     _ASYNC_N(is_parallel_thread),
+    _ASYNC_N(persisted_contexts),
     _ASYNC_V(call_from_main_thread),
     _ASYNC_V(call_from_main_thread_and_wait),
 

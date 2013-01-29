@@ -85,9 +85,38 @@ whose size is determined when the object is allocated.
 #define _Py_NOT_PARALLEL ((void *)_Py_DEADBEEF)
 #define _Py_IS_PARALLEL  ((void *)_Px_DEADBEEF)
 
+#ifdef MS_WINDOWS
+/* So dodgy putting this in object.h. */
+#ifdef _WIN64
+#pragma warning(push)
+#pragma warning(disable:4324)   // structure padded due to align()
+typedef struct __declspec(align(16)) _Py_SLIST_ENTRY *Py_PSLIST_ENTRY;
+typedef struct __declspec(align(16)) _Py_SLIST_ENTRY {
+    Py_PSLIST_ENTRY Next;
+} Py_SLIST_ENTRY;
+#pragma warning(pop)
+
+typedef struct _Py_SLIST_ENTRY32 {
+    unsigned long Next;
+} Py_SLIST_ENTRY32, *Py_PSLIST_ENTRY32;
+
+#else
+typedef struct _Py_SINGLE_LIST_ENTRY {
+    struct _Py_SINGLE_LIST_ENTRY *Next;
+} Py_SINGLE_LIST_ENTRY, *Py_PSINGLE_LIST_ENTRY;
+
+#define Py_SLIST_ENTRY Py_SINGLE_LIST_ENTRY
+#define _Py_SLIST_ENTRY _Py_SINGLE_LIST_ENTRY
+#define Py_PSLIST_ENTRY Py_PSINGLE_LIST_ENTRY
+
+typedef Py_SLIST_ENTRY Py_SLIST_ENTRY32, *Py_PSLIST_ENTRY32;
+#endif
+#endif
+
 #define _PyObject_HEAD_EXTRA            \
     void   *is_px;                      \
     void   *px;                         \
+    Py_SLIST_ENTRY slist_entry;         \
     size_t  px_flags;                   \
     void   *srw_lock;                   \
     void   *event;                      \
@@ -98,12 +127,14 @@ whose size is determined when the object is allocated.
 #define _PyObject_EXTRA_INIT            \
     (void *)_Py_NOT_PARALLEL,           \
     (void *)_Py_NOT_PARALLEL,           \
-    0,                                  \
+    NULL,                               \
+    Py_PXFLAGS_ISPY,                    \
     NULL,                               \
     NULL,                               \
     NULL,                               \
     (struct _object *)_Py_NOT_PARALLEL, \
     (struct _object *)_Py_NOT_PARALLEL,
+
 #endif /* WITH_PARALLEL */
 
 
@@ -854,7 +885,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 #else /* !WITH_PARALLEL */
 
 #define Py_INCREF(op)                                         \
-    (!(!Py_PXCTX && (Py_ISPY(op) || Py_WASPX(op))) ?          \
+    (!(!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op))) ?      \
         ((void)0) : (                                         \
             _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
             (((PyObject*)(op))->ob_refcnt++)                  \

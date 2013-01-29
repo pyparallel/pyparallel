@@ -12,6 +12,8 @@ extern "C" {
 
 #define E2I(p) ((PxListItem  *)p)
 #define I2E(p) ((PxListEntry *)p)
+#define O2I(o) ((PxListEntry *)(((PyObject *)(o))->slist_entry))
+#define I2O(i) (_Py_CAST_BACK(i, PyObject, slist_entry))
 
 #define PxListHead  SLIST_HEADER
 #define PxListEntry SLIST_ENTRY
@@ -21,7 +23,7 @@ extern "C" {
 /* Fill up 64-bytes. */
 #ifndef _WIN64
 typedef struct _PxListItem32 {
-    __declspec(align(16)) PxListEntry entry;
+    __declspec(align(16)) PxListEntry slist_entry;
     __declspec(align(8))  __int64  when;
     __declspec(align(8))  void    *from;
     __declspec(align(8))  void    *p1;
@@ -33,7 +35,7 @@ typedef struct _PxListItem32 PxListItem;
 
 #else
 typedef struct _PxListItem64 {
-    PxListEntry   entry; /* aligned to 16-bytes */
+    PxListEntry   slist_entry; /* aligned to 16-bytes */
     unsigned __int64 when;
     void         *from;
     void         *p1;
@@ -50,7 +52,7 @@ static __inline
 PxListItem *
 PxList_Next(PxListItem *item)
 {
-    return E2I(item->entry.Next);
+    return E2I(item->slist_entry.Next);
 }
 
 static __inline
@@ -129,8 +131,8 @@ static __inline
 PxListItem *
 PxList_SeverFromNext(PxListItem *item)
 {
-    register PxListItem *next = E2I(item->entry.Next);
-    item->entry.Next = NULL;
+    register PxListItem *next = E2I(item->slist_entry.Next);
+    item->slist_entry.Next = NULL;
     return next;
 }
 
@@ -224,18 +226,20 @@ static __inline
 PxListItem *
 PxList_Push(PxListHead *head, PxListItem *item)
 {
-    return E2I(InterlockedPushEntrySList(head, I2E(&item->entry)));
+    return E2I(InterlockedPushEntrySList(head, I2E(&item->slist_entry)));
 }
+#define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2I((o)))))
 
 static __inline
 PxListItem *
 PxList_Transfer(PxListHead *head, PxListItem *item)
 {
-    register PxListItem *next = E2I(item->entry.Next);
-    item->entry.Next = NULL;
+    register PxListItem *next = E2I(item->slist_entry.Next);
+    item->slist_entry.Next = NULL;
     PxList_Push(head, item);
     return next;
 }
+#define PxList_TransferObject(h, o) (I2O(PxList_Transfer(h, O2I(o))))
 
 #if (Py_NTDDI >= 0x06020000)
 static __inline
@@ -255,6 +259,7 @@ PxList_Pop(PxListHead *head)
 {
     return E2I(InterlockedPopEntrySList(head));
 }
+#define PxList_PopObject(h) (I2O(PxList_Pop(h)))
 
 #else
 

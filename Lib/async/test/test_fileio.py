@@ -191,5 +191,10 @@ class TestFileIO(unittest.TestCase):
         async.run()
         f.close()
 
-if __name__ == '__main__':
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()
+
+# vim:set ts=8 sw=4 sts=4 tw=78 et:

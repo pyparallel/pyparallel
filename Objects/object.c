@@ -50,7 +50,8 @@ static PyObject refchain = {&refchain, &refchain};
 static PyObject refchain = {
     _Py_NOT_PARALLEL,
     _Py_NOT_PARALLEL,
-    0,
+    NULL,
+    Py_PXFLAGS_ISPY,
     NULL,
     NULL,
     NULL,

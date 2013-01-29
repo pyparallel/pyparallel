@@ -195,8 +195,10 @@ class TestSubmitWork(unittest.TestCase):
         _async.submit_work(f, None, None, None, eb)
         _async.run()
 
+def main():
+    unittest.main()
 
 if __name__ == '__main__':
-    unittest.main()
+    main()
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

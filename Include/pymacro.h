@@ -69,4 +69,25 @@
 /* Check if pointer "p" is aligned to "a"-bytes boundary. */
 #define _Py_IS_ALIGNED(p, a) (!((Py_uintptr_t)(p) & (Py_uintptr_t)((a) - 1)))
 
+/* Shortcut for casting to a pointer that we can do arithmetic against. */
+#define _Py_PTR(p) ((Py_uintptr_t)(p))
+/* Add n bytes to pointer p. */
+#define _Py_PTR_ADD(p, n) (_Py_PTR((_Py_PTR(p)) + (_Py_PTR(n))))
+/* Subtract n bytes from pointer p. */
+#define _Py_PTR_SUB(p, n) (_Py_PTR((_Py_PTR(p)) - (_Py_PTR(n))))
+/* Increment pointer p by n sizeof-pointers. */
+#define _Py_PTR_INC(p, n) (_Py_PTR((_Py_PTR(p)) + \
+                           _Py_PTR(n * sizeof(Py_uintptr_t))))
+/* Decrement pointer p by n sizeof-pointers. */
+#define _Py_PTR_DEC(p, n) (_Py_PTR((_Py_PTR(p)) - \
+                           _Py_PTR(n * sizeof(Py_uintptr_t))))
+
+/* Subtract offset of member from type, from pointer p, and cast as type. */
+#define _Py_CAST_BACK(p, type, member) \
+    ((type)(_Py_PTR_SUB(e, offsetof(type, member))))
+
+/* Add offset of member from type, to pointer p, and cast as type. */
+#define _Py_CAST_FWD(p, type, member) \
+    ((type)(_Py_PTR_ADD(e, offsetof(type, member))))
+
 #endif /* Py_PYMACRO_H */

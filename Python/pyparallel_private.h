@@ -290,6 +290,13 @@ typedef struct _PxState {
     PxPages    *pages;
 #endif
 
+    /*
+    PxListHead *free_contexts_4096;
+    PxListHead *free_contexts_8192;
+    PxListHead *free_contexts_16384;
+    short max_free_contexts;
+    */
+
     Context *ctx_first;
     Context *ctx_last;
     unsigned short ctx_minfree;
@@ -309,6 +316,7 @@ typedef struct _PxState {
     long long contexts_created;
     long long contexts_destroyed;
     long contexts_active;
+    long contexts_persisted;
 
     volatile long long io_stalls;
 
@@ -398,6 +406,8 @@ typedef struct _PyParallelContext {
     LARGE_INTEGER filesize;
     LARGE_INTEGER next_read_offset;
 
+    PxListEntry slist_entry;
+
     TP_TIMER *tp_timer;
 
     Context *prev;
@@ -434,6 +444,8 @@ typedef struct _PyParallelContext {
     Objects objects;
     Objects varobjs;
     Objects events;
+    Objects persist;
+    Objects promote;
 
     char  tbuf[_PX_TMPBUF_SIZE];
     void *tbuf_base;
@@ -459,6 +471,9 @@ typedef struct _PyParallelContext {
     long done;
 
     int times_finished;
+    char is_persisted;
+    char was_persisted;
+    int persisted_count;
 
 } PyParallelContext, WorkContext, Context;
 
@@ -514,9 +529,9 @@ typedef struct _PxSocket {
     __declspec(align(64))
 
 #ifndef _WIN64
-#define _PxSocket_BUFSIZE (4096-448)
-#else
 #define _PxSocket_BUFSIZE (4096-512)
+#else
+#define _PxSocket_BUFSIZE (4096-576)
 #endif
 
     char buf[_PxSocket_BUFSIZE];
