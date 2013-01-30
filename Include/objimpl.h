@@ -216,7 +216,7 @@ _PyObject_InitHead(PyObject *op)
     op->is_px = _Py_NOT_PARALLEL;
     op->px    = _Py_NOT_PARALLEL;
     op->slist_entry.Next = NULL;
-    op->px_flags  = 0;
+    op->px_flags  = Py_PXFLAGS_ISPY;
     op->srw_lock  = NULL;
     op->event     = NULL;
     op->orig_type = NULL;

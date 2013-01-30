@@ -110,7 +110,7 @@ _PyObject_Dealloc(PyObject *o)
 {
     PyTypeObject *tp;
     PyMappingMethods *mm;
-    PySequenceMethods *sm;
+    //PySequenceMethods *sm;
     destructor d;
 #ifdef Py_DEBUG
     Py_GUARD_OBJ(o);
@@ -123,14 +123,14 @@ _PyObject_Dealloc(PyObject *o)
 
     tp = Py_TYPE(o);
     mm = tp->tp_as_mapping;
-    sm = tp->tp_as_sequence;
+    //sm = tp->tp_as_sequence;
     d = Py_ORIG_TYPE_CAST(o)->tp_dealloc;
     Py_TYPE(o) = Py_ORIG_TYPE(o);
     Py_ORIG_TYPE(o) = NULL;
     (*d)(o);
     PyMem_FREE(tp);
     PyMem_FREE(mm);
-    PyMem_FREE(sm);
+    //PyMem_FREE(sm);
 }
 
 __inline
@@ -471,7 +471,7 @@ _Px_sq_length(PyObject *o)
 
 
 char
-_PyObject_PrepOrigType(PyObject *o)
+_PyObject_PrepOrigType(PyObject *o, PyObject *kwds)
 {
     PyMappingMethods *old_mm, *new_mm;
     /*PySequenceMethods *old_sm, *new_sm;*/
@@ -647,7 +647,7 @@ _PyEvent_TryCreate(PyObject *o)
         success = 0;
         if (Py_ISPX(o))
             PyErr_SetNone(PyExc_WaitError);
-        else if (!_PyObject_PrepOrigType(o))
+        else if (!_PyObject_PrepOrigType(o, 0))
             goto done;
         else if (!PyEvent_CREATE(o))
             PyErr_SetFromWindowsErr(0);
@@ -787,13 +787,13 @@ __inline
 PyObject *
 _protect(PyObject *obj)
 {
+    if (!obj)
+        return NULL;
     if (!_protected(obj)) {
-        if (!_PyObject_PrepOrigType(obj))
+        if (!_PyObject_PrepOrigType(obj, 0))
             return NULL;
         InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
-        obj->px_flags |= Py_PXFLAGS_RWLOCK;
-        if (!(Px_ISPX(obj) && !(Px_ISPY(obj))))
-            Py_PXFLAGS(obj) |= Py_PXFLAGS_ISPY;
+        Py_PXFLAGS(obj) |= Py_PXFLAGS_RWLOCK;
     }
     return obj;
 }
@@ -4088,6 +4088,41 @@ _async__dbg_address(PyObject *self, PyObject *addr)
     Py_RETURN_NONE;
 }
 
+/* Helper inline function that the macros use (allowing breakpoints to be set
+ * at object creation time, which is useful when debugging). */
+__inline
+PyObject *
+_wrap(PyTypeObject *tp, PyObject *args, PyObject *kwds)
+{
+    PyObject *self;
+    Py_GUARD
+    if (!(self = _protect(tp->tp_new(tp, args, kwds))))
+        return NULL;
+
+    if (kwds && !args)
+        args = PyTuple_New(0);
+
+    if (args && tp->tp_init(self, args, kwds)) {
+        Py_DECREF(self);
+        return NULL;
+    }
+
+    return self;
+}
+
+#define _ASYNC_WRAP(name, type)                                                 \
+PyDoc_STRVAR(_async_##name##_doc,                                               \
+"Helper function for creating an async-protected instance of type '##name'\n"); \
+PyObject *                                                                      \
+_async_##name(PyObject *self, PyObject *args, PyObject *kwds)                   \
+{                                                                               \
+    return _wrap(&type, args, kwds);                                            \
+}
+
+_ASYNC_WRAP(set, PySet_Type)
+_ASYNC_WRAP(list, PyList_Type)
+_ASYNC_WRAP(dict, PyDict_Type)
+
 PyDoc_STRVAR(_async_doc,
 "_async module.\n\
 \n\
@@ -4578,6 +4613,9 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(run),
     _ASYNC_O(wait),
     _ASYNC_V(read),
+    _ASYNC_K(set),
+    _ASYNC_K(dict),
+    _ASYNC_K(list),
     //_ASYNC_V(open),
     _ASYNC_V(write),
     _ASYNC_N(rdtsc),

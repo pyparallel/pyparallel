@@ -1,12 +1,3 @@
-import _async
-
-from _async import *
-
-_baseobject = object
-class object:
-    def __init__(self, **kwds):
-        self.__dict__.update(**kwds)
-        _async.protect(self)
 
 class Constant(dict):
     def __init__(self):
@@ -28,6 +19,20 @@ class _CachingBehavior(Constant):
     SequentialScan  = 3
     WriteThrough    = 4
     Temporary       = 5
+CachingBehavior = _CachingBehavior()
+
+_set = set
+_dict = dict
+_list = list
+_object = object
+
+import _async
+from _async import *
+
+class object:
+    def __init__(self, **kwds):
+        self.__dict__.update(kwds)
+        _async.protect(self)
 
 def call_from_main_thread_and_wait(f):
     def decorator(*_args, **_kwds):
@@ -96,6 +101,11 @@ def writefile(filename, buf, callback=None, errback=None):
 
 def read(obj, callback, nbytes=0, errback=None):
     _async.submit_read_io(obj.write, buf, callback, errback)
+
+def prewait(obj=None):
+    if obj is None:
+        obj = object()
+    return _async.prewait(obj)
 
 def pipe(reader, writer, bufsize=0, callback=None, errback=None):
     raise NotImplementedError
