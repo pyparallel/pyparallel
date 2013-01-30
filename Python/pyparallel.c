@@ -4119,7 +4119,6 @@ _async_##name(PyObject *self, PyObject *args, PyObject *kwds)                   
     return _wrap(&type, args, kwds);                                            \
 }
 
-_ASYNC_WRAP(set, PySet_Type)
 _ASYNC_WRAP(list, PyList_Type)
 _ASYNC_WRAP(dict, PyDict_Type)
 
@@ -4613,7 +4612,6 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(run),
     _ASYNC_O(wait),
     _ASYNC_V(read),
-    _ASYNC_K(set),
     _ASYNC_K(dict),
     _ASYNC_K(list),
     //_ASYNC_V(open),

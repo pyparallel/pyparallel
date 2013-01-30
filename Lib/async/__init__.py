@@ -21,7 +21,6 @@ class _CachingBehavior(Constant):
     Temporary       = 5
 CachingBehavior = _CachingBehavior()
 
-_set = set
 _dict = dict
 _list = list
 _object = object

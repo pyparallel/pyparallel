@@ -454,7 +454,6 @@ class TestPersistence(unittest.TestCase):
         self.assertEqual(async.persisted_contexts(), 1)
         del d
         self.assertEqual(async.persisted_contexts(), 0)
-        self.assertEqual(async.persisted_contexts(), 0)
 
     def test_persist_dict_with_delitem(self):
         self.assertEqual(async.persisted_contexts(), 0)
@@ -472,6 +471,42 @@ class TestPersistence(unittest.TestCase):
         self.assertEqual(async.persisted_contexts(), 1)
         del d['foo']
         self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_persist_dict_with_pxobj_as_key(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        o = async.object()
+        d = async.dict()
+
+        def cb():
+            d[async.rdtsc()] = None
+
+        async.submit_wait(o, cb)
+        async.signal(o)
+        async.run()
+        self.assertEqual(async.active_contexts(), 0)
+        self.assertEqual(async.persisted_contexts(), 1)
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_persist_dict_with_multiple_callbacks(self):
+        self.assertEqual(async.persisted_contexts(), 0)
+
+        o = async.object()
+        d = async.dict()
+
+        def cb():
+            d[async.rdtsc()] = None
+
+        async.submit_work(cb)
+        async.submit_work(cb)
+        async.submit_work(cb)
+        async.submit_work(cb)
+        async.run()
+        self.assertEqual(async.active_contexts(), 0)
+        self.assertEqual(async.persisted_contexts(), 4)
+        self.assertEqual(len(d), 4)
+        del d
         self.assertEqual(async.persisted_contexts(), 0)
 
 class TestWraps(unittest.TestCase):
@@ -488,17 +523,6 @@ class TestWraps(unittest.TestCase):
         self.assertEqual(o.foo, 'bar')
         self.assertEqual(o.bar, 'foo')
         self.assertRaises(AttributeError, lambda s: getattr(o, s), 'moo')
-
-    def test_set(self):
-        o = self._test(async.set, set)
-        o.add('foo')
-        self.assertTrue('foo' in o)
-
-    def test_list(self):
-        o = self._test(async.list, list)
-        o.append('foo')
-        self.assertTrue(o[0] == 'foo')
-        self.assertTrue('foo' in o)
 
     def test_dict(self):
         o = self._test(async.dict, dict)
