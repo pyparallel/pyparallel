@@ -25,7 +25,7 @@ extern "C" {
 #       define _Py_rdtsc()              __rdtsc()
 #       define _Py_popcnt_u32(v)        _mm_popcnt_u32(v)
 #       define _Py_popcnt_u64(v)        _mm_popcnt_u64(v)
-#       define _Py_UINT32_BITS_SET(v)   _Py_popcnt_u32(v)
+#       define _Py_UINT32_BITS_SET(v)   Py_popcnt_u32(v)
 #       define _Py_UINT64_BITS_SET(v)   _Py_popcnt_u64(v)
 #   else
 #       error "Intrinsics not available for this platform yet."
@@ -42,6 +42,18 @@ extern "C" {
 #       error "No intrinsics stubs available for this platform."
 #   endif
 #endif
+
+__inline
+int
+Py_popcnt_u32(unsigned int i)
+{
+    i = i - ((i >> 1 & 0x55555555));
+    i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
+    i = (i + (i >> 4)) & 0x0f0f0f0f;
+    i = i + (i >> 8);
+    i = i + (i >> 16);
+    return i & 0x0000003f;
+}
 
 #ifdef __cplusplus
 }
