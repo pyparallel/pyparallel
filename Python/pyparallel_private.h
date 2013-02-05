@@ -13,13 +13,25 @@ extern "C" {
 #include <Windows.h>
 #include "pyparallel.h"
 
+#pragma comment(lib, "ws2_32.lib")
+
+#if defined(_MSC_VER) && _MSC_VER>1201
+  /* Do not include addrinfo.h for MSVC7 or greater. 'addrinfo' and
+   * EAI_* constants are defined in (the already included) ws2tcpip.h.
+   */
+#else
+#  include "../Modules/addrinfo.h"
+#endif
+
 
 #ifdef _WIN64
 #define Px_PTR_ALIGN_SIZE 8U
+#define Px_PTR_ALIGN_RAW 8
 #define Px_UINTPTR unsigned long long
 #define Px_INTPTR long long
 #else
 #define Px_PTR_ALIGN_SIZE 4U
+#define Px_PTR_ALIGN_RAW 4
 #define Px_UINTPTR unsigned long
 #define Px_INTPTR long
 #endif
@@ -95,6 +107,13 @@ extern "C" {
 #define PyAsync_IO_READ      (1UL <<  1)
 #define PyAsync_IO_WRITE     (1UL <<  2)
 
+#define Px_CTXTYPE(c)      (((Context *)c)->context_type)
+
+#define Px_CTXTYPE_WORK    (1)
+#define Px_CTXTYPE_WAIT    (1UL <<  1)
+#define Px_CTXTYPE_SOCK    (1UL <<  2)
+#define Px_CTXTYPE_FILE    (1UL <<  3)
+
 #include "pxlist.h"
 
 typedef struct _cpuinfo {
@@ -165,6 +184,8 @@ typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
 typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
 typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
+
+typedef struct _PxSocketBuf PxSocketBuf;
 
 typedef struct _PyParallelHeap {
     Heap   *sle_prev;
@@ -248,36 +269,34 @@ typedef struct _PxPages {
 #define PxIO_IS_PREALLOC(i) (PxIO_FLAGS(i) == PxIO_PREALLOCATED)
 #define PxIO_IS_ONDEMAND(i) (PxIO_FLAGS(i) == PxIO_ONDEMAND)
 
-typedef struct _PxIO PxIO;
+#define Px_IOTYPE_FILE      (1)
+#define Px_IOTYPE_SOCKET    (1UL <<  1)
 
-typedef struct _PxIOEntry {
-    OVERLAPPED  overlapped;
-    PyObject   *obj;
-    char       *buf;
-    Py_ssize_t  size;
-    Py_ssize_t  bufsize;
-    int         flags;
-    PxIO       *self;
-} PxIOEntry;
+typedef struct _PxIO PxIO;
 
 typedef struct _PxIO {
     __declspec(align(Px_MEM_ALIGN_RAW))
     PxListEntry entry;
     OVERLAPPED  overlapped;
     PyObject   *obj;
-    char       *buf;
-    int         size;
-    Py_ssize_t  bufsize;
+    ULONG       size;
     int         flags;
-    PxIO       *self;
+    __declspec(align(Px_PTR_ALIGN_RAW))
+    ULONG       len;
+    char FAR   *buf;
 } PxIO;
 
+#define PxIO2WSABUF(io) (_Py_CAST_FWD(io, LPWSABUF, PxIO, len))
+#define OL2PxIO(ol)     (_Py_CAST_BACK(ol, PxIO *, PxIO, overlapped))
+
 typedef struct _PxState {
+    PxListHead *retired_contexts;
     PxListHead *errors;
     PxListHead *completed_callbacks;
     PxListHead *completed_errbacks;
     PxListHead *incoming;
     PxListHead *finished;
+    PxListHead *finished_sockets;
 
     PxListHead *io_ondemand;
     PxListHead *io_free;
@@ -395,20 +414,32 @@ typedef struct _PyParallelContext {
     PFILETIME       wait_timeout;
 
     int         io_type;
+    int         io_op;
     TP_IO      *tp_io;
     DWORD       io_status;
     ULONG       io_result;
     ULONG_PTR   io_nbytes;
-    OVERLAPPED *overlapped;
     PxIO       *io;
+    PyObject   *io_obj;
 
-    PyObject *copy_event;
+    OVERLAPPED  overlapped;
+
+    int context_type;
+
+    PxSocketBuf *rbuf_first;
+    PxSocketBuf *rbuf_last;
+
     LARGE_INTEGER filesize;
     LARGE_INTEGER next_read_offset;
 
+    __declspec(align(Px_MEM_ALIGN_RAW))
     PxListEntry slist_entry;
 
     TP_TIMER *tp_timer;
+
+    PyObject    *exc_type;
+    PyObject    *exc_value;
+    PyObject    *exc_traceback;
 
     Context *prev;
     Context *next;
@@ -491,39 +522,152 @@ typedef struct _PxObject {
     size_t       signature;
 } PxObject;
 
+#define Px_SOCKFLAGS(s)     (((PxSocket *)s)->flags)
+
+#define Px_SOCKFLAGS_CLIENT                     (1)
+#define Px_SOCKFLAGS_SERVER                     (1UL <<  1)
+#define Px_SOCKFLAGS_BOUND                      (1UL <<  2)
+#define Px_SOCKFLAGS_PENDING_DISCONNECT         (1UL <<  3)
+#define Px_SOCKFLAGS_DISCONNECTED               (1UL <<  4)
+#define Px_SOCKFLAGS_RECV_MORE                  (1UL <<  5)
+#define Px_SOCKFLAGS_LOST_CONNECTION_CALLED     (1UL <<  6)
+
+#define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
+#define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
+#define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
+
+#define PxSocket_IS_PENDING_DISCONNECT(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PENDING_DISCONNECT)
+
+#define PxSocket_IS_DISCONNECTED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_DISCONNECTED)
+
+#define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
+
+#define PxSocket_RECEIVABLE(c)            \
+    (Px_SOCKFLAGS(c->io_obj) & (          \
+        Px_SOCKFLAGS_PENDING_DISCONNECT | \
+        Px_SOCKFLAGS_DISCONNECTED         \
+    ))
+
+#define PxSocket_CB_CONNECTION_MADE     (1)
+#define PxSocket_CB_DATA_RECEIVED       (1UL <<  1)
+#define PxSocket_CB_LINES_RECEIVED      (1UL <<  2)
+#define PxSocket_CB_EOF_RECEIVED        (1UL <<  3)
+#define PxSocket_CB_CONNECTION_LOST     (1UL <<  4)
+
+#define PxSocket_IO_CONNECT             (1)
+#define PxSocket_IO_ACCEPT              (1UL << 1)
+#define PxSocket_IO_RECV                (1UL << 2)
+#define PxSocket_IO_SEND                (1UL << 3)
+
+typedef struct _PxSocketBuf PxSocketBuf;
+typedef struct _PxSocketBufList PxSocketBufList;
+
+typedef struct _PxSocketBuf {
+    WSAOVERLAPPED ol;
+    WSABUF w;
+    PxSocketBuf *prev;
+    PxSocketBuf *next;
+    size_t signature;
+    /* mimic PyBytesObject herein */
+    PyObject_VAR_HEAD
+    Py_hash_t ob_shash;
+    char ob_sval[1];
+} PxSocketBuf;
+
+
+typedef struct _PxSocketBufList {
+    PyObject_VAR_HEAD
+    /* mimic PyListObject */
+    PyObject **ob_item;
+    Py_ssize_t allocated;
+    WSABUF **wsabufs;
+    int nbufs;
+} PxSocketBufList;
+
+#define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
+#define PxSocketBuf2PyBytesObject(s) \
+    (_Py_CAST_FWD(s, PyBytesObject *, PxSocketBuf, ob_base))
+
+#define PyBytesObject2PxSocketBuf(b)                                  \
+    (PyBytesObject2PxSocketBufSignature(b) == _PxSocketBufSignature ? \
+        (_Py_CAST_BACK(b, PxSocketBuf *, PxSocketBuf, ob_base)) :     \
+        (PxSocketBuf *)NULL                                           \
+    )
+
+#define PyBytesObject2PxSocketBufSignature(b) \
+    (_Py_CAST_BACK(b, size_t, PxSocketBuf, ob_base))
+
+#define IS_SBUF(b)
+
 typedef struct _PxSocket {
     PyObject_HEAD
-    /* internal */
-    PySocketSockObject *sock;
-    WSAOVERLAPPED overlapped;
-    HANDLE completion_port;
+    /* Mirror PySocketSockObject. */
+    SOCKET_T sock_fd;           /* Socket file descriptor */
+    int sock_family;            /* Address family, e.g., AF_INET */
+    int sock_type;              /* Socket type, e.g., SOCK_STREAM */
+    int sock_proto;             /* Protocol type, usually 0 */
+    PyObject *(*errorhandler)(void); /* Error handler; checks
+                                        errno, returns NULL and
+                                        sets a Python exception */
+    double sock_timeout;                 /* Operation timeout in seconds;
+                                        0.0 means non-blocking */
+    int sock_backlog;           /* Backlog specified to listen(n). Used for
+                                   pre-allocating sockets for AcceptEx when
+                                   on Windows. */
 
-    sock_addr_t local;
-    sock_addr_t remote;
-    int         local_addrlen;
-    int         remote_addrlen;
+    struct addrinfo local_addrinfo;
+    struct addrinfo remote_addrinfo;
 
-    /* default handler and callbacks */
-    PyObject *handler;
+    sock_addr_t  local_addr;
+    int          local_addr_len;
+    sock_addr_t  remote_addr;
+    int          remote_addr_len;
 
-    PyObject *connected;
+    int   flags;
+
+    /* endpoint */
+    char *ip;
+    char *host;
+    int   port;
+
+    int       recvbuf_size;
+    int       sendbuf_size;
+
+    PyObject *protocol;
+
+    /*
+    PyObject *connection_made;
     PyObject *data_received;
-    PyObject *lines_received;
+    PyObject *data_sent;
+    PyObject *line_received;
+    PyObject *eof_received;
     PyObject *connection_lost;
+    PyObject *connection_error;
     PyObject *connection_closed;
+    PyObject *connection_timeout;
+
+    PyObject *connection_cleanup;
+
+    PyObject *network_up;
+    PyObject *network_down;
+
     PyObject *exception_handler;
     PyObject *initial_connection_error;
 
-    /* attributes */
     PyObject *initial_bytes_to_send;
+    PyObject *initial_words_to_expect;
     PyObject *initial_regex_to_expect;
-    char      is_client;
-    char      is_connected;
+
     char      line_mode;
     char      wait_for_eol;
     char      auto_reconnect;
     char     *eol[2];
     int       max_line_length;
+
+
+    short     bufsize;
 
     __declspec(align(64))
 
@@ -534,9 +678,231 @@ typedef struct _PxSocket {
 #endif
 
     char buf[_PxSocket_BUFSIZE];
+    */
 } PxSocket;
 
-C_ASSERT(sizeof(PxSocket) == Px_PAGE_SIZE);
+#define PxSocket_PROTOCOL(c)                              \
+    ((PyObject *)((PxSocket *)((Context *)c)->io_obj)->protocol)
+
+#define PxSocket_GET_ATTR(n)                              \
+    (PyObject_HasAttr(PxSocket_PROTOCOL(c), n) ?          \
+        PyObject_GetAttrString(PxSocket_PROTOCOL(c), n) : \
+        Py_None)
+
+void PxSocket_HandleError(PxSocket *s, int op, int errcode);
+
+int PxSocket_ConnectionClosed(PxSocket *s, int op);
+int PxSocket_ConnectionLost(PxSocket *s, int op, int errcode);
+int PxSocket_ConnectionTimeout(PxSocket *s, int op);
+int PxSocket_ConnectionError(PxSocket *s, int op, int errcode);
+int PxSocket_ConnectionDone(PxSocket *s);
+
+void _pxsocket_recv(PxSocket *s, Context *c);
+
+#define _CSTR(s) (#s '\0')
+
+#define PxSocket_ERROR_OTHER    (-1)
+#define PxSocket_ERROR_SYS      (-2)
+
+#define PxSocket_EXCEPTION() do {                         \
+    assert(PyErr_Occurred());                             \
+    PxSocket_HandleException(c, s);                       \
+    return;                                               \
+} while (0)
+
+#define PxSocket_SYSERROR(n) do {                         \
+    PyErr_SetExcFromWindowsErr(0);                        \
+    PxSocket_HandleException(c, s);                       \
+    return;                                               \
+} while (0)
+
+#define PxSocket_WSAERROR(n) do {                         \
+    PxSocket_HandleError(c, s, op, n, WSAGetLastError()); \
+    return;                                               \
+} while (0)
+
+#define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
+
+#define OL2PxSocket(ol) (_Py_CAST_BACK(ol, PxSocket *, PxSocket, overlapped))
+
+#define PxSocket_SET_DISCONNECTED(s) \
+    (Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_DISCONNECTED)
+
+#define PxSocket_CLOSE(s) do {                      \
+    (void)closesocket((SOCKET)s->sock_fd);          \
+} while (0)
+
+static const char *pxsocket_kwlist[] = {
+    "host",
+    "port",
+
+    /* inherited from socket */
+    "family",
+    "type",
+    "proto",
+
+    "protocol",
+
+    /*
+    "connection_made",
+    "data_received",
+    "line_received",
+    "eof_received",
+    "connection_lost",
+    "connection_closed",
+    "connection_timeout",
+    "connection_done",
+
+    "exception_handler",
+    "initial_connection_error",
+
+    "initial_bytes_to_send",
+    "initial_words_to_expect",
+    "initial_regex_to_expect",
+
+    "duplex",
+    "line_mode",
+    "wait_for_eol",
+    "auto_reconnect",
+    "max_line_length",
+    */
+
+    NULL
+};
+
+static const char *pxsocket_protocol_attrs[] = {
+    "connection_made",
+    "data_received",
+    "line_received",
+    "eof_received",
+    "connection_lost",
+    "connection_closed",
+    "connection_timeout",
+    "connection_done",
+
+    "exception_handler",
+    "initial_connection_error",
+
+    "initial_bytes_to_send",
+    "initial_words_to_expect",
+    "initial_regex_to_expect",
+
+    "line_mode",
+    "wait_for_eol",
+    "auto_reconnect",
+    "max_line_length",
+    NULL
+}
+
+static const char *pxsocket_kwlist_formatstring = \
+    /* optional below */
+    "|"
+
+    /* endpoint */
+    "s"     /* host */
+    "i"     /* port */
+
+    /* base */
+    "i"     /* family */
+    "i"     /* type */
+    "i"     /* proto */
+
+    "O"     /* protocol */
+
+    ":socket";
+
+    /* extensions */
+
+//    "O"     /* connection_made */
+//    "O"     /* data_received */
+//    "O"     /* line_received */
+//    "O"     /* eof_received */
+//    "O"     /* connection_lost */
+//    "O"     /* connection_closed */
+//    "O"     /* connection_timeout */
+//    "O"     /* connection_done */
+//
+//    "O"     /* exception_handler */
+//    "O"     /* initial_connection_error */
+//
+//    "O"     /* initial_bytes_to_send */
+//    "O"     /* initial_words_to_expect */
+//    "O"     /* initial_regex_to_expect */
+//
+//    "p"     /* duplex */
+//    "p"     /* line_mode */
+//    "p"     /* wait_for_eol */
+//    "p"     /* auto_reconnect */
+//    "i"     /* max_line_length */
+//
+//    ":socket";
+
+#define PxSocket_PARSE_ARGS                  \
+    args,                                    \
+    kwds,                                    \
+    pxsocket_kwlist_formatstring,            \
+    (char **)pxsocket_kwlist,                \
+    &host,                                   \
+    &(s->port),                              \
+    &(s->sock_family),                       \
+    &(s->sock_type),                         \
+    &(s->sock_proto),                        \
+    &protocol
+    /*
+    &(s->handler)
+    &(s->connection_made),                   \
+    &(s->data_received),                     \
+    &(s->data_sent),                         \
+    &(s->send_failed),                       \
+    &(s->line_received),                     \
+    &(s->eof_received),                      \
+    &(s->connection_lost),                   \
+    &(s->exception_handler),                 \
+    &(s->initial_connection_error),          \
+    &(s->initial_bytes_to_send),             \
+    &(s->initial_words_to_expect),           \
+    &(s->initial_regex_to_expect),           \
+    &(s->line_mode),                         \
+    &(s->wait_for_eol),                      \
+    &(s->auto_reconnect),                    \
+    &(s->max_line_length)
+    */
+
+#define PxSocket_XINCREF(s) do {             \
+    if (Py_PXCTX)                            \
+        break;                               \
+    Py_XINCREF(s->protocol);                 \
+    Py_XINCREF(s->connection_made);          \
+    Py_XINCREF(s->data_received);            \
+    Py_XINCREF(s->data_sent);                \
+    Py_XINCREF(s->line_received);            \
+    Py_XINCREF(s->eof_received);             \
+    Py_XINCREF(s->connection_lost);          \
+    Py_XINCREF(s->exception_handler);        \
+    Py_XINCREF(s->initial_connection_error); \
+    Py_XINCREF(s->initial_bytes_to_send);    \
+    Py_XINCREF(s->initial_words_to_expect);  \
+    Py_XINCREF(s->initial_regex_to_expect);  \
+} while (0)
+
+#define PxSocket_XDECREF(s) do {             \
+    if (Py_PXCTX)                            \
+        break;                               \
+    Py_XDECREF(s->protocol);                 \
+    Py_XDECREF(s->connection_made);          \
+    Py_XDECREF(s->data_received);            \
+    Py_XDECREF(s->data_sent);                \
+    Py_XDECREF(s->line_received);            \
+    Py_XDECREF(s->eof_received);             \
+    Py_XDECREF(s->connection_lost);          \
+    Py_XDECREF(s->exception_handler);        \
+    Py_XDECREF(s->initial_connection_error); \
+    Py_XDECREF(s->initial_bytes_to_send);    \
+    Py_XDECREF(s->initial_words_to_expect);  \
+    Py_XDECREF(s->initial_regex_to_expect);  \
+} while (0)
+
+//C_ASSERT(sizeof(PxSocket) == Px_PAGE_SIZE);
 
 typedef struct _PxClientSocket {
     PxSocket _pxsocket;
@@ -552,12 +918,20 @@ typedef struct _PxServerSocket {
     int auto_reconnect;
 } PxServerSocket;
 
+typedef struct _PxAddrInfo {
+    PyObject_HEAD
+
+
+} PxAddrInfo;
+
 static PyTypeObject PxSocket_Type;
+static PyTypeObject PxSocketBuf_Type;
 static PyTypeObject PxClientSocket_Type;
 static PyTypeObject PxServerSocket_Type;
 
 static PySocketModule_APIObject PySocketModule;
 
+#define PySocket_Type           PySocketModule.Sock_Type
 #define getsockaddrarg          PySocketModule.getsockaddrarg
 #define getsockaddrlen          PySocketModule.getsockaddrlen
 #define makesockaddr            PySocketModule.makesockaddr
@@ -602,3 +976,5 @@ static PySocketModule_APIObject PySocketModule;
 #endif
 
 #endif /* PYPARALLEL_PRIVATE_H */
+
+/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell: */

@@ -1,4 +1,4 @@
-CHARGEN = [
+CHARGEN_DATA = [
 r""" !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefg""",
 r"""!"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefgh""",
 r""""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghi""",
@@ -6,25 +6,34 @@ r"""#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghij""",
 r"""$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijk""",
 ]
 
-QOTD = b'An apple a day keeps the doctor away.\r\n'
+QOTD_DATA = b'An apple a day keeps the doctor away.\r\n'
 
-ECHO_HOST    = ('echo.snakebite.net',     7)
-QOTD_HOST    = ('qotd.snakebite.net',    17)
-DISCARD_HOST = ('discard.snakebite.net',  9)
-DAYTIME_HOST = ('daytime.snakebite.net', 13)
-CHARGEN_HOST = ('chargen.snakebite.net', 19)
+ECHO_PORT     = 7
+QOTD_PORT     = 17
+DISCARD_PORT  = 9
+DAYTIME_PORT  = 13
+CHARGEN_PORT  = 19
+
+ECHO_HOST    = 'echo.snakebite.net'
+QOTD_HOST    = 'qotd.snakebite.net'
+DISCARD_HOST = 'discard.snakebite.net'
+DAYTIME_HOST = 'daytime.snakebite.net'
+CHARGEN_HOST = 'chargen.snakebite.net'
 
 #SERVICES_IP = socket.getaddrinfo(*ECHO_HOST)[0][4][0]
 SERVICES_IP = '10.31.8.61'
 
-ECHO_IP     = (SERVICES_IP,  7)
-QOTD_IP     = (SERVICES_IP, 17)
-DISCARD_IP  = (SERVICES_IP,  9)
-DAYTIME_IP  = (SERVICES_IP, 13)
-CHARGEN_IP  = (SERVICES_IP, 19)
+ECHO_IP     = SERVICES_IP
+QOTD_IP     = SERVICES_IP
+DISCARD_IP  = SERVICES_IP
+DAYTIME_IP  = SERVICES_IP
+CHARGEN_IP  = SERVICES_IP
 
-NO_CB = None
-NO_EB = None
+ECHO_ADDR     = (SERVICES_IP, ECHO_PORT)
+QOTD_ADDR     = (SERVICES_IP, QOTD_PORT)
+DISCARD_ADDR  = (SERVICES_IP, DISCARD_PORT)
+DAYTIME_ADDR  = (SERVICES_IP, DAYTIME_PORT)
+CHARGEN_ADDR  = (SERVICES_IP, CHARGEN_PORT)
 
 HOST = '127.0.0.1'
 ADDR = (HOST, 0)

@@ -13,7 +13,10 @@ extern "C" {
 #define E2I(p) ((PxListItem  *)p)
 #define I2E(p) ((PxListEntry *)p)
 #define O2I(o) ((PxListEntry *)(((PyObject *)(o))->slist_entry))
-#define I2O(i) (_Py_CAST_BACK(i, PyObject, slist_entry))
+#define I2O(i) (_Py_CAST_BACK(i, PyObject *, PyObject, slist_entry))
+#define I2C(i) (_Py_CAST_BACK(i, Context *, Context, slist_entry))
+#define C2E(i) (_Py_CAST_FWD(i, PxListEntry *, Context, slist_entry))
+#define C2I(i) (_Py_CAST_FWD(i, PxListItem *, Context, slist_entry))
 
 #define PxListHead  SLIST_HEADER
 #define PxListEntry SLIST_ENTRY
@@ -229,6 +232,7 @@ PxList_Push(PxListHead *head, PxListItem *item)
     return E2I(InterlockedPushEntrySList(head, I2E(&item->slist_entry)));
 }
 #define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2I((o)))))
+#define PxList_PushContext(h, c) (PxList_Push((PxListHead *)(h), C2I((c))))
 
 static __inline
 PxListItem *

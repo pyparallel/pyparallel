@@ -262,6 +262,9 @@ typedef struct {
                               struct sockaddr *addr,
                               size_t addrlen,
                               int proto);
+    PyObject *(*socket_errorhandler)(void);
+    PyObject *(*host_errorhandler)(int);
+    PyObject *(*gai_errorhandler)(int);
 #ifdef MS_WINDOWS
     LPFN_ACCEPTEX AcceptEx;
     LPFN_CONNECTEX ConnectEx;

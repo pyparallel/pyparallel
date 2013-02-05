@@ -1,4 +1,3 @@
-
 class Constant(dict):
     def __init__(self):
         items = self.__class__.__dict__.items()
@@ -114,5 +113,70 @@ def wait_any(waits):
 
 def wait_all(waits):
     raise NotImplementedError
+
+def chargen(lineno, nchars=72):
+    start = ord(' ')
+    end = ord('~')
+    c = lineno + start
+    if c > end:
+        c = (c % end) + start
+    b = bytearray(nchars)
+    for i in range(0, nchars):
+        if c > end:
+            c = start
+        b[i] = c
+        c += 1
+
+    return b
+
+class EchoServer(_async.server):
+    def data_received(self, data):
+        return data
+
+QOTD = b'An apple a day keeps the doctor away.\r\n'
+
+class QOTD(_async.server):
+    initial_bytes_to_send = QOTD
+
+class BaseChargen:
+    def __init__(self):
+        self._lineno = -1
+
+    @property
+    def lineno(self):
+        self._lineno += 1
+        return self._lineno
+
+    def chargen(self):
+        return chargen(self.lineno)
+
+class Chargen(BaseChargen):
+    def initial_bytes_to_send(self):
+        return self.chargen()
+
+    def data_sent(self, data):
+        return self.chargen()
+
+class ChargenBrute(BaseChargen):
+    def connection_made(self, sock):
+        async.call_next(self.connection_made)
+        return self.chargen()
+
+class Disconnect:
+    def connection_made(self, sock):
+        sock.disconnect()
+
+class Discard:
+    def data_received(self, data):
+        pass
+
+class EchoData:
+    def data_received(self, data):
+        return data
+
+class EchoLine:
+    line_mode = True
+    def line_received(self, line):
+        return line
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

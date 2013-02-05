@@ -3977,7 +3977,8 @@ sock_dealloc(PySocketSockObject *s)
     if (s->sock_fd != -1) {
         PyObject *exc, *val, *tb;
         Py_ssize_t old_refcount = Py_REFCNT(s);
-        ++Py_REFCNT(s);
+        /* ++Py_REFCNT(self); */
+        Py_INCREF(s);
         PyErr_Fetch(&exc, &val, &tb);
         if (PyErr_WarnFormat(PyExc_ResourceWarning, 1,
                              "unclosed %R", s))
@@ -5713,6 +5714,9 @@ PySocketModule_APIObject PySocketModuleAPI =
     getsockaddrarg,
     getsockaddrlen,
     makesockaddr,
+    set_error,
+    set_herror,
+    set_gaierror,
     NULL, /* LPFN_ACCEPTEX             */
     NULL, /* LPFN_CONNECTEX            */
     NULL, /* LPFN_WSARECVMSG           */

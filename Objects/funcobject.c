@@ -661,12 +661,13 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
             PyObject *o = a[i];
             is_py = Py_TEST_OBJ(o);
             is_px = Px_TEST_OBJ(o);
+            /*
             if (Py_VerboseFlag)
                 printf("[%d/%d] 0x%llx is_px: %d, is_py: %d\n",
                        i, (int)na, (void *)o, is_px, is_py);
+                       */
             if (o && !is_py && !is_px)
-                if (Py_VerboseFlag)
-                    printf("ERROR! !is_px && !is_py\n");
+                printf("ERROR! !is_px && !is_py\n");
         }
     }
 #endif

@@ -82,12 +82,12 @@
 #define _Py_PTR_DEC(p, n) (_Py_PTR((_Py_PTR(p)) - \
                            _Py_PTR(n * sizeof(Py_uintptr_t))))
 
-/* Subtract offset of member from type, from pointer p, and cast as type. */
-#define _Py_CAST_BACK(p, type, member) \
-    ((type)(_Py_PTR_SUB(e, offsetof(type, member))))
+/* Subtract offset of member from type, from pointer p, and cast as cast. */
+#define _Py_CAST_BACK(p, cast, type, member) \
+    ((cast)(_Py_PTR_SUB(e, offsetof(type, member))))
 
-/* Add offset of member from type, to pointer p, and cast as type. */
-#define _Py_CAST_FWD(p, type, member) \
-    ((type)(_Py_PTR_ADD(e, offsetof(type, member))))
+/* Add offset of member from type, to pointer p, and cast as cast. */
+#define _Py_CAST_FWD(p, cast, type, member) \
+    ((cast)(_Py_PTR_ADD(e, offsetof(type, member))))
 
 #endif /* Py_PYMACRO_H */

@@ -1,17 +1,4 @@
-import os
-import sys
-import atexit
 import unittest
-import tempfile
-
-import socket
-from socket import (
-    socket,
-    AF_INET,
-    SOCK_STREAM,
-    IPPROTO_TCP,
-)
-
 import async
 
 from async.test import (
@@ -21,70 +8,46 @@ from async.test import (
     ADDR,
 )
 
-def clientsock():
-    return socket(family=AF_INET, type=SOCK_STREAM)
+class TestSocket(unittest.TestCase):
+    def test_basic(self):
+        s = async.socket()
 
-def serversock(bind=ADDR, listen=10):
-    s = clientsock()
-    s.bind(bind)
-    s.listen(listen)
-    return s
+    def test_connection_made(self):
+        def cb1(*args, **kwds):
+            pass
 
-class TestClient(unittest.TestCase):
-    def test_async_client_data_received_kwd(self):
-        @async.call_from_main_thread_and_wait
-        def _check(buf):
-            self.assertEqual(buf, QOTD)
+        def cb2(*args, **kwds):
+            pass
 
-        def data_received(client, buf):
-            _check(buf)
+        s = async.socket()
+        self.assertNone(s.connection_made)
 
-        client = async.client(tcpsock(), data_received=data_received)
-        client.connect(QOTD_IP)
-        async.run()
+        s = async.socket(connection_made=cb1)
+        self.assertEqual(s.connection_made, cb1)
+        s.connection_made = cb2
+        self.assertEqual(s.connection_made, cb2)
 
-    def test_async_client_data_received_cls(self):
-        class foo:
-            test = None
-            def data_received(self, client, buf):
-                test.assertEqual(buf, QOTD)
+    def test_connect(self):
+        d = async.prewait(async.dict())
+        def cb(sock, *args, **kwds):
+            d[1] = None
+            async.signal(d)
 
-        f = foo()
-        f.test = self
+        s = async.socket(connection_made=cb)
+        s.connect(QOTD_IP)
+        for i in range(0, 5):
+            async.run_once()
+            if 1 in d:
+                break
 
-        client = async.client(tcpsock(), f)
-        client.connect(QOTD_IP)
-        async.run()
+        self.assertTrue(1 in d)
+        s.close()
 
-class TestServer(unittest.TestCase):
-    def test_async_server(self):
 
-        server = async.server(serversock(), initial_bytes_to_send=QOTD)
-        server.accept()
-
-        @async.call_from_main_thread
-        def connection_closed(client):
-            server.shutdown()
-
-        @async.call_from_main_thread_and_wait
-        def _check(buf):
-            self.assertEqual(buf, QOTD)
-            server.shutdown()
-
-        def data_received(client, buf):
-            _check(buf)
-
-        client = async.client(
-            tcpsock(),
-            data_received=data_received,
-            connection_closed=connection_closed,
-        )
-
-        client.connect(server.sock.getsockname())
-        async.run()
-
+def test():
+    unittest.main()
 
 if __name__ == '__main__':
-    unittest.main()
+    test()
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

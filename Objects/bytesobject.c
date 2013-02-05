@@ -98,7 +98,7 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + size);
     if (op == NULL)
         return PyErr_NoMemory();
-    PyObject_INIT_VAR(op, &PyBytes_Type, size);
+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
     op->ob_shash = -1;
     if (str != NULL)
         Py_MEMCPY(op->ob_sval, str, size);
