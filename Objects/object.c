@@ -10,6 +10,9 @@ extern "C" {
 
 #ifdef WITH_PARALLEL
 #include <Windows.h>
+static CRITICAL_SECTION stdout_cs;
+static CRITICAL_SECTION stderr_cs;
+#define CS_SPINCOUNT 4
 #endif
 
 #ifdef Py_REF_DEBUG
@@ -298,16 +301,27 @@ int
 PyObject_Print(PyObject *op, FILE *fp, int flags)
 {
     int ret = 0;
-    Py_GUARD
-    Py_GUARD_OBJ(op);
+#ifdef WITH_PARALLEL
+    CRITICAL_SECTION *cs = NULL;
+
+    if (fp == stdout)
+        cs = &stdout_cs;
+    else if (fp == stderr)
+        cs = &stderr_cs;
+
+    if (cs)
+        EnterCriticalSection(cs);
+#endif
+    ret = -1;
     if (PyErr_CheckSignals())
-        return -1;
+        goto end;
 #ifdef USE_STACKCHECK
     if (PyOS_CheckStack()) {
         PyErr_SetString(PyExc_MemoryError, "stack overflow");
-        return -1;
+        goto end;
     }
 #endif
+    ret = 0;
     clearerr(fp); /* Clear any previous error condition */
     if (op == NULL) {
         Py_BEGIN_ALLOW_THREADS
@@ -315,7 +329,7 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
         Py_END_ALLOW_THREADS
     }
     else {
-        if (op->ob_refcnt <= 0)
+        if (!Py_ISPX(op) && op->ob_refcnt <= 0)
             /* XXX(twouters) cast refcount to long until %zd is
                universally available */
             Py_BEGIN_ALLOW_THREADS
@@ -361,6 +375,11 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
             ret = -1;
         }
     }
+end:
+#ifdef WITH_PARALLEL
+    if (cs)
+        LeaveCriticalSection(cs);
+#endif
     return ret;
 }
 
@@ -1778,6 +1797,11 @@ _Py_ReadyTypes(void)
 
     if (PyType_Ready(&PySeqIter_Type) < 0)
         Py_FatalError("Can't initialize sequence iterator type");
+
+#ifdef WITH_PARALLEL
+    InitializeCriticalSectionAndSpinCount(&stdout_cs, CS_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&stderr_cs, CS_SPINCOUNT);
+#endif
 }
 
 #if defined(Py_DEBUG) && defined(WITH_PARALLEL)

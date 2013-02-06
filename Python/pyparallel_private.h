@@ -84,6 +84,19 @@ extern "C" {
     ))                                              \
 ))
 
+static __inline
+size_t
+Px_GET_ALIGNMENT(void *p)
+{
+    register Px_UINTPTR c = Px_PTR(p);
+    register unsigned int i = 0;
+    if (!p)
+        return 0;
+    while (!((c >> i) & 1))
+        i++;
+    return (1ULL << i);
+}
+
 #define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
 
 #ifdef MS_WINDOWS
@@ -210,6 +223,7 @@ typedef struct _PyParallelHeap {
 typedef struct _PyParallelContextStats {
     unsigned __int64 submitted;
     unsigned __int64 entered;
+    unsigned __int64 exited;
     unsigned __int64 start;
     unsigned __int64 end;
     double runtime;
@@ -426,6 +440,8 @@ typedef struct _PyParallelContext {
 
     int context_type;
 
+    int flags;
+
     PxSocketBuf *rbuf_first;
     PxSocketBuf *rbuf_last;
 
@@ -522,6 +538,16 @@ typedef struct _PxObject {
     size_t       signature;
 } PxObject;
 
+#define Px_CTXFLAGS(c)      (((Context *)c)->flags)
+
+#define Px_CTXFLAGS_IS_PERSISTED    (1)
+#define Px_CTXFLAGS_WAS_PERSISTED   (1UL <<  1)
+#define Px_CTXFLAGS_REUSED          (1UL <<  2)
+
+#define Px_CTX_IS_PERSISTED(c)   (Px_CTXFLAGS(c) & Px_CTXFLAGS_IS_PERSISTED)
+#define Px_CTX_WAS_PERSISTED(c)  (Px_CTXFLAGS(c) & Px_CTXFLAGS_WAS_PERSISTED)
+#define Px_CTX_REUSED(c)         (Px_CTXFLAGS(c) & Px_CTXFLAGS_REUSED)
+
 #define Px_SOCKFLAGS(s)     (((PxSocket *)s)->flags)
 
 #define Px_SOCKFLAGS_CLIENT                     (1)
@@ -531,10 +557,14 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_DISCONNECTED               (1UL <<  4)
 #define Px_SOCKFLAGS_RECV_MORE                  (1UL <<  5)
 #define Px_SOCKFLAGS_LOST_CONNECTION_CALLED     (1UL <<  6)
+#define Px_SOCKFLAGS_CONNECTED                  (1UL <<  7)
+#define Px_SOCKFLAGS_LONG_LIVED                 (1UL <<  8)
 
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
 #define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
+#define PxSocket_IS_CONNECTED(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED)
+#define PxSocket_LONG_LIVED(s)  (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_LONG_LIVED)
 
 #define PxSocket_IS_PENDING_DISCONNECT(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PENDING_DISCONNECT)
@@ -543,12 +573,6 @@ typedef struct _PxObject {
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_DISCONNECTED)
 
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
-
-#define PxSocket_RECEIVABLE(c)            \
-    (Px_SOCKFLAGS(c->io_obj) & (          \
-        Px_SOCKFLAGS_PENDING_DISCONNECT | \
-        Px_SOCKFLAGS_DISCONNECTED         \
-    ))
 
 #define PxSocket_CB_CONNECTION_MADE     (1)
 #define PxSocket_CB_DATA_RECEIVED       (1UL <<  1)
@@ -565,7 +589,7 @@ typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
 
 typedef struct _PxSocketBuf {
-    WSAOVERLAPPED ol;
+    /*WSAOVERLAPPED ol;*/
     WSABUF w;
     PxSocketBuf *prev;
     PxSocketBuf *next;
@@ -635,7 +659,9 @@ typedef struct _PxSocket {
     int       recvbuf_size;
     int       sendbuf_size;
 
+    PyObject *protocol_type;
     PyObject *protocol;
+    PyObject *exception_handler;
 
     /*
     PyObject *connection_made;
@@ -682,14 +708,18 @@ typedef struct _PxSocket {
 } PxSocket;
 
 #define PxSocket_PROTOCOL(c)                              \
-    ((PyObject *)((PxSocket *)((Context *)c)->io_obj)->protocol)
+    ((PyObject *)(((PxSocket *)((Context *)c)->io_obj)->protocol))
 
 #define PxSocket_GET_ATTR(n)                              \
-    (PyObject_HasAttr(PxSocket_PROTOCOL(c), n) ?          \
+    (PyObject_HasAttrString(PxSocket_PROTOCOL(c), n) ?    \
         PyObject_GetAttrString(PxSocket_PROTOCOL(c), n) : \
         Py_None)
 
-void PxSocket_HandleError(PxSocket *s, int op, int errcode);
+void PxSocket_HandleError(Context *c,
+                          PxSocket *s,
+                          int op,
+                          const char *syscall,
+                          int errcode);
 
 int PxSocket_ConnectionClosed(PxSocket *s, int op);
 int PxSocket_ConnectionLost(PxSocket *s, int op, int errcode);
@@ -697,28 +727,30 @@ int PxSocket_ConnectionTimeout(PxSocket *s, int op);
 int PxSocket_ConnectionError(PxSocket *s, int op, int errcode);
 int PxSocket_ConnectionDone(PxSocket *s);
 
-void _pxsocket_recv(PxSocket *s, Context *c);
-
-#define _CSTR(s) (#s '\0')
-
-#define PxSocket_ERROR_OTHER    (-1)
-#define PxSocket_ERROR_SYS      (-2)
+int _pxsocket_recv(PxSocket *s, Context *c);
 
 #define PxSocket_EXCEPTION() do {                         \
     assert(PyErr_Occurred());                             \
-    PxSocket_HandleException(c, s);                       \
-    return;                                               \
+    if (s->protocol)                                      \
+        PxSocket_HandleException(c, s, "");               \
+    goto end;                                             \
 } while (0)
 
 #define PxSocket_SYSERROR(n) do {                         \
-    PyErr_SetExcFromWindowsErr(0);                        \
-    PxSocket_HandleException(c, s);                       \
-    return;                                               \
+    PyErr_SetFromWindowsErr(0);                           \
+    PxSocket_HandleException(c, s, n);                    \
+    goto end;                                             \
 } while (0)
 
 #define PxSocket_WSAERROR(n) do {                         \
+    PyErr_SetFromWindowsErr(WSAGetLastError());           \
+    PxSocket_HandleException(c, s, n);                    \
+    goto end;                                             \
+} while (0)
+
+#define PxSocket_SOCKERROR(n) do {                        \
     PxSocket_HandleError(c, s, op, n, WSAGetLastError()); \
-    return;                                               \
+    goto end;                                             \
 } while (0)
 
 #define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
@@ -740,8 +772,6 @@ static const char *pxsocket_kwlist[] = {
     "family",
     "type",
     "proto",
-
-    "protocol",
 
     /*
     "connection_made",
@@ -792,22 +822,20 @@ static const char *pxsocket_protocol_attrs[] = {
     "auto_reconnect",
     "max_line_length",
     NULL
-}
+};
 
 static const char *pxsocket_kwlist_formatstring = \
     /* optional below */
     "|"
 
     /* endpoint */
-    "s"     /* host */
+    "s#"    /* host + len */
     "i"     /* port */
 
     /* base */
     "i"     /* family */
     "i"     /* type */
     "i"     /* proto */
-
-    "O"     /* protocol */
 
     ":socket";
 
@@ -843,11 +871,11 @@ static const char *pxsocket_kwlist_formatstring = \
     pxsocket_kwlist_formatstring,            \
     (char **)pxsocket_kwlist,                \
     &host,                                   \
+    &hostlen,                                \
     &(s->port),                              \
     &(s->sock_family),                       \
     &(s->sock_type),                         \
-    &(s->sock_proto),                        \
-    &protocol
+    &(s->sock_proto)
     /*
     &(s->handler)
     &(s->connection_made),                   \
@@ -944,7 +972,7 @@ static PySocketModule_APIObject PySocketModule;
 #define TransmitPackets         PySocketModule.TransmitPackets
 #define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
 
-#define PxSocket_Check(v)         (Py_TYPE(v) == &PxSocket_Type)
+#define PxSocket_Check(v)         (Py_ORIG_TYPE(v) == &PxSocket_Type)
 #define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)
 #define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
 
@@ -970,6 +998,16 @@ static PySocketModule_APIObject PySocketModule;
             return NULL;                           \
         }                                          \
     } while (0)
+
+#define ENTERED_IO_CALLBACK()                 \
+    _PyParallel_EnteredIOCallback(c,          \
+                                  instance,   \
+                                  overlapped, \
+                                  io_result,  \
+                                  nbytes,     \
+                                  tp_io)
+
+#define ENTERED_CALLBACK() _PyParallel_EnteredCallback(c, instance)
 
 #ifdef __cpplus
 }

@@ -1042,7 +1042,7 @@ PyAPI_DATA(PyObject) _Py_NoneStruct; /* Don't use this directly */
 /*
 Py_NotImplemented is a singleton used to signal that an operation is
 not implemented for a given type combination.
-*/
+*/  
 PyAPI_DATA(PyObject) _Py_NotImplementedStruct; /* Don't use this directly */
 #define Py_NotImplemented (&_Py_NotImplementedStruct)
 

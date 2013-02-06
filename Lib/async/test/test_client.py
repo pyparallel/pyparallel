@@ -7,13 +7,16 @@ import tempfile
 import async
 import itertools
 
-from async.test import (
-    ECHO_IP,
-    QOTD_DATA,
-    QOTD_HOST,
-    QOTD_PORT,
-    QOTD_IP,
-)
+#from async.test import (
+#    ECHO_IP,
+#    QOTD_DATA,
+#    QOTD_HOST,
+#    QOTD_PORT,
+#    QOTD_IP,
+#)
+
+QOTD_IP = '10.211.55.2'
+QOTD_PORT = 20017
 
 class TestClient(unittest.TestCase):
     def test_nohost_error(self):

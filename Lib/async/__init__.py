@@ -129,13 +129,83 @@ def chargen(lineno, nchars=72):
 
     return b
 
-class EchoServer(_async.server):
+QOTD = b'An apple a day keeps the doctor away.\r\n'
+
+class Protocol:
+    line_mode = False
+    initial_bytes_to_send = None
+    def connection_made(self, transport, data):
+        pass
+
+    def connection_closed(self, transport, op):
+        pass
+
+    def connection_lost(self, transport, op):
+        pass
+
+    def connection_timeout(self, transport, op):
+        pass
+
+    def connection_error(self, transport, op, syscall, errcode):
+        pass
+
+    def data_received(self, transport, data):
+        pass
+
+    def line_received(self, transport, line):
+        pass
+
+    def data_sent(self, transport, data):
+        pass
+
+    def send_failed(self, transport, data):
+        pass
+
+    def exception_handler(self, transport, exc):
+        pass
+
+class ChattyLineProtocol:
+    line_mode = False
+    max_line_length = 100
+    wait_for_eol = True
+    def connection_made(self, transport):
+        _async.stdout("connection_made\n")
+
+    def connection_closed(self, transport, op):
+        _async.stdout("connection_closed: %d\n" % op)
+
+    def connection_lost(self, transport, op):
+        _async.stderr("connection_lost: %d\n" % op)
+
+    def connection_timeout(self, transport, op):
+        _async.stderr("connection_lost: %d\n" % op)
+
+    def connection_error(self, transport, op, syscall, errcode):
+        _async.stderr("connection_error: %d, %s, %d\n" % op)
+
+    def data_received(self, *args):
+        _async.stdout("data_received\n")
+
+    def line_received(self, transport, line):
+        _async.stdout("line_received: %s\n" % line)
+
+    def data_sent(self, transport, data):
+        _async.stdout("data_sent: %s\n" % data)
+
+    def send_failed(self, transport, data):
+        _async.stderr("send_failed: %s\n", data)
+
+    def initial_connection_error(self, transport, errcode):
+        _async.stderr("initial_connection_error: %d\n" % errcode)
+
+    def __exception_handler(self, transport, syscall, exc):
+        _async.stderr("exception_handler: %s\n" % repr(exc))
+
+class EchoServer:
     def data_received(self, data):
         return data
 
-QOTD = b'An apple a day keeps the doctor away.\r\n'
-
-class QOTD(_async.server):
+class QOTD:
     initial_bytes_to_send = QOTD
 
 class BaseChargen:

@@ -84,10 +84,10 @@
 
 /* Subtract offset of member from type, from pointer p, and cast as cast. */
 #define _Py_CAST_BACK(p, cast, type, member) \
-    ((cast)(_Py_PTR_SUB(e, offsetof(type, member))))
+    ((cast)(_Py_PTR_SUB(p, offsetof(type, member))))
 
 /* Add offset of member from type, to pointer p, and cast as cast. */
 #define _Py_CAST_FWD(p, cast, type, member) \
-    ((cast)(_Py_PTR_ADD(e, offsetof(type, member))))
+    ((cast)(_Py_PTR_ADD(p, offsetof(type, member))))
 
 #endif /* Py_PYMACRO_H */
