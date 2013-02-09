@@ -183,8 +183,10 @@ class ChattyLineProtocol:
     def connection_error(self, transport, op, syscall, errcode):
         _async.stderr("connection_error: %d, %s, %d\n" % op)
 
-    def data_received(self, *args):
+    def data_received(self, transport, data):
         _async.stdout("data_received\n")
+        _async.stdout(data)
+        _async.stdout("\n")
 
     def line_received(self, transport, line):
         _async.stdout("line_received: %s\n" % line)

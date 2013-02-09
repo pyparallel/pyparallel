@@ -608,7 +608,10 @@ typedef struct _PxSocketBufList {
     Py_ssize_t allocated;
     WSABUF **wsabufs;
     int nbufs;
+    int flags;
 } PxSocketBufList;
+
+typedef void (*sockcb_t)(Context *c);
 
 #define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
 #define PxSocketBuf2PyBytesObject(s) \
@@ -650,11 +653,14 @@ typedef struct _PxSocket {
     int          remote_addr_len;
 
     int   flags;
+    int   error_occurred;
 
     /* endpoint */
     char *ip;
     char *host;
     int   port;
+
+    CRITICAL_SECTION cs;
 
     int       recvbuf_size;
     int       sendbuf_size;
@@ -716,7 +722,6 @@ typedef struct _PxSocket {
         Py_None)
 
 void PxSocket_HandleError(Context *c,
-                          PxSocket *s,
                           int op,
                           const char *syscall,
                           int errcode);
@@ -727,29 +732,40 @@ int PxSocket_ConnectionTimeout(PxSocket *s, int op);
 int PxSocket_ConnectionError(PxSocket *s, int op, int errcode);
 int PxSocket_ConnectionDone(PxSocket *s);
 
-int _pxsocket_recv(PxSocket *s, Context *c);
+void PxSocket_TryRecv(Context *c);
+
+void
+NTAPI
+PxSocket_Callback(
+    PTP_CALLBACK_INSTANCE instance,
+    void *context,
+    void *overlapped,
+    ULONG io_result,
+    ULONG_PTR nbytes,
+    TP_IO *tp_io
+);
 
 #define PxSocket_EXCEPTION() do {                         \
     assert(PyErr_Occurred());                             \
     if (s->protocol)                                      \
-        PxSocket_HandleException(c, s, "");               \
+        PxSocket_HandleException(c, "");                  \
     goto end;                                             \
 } while (0)
 
 #define PxSocket_SYSERROR(n) do {                         \
     PyErr_SetFromWindowsErr(0);                           \
-    PxSocket_HandleException(c, s, n);                    \
+    PxSocket_HandleException(c, n);                       \
     goto end;                                             \
 } while (0)
 
 #define PxSocket_WSAERROR(n) do {                         \
     PyErr_SetFromWindowsErr(WSAGetLastError());           \
-    PxSocket_HandleException(c, s, n);                    \
+    PxSocket_HandleException(c, n);                       \
     goto end;                                             \
 } while (0)
 
 #define PxSocket_SOCKERROR(n) do {                        \
-    PxSocket_HandleError(c, s, op, n, WSAGetLastError()); \
+    PxSocket_HandleError(c, op, n, WSAGetLastError());    \
     goto end;                                             \
 } while (0)
 
@@ -757,11 +773,13 @@ int _pxsocket_recv(PxSocket *s, Context *c);
 
 #define OL2PxSocket(ol) (_Py_CAST_BACK(ol, PxSocket *, PxSocket, overlapped))
 
-#define PxSocket_SET_DISCONNECTED(s) \
-    (Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_DISCONNECTED)
+#define PxSocket_SET_DISCONNECTED(s) do {         \
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_DISCONNECTED; \
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;   \
+} while (0)
 
-#define PxSocket_CLOSE(s) do {                      \
-    (void)closesocket((SOCKET)s->sock_fd);          \
+#define PxSocket_CLOSE(s) do {                    \
+    (void)closesocket((SOCKET)s->sock_fd);        \
 } while (0)
 
 static const char *pxsocket_kwlist[] = {
