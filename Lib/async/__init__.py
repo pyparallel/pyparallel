@@ -203,6 +203,11 @@ class ChattyLineProtocol:
     def __exception_handler(self, transport, syscall, exc):
         _async.stderr("exception_handler: %s\n" % repr(exc))
 
+# Server will be one of two types: it either sends data first, or it expects
+# the client to send data first (then presumably reacts to sent data).  The
+# type is determined by the values of the attributes ``initial_bytes_to_send``
+# and the ``expect_*`` ones.
+
 class EchoServer:
     def data_received(self, data):
         return data

@@ -559,12 +559,32 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_LOST_CONNECTION_CALLED     (1UL <<  6)
 #define Px_SOCKFLAGS_CONNECTED                  (1UL <<  7)
 #define Px_SOCKFLAGS_LONG_LIVED                 (1UL <<  8)
+#define Px_SOCKFLAGS_LISTEN                     (1UL <<  9)
+#define Px_SOCKFLAGS_SERVERCLIENT               (1UL << 10)
+#define Px_SOCKFLAGS_INITIAL_BYTES              (1UL << 11)
+#define Px_SOCKFLAGS_INITIAL_BYTES_STATIC       (1UL << 12)
+#define Px_SOCKFLAGS_INITIAL_BYTES_PYBYTES      (1UL << 13)
+#define Px_SOCKFLAGS_INITIAL_BYTES_UNICODE      (1UL << 14)
+#define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1UL << 15)
+#define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 16)
+#define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 17)
+#define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 18)
+#define Px_SOCKFLAGS_PERSISTENT                 (1UL << 19)
+#define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 20)
 
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
 #define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
 #define PxSocket_IS_CONNECTED(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED)
 #define PxSocket_LONG_LIVED(s)  (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_LONG_LIVED)
+
+#define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
+
+#define PxSocket_HAS_INITIAL_BYTES(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES)
+
+#define PxSocket_IS_SERVERCLIENT(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVERCLIENT)
 
 #define PxSocket_IS_PENDING_DISCONNECT(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PENDING_DISCONNECT)
@@ -584,6 +604,7 @@ typedef struct _PxObject {
 #define PxSocket_IO_ACCEPT              (1UL << 1)
 #define PxSocket_IO_RECV                (1UL << 2)
 #define PxSocket_IO_SEND                (1UL << 3)
+#define PxSocket_IO_DISCONNECT          (1UL << 4)
 
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
@@ -628,6 +649,8 @@ typedef void (*sockcb_t)(Context *c);
 
 #define IS_SBUF(b)
 
+typedef struct _PxSocket PxSocket;
+
 typedef struct _PxSocket {
     PyObject_HEAD
     /* Mirror PySocketSockObject. */
@@ -655,6 +678,8 @@ typedef struct _PxSocket {
     int   flags;
     int   error_occurred;
 
+    Context *ctx;
+
     /* endpoint */
     char *ip;
     char *host;
@@ -668,6 +693,18 @@ typedef struct _PxSocket {
     PyObject *protocol_type;
     PyObject *protocol;
     PyObject *exception_handler;
+    PyObject *initial_bytes_callable;
+    PxSocketBuf *initial_bytes;
+
+    /* Server-specific stuff. */
+    int preallocate;
+    WSAEVENT fd_accept;
+    PxSocket *first;
+    PxSocket *last;
+    PxSocket *next;
+    /* Server socket clients. */
+    PxSocket *parent;
+    DWORD     rbytes;
 
     /*
     PyObject *connection_made;
@@ -721,6 +758,13 @@ typedef struct _PxSocket {
         PyObject_GetAttrString(PxSocket_PROTOCOL(c), n) : \
         Py_None)
 
+static __inline
+int
+PxSocket_HasCallback(PxSocket *s, const char *callback)
+{
+    return PyObject_HasAttrString(PxSocket_PROTOCOL(s->ctx), callback);
+}
+
 void PxSocket_HandleError(Context *c,
                           int op,
                           const char *syscall,
@@ -735,8 +779,21 @@ int PxSocket_ConnectionDone(PxSocket *s);
 void PxSocket_TryRecv(Context *c);
 
 void
+PxSocket_HandleCallback(
+    Context *c,
+    const char *name,
+    const char *format,
+    ...
+);
+
+PxSocketBuf *PxSocket_GetInitialBytes(Context *);
+PxSocketBuf *_try_extract_something_sendable_from_object(Context *c,
+                                                         PyObject *o,
+                                                         int depth);
+
+void
 NTAPI
-PxSocket_Callback(
+PxSocketClient_Callback(
     PTP_CALLBACK_INSTANCE instance,
     void *context,
     void *overlapped,
@@ -745,22 +802,29 @@ PxSocket_Callback(
     TP_IO *tp_io
 );
 
+#define PxSocket_FATAL() do {                             \
+    assert(PyErr_Occurred());                             \
+    PxSocket_HandleException(c, "", 1);                   \
+    goto end;                                             \
+} while (0)
+
+
 #define PxSocket_EXCEPTION() do {                         \
     assert(PyErr_Occurred());                             \
     if (s->protocol)                                      \
-        PxSocket_HandleException(c, "");                  \
+        PxSocket_HandleException(c, "", 0);               \
     goto end;                                             \
 } while (0)
 
 #define PxSocket_SYSERROR(n) do {                         \
     PyErr_SetFromWindowsErr(0);                           \
-    PxSocket_HandleException(c, n);                       \
+    PxSocket_HandleException(c, n, 1);                    \
     goto end;                                             \
 } while (0)
 
 #define PxSocket_WSAERROR(n) do {                         \
     PyErr_SetFromWindowsErr(WSAGetLastError());           \
-    PxSocket_HandleException(c, n);                       \
+    PxSocket_HandleException(c, n, 1);                    \
     goto end;                                             \
 } while (0)
 
