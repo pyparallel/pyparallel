@@ -868,7 +868,7 @@ typedef struct _PxSocket {
     if (!c->io_nbytes)                                                       \
         assert(c->io_result != NO_ERROR);                                    \
                                                                              \
-    if (c->io_result != NO_ERROR)                                            \
+    if (c->io_result == NO_ERROR)                                            \
         assert(c->io_nbytes > 0);                                            \
     else                                                                     \
         assert(!c->io_nbytes);                                               \

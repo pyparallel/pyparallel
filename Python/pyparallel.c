@@ -40,7 +40,7 @@ int _PxBlockingCallsThreshold = 5;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
-int _PxSocketServer_PreallocatedSockets = 1;
+int _PxSocketServer_PreallocatedSockets = 2;
 
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
 
@@ -3285,7 +3285,7 @@ start:
         } while (item);
     }
 
-    if (px->active == 0 || purged)
+    if (px->contexts_active == 0 || purged)
         Py_RETURN_NONE;
 
     /* Return if we've done something useful... */
@@ -5541,6 +5541,7 @@ PxSocket_TrySend(Context *c, PxSocketBuf *b)
     PxSocket *s = (PxSocket *)c->io_obj;
     OVERLAPPED *ol = NULL;
     DWORD flags = 0;
+    DWORD nbytes = 0;
     int op = PxSocket_IO_SEND;
 
     Px_GUARD
@@ -5554,18 +5555,35 @@ PxSocket_TrySend(Context *c, PxSocketBuf *b)
         c->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
         if (!c->tp_io)
             PxSocket_SYSERROR("CreateThreadpoolIo");
-        StartThreadpoolIo(c->tp_io);
     }
 
-    ol = &(c->overlapped);
-
-    err = WSASend(s->sock_fd, &(b->w), 1, NULL, flags, ol, NULL);
+    /* Try a synchronous send, falling back to an overlapped send with a
+     * threadpool IO if that returns EWOULDBLOCK. */
+    err = WSASend(s->sock_fd, &(b->w), 1, &nbytes, flags, NULL, NULL);
     if (err != SOCKET_ERROR) {
-        CancelThreadpoolIo(c->tp_io);
+        /* Send completed synchronously. */
+        assert(nbytes == b->w.len);
         PxSocketClient_Callback(NULL, c, ol, NO_ERROR, b->w.len, NULL);
     } else {
         err = WSAGetLastError();
-        if (err != WSA_IO_PENDING)
+        if (err == WSAEWOULDBLOCK) {
+            ol = &(c->overlapped);
+            StartThreadpoolIo(c->tp_io);
+            err = WSASend(s->sock_fd, &(b->w), 1, NULL, flags, ol, NULL);
+            if (err != SOCKET_ERROR) {
+                /* Send completed synchronously, even though the previous
+                 * attempt didn't.  It appears as though the callback always
+                 * gets invoked when this happens, so we don't explicitly call
+                 * it here.  Also, er, I guess that means we don't need to
+                 * call CancelThreadpoolIo either.
+                 */
+                /*CancelThreadpoolIo(c->tp_io);*/
+            } else {
+                err = WSAGetLastError();
+                if (err != WSA_IO_PENDING)
+                    PxSocket_HandleError(c, op, "WSARecv", err);
+            }
+        } else if (err != WSA_IO_PENDING)
             PxSocket_HandleError(c, op, "WSARecv", err);
     }
 
@@ -5680,8 +5698,10 @@ PxSocketClient_Callback(
 
     cb(c);
 
+    /*
     if (PxSocket_IS_CONNECTED(s) && c->io_op != PxSocket_IO_SEND)
         PxSocket_TryRecv(c);
+    */
 
     LeaveCriticalSection(&(s->cs));
 }
@@ -6179,7 +6199,6 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     DWORD bufsize;
     char *buf = NULL;
     DWORD size = 0;
-    int accepts = 0;
     PyObject *result = NULL;
     PxSocket *s = (PxSocket *)c->io_obj;
     PxSocket *o;
@@ -6235,12 +6254,12 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     else
         bufsize = (DWORD)(s->recvbuf_size - (size * 2));
 
-    StartThreadpoolIo(c->tp_io);
     for (o = s->first; o; o = o->next) {
         x = o->ctx;
         assert(x->rbuf_first);
         assert(x->rbuf_first->w.len == s->recvbuf_size);
 
+        StartThreadpoolIo(c->tp_io);
         success = AcceptEx(s->sock_fd,
                            o->sock_fd,
                            x->rbuf_first->w.buf,
@@ -6251,18 +6270,18 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
                            &(x->overlapped));
         if (!success) {
             if (WSAGetLastError() != WSA_IO_PENDING) {
+                CancelThreadpoolIo(c->tp_io);
                 failed = 1;
                 break;
             }
-            accepts++;
         } else {
             /* This really shouldn't ever happen. */
+            /* ....well, not entirely correct.  I guess this could happen if
+             * an incoming client connection arrives after our listen() but
+             * before our AcceptEx() call. */
             assert(0);
         }
     }
-
-    if (!accepts)
-        CancelThreadpoolIo(c->tp_io);
 
     if (failed)
         PxSocket_WSAERROR("AcceptEx");
