@@ -206,7 +206,7 @@ typedef struct _PyParallelHeap {
     void   *base;
     void   *next;
     size_t  pages;
-    size_t  last_alignment;
+    size_t  next_alignment;
     size_t  mallocs;
     size_t  deallocs;
     size_t  mem_reallocs;
@@ -499,7 +499,7 @@ typedef struct _PyParallelContext {
     size_t tbuf_allocated;
     size_t tbuf_remaining;
     size_t tbuf_bytes_wasted;
-    size_t tbuf_last_alignment;
+    size_t tbuf_next_alignment;
     size_t tbuf_alignment_mismatches;
 
 
@@ -576,7 +576,8 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_CLOSED                     (1UL << 23)
 #define Px_SOCKFLAGS_TIMEDOUT                   (1UL << 24)
 #define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 25)
-#define Px_SOCKFLAGS_                           (1UL << 26)
+#define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
+#define Px_SOCKFLAGS_                           (1UL << 27)
 
 
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
@@ -710,16 +711,29 @@ typedef struct _PxSocket {
     PyObject *initial_bytes_callable;
     PxSocketBuf *initial_bytes;
 
+    TP_IO *tp_io;
+
     /* Server-specific stuff. */
     int preallocate;
     WSAEVENT  fd_accept;
-    WSAEVENT  acceptex;
+    Context  *wait_ctx;
     PxSocket *first;
     PxSocket *last;
-    PxSocket *next;
+
+    PxListHead *freelist;
+
+    DWORD     rbytes;
+    TP_WORK  *acceptex;
+    CRITICAL_SECTION acceptex_cs;
+    volatile long num_accepts_wanted;
+    HANDLE  more_accepts;
+    HANDLE  shutdown;
+    HANDLE  wait_handles[3];
+
     /* Server socket clients. */
     PxSocket *parent;
-    DWORD     rbytes;
+    PxSocket *prev;
+    PxSocket *next;
 
     /*
     PyObject *connection_made;
@@ -764,6 +778,32 @@ typedef struct _PxSocket {
     char buf[_PxSocket_BUFSIZE];
     */
 } PxSocket;
+
+#define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))
+
+static __inline
+void
+PxList_PushSocket(PxListHead *head, PxSocket *s)
+{
+    SLIST_ENTRY *entry = (SLIST_ENTRY *)(&(s->ob_base.slist_entry));
+    InterlockedPushEntrySList(head, entry);
+}
+
+static __inline
+PxSocket *
+PxList_PopSocket(PxListHead *head)
+{
+    PxSocket *s;
+    SLIST_ENTRY *entry = InterlockedPopEntrySList(head);
+
+    if (!entry)
+        return NULL;
+
+    s = I2S(entry);
+
+    return s;
+}
+
 
 #define PxSocket_PROTOCOL(c)                                                 \
     ((PyObject *)(((PxSocket *)((Context *)c)->io_obj)->protocol))
@@ -828,7 +868,7 @@ typedef struct _PxSocket {
     }                                                                        \
 } while (0)
 
-#define MAYBE_CLOSE() do {                                                   \
+#define _m_MAYBE_CLOSE() do {                                                \
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||                  \
        !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))                  \
     {                                                                        \
@@ -856,27 +896,6 @@ typedef struct _PxSocket {
         goto end;                                                            \
     }                                                                        \
 } while (0)
-
-#define MAYBE_SEND() do {                                                    \
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {                     \
-        /* xxx todo */                                                       \
-    }                                                                        \
-} while (0)
-
-#ifdef Py_DEBUG
-#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() do {                           \
-    if (!c->io_nbytes)                                                       \
-        assert(c->io_result != NO_ERROR);                                    \
-                                                                             \
-    if (c->io_result == NO_ERROR)                                            \
-        assert(c->io_nbytes > 0);                                            \
-    else                                                                     \
-        assert(!c->io_nbytes);                                               \
-} while (0)
-#else
-#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() /* no-op */
-#endif
-
 
 static __inline
 int
@@ -921,6 +940,33 @@ PxSocketClient_Callback(
     ULONG_PTR nbytes,
     TP_IO *tp_io
 );
+
+void PxServerSocket_ClientClosed(Context *x);
+
+
+void PxSocket_HandleException(Context *c, const char *syscall, int fatal);
+
+
+#define MAYBE_SEND() do {                                                    \
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {                     \
+        /* xxx todo */                                                       \
+    }                                                                        \
+} while (0)
+
+#ifdef Py_DEBUG
+#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() do {                           \
+    if (!c->io_nbytes)                                                       \
+        assert(c->io_result != NO_ERROR);                                    \
+                                                                             \
+    if (c->io_result == NO_ERROR)                                            \
+        assert(c->io_nbytes > 0);                                            \
+    else                                                                     \
+        assert(!c->io_nbytes);                                               \
+} while (0)
+#else
+#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() /* no-op */
+#endif
+
 
 #define PxSocket_FATAL() do {                             \
     assert(PyErr_Occurred());                             \
@@ -1209,6 +1255,89 @@ static PySocketModule_APIObject PySocketModule;
                                   tp_io)
 
 #define ENTERED_CALLBACK() _PyParallel_EnteredCallback(c, instance)
+
+static __inline
+int
+_i_MAYBE_CLOSE_old(Context *c)
+{
+    PxSocket *s = (PxSocket *)c->io_obj;
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+    {
+        char error = 0;
+
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+        c->io_op = PxSocket_IO_CLOSE;
+
+        if (closesocket(s->sock_fd) == SOCKET_ERROR) {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");
+            else
+                error = 1;
+        }
+
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
+        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
+
+        if (error)
+            PxSocket_HandleException(c, "closesocket", 0);
+        else
+            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
+
+        if (PxSocket_IS_SERVERCLIENT(s))
+            PxServerSocket_ClientClosed(c);
+
+        return 1;
+    }
+    return 0;
+}
+
+static __inline
+int
+_i_MAYBE_CLOSE(Context *c)
+{
+    PxSocket *s = (PxSocket *)c->io_obj;
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+    {
+        BOOL success;
+        char error = 0;
+
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+        c->io_op = PxSocket_IO_CLOSE;
+
+        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
+        if (!success) {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+                Py_FatalError("DisconnectEx() -> WSAEWOULDBLOCK!");
+            else
+                error = 1;
+        }
+
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
+        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
+
+        if (error)
+            PxSocket_HandleException(c, "DisconnectEx", 0);
+        else
+            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
+
+        if (PxSocket_IS_SERVERCLIENT(s))
+            PxServerSocket_ClientClosed(c);
+
+        return 1;
+    }
+    return 0;
+}
+#define MAYBE_CLOSE() do {  \
+    if (_i_MAYBE_CLOSE(c))  \
+        goto end;           \
+} while (0)
+
 
 #ifdef __cpplus
 }
