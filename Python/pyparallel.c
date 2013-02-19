@@ -11,22 +11,252 @@ extern "C" {
 #include "frameobject.h"
 #include "structmember.h"
 
-//
-// Calculate the address of the base of the structure given its type, and an
-// address of a field within the structure.
-//
-
-#define _CONTAINING_RECORD(address, type, field) \
-    ((type *)((PCHAR)(address) - (ULONG_PTR)(&((type *)0)->field)))
-
 #define CS_SOCK_SPINCOUNT 4
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
-__declspec(thread) PyParallelContext *ctx = NULL;
+__declspec(thread) Context *ctx = NULL;
+__declspec(thread) TLS tls;
+
+Py_TLS static int _PxNewThread = 1;
+
 #define _TMPBUF_SIZE 1024
 
-__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
-__declspec(thread) PyParallelIOContext *ioctx = NULL;
+#ifdef _WIN64
+#define _tls_bitscan_fwd        _BitScanForward64
+#define _tls_bitscan_rev        _BitScanReverse64
+#define _tls_interlocked_or     _InterlockedOr64
+#define _tls_interlocked_and    _InterlockedAnd64
+#define _tls_popcnt             _Py_popcnt_u64
+#else
+#define _tls_bitscan_fwd        _BitScanForward
+#define _tls_bitscan_rev        _BitScanReverse
+#define _tls_interlocked_or     _InterlockedOr
+#define _tls_interlocked_and    _InterlockedAnd
+#define _tls_popcnt             _Py_popcnt_u32
+#endif
+
+static __inline
+PyThreadState *
+get_main_thread_state(void)
+{
+    return (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
+}
+
+static __inline
+PxState *
+PXSTATE(void)
+{
+    register PyThreadState *pstate = get_main_thread_state();
+    return (!pstate ? NULL : (PxState *)pstate->px);
+}
+
+static __inline
+Heap *
+GET_TLS_HEAP_SNAPSHOT(Heap *prev)
+{
+    Heap *h;
+    TLS *t = &tls;
+    Context *c = ctx;
+    Px_UINTPTR bitmap = Px_PTR(t->snapshots_bitmap);
+    unsigned long i = 0;
+
+    EnterCriticalSection(&t->snapshots_cs);
+
+    if (_tls_bitscan_fwd(&i, bitmap))
+        h = t->snapshots[i];
+
+    if (h)
+        _tls_interlocked_and(&t->snapshots_bitmap, ~(1 << h->index));
+
+    LeaveCriticalSection(&t->snapshots_cs);
+
+    if (!h)
+        Py_FatalError("TLS heap snapshots exhausted!");
+
+    h->snapshot_id = t->snapshot_id++;
+
+    if (!prev) {
+        memcpy(h, t->h, sizeof(Heap));
+        h->sle_prev = NULL;
+        h->sle_next = NULL;
+    } else {
+        memset(h, 0, sizeof(Heap));
+        h->sle_prev = prev;
+    }
+
+    return h;
+}
+
+static __inline
+Heap *
+ENABLE_TLS_HEAP(void)
+{
+    Heap *h1, *h2;
+    TLS *t = &tls;
+    Context *c = ctx;
+
+    h1 = GET_TLS_HEAP_SNAPSHOT(0);
+    h2 = GET_TLS_HEAP_SNAPSHOT(h1);
+
+    assert(h1);
+    assert(h2);
+    assert(!h1->sle_prev);
+    assert(!h2->sle_next);
+    assert(h1->sle_next == h2);
+    assert(h2->sle_prev == h1);
+
+    assert(!t->ctx_heap);
+    assert(c->h != t->h);
+
+    t->ctx_heap = c->h;
+
+    c->h = t->h;
+
+    return h1;
+}
+
+static __inline
+void
+DISABLE_TLS_HEAP(Heap *snapshot)
+{
+    Heap *h1, *h2;
+    TLS *t = &tls;
+    Context *c = ctx;
+
+    assert(t->ctx_heap);
+    assert(c->h == t->h);
+
+    h1 = snapshot;
+    h2 = h1->sle_next;
+    assert(h2);
+
+    memcpy(h2, t->h, sizeof(Heap));
+    h2->sle_prev = h1;
+
+    c->h = t->ctx_heap;
+    t->ctx_heap = NULL;
+}
+
+static __inline
+void
+REWIND_TLS_HEAP(Heap *snapshot)
+{
+    TLS *t = &tls;
+    Heap *h1, *h2, *p, *n;
+
+    h1 = snapshot;
+    h2 = h1->sle_next;
+
+    if (_tls_popcnt(t->snapshots_bitmap) == 2)
+        goto rewind;
+
+    if (h1->index == h2->index && h1->index == t->h->index) {
+        if (h2->allocated == t->h->allocated)
+            goto rewind;
+    }
+
+    /* xxx todo */
+    return;
+
+rewind:
+    p = t->h->sle_prev;
+    n = t->h->sle_next;
+    memcpy(t->h, h1, sizeof(Heap));
+    t->h->sle_prev = p;
+    t->h->sle_next = n;
+    return;
+}
+
+static __inline
+void
+DISABLE_AND_REWIND_TLS_HEAP(Heap *snapshot)
+{
+    DISABLE_TLS_HEAP(snapshot);
+    REWIND_TLS_HEAP(snapshot);
+}
+
+#define TLS_BUF_SPINCOUNT 8
+
+static __inline
+WSABUF *
+GET_TLS_SBUF(void)
+{
+    WSABUF *w = NULL;
+    TLS    *t = &tls;
+    Px_UINTPTR c = Px_PTR(t->sbuf_bitmap);
+    unsigned long i = 0;
+
+    EnterCriticalSection(&t->sbuf_cs);
+
+    if (_tls_bitscan_fwd(&i, c))
+        w = t->sbufs[i];
+
+    if (w)
+        _tls_interlocked_and(&t->sbuf_bitmap, ~(1ULL << W2T(w)->index));
+
+    LeaveCriticalSection(&t->sbuf_cs);
+
+    return w;
+}
+
+static __inline
+void
+RETURN_TLS_SBUF(WSABUF *w)
+{
+    TLSBUF *b = W2T(w);
+    register TLS *t = b->tls;
+    register Px_UINTPTR c = Px_PTR(t->sbuf_bitmap);
+    register unsigned long i = 0;
+    char mismatch = 0;
+
+    EnterCriticalSection(&t->sbuf_cs);
+
+    _tls_interlocked_or(&t->sbuf_bitmap, (1ULL << b->index));
+
+    LeaveCriticalSection(&t->sbuf_cs);
+
+    if (t != &tls)
+        InterlockedIncrement(&PXSTATE()->tls_buf_mismatch);
+}
+
+static __inline
+char
+IS_TLS_SBUF(WSABUF *w)
+{
+    TLS *t = &tls;
+    return (
+        Px_PTR(w) >= Px_PTR(t->sbufs[0]) &&
+        Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS])
+    );
+}
+
+/* 0 on failure, 1 on success */
+static __inline
+int
+PyObject2WSABUF(PyObject *o, WSABUF *w)
+{
+    int result = 1;
+    if (PyBytes_Check(o)) {
+        w->len = (ULONG)((PyVarObject *)o)->ob_size;
+        w->buf = (char *)((PyBytesObject *)o)->ob_sval[0];
+    } else if (PyByteArray_Check(o)) {
+        w->len = (ULONG)((PyByteArrayObject *)o)->ob_alloc;
+        w->buf = ((PyByteArrayObject *)o)->ob_bytes;
+    } else if (PyUnicode_Check(o)) {
+        Py_ssize_t nbytes;
+        char *buf = PyUnicode_AsUTF8AndSize(o, &nbytes);
+        if (buf) {
+            w->buf = buf;
+            /* xxx todo: range check */
+            w->len = (DWORD)nbytes;
+        } else
+            result = 0;
+    } else
+        result = 0;
+
+    return result;
+}
+
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 long Py_MainThreadId  = -1;
@@ -41,8 +271,14 @@ int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
 int _PxSocketServer_PreallocatedSockets = 10;
+int _PxSocket_MaxSyncSendAttempts = 3;
+
+int _PyTLSHeap_DefaultSize = Px_DEFAULT_TLS_HEAP_SIZE;
+
+int _PxSocket_SendListSize = 30;
 
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
+void *_PyTLSHeap_Malloc(size_t n, size_t align);
 
 static PyObject *PyExc_AsyncError;
 static PyObject *PyExc_ProtectionError;
@@ -98,40 +334,27 @@ int _PyObject_SetAttrString(PyObject *, char *, PyObject *w);
 PyObject *_PyObject_GenericGetAttr(PyObject *o, PyObject *n);
 PyObject *_PyObject_GetAttrString(PyObject *, char *);
 
-__inline
-PyThreadState *
-get_main_thread_state(void)
-{
-    return (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
-}
-
-__inline
-PxState *
-PXSTATE(void)
-{
-    register PyThreadState *pstate = get_main_thread_state();
-    return (!pstate ? NULL : (PxState *)pstate->px);
-}
-
 void
 _PyParallel_DisassociateCurrentThreadFromCallback(void)
 {
     Context *c = ctx;
-    if (c->disassociated)
+    if (Px_CTX_IS_DISASSOCIATED(c))
         return;
     DisassociateCurrentThreadFromCallback((PTP_CALLBACK_INSTANCE)c->instance);
-    c->disassociated = 1;
+    Px_CTXFLAGS(c) |= Px_CTXFLAGS_DISASSOCIATED;
 }
 
 void
 _PyParallel_BlockingCall(void)
 {
     Context *c = ctx;
-    Stats   *s = &(c->stats);
+    Stats   *s = STATS(c);
     Px_GUARD
 
-    s->blocking_calls++;
-    if (!c->disassociated && s->blocking_calls > _PxBlockingCallsThreshold)
+    if (Px_CTX_IS_DISASSOCIATED(c))
+        return;
+
+    if (s && ++s->blocking_calls > _PxBlockingCallsThreshold)
         _PyParallel_DisassociateCurrentThreadFromCallback();
 }
 
@@ -236,15 +459,6 @@ _async_unprotect(PyObject *self, PyObject *obj)
     Py_RETURN_NONE;
 }
 
-__inline
-PyObject *
-_read_lock(PyObject *obj)
-{
-    AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
-    return obj;
-}
-#define READ_LOCK(o) (_read_lock((PyObject *)o))
-
 PyObject *
 _async_read_lock(PyObject *self, PyObject *obj)
 {
@@ -252,15 +466,6 @@ _async_read_lock(PyObject *self, PyObject *obj)
     Py_INCREF(obj);
     return _read_lock(obj);
 }
-
-__inline
-PyObject *
-_read_unlock(PyObject *obj)
-{
-    ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
-    return obj;
-}
-#define READ_UNLOCK(o) (_read_unlock((PyObject *)o))
 
 PyObject *
 _async_read_unlock(PyObject *self, PyObject *obj)
@@ -270,13 +475,6 @@ _async_read_unlock(PyObject *self, PyObject *obj)
     return _read_unlock(obj);
 }
 
-__inline
-char
-_try_read_lock(PyObject *obj)
-{
-    return TryAcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
-}
-
 PyObject *
 _async_try_read_lock(PyObject *self, PyObject *obj)
 {
@@ -284,16 +482,6 @@ _async_try_read_lock(PyObject *self, PyObject *obj)
     Py_INCREF(obj);
     Py_RETURN_BOOL(_try_read_lock(obj));
 }
-#define TRY_READ_LOCK(o) (_try_read_lock((PyObject *)o))
-
-__inline
-PyObject *
-_write_lock(PyObject *obj)
-{
-    AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
-    return obj;
-}
-#define WRITE_LOCK(o) (_write_lock((PyObject *)o))
 
 PyObject *
 _async_write_lock(PyObject *self, PyObject *obj)
@@ -303,28 +491,12 @@ _async_write_lock(PyObject *self, PyObject *obj)
     return _write_lock(obj);
 }
 
-__inline
-PyObject *
-_write_unlock(PyObject *obj)
-{
-    ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
-    return obj;
-}
-#define WRITE_UNLOCK(o) (_write_unlock((PyObject *)o))
-
 PyObject *
 _async_write_unlock(PyObject *self, PyObject *obj)
 {
     Px_PROTECTION_GUARD(obj);
     Py_INCREF(obj);
     return _write_unlock(obj);
-}
-
-__inline
-char
-_try_write_lock(PyObject *obj)
-{
-    return TryAcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
 }
 
 PyObject *
@@ -1416,6 +1588,8 @@ Heap_Init(Context *c, size_t n)
     size_t size;
     int flags;
 
+    assert(!Px_TLS_HEAP_ACTIVE(c));
+
     if (n < Px_DEFAULT_HEAP_SIZE)
         size = Px_DEFAULT_HEAP_SIZE;
     else
@@ -1425,12 +1599,14 @@ Heap_Init(Context *c, size_t n)
 
     assert((size % Px_PAGE_SIZE) == 0);
 
-    if (!c->h)
+    if (!c->h) {
         /* First init. */
         h = &(c->heap);
-    else {
+        h->index = 1;
+    } else {
         h = c->h->sle_next;
         h->sle_prev = c->h;
+        h->index = h->sle_prev->index + 1;
     }
 
     assert(h);
@@ -1453,6 +1629,59 @@ Heap_Init(Context *c, size_t n)
     _PxState_RegisterHeap(c->px, h, c);
 #endif
     return h;
+}
+
+/* 0 = failure, 1 = success */
+int
+_PyTLSHeap_Init(size_t n)
+{
+    TLS *t = &tls;
+    Heap *h;
+    Stats *s = &(t->stats);
+    size_t size;
+    int flags;
+
+    if (n < _PyTLSHeap_DefaultSize)
+        size = _PyTLSHeap_DefaultSize;
+    else
+        size = n;
+
+    size = Px_PAGE_ALIGN(size);
+
+    assert((size % Px_PAGE_SIZE) == 0);
+
+    if (!t->h) {
+        /* First init. */
+        h = &(t->heap);
+        h->index = 1;
+    } else {
+        h = t->h->sle_next;
+        h->sle_prev = t->h;
+        h->index = h->sle_prev->index + 1;
+    }
+
+    assert(h);
+
+    h->pages = size / Px_PAGE_SIZE;
+    h->size = size;
+    flags = HEAP_ZERO_MEMORY;
+    h->base = h->next = HeapAlloc(t->handle, flags, h->size);
+    if (!h->base) {
+        PyErr_SetFromWindowsErr(0);
+        return 0;
+    }
+    h->next_alignment = Px_GET_ALIGNMENT(h->base);
+    h->remaining = size;
+    s->remaining += size;
+    s->size += size;
+    s->heaps++;
+    t->h = h;
+    h->sle_next = (Heap *)_PyTLSHeap_Malloc(sizeof(Heap), 0);
+    assert(h->sle_next);
+#ifdef Py_DEBUG
+    _PxState_RegisterHeap(PXSTATE(), h, 0);
+#endif
+    return 1;
 }
 
 __inline
@@ -1526,16 +1755,90 @@ Heap_LocalMalloc(Context *c, size_t n, size_t align)
 }
 
 void *
-_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
+_PyTLSHeap_Malloc(size_t n, size_t align)
 {
     void  *next;
     Heap  *h;
-    Stats *s = &c->stats;
+    TLS   *t = &tls;
+    Stats *s = &t->stats;
     size_t alignment_diff;
     size_t alignment = align;
     size_t requested_size = n;
     size_t aligned_size;
 
+    assert(Px_TLS_HEAP_ACTIVE(ctx) || _PxNewThread);
+
+    if (!alignment)
+        alignment = Px_PTR_ALIGN_SIZE;
+begin:
+    h = t->h;
+
+    if (alignment > h->next_alignment)
+        alignment_diff = Px_PTR_ALIGN(alignment - h->next_alignment);
+    else
+        alignment_diff = 0;
+
+    aligned_size = Px_ALIGN(n, alignment);
+
+    if (aligned_size < (h->remaining-alignment_diff)) {
+        if (alignment_diff) {
+            h->remaining -= alignment_diff;
+            s->remaining -= alignment_diff;
+            h->allocated += alignment_diff;
+            s->allocated += alignment_diff;
+            h->alignment_mismatches++;
+            s->alignment_mismatches++;
+            h->bytes_wasted += alignment_diff;
+            s->bytes_wasted += alignment_diff;
+            h->next = Px_PTR_ADD(h->next, alignment_diff);
+            assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
+        }
+
+        h->allocated += aligned_size;
+        s->allocated += aligned_size;
+
+        h->remaining -= aligned_size;
+        s->remaining -= aligned_size;
+
+        h->mallocs++;
+        s->mallocs++;
+
+        h->bytes_wasted += (aligned_size - requested_size);
+        s->bytes_wasted += (aligned_size - requested_size);
+
+        next = h->next;
+        h->next = Px_PTR_ADD(h->next, aligned_size);
+        h->next_alignment = Px_GET_ALIGNMENT(h->next);
+
+        assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
+        assert(_Py_IS_ALIGNED(h->base, alignment));
+        assert(Px_GET_ALIGNMENT(next) >= alignment);
+        return next;
+    }
+
+    t->h = h->sle_next;
+
+    if (!t->h->size && !_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size)))
+        return _aligned_malloc(aligned_size, alignment);
+
+    goto begin;
+}
+
+void *
+_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
+{
+    void  *next;
+    Heap  *h;
+    Stats *s;
+    size_t alignment_diff;
+    size_t alignment = align;
+    size_t requested_size = n;
+    size_t aligned_size;
+
+    if (Px_TLS_HEAP_ACTIVE(c))
+        return _PyTLSHeap_Malloc(n, align);
+
+    s = &c->stats;
     if (!alignment)
         alignment = Px_PTR_ALIGN_SIZE;
 
@@ -1599,16 +1902,36 @@ __inline
 void
 _PyHeap_FastFree(Heap *h, Stats *s, void *p)
 {
+    assert(!Px_TLS_HEAP_ACTIVE(ctx));
     h->frees++;
     s->frees++;
+}
+
+void *
+_PyTLSHeap_Realloc(void *p, size_t n)
+{
+    void *r = _PyTLSHeap_Malloc(n, 0);
+    if (!r)
+        return NULL;
+
+    if (p)
+        memcpy(r, p, n);
+
+    return r;
 }
 
 void *
 _PyHeap_Realloc(Context *c, void *p, size_t n)
 {
     void  *r;
-    Heap  *h = c->h;
-    Stats *s = &c->stats;
+    Heap  *h;
+    Stats *s;
+
+    if (Px_TLS_HEAP_ACTIVE(c))
+        return _PyTLSHeap_Realloc(p, n);
+
+    h = c->h;
+    s = &c->stats;
     r = _PyHeap_Malloc(c, n, 0, 0);
     if (!r)
         return NULL;
@@ -1623,9 +1946,16 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
 void
 _PyHeap_Free(Context *c, void *p)
 {
-    Heap  *h = c->h;
-    Stats *s = &c->stats;
+    Heap  *h;
+    Stats *s;
+
+    if (Px_TLS_HEAP_ACTIVE(c))
+        return;
+
     Px_GUARD_MEM(p);
+
+    h = c->h;
+    s = &c->stats;
 
     h->frees++;
     s->frees++;
@@ -1665,18 +1995,23 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
      *      allocation.  That's fine, as our realloc doesn't actually free
      *      anything, so we're, in effect, just copying the existing object.
      */
+    TLS      *t = &tls;
     PyObject *n;
     PxObject *x;
     Object   *o;
+    Stats    *s;
     size_t    object_size;
     size_t    total_size;
     size_t    bytes_to_copy;
     int       init_type;
     int       is_varobj = -1;
+    int       is_tls_heap_active = Px_TLS_HEAP_ACTIVE(c);
 
 #define _INIT_NEW       1
 #define _INIT_INIT      2
 #define _INIT_RESIZE    3
+
+    s = (is_tls_heap_active ? &t->stats : &c->stats);
 
     if (!p) {
         /* Case 1: PyObject_NEW/NEW_VAR (via (Object|VarObject)_New). */
@@ -1694,10 +2029,10 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         Py_TYPE(n) = tp;
         Py_REFCNT(n) = -1;
         if (is_varobj = (tp->tp_itemsize > 0)) {
-            (c->stats.varobjs)++;
+            s->varobjs++;
             Py_SIZE(n) = nitems;
         } else
-            (c->stats.objects)++;
+            s->objects++;
 
     } else {
         if (!Py_TYPE(p)) {
@@ -1719,10 +2054,10 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             Py_REFCNT(n) = -1;
 
             if (is_varobj = (tp->tp_itemsize > 0)) {
-                (c->stats.varobjs)++;
+                s->varobjs++;
                 Py_SIZE(n) = nitems;
             } else
-                (c->stats.objects)++;
+                s->objects++;
 
         } else {
             /* Case 3: PyObject_GC_Resize called.  Object to resize may or may
@@ -1768,8 +2103,8 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
                 x->resized_from = p;
             }
 
-            (c->h->resizes)++;
-            (c->stats.resizes)++;
+            c->h->resizes++;
+            s->resizes++;
         }
     }
     assert(tp);
@@ -1791,6 +2126,9 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     x->ctx = c;
     x->signature = _PxObjectSignature;
 
+    if (is_tls_heap_active)
+        goto end;
+
     o->op = n;
     append_object((is_varobj ? &c->varobjs : &c->objects), o);
 
@@ -1809,6 +2147,8 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         n->_ob_next = NULL;
         c->ob_last = n;
     }
+
+end:
 
     return n;
 }
@@ -2159,13 +2499,17 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
 
     px->iob_ctx = c;
 
+    /*
     if (!_PxState_AllocIOBufs(px, c, PyAsync_NUM_BUFS, PyAsync_IO_BUFSIZE))
         goto free_context;
+     */
 
     goto done;
 
+    /*
 free_context:
     free(c);
+    */
 
 free_wakeup:
     CloseHandle(px->wakeup);
@@ -2223,8 +2567,6 @@ _PyParallel_ExecutingCallbackFromMainThread(void)
     px = (PxState *)tstate->px;
     return (px->processing_callback == 1);
 }
-
-Py_TLS static int _PxNewThread = 1;
 
 PyObject *
 PxState_SetError(Context *c)
@@ -2286,6 +2628,48 @@ error:
     PxState_SetError(c);
 }
 
+int
+_PyParallel_InitTLS(void)
+{
+    int   i;
+    TLS  *t = &tls;
+    assert(_PxNewThread != 0);
+    assert(!t->h);
+
+    t->handle = HeapCreate(HEAP_NO_SERIALIZE, _PyTLSHeap_DefaultSize, 0);
+    if (!t->handle)
+        Py_FatalError("_PyParallel_InitTLSHeap:HeapCreate");
+
+    if (!_PyTLSHeap_Init(0))
+        return 0;
+
+    InitializeCriticalSectionAndSpinCount(&t->sbuf_cs, TLS_BUF_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&t->rbuf_cs, TLS_BUF_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&t->snapshots_cs, TLS_BUF_SPINCOUNT);
+
+
+    for (i = 0; i < Px_NUM_TLS_WSABUFS; i++) {
+        TLSBUF *sb = &t->sbuf[i];
+        TLSBUF *rb = &t->sbuf[i];
+        WSABUF *sw = T2W(sb);
+        WSABUF *rw = T2W(rb);
+        sb->index = i;
+        rb->index = i;
+        sb->tls = t;
+        rb->tls = t;
+        assert(&sb->w == sw);
+        assert(&rb->w == rw);
+        t->sbufs[i] = sw;
+        t->rbufs[i] = rw;
+
+        t->sbuf_bitmap &= (1ULL << i);
+        t->rbuf_bitmap &= (1ULL << i);
+    }
+
+    t->thread_id = _Py_get_current_thread_id();
+
+    return 1;
+}
 
 void
 _PyParallel_EnteredCallback(Context *c, PTP_CALLBACK_INSTANCE instance)
@@ -2295,7 +2679,8 @@ _PyParallel_EnteredCallback(Context *c, PTP_CALLBACK_INSTANCE instance)
     ctx = c;
 
     if (_PxNewThread) {
-        /* xxx new thread init */
+        if (!_PyParallel_InitTLS())
+            Py_FatalError("TLS heap initialization failed");
         _PxNewThread = 0;
     } else {
         /* xxx not a new thread */
@@ -2471,7 +2856,7 @@ _PyParallel_WorkCallback(PTP_CALLBACK_INSTANCE instance, void *context)
         assert(0);
     } else if (c->tp_io && c->io_type == Px_IOTYPE_SOCKET) {
         PxSocket *s = (PxSocket *)c->io_obj;
-        switch (c->io_op) {
+        switch (s->io_op) {
             case PxSocket_IO_CONNECT:
                 READ_LOCK(s);
                 func = s->connection_made;
@@ -3526,9 +3911,8 @@ new_context_for_socket(PxSocket *s)
     if (!c)
         return NULL;
 
-    /* Err... seems a bit odd that we'd need both of these. */
     c->io_type = Px_IOTYPE_SOCKET;
-    c->context_type = Px_CTXTYPE_SOCK;
+    /*c->context_type = Px_CTXTYPE_SOCK;*/
     c->io_obj = (PyObject *)s;
     s->ctx = c;
     return c;
@@ -4693,6 +5077,551 @@ Px_DecRef(PyObject *o)
 }
 
 /* socket */
+static __inline
+int
+_MAYBE_CLOSE(Context *c)
+{
+    PxSocket *s = (PxSocket *)c->io_obj;
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+    {
+        BOOL success;
+        char error = 0;
+
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+        s->io_op = PxSocket_IO_CLOSE;
+
+        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
+        if (!success) {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+                Py_FatalError("DisconnectEx() -> WSAEWOULDBLOCK!");
+            else
+                error = 1;
+        }
+
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
+        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
+
+        if (error)
+            PxSocket_HandleException(c, "DisconnectEx", 0);
+        else
+            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
+
+        if (PxSocket_IS_SERVERCLIENT(s))
+            PxServerSocket_ClientClosed(c);
+
+        return 1;
+    }
+    return 0;
+}
+#define MAYBE_CLOSE() do {  \
+    if (_MAYBE_CLOSE(c))    \
+        goto end;           \
+} while (0)
+
+__inline
+const char *
+PxSocket_GetRecvCallback(PxSocket *s)
+{
+    int line_mode;
+    READ_LOCK(s);
+    line_mode = PyObject_IsTrue(PxSocket_GET_ATTR("line_mode"));
+    READ_UNLOCK(s);
+    return (line_mode ? "line_received" : "data_received");
+}
+
+#undef MAYBE_DO_DATA_RECEIVED
+static __inline
+int
+_MAYBE_DO_DATA_RECEIVED(PxSocket *s)
+{
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED) {
+        Context *c = s->ctx;
+        const char *f = PxSocket_GetRecvCallback(s);
+        PxSocketBuf   *sbuf;
+        PyBytesObject *pbuf;
+        sbuf = c->rbuf_first;
+        sbuf->ob_base.ob_size = c->io_nbytes;
+        pbuf = PxSocketBuf2PyBytesObject(sbuf);
+        PxSocket_HandleCallback(c, f, "(OO)", s, pbuf);
+
+        return (PyErr_Occurred() ? 1 : 0);
+    }
+
+    return 0;
+}
+
+#define MAYBE_DO_DATA_RECEIVED() do {   \
+    if (_MAYBE_DO_DATA_RECEIVED(s))     \
+        goto end;                       \
+} while (0)
+
+#undef MAYBE_DO_SEND_FAILED
+static __inline
+int
+_MAYBE_DO_SEND_FAILED(PxSocket *s)
+{
+    if ((s->io_op == PxSocket_IO_SEND) &&
+        (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_FAILED))
+    {
+        PyObject *result;
+        Context *c = s->ctx;
+        PyObject *args, *func;
+        args = Py_BuildValue("(Oni)", s, s->send_id, c->io_result);
+        if (!args)
+            PxSocket_EXCEPTION();
+        READ_LOCK(s);
+        func = PxSocket_GET_ATTR("send_failed");
+        READ_UNLOCK(s);
+        assert(func);
+        result = PyObject_CallObject(func, args);
+        if (null_with_exc_or_non_none_return_type(result, c->pstate))
+            PxSocket_EXCEPTION();
+    }
+
+    return 0;
+
+end:
+    return 1;
+}
+#define MAYBE_DO_SEND_FAILED() do { \
+    if (_MAYBE_DO_SEND_FAILED(s))   \
+        goto end;                   \
+} while (0)
+
+#define CHECK_POST_CALLBACK_INVARIANTS() do { \
+    if (result)                               \
+        assert(!PyErr_Occurred());            \
+    if (PyErr_Occurred())                     \
+        assert(!result);                      \
+    if (!result)                              \
+        PxSocket_EXCEPTION();                 \
+} while (0)
+
+
+#define pxsock_nop                                                    0
+#define pxsock_reload_protocol                                        1
+#define pxsock_maybe_shutdown_send_or_recv                            2
+#define pxsock_handle_error                                           3
+#define pxsock_connection_made_callback                               4
+#define pxsock_data_received_callback                                 5
+#define pxsock_send_complete_callback                                 6
+#define pxsock_post_callback_that_supports_sending_retval             7
+#define pxsock_post_callback_that_does_not_support_sending_retval     8
+#define pxsock_close_                                                 9
+#define pxsock_try_send                                               10
+#define pxsock_init_line_mode                                         11
+
+#define TARGET(n) \
+    case pxsock_##n: goto n
+
+#define OPCODE(n) (pxsock_##n)
+/* Hybrid sync/async IO loop. */
+void
+PxSocket_IOLoop(PxSocket *s, int opcode)
+{
+    PyObject *func, *args, *result;
+    int next_opcode = opcode;
+    char *syscall;
+    TLS *t = &tls;
+    Context *c = s->ctx;
+    char *line_mode;
+    char *callback;
+    char *f;
+    DWORD err, wsa_error, nbytes;
+    SOCKET fd;
+    WSABUF *w = NULL;
+    TLSBUF *b = NULL;
+    OVERLAPPED *ol = NULL;
+    Heap *snapshot = NULL;
+    int i, n;
+
+    fd = s->sock_fd;
+
+    goto start;
+
+dispatch:
+    switch (next_opcode) {
+        TARGET(reload_protocol);
+        TARGET(maybe_shutdown_send_or_recv);
+        TARGET(handle_error);
+        TARGET(connection_made_callback);
+        TARGET(data_received_callback);
+        TARGET(send_complete_callback);
+        TARGET(post_callback_that_supports_sending_retval);
+        TARGET(post_callback_that_does_not_support_sending_retval);
+        TARGET(close_);
+        TARGET(try_send);
+        TARGET(init_line_mode);
+
+        default:
+            break;
+    }
+
+start:
+
+reload_protocol:
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RELOAD_PROTOCOL) {
+        if (!s->protocol) {
+            assert(!PxSocket_LONG_LIVED(s));
+            assert(s->protocol_type);
+            s->protocol = PyObject_CallObject(s->protocol_type, NULL);
+            if (!s->protocol)
+                PxSocket_FATAL();
+
+            if (!_Px_TryPersist(s->protocol))
+                PxSocket_FATAL();
+        } else
+            assert(!PxSocket_LONG_LIVED(s));
+
+        assert(s->protocol);
+
+        if (PxSocket_HasAttr(s, "connection_made"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_CONNECTION_MADE;
+
+        if (PxSocket_HasAttr(s, "data_received") ||
+            PxSocket_HasAttr(s, "line_received"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
+
+        if (PxSocket_HasAttr(s, "send_failed"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_FAILED;
+
+        if (PxSocket_HasAttr(s, "send_complete"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
+
+        if (PxSocket_HasAttr(s, "shutdown_send"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SHUTDOWN_SEND;
+    }
+
+init_line_mode:
+    line_mode = (
+        PyObject_IsTrue(PxSocket_GET_ATTR("line_mode")) ?
+            "line_received" :
+            "data_received"
+    );
+
+    if (next_opcode)
+        goto dispatch;
+
+maybe_shutdown_send_or_recv:
+    if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)) {
+        if (shutdown(s->sock_fd, SD_RECEIVE) == SOCKET_ERROR)
+            PxSocket_WSAERROR("shutdown(SD_RECEIVE)");
+    } else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SHUTDOWN_SEND) {
+        if (shutdown(s->sock_fd, SD_SEND) == SOCKET_ERROR)
+            PxSocket_WSAERROR("shutdown(SD_SEND)");
+    }
+
+    if (next_opcode)
+        goto dispatch;
+
+    /* client and server entry point */
+    if (PxSocket_IS_CLIENT(s))
+        goto maybe_do_connection_made;
+
+    /* server entry point */
+maybe_send_initial_bytes:
+    assert(PxSocket_IS_SERVERCLIENT(s));
+    assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES));
+
+    if (PxSocket_HAS_INITIAL_BYTES(s)) {
+
+        if (!PxSocket_LoadInitialBytes(s))
+            PxSocket_EXCEPTION();
+
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDING_INITIAL_BYTES;
+
+        w = &s->initial_bytes;
+
+        goto do_send;
+    }
+
+    /*
+    if (has_connection_made && !called_connection_made)
+        goto connection_made;
+    else if (shutdowns)
+        ...
+    else if (close scheduled)
+        ...
+    else
+        goto try_recv;
+    */
+
+    goto try_recv;
+
+do_send:
+    assert(w);
+    assert(w == &s->initial_bytes || IS_TLS_SBUF(w));
+
+    if (!s->tp_io) {
+        PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
+        assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES);
+        s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
+        if (!s->tp_io)
+            PxSocket_SYSERROR("CreateThreadpoolIo");
+    }
+
+    s->send_id++;
+
+    n = 1;
+
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_THROUGHPUT)
+        n = _PxSocket_MaxSyncSendAttempts;
+    else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
+        goto do_async_send;
+
+    err = SOCKET_ERROR;
+    wsa_error = NO_ERROR;
+    for (i = 1; i <= n; i++) {
+        err = WSASend(fd, w, 1, &nbytes, 0, NULL, NULL);
+        if (err == SOCKET_ERROR) {
+            wsa_error = WSAGetLastError();
+            if (wsa_error == WSAEWOULDBLOCK)
+                Sleep(0);
+            else
+                break;
+        }
+    }
+
+    if (err != SOCKET_ERROR) {
+        /* Send completed synchronously. */
+        s->io_op = PxSocket_IO_SEND_SYNC;
+        goto send_complete;
+    } else if (wsa_error == WSAEWOULDBLOCK)
+        goto do_async_send;
+    else {
+        PxSocket_HandleError(c, s->io_op, "WSARecv", wsa_error);
+        goto end;
+    }
+
+do_async_send:
+    /* Need to memcpy the send buf into the context's heap. */
+
+
+
+send_complete:
+    if (!PxSocket_HAS_SEND_COMPLETE(s)) {
+        /*
+        if (has_connection_made && !called_connection_made)
+            goto connection_made;
+        else
+            goto try_recv;
+         */
+        goto try_recv;
+    }
+
+    func = PxSocket_GET_ATTR("send_complete");
+    assert(func && func != Py_None);
+
+    snapshot = ENABLE_TLS_HEAP();
+    args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
+    if (!args) {
+        DISABLE_AND_REWIND_TLS_HEAP(snapshot);
+        PxSocket_FATAL();
+    }
+
+    result = PyObject_CallObject(func, args);
+    DISABLE_TLS_HEAP(snapshot);
+    CHECK_POST_CALLBACK_INVARIANTS();
+
+    if (result == Py_None) {
+        REWIND_TLS_HEAP(snapshot);
+        /*
+        if (has_connection_made && !called_connection_made)
+            goto connection_made;
+        else if (shutdowns)
+            ...
+        else if (close scheduled)
+            ...
+
+            goto try_recv;
+         */
+        /* xxx todo */
+        goto try_recv;
+    }
+
+    w = GET_TLS_SBUF();
+    assert(IS_TLS_SBUF(w));
+
+    if (!PyObject2WSABUF(result, w)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "send_complete() did not return a sendable "
+                        "objected (bytes, bytearray or unicode)");
+        RETURN_TLS_SBUF(w);
+        PxSocket_EXCEPTION();
+    }
+
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES) {
+        if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) {
+            char *msg = "protocol's connection_made() callback "        \
+                        "may never be called (because send_complete() " \
+                        "is sending more data on the back of the "      \
+                        "successful sending of the initial_bytes)";
+            PyErr_WarnEx(PyExc_RuntimeWarning, msg, 1);
+        }
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDING_INITIAL_BYTES;
+    }
+
+    if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE)) {
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE;
+        if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED) {
+            char *msg = "protocol has data_received|line_received " \
+                        "callback, but send_complete() is sending " \
+                        "more data, so it may never be called";
+            PyErr_WarnEx(PyExc_RuntimeWarning, msg, 1);
+        }
+    }
+
+    goto do_send;
+
+try_extract_something_sendable_from_object:
+
+
+    /* typical entry point for send callback */
+maybe_do_connection_made:
+    assert(
+        s->io_op == PxSocket_IO_ACCEPT ||
+        s->io_op == PxSocket_IO_CONNECT
+    );
+
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) &&
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE))
+    {
+
+
+    }
+
+maybe_do_send_complete:
+    assert(s->io_op == PxSocket_IO_SEND);
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE) {
+        const char *name = "send_complete";
+        PyObject *func, *args;
+
+        func = PxSocket_GET_ATTR(name);
+        assert(func && func != Py_None);
+
+        snapshot = ENABLE_TLS_HEAP();
+        args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
+        if (!args) {
+            DISABLE_AND_REWIND_TLS_HEAP(snapshot);
+            PxSocket_FATAL();
+        }
+
+        result = PyObject_CallObject(func, args);
+        DISABLE_TLS_HEAP(snapshot);
+        CHECK_POST_CALLBACK_INVARIANTS();
+
+        if (result != Py_None) {
+            if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED) {
+                /* xxx todo: handle this in main thread */
+                char *msg = "protocol has data_received|line_received " \
+                            "callback, but send_complete() is sending " \
+                            "more data, so it may never be called";
+                PyErr_WarnEx(PyExc_RuntimeWarning, msg, 1);
+            }
+
+            goto try_send;
+        } else
+            goto maybe_recv;
+
+
+        PxSocket_HandleCallback(c, "send_complete", "(On)", s, s->send_id);
+        if (PyErr_Occurred())
+            goto end;
+
+        if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {
+            /* xxx todo */
+            if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
+                goto try_send;
+        }
+    }
+
+maybe_recv:
+    if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+        goto close_;
+
+do_recv:
+
+process_data_received:
+    /* xxx todo */
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RECV_MORE;
+
+    if (next_opcode)
+        goto dispatch;
+
+do_data_received_callback:
+    f = (char *)PxSocket_GetRecvCallback(s);
+    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED);
+
+
+close_:
+    assert(
+        (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+        (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+    );
+
+maybe_close:
+    assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED));
+    assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+        (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)))
+    {
+        BOOL success;
+        char error = 0;
+
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+        s->io_op = PxSocket_IO_CLOSE;
+
+        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
+        if (!success) {
+            int last_error = WSAGetLastError();
+            if (last_error == WSAEWOULDBLOCK)
+                Py_FatalError("DisconnectEx() -> WSAEWOULDBLOCK!");
+            else
+                PyErr_SetFromWindowsErr(last_error);
+        }
+
+        goto connection_closed;
+    }
+
+    assert(next_opcode);
+    goto dispatch;
+
+connection_closed:
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
+    Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
+
+    if (PyErr_Occurred()) {
+        PxSocket_HandleException(c, "", 0);
+        goto end;
+    }
+
+    PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
+
+try_recv:
+handle_error:
+connection_made_callback:
+data_received_callback:
+send_complete_callback:
+post_callback_that_supports_sending_retval:
+post_callback_that_does_not_support_sending_retval:
+try_send:
+
+error:
+
+exception:
+
+end:
+
+    return;
+
+}
+
 PxSocketBuf *
 new_pxsocketbuf(Context *c, size_t nbytes)
 {
@@ -4989,10 +5918,10 @@ PxSocket_HandleError(
             break;
 
         case WSAESHUTDOWN:
-            if (c->io_op == PxSocket_IO_SEND) {
+            if (s->io_op == PxSocket_IO_SEND) {
                 Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SEND_SHUTDOWN;
                 name = "send_shutdown";
-            } else if (c->io_op == PxSocket_IO_RECV) {
+            } else if (s->io_op == PxSocket_IO_RECV) {
                 Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RECV_SHUTDOWN;
                 name = "recv_shutdown";
             }
@@ -5275,49 +6204,61 @@ PxSocket_SendCallback(Context *c)
         goto maybe_close;
     }
 
-    MAYBE_DO_SEND_COMPLETE();
-
     MAYBE_DO_CONNECTION_MADE();
 
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {
-        /* xxx todo */
+    MAYBE_DO_SEND_COMPLETE();
 
-    }
+    MAYBE_SEND();
 
 maybe_close:
     MAYBE_CLOSE();
 
-    if (!PyErr_Occurred() && (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED))
-        PxSocket_TryRecv(c);
+    MAYBE_RECV();
 
 end:
     return;
 }
 
-__inline
-const char *
-PxSocket_GetRecvCallback(Context *c)
+
+/* 0 = failure, 1 = success (PyErr_Occurred() set on failure) */
+int
+PxSocket_ScheduleBufForSending(Context *c, PxSocketBuf *b)
 {
     PxSocket *s = (PxSocket *)c->io_obj;
-    int line_mode;
-    READ_LOCK(s);
-    line_mode = PyObject_IsTrue(PxSocket_GET_ATTR("line_mode"));
-    READ_UNLOCK(s);
-    return (line_mode ? "line_received" : "data_received");
+    PyObject *o;
+
+    o = (PyObject *)PxSocketBuf2PyBytesObject(b);
+
+    if (PyList_Append(s->send_list, o))
+        return 0;
+
+    s->send_nbytes += PyBytes_GET_SIZE(o);
+
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SEND_SCHEDULED;
+
+    return 1;
 }
 
-/* 0 = failure, 1 = success */
+/* 0 = failure, 1 = success (PyErr_Occurred() set on failure) */
 int
-PxSocket_TrySendResult(Context *c, PyObject *result)
+PxSocket_ScheduleObjectForSending(Context *c, PyObject *o)
 {
-    return 1;
+    int result = 0;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    PxSocketBuf *b;
 
-    if (result == Py_None)
+    assert(o);
+
+    if (o == Py_None)
         return 1;
 
-    /* xxx todo */
-    return 0;
+    b = _try_extract_something_sendable_from_object(c, o, 0);
+    if (!b)
+        return 0;
+
+    return PxSocket_ScheduleBufForSending(c, b);
 }
+
 
 void
 PxSocket_HandleCallback(
@@ -5341,11 +6282,16 @@ PxSocket_HandleCallback(
     READ_UNLOCK(o);
 
     if (!func || func == Py_None)
-        goto callback_complete;
+        goto end;
 
     va_start(va, format);
     args = Py_VaBuildValue(format, va);
     va_end(va);
+
+    /*
+    if (!PxContext_Snapshot(c))
+        PxSocket_EXCEPTION();
+    */
 
     result = PyObject_CallObject(func, args);
 
@@ -5359,20 +6305,10 @@ PxSocket_HandleCallback(
         PxSocket_EXCEPTION();
 
     if (result == Py_None)
-        goto callback_complete;
+        goto end;
 
-    if (!PxSocket_TrySendResult(c, result))
+    if (!PxSocket_ScheduleObjectForSending(c, result))
         PxSocket_EXCEPTION();
-
-    c->result = result;
-
-    /* xxx todo: check for other async ops to apply */
-
-callback_complete:
-    /*
-    if (PxSocket_IS_CONNECTED(s) && _pxsocket_recv(s, c))
-        PxSocket_CallbackComplete(c);
-    */
 
 end:
     return;
@@ -5534,7 +6470,7 @@ PxSocket_TryRecv(Context *c)
         b = c->rbuf_first;
     }
 
-    c->io_op = op;
+    s->io_op = op;
     c->io_result = NO_ERROR;
 
     if (!avail) {
@@ -5546,7 +6482,7 @@ PxSocket_TryRecv(Context *c)
     err = WSARecv(s->sock_fd, &(b->w), 1, rbytes, &flags, ol, NULL);
     if (err != SOCKET_ERROR) {
         if (!avail) {
-            CancelThreadpoolIo(s->tp_io);
+            /*CancelThreadpoolIo(s->tp_io);*/
             rbytes = &_received;
             *rbytes = 0;
         }
@@ -5575,7 +6511,7 @@ PxSocket_TrySend(Context *c, PxSocketBuf *b)
 
     Px_GUARD
 
-    c->io_op = op;
+    s->io_op = op;
     c->io_result = NO_ERROR;
 
     if (!s->tp_io) {
@@ -5585,6 +6521,8 @@ PxSocket_TrySend(Context *c, PxSocketBuf *b)
         if (!s->tp_io)
             PxSocket_SYSERROR("CreateThreadpoolIo");
     }
+
+    s->send_id++;
 
     /* Try a synchronous send, falling back to an overlapped send with a
      * threadpool IO if that returns EWOULDBLOCK. */
@@ -5613,6 +6551,119 @@ end:
 }
 
 void
+PxSocket_TrySendScheduled(Context *c)
+{
+    int err;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    OVERLAPPED *ol = NULL;
+    DWORD i;
+    DWORD flags = 0;
+    DWORD nbytes = 0;
+    DWORD nbufs = 0;
+    DWORD last_error;
+    size_t sz;
+    WSABUF **wbufs;
+    int op = PxSocket_IO_SEND;
+    PyObject *l = s->send_list;
+    PyObject *o;
+    PxSocketBuf *b;
+
+    Px_GUARD
+
+    s->io_op = op;
+    c->io_result = NO_ERROR;
+
+    assert(s->tp_io);
+
+    nbufs = (DWORD)PyList_GET_SIZE(l);
+    assert(nbufs > 0);
+
+    sz = sizeof(void *) * nbufs;
+
+    if (nbufs > s->nbufs) {
+        wbufs = (WSABUF **)_PyHeap_Malloc(c, sz, 0, 0);
+        if (!wbufs)
+            PxSocket_EXCEPTION();
+        s->wbufs = wbufs;
+        s->nbufs = nbufs;
+    } else
+        memset(s->wbufs[0], 0, sz);
+
+    for (i = 0; i < nbufs; i++) {
+        o = PyList_GET_ITEM(l, i);
+        b = PyBytesObject2PxSocketBuf(o);
+        wbufs[i] = &b->w;
+    }
+
+    if (!s->tp_io) {
+        PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
+        assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES);
+        s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
+        if (!s->tp_io)
+            PxSocket_SYSERROR("CreateThreadpoolIo");
+    }
+
+
+    s->send_id++;
+
+    /* Try a synchronous send, falling back to an overlapped send with a
+     * threadpool IO if that returns EWOULDBLOCK. */
+    err = WSASend(s->sock_fd, wbufs[0], nbufs, &nbytes, flags, NULL, NULL);
+    if (err != SOCKET_ERROR) {
+        /* Send completed synchronously. */
+        assert(nbytes == b->w.len);
+        PxSocketClient_Callback(NULL, c, ol, NO_ERROR, b->w.len, NULL);
+    } else {
+        err = WSAGetLastError();
+        if (err == WSAEWOULDBLOCK) {
+            ol = &(c->overlapped);
+            StartThreadpoolIo(s->tp_io);
+            err = WSASend(s->sock_fd, &(b->w), 1, NULL, flags, ol, NULL);
+            if (err == SOCKET_ERROR) {
+                err = WSAGetLastError();
+                if (err != WSA_IO_PENDING)
+                    PxSocket_HandleError(c, op, "WSARecv", err);
+            }
+        } else if (err != WSA_IO_PENDING)
+            PxSocket_HandleError(c, op, "WSARecv", err);
+    }
+
+
+    ol = &(c->overlapped);
+    StartThreadpoolIo(s->tp_io);
+    err = WSASend(s->sock_fd, wbufs[0], nbufs, NULL, flags, ol, NULL);
+    if (err == SOCKET_ERROR) {
+        last_error = WSAGetLastError();
+        if (last_error != WSA_IO_PENDING)
+            PxSocket_HandleError(c, op, "WSASend", last_error);
+    }
+
+end:
+    return;
+}
+
+/* 0 = failure (error will be set), 1 = no error occurred */
+int
+PxSocket_InitSendList(Context *c)
+{
+    Context *old_ctx = NULL;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    assert(!PyErr_Occurred());
+
+    if (ctx != c) {
+        old_ctx = ctx;
+        ctx = c;
+    }
+
+    s->send_list = PyList_New(_PxSocket_SendListSize);
+
+    if (old_ctx)
+        ctx = old_ctx;
+
+    return (s->send_list ? 1 : 0);
+}
+
+void
 PxSocket_ConnectCallback(Context *c)
 {
     int err;
@@ -5630,9 +6681,23 @@ PxSocket_ConnectCallback(Context *c)
     if (err == SOCKET_ERROR)
         PxSocket_WSAERROR("setsockopt(SO_UPDATE_CONNECT_CONTEXT)");
 
-    PxSocket_HandleCallback(c, "connection_made", "(O)", s);
+    /*
+    if (!PxSocket_InitSendList(c))
+        PxSocket_EXCEPTION();
+     */
 
-    /* xxx todo: check for other async ops to apply */
+    MAYBE_SHUTDOWN_SEND_OR_RECV();
+
+    MAYBE_DO_CONNECTION_MADE();
+
+    MAYBE_DO_SEND_COMPLETE();
+
+    MAYBE_SEND();
+
+    MAYBE_CLOSE();
+
+    MAYBE_RECV();
+
 end:
     return;
 }
@@ -5666,6 +6731,10 @@ _try_extract_something_sendable_from_object(
         PyObject *r = PyObject_CallObject(o, NULL);
         if (r)
             b = _try_extract_something_sendable_from_object(c, r, depth+1);
+    } else {
+        PyObject *s = PyObject_Str(o);
+        if (s)
+            b = _try_extract_something_sendable_from_object(c, s, depth);
     }
 
     if (!b)
@@ -5703,7 +6772,7 @@ PxSocketClient_Callback(
 
     ENTERED_IO_CALLBACK();
 
-    switch (c->io_op) {
+    switch (s->io_op) {
         case PxSocket_IO_CONNECT:
             cb = PxSocket_ConnectCallback;
             break;
@@ -5720,7 +6789,7 @@ PxSocketClient_Callback(
     cb(c);
 
     /*
-    if (PxSocket_IS_CONNECTED(s) && c->io_op != PxSocket_IO_SEND)
+    if (PxSocket_IS_CONNECTED(s) && s->io_op != PxSocket_IO_SEND)
         PxSocket_TryRecv(c);
     */
 
@@ -5790,19 +6859,29 @@ PxSocketServer_AcceptCallback(
     memcpy(&(s->local_addr), local, llen);
     memcpy(&(s->remote_addr), remote, rlen);
 
+    PxSocket_IOLoop(s, PxSocket_IO_ACCEPT);
+
+    goto end;
+
+    MAYBE_SHUTDOWN_SEND_OR_RECV();
+
+    /*
     if (PxSocket_HAS_INITIAL_BYTES(s)) {
         memset(p, 0, sz * 2);
-        b = PxSocket_GetInitialBytes(c);
+        b = PxSocket_GetInitialBytes(s);
         if (!b)
             PxSocket_EXCEPTION();
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDING_INITIAL_BYTES;
-        PxSocket_TrySend(c, b);
+        if (!PxSocket_ScheduleBufForSending(c, b))
+            PxSocket_EXCEPTION();
     }
-
-    /*
-    if (PxSocket_IS_CONNECTED(s) && c->io_op != PxSocket_IO_SEND)
-        PxSocket_TryRecv(c);
     */
+
+    MAYBE_SEND();
+
+    MAYBE_CLOSE();
+
+    MAYBE_RECV();
 
 end:
     LeaveCriticalSection(&(s->cs));
@@ -5951,18 +7030,21 @@ PxSocket_InitProtocol(Context *c)
 
     assert(s->protocol);
 
-    if (PxSocket_HasCallback(s, "connection_made"))
+    if (PxSocket_HasAttr(s, "connection_made"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_CONNECTION_MADE;
 
-    if (PxSocket_HasCallback(s, "data_received") ||
-        PxSocket_HasCallback(s, "line_received"))
+    if (PxSocket_HasAttr(s, "data_received") ||
+        PxSocket_HasAttr(s, "line_received"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
 
-    if (PxSocket_HasCallback(s, "send_failed"))
+    if (PxSocket_HasAttr(s, "send_failed"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_FAILED;
 
-    if (PxSocket_HasCallback(s, "send_complete"))
+    if (PxSocket_HasAttr(s, "send_complete"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
+
+    if (PxSocket_HasAttr(s, "shutdown_send"))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SHUTDOWN_SEND;
 
     return 1;
 
@@ -5980,6 +7062,8 @@ PxSocket_InitInitialBytes(Context *c)
 {
     PxSocket *s = (PxSocket *)c->io_obj;
     PyObject *o, *t = s->protocol;
+    int is_static = 0;
+
     assert(t);
     assert(!PyErr_Occurred());
 
@@ -5995,18 +7079,18 @@ PxSocket_InitInitialBytes(Context *c)
     if (!o || o == Py_None)
         return 1;
 
-    if (PyBytes_Check(o))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_PYBYTES;
+    is_static = (
+        PyBytes_Check(o)        ||
+        PyByteArray_Check(o)    ||
+        PyUnicode_Check(o)
+    );
 
-    else if (PyUnicode_Check(o))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_UNICODE;
-
-    else if (PyCallable_Check(o))
+    if (!is_static) {
+        if (!PyCallable_Check(o)) {
+            PyErr_SetString(PyExc_ValueError, INVALID_INITIAL_BYTES);
+            return 0;
+        }
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE;
-
-    else {
-        PyErr_SetString(PyExc_ValueError, INVALID_INITIAL_BYTES);
-        return 0;
     }
 
     /* XXX TODO: check that there are no 'expect_*' members, as these imply
@@ -6015,42 +7099,70 @@ PxSocket_InitInitialBytes(Context *c)
 
     Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES;
 
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE)
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE) {
+        WSABUF w;
+        PyObject *r;
+        /* xxx: heap rewind */
+        r = PyObject_CallObject(o, NULL);
+        if (!r)
+            return 0;
+        if (!PyObject2WSABUF(r, &w)) {
+            PyErr_SetString(PyExc_ValueError,
+                            "initial_bytes_to_send() callable did not return "
+                            "a sendable object (bytes, bytearray or unicode)");
+            return 0;
+        }
         s->initial_bytes_callable = o;
-    else {
-        PxSocketBuf *b;
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_STATIC;
+    } else {
         if (!PxSocket_IS_SERVERCLIENT(s)) {
-            assert(!s->initial_bytes);
-            if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_PYBYTES)
-                b = new_pxsocketbuf_from_bytes(c, (PyBytesObject *)o);
-            else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_UNICODE)
-                b = new_pxsocketbuf_from_unicode(c, (PyUnicodeObject *)o);
-            if (!b)
-                return 0;
-            s->initial_bytes = b;
-        } else
-            s->initial_bytes = s->parent->initial_bytes;
+            WSABUF w;
 
-        assert(s->initial_bytes);
+            assert(!s->initial_bytes.buf);
+
+            if (!PyObject2WSABUF(o, &s->initial_bytes)) {
+                PyErr_SetString(PyExc_ValueError,
+                                "initial_bytes_to_send is not a sendable "
+                                "object (bytes, bytearray or unicode)");
+                return 0;
+            }
+
+        } else {
+            s->initial_bytes.len = s->parent->initial_bytes.len;
+            s->initial_bytes.buf = s->parent->initial_bytes.buf;
+        }
+
+        assert(s->initial_bytes.buf);
     }
 
     return 1;
 }
 
-PxSocketBuf *
-PxSocket_GetInitialBytes(Context *c)
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_LoadInitialBytes(PxSocket *s)
 {
-    PxSocket *s = (PxSocket *)c->io_obj;
-    PyObject *o;
+    Context *c = s->ctx;
+    PyObject *o, *r;
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_STATIC)
-        return s->initial_bytes;
-
+        return 1;
 
     assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE);
     o = s->initial_bytes_callable;
-    return _try_extract_something_sendable_from_object(c, o, 0);
+
+    r = PyObject_CallObject(o, NULL);
+    if (!r)
+        return 0;
+
+    if (!PyObject2WSABUF(r, &s->initial_bytes)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "initial_bytes_to_send() callable did not return "
+                        "a sendable object (bytes, bytearray or unicode)");
+        return 0;
+    }
+
+    return 1;
 }
 
 void
@@ -6087,6 +7199,7 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
     WSAOVERLAPPED *ol;
     PyObject *result = NULL;
     PxSocket *s = (PxSocket *)c->io_obj;
+    struct sockaddr_in *sin;
 
     Px_GUARD
 
@@ -6109,15 +7222,12 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
 
     px = c->px;
 
-    if (!(PxSocket_IS_BOUND(s))) {
-        struct sockaddr_in *sin = &(s->local_addr.in);
-        sin->sin_family = AF_INET;
-        sin->sin_addr.s_addr = INADDR_ANY;
-        sin->sin_port = 0;
-        if (bind(s->sock_fd, (struct sockaddr *)sin, sizeof(*sin)))
-            PxSocket_WSAERROR("bind");
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_BOUND;
-    }
+    sin = &(s->local_addr.in);
+    sin->sin_family = AF_INET;
+    sin->sin_addr.s_addr = INADDR_ANY;
+    sin->sin_port = 0;
+    if (bind(s->sock_fd, (struct sockaddr *)sin, sizeof(*sin)))
+        PxSocket_WSAERROR("bind");
 
     cb = PxSocketClient_Callback;
     s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
@@ -6125,7 +7235,7 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
         PxSocket_SYSERROR("CreateThreadpoolIo");
 
     c->io_type = Px_IOTYPE_SOCKET;
-    c->io_op = PxSocket_IO_CONNECT;
+    s->io_op = PxSocket_IO_CONNECT;
 
     ol = &(c->overlapped);
     RESET_OVERLAPPED(ol);
@@ -6189,6 +7299,9 @@ PxSocketServer_CreateClientSocket(Context *c)
         goto error;
 
     PxSocket_InitExceptionHandler(x);
+
+    if (!PxSocket_InitSendList(x))
+        goto error;
 
     b = new_pxsocketbuf(x, o->recvbuf_size);
     if (!b)
@@ -6289,18 +7402,15 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
         PxSocket_FATAL();
 
     px = c->px;
-    c->io_op = PxSocket_IO_ACCEPT;
+    s->io_op = PxSocket_IO_ACCEPT;
 
-    assert(!(PxSocket_IS_BOUND(s)));
     sa = (struct sockaddr *)&(s->local_addr.in);
     len = s->local_addr_len;
     if (bind(s->sock_fd, sa, len) == SOCKET_ERROR)
         PxSocket_WSAERROR("bind");
-    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_BOUND;
 
     if (listen(s->sock_fd, SOMAXCONN) == SOCKET_ERROR)
         PxSocket_WSAERROR("listen");
-    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LISTEN;
 
     s->first = PxSocketServer_AllocClientSockets(c, 0);
     if (!s->first)
@@ -6378,90 +7488,22 @@ end:
     return;
 }
 
-
 PyObject *
 pxsocket_close(PxSocket *s, PyObject *args)
 {
-    if (s->sock_fd != -1) {
-        if (closesocket(s->sock_fd) == SOCKET_ERROR)
-            return s->errorhandler();
-        s->sock_fd = -1;
-    }
-    Py_RETURN_NONE;
-}
-
-PyObject *
-pxsocket_disconnect(PxSocket *s, PyObject *args)
-{
-/*
-    Context *c = ctx;
-    PyObject *result;
-    BOOL success;
-    PTP_WIN32_IO_CALLBACK cb;
     WRITE_LOCK(s);
-    if (s->sock_fd == -1) {
-        WRITE_UNLOCK(s);
-        PyErr_SetString(PyExc_ValueError, "sock_fd == -1");
-        return NULL;
-    }
-
-    memset((void *)&(c->overlapped), 0, sizeof(WSAOVERLAPPED));
-
-    c = ctx;
-    assert(c->io_obj == (PyObject *)s);
-    cb = PxSocket_DisconnectCallback;
-    c->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
-    if (!c->tp_io) {
-        WRITE_UNLOCK(s);
-        PyErr_SetFromWindowsErr(0);
-        return NULL;
-    }
-
-    StartThreadpoolIo(c->tp_io);
-
-    success = DisconnectEx(s->sock_fd, &(c->overlapped), 0, 0);
-    if (!success) {
-        int last_error = WSAGetLastError();
-        if (last_error != ERROR_IO_PENDING) {
-            CancelThreadpoolIo(c->tp_io);
-            PyErr_SetFromWindowsErr(last_error);
-            PxSocket_HandleException(c, "DisconnectEx", 1);
-            return NULL;
-        }
-    } else {
-        CancelThreadpoolIo(c->tp_io);
-        PySys_WriteStdout("DisconnectEx() completed synchronously\n");
-        result = Py_True;
-    }
-
-    result = Py_None;
-
-done:
-    if (!result)
-        assert(PyErr_Occurred());
-    else {
-        assert(result == Py_None || result == Py_True);
-        Py_INCREF(result);
-    }
-    return result;
-    */
-    return NULL;
-}
-
-PyObject *
-pxsocket_listen(PxSocket *s, PyObject *args)
-{
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CLOSE_SCHEDULED;
+    WRITE_UNLOCK(s);
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(pxsocket_next_send_id_doc, "xxx todo\n");
+
 PyObject *
-pxsocket_write(PxSocket *s, PyObject *args)
+pxsocket_next_send_id(PxSocket *s, PyObject *args)
 {
-    PyObject *result = NULL;
-
-    Py_RETURN_NONE;
+    return PyLong_FromUnsignedLongLong(s->send_id+1);
 }
-
 
 #define _PXSOCKET(n, a) _METHOD(pxsocket, n, a)
 #define _PXSOCKET_N(n) _PXSOCKET(n, METH_NOARGS)
@@ -6470,6 +7512,7 @@ pxsocket_write(PxSocket *s, PyObject *args)
 
 static PyMethodDef PxSocketMethods[] = {
     _PXSOCKET_N(close),
+    _PXSOCKET_N(next_send_id),
     { NULL, NULL }
 };
 
@@ -6496,7 +7539,7 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_IR(sock_type),
     _PXSOCKET_ATTR_IR(sock_proto),
     _PXSOCKET_ATTR_DR(sock_timeout),
-    _PXSOCKET_ATTR_IR(sock_backlog),
+    /*_PXSOCKET_ATTR_IR(sock_backlog),*/
 
     ///* handler */
     //_PXSOCKET_ATTR_O(handler),

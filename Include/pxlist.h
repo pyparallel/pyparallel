@@ -59,13 +59,6 @@ PxList_Next(PxListItem *item)
 }
 
 static __inline
-void
-_PxList_SetNext(PxListItem *item, PxListItem *next)
-{
-    item->slist_entry.Next = I2E(next);
-}
-
-static __inline
 void *
 PxList_Malloc(Py_ssize_t size)
 {

@@ -114,21 +114,6 @@ def wait_any(waits):
 def wait_all(waits):
     raise NotImplementedError
 
-def chargen(lineno, nchars=72):
-    start = ord(' ')
-    end = ord('~')
-    c = lineno + start
-    if c > end:
-        c = (c % end) + start
-    b = bytearray(nchars)
-    for i in range(0, nchars):
-        if c > end:
-            c = start
-        b[i] = c
-        c += 1
-
-    return b
-
 QOTD = b'An apple a day keeps the doctor away.\r\n'
 
 class Protocol:

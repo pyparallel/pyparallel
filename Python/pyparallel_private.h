@@ -29,13 +29,16 @@ extern "C" {
 #define Px_PTR_ALIGN_RAW 8
 #define Px_UINTPTR unsigned long long
 #define Px_INTPTR long long
+#define Px_LARGE_PAGE_SIZE 2 * 1024 * 1024 /* 2MB on x64 */
 #else
+#define Px_LARGE_PAGE_SIZE 4 * 1024 * 1024 /* 4MB on x86 */
 #define Px_PTR_ALIGN_SIZE 4U
 #define Px_PTR_ALIGN_RAW 4
 #define Px_UINTPTR unsigned long
 #define Px_INTPTR long
 #endif
 #define Px_PAGE_SIZE (4096)
+#define Px_SMALL_PAGE_SIZE Px_PAGE_SIZE
 #define Px_PAGE_SHIFT 12ULL
 #define Px_MEM_ALIGN_RAW MEMORY_ALLOCATION_ALIGNMENT
 #define Px_MEM_ALIGN_SIZE ((Px_UINTPTR)MEMORY_ALLOCATION_ALIGNMENT)
@@ -64,16 +67,17 @@ extern "C" {
     (Px_PTR_ALIGN(Px_PTR_ADD(p, Px_PTR_ALIGN(n))))
 
 #define Px_ALIGNED_MALLOC(n)                                \
-    (Py_PXCTX ? _PyHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+    (Py_PXCTX ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
                 _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
 
 #define Px_ALIGNED_FREE(n)                                  \
-    (Py_PXCTX ? _PyHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+    (Py_PXCTX ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
                 _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
 
 #define Px_MAX(a, b) ((a > b) ? a : b)
 
 #define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE) /* 4KB */
+#define Px_DEFAULT_TLS_HEAP_SIZE (Px_LARGE_PAGE_SIZE) /* 2MB/4MB */
 #define Px_MAX_SEM (32768)
 
 #define Px_PTR_IN_HEAP(p, h) (!h ? 0 : (            \
@@ -128,6 +132,36 @@ Px_GET_ALIGNMENT(void *p)
 #define Px_CTXTYPE_FILE    (1UL <<  3)
 
 #include "pxlist.h"
+
+#ifdef _WIN64
+#define Px_NUM_TLS_WSABUFS 64
+#else
+#define Px_NUM_TLS_WSABUFS 32
+#endif
+
+
+typedef struct _PyParallelHeap PyParallelHeap, Heap;
+typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
+typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
+typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
+typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
+typedef struct _PyParallelCallback PyParallelCallback, Callback;
+
+typedef struct _PxSocketBuf PxSocketBuf;
+typedef struct _PxHeap PxHeap;
+
+typedef struct _PxThreadLocalState TLS;
+
+typedef struct _TLSBUF {
+    char index;
+    TLS *tls;
+    WSABUF w;
+} TLSBUF;
+
+#define T2W(b) (_Py_CAST_FWD(b, WSABUF *, TLSBUF, w))
+#define W2T(b) (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, w))
+
+#define usize_t unsigned size_t
 
 typedef struct _cpuinfo {
     struct _core {
@@ -191,31 +225,33 @@ remove_object(Objects *list, Object *o)
         next->prev = prev;
 }
 
-typedef struct _PyParallelHeap PyParallelHeap, Heap;
-typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
-typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
-typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
-typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
-typedef struct _PyParallelCallback PyParallelCallback, Callback;
+#define _PxHeap_HEAD_EXTRA  \
+    Heap   *sle_prev;       \
+    Heap   *sle_next;       \
+    void   *base;           \
+    void   *next;           \
+    size_t  pages;          \
+    size_t  next_alignment; \
+    size_t  size;           \
+    size_t  allocated;      \
+    size_t  remaining;      \
+    size_t  snapshot_id;    \
+    int     index;
 
-typedef struct _PxSocketBuf PxSocketBuf;
+#define PxHeap_HEAD PxHeap heap_base;
+
+typedef struct _PxHeap {
+    _PxHeap_HEAD_EXTRA
+} PxHeap;
 
 typedef struct _PyParallelHeap {
-    Heap   *sle_prev;
-    Heap   *sle_next;
-    void   *base;
-    void   *next;
-    size_t  pages;
-    size_t  next_alignment;
+    _PxHeap_HEAD_EXTRA
     size_t  mallocs;
     size_t  deallocs;
     size_t  mem_reallocs;
     size_t  obj_reallocs;
     size_t  resizes;
     size_t  frees;
-    size_t  size;
-    size_t  allocated;
-    size_t  remaining;
     size_t  alignment_mismatches;
     size_t  bytes_wasted;
 } PyParallelHeap, Heap;
@@ -256,6 +292,34 @@ typedef struct _PyParallelContextStats {
 
     size_t startup_size;
 } PyParallelContextStats, Stats;
+
+typedef struct _PxThreadLocalState {
+    Heap       *h;
+    Heap       *ctx_heap;
+    Heap        heap;
+    HANDLE      handle;
+    DWORD       thread_id;
+    Stats       stats;
+
+    CRITICAL_SECTION    sbuf_cs;
+    volatile Px_INTPTR  sbuf_bitmap;
+    WSABUF             *sbufs[Px_NUM_TLS_WSABUFS];
+    TLSBUF              sbuf[Px_NUM_TLS_WSABUFS];
+
+    CRITICAL_SECTION    rbuf_cs;
+    volatile Px_INTPTR  rbuf_bitmap;
+    WSABUF             *rbufs[Px_NUM_TLS_WSABUFS];
+    TLSBUF              rbuf[Px_NUM_TLS_WSABUFS];
+
+    size_t              snapshot_id;
+    CRITICAL_SECTION    snapshots_cs;
+    volatile Px_INTPTR  snapshots_bitmap;
+    Heap               *snapshots[Px_NUM_TLS_WSABUFS];
+    Heap                snapshot[Px_NUM_TLS_WSABUFS];
+
+} PxThreadLocalState, TLS;
+
+
 
 #define _PX_TMPBUF_SIZE 1024
 
@@ -411,9 +475,32 @@ typedef struct _PxState {
     long long last_sync_nowait_done_count;
     long long last_sync_nowait_submitted_count;
 
+    volatile long tls_buf_mismatch;
+
 } PxState;
 
+#define _PxContext_HEAD_EXTRA       \
+    __declspec(align(16))           \
+    SLIST_ENTRY slist_entry;        \
+    HANDLE  heap_handle;            \
+    Heap    heap;                   \
+    Heap    *h;                      \
+    PxState *px;                    \
+    PyThreadState *tstate;          \
+    PyThreadState *pstate;          \
+    PTP_CALLBACK_INSTANCE instance; \
+    int flags;
+
+#define PxContext_HEAD  PxContext ctx_base;
+
+typedef struct _PxContext {
+    _PxContext_HEAD_EXTRA
+} PxContext;
+
 typedef struct _PyParallelContext {
+    _PxContext_HEAD_EXTRA
+    Stats     stats;
+
     PyObject *waitobj;
     PyObject *waitobj_timeout;
     PyObject *func;
@@ -428,7 +515,6 @@ typedef struct _PyParallelContext {
     PFILETIME       wait_timeout;
 
     int         io_type;
-    int         io_op;
     TP_IO      *tp_io;
     DWORD       io_status;
     ULONG       io_result;
@@ -438,18 +524,12 @@ typedef struct _PyParallelContext {
 
     OVERLAPPED  overlapped;
 
-    int context_type;
-
-    int flags;
 
     PxSocketBuf *rbuf_first;
     PxSocketBuf *rbuf_last;
 
     LARGE_INTEGER filesize;
     LARGE_INTEGER next_read_offset;
-
-    __declspec(align(Px_MEM_ALIGN_RAW))
-    PxListEntry slist_entry;
 
     TP_TIMER *tp_timer;
 
@@ -463,11 +543,6 @@ typedef struct _PyParallelContext {
     PyObject *ob_first;
     PyObject *ob_last;
 
-    PyThreadState *tstate;
-    PyThreadState *pstate;
-
-    PxState *px;
-
     PxListItem *error;
     PxListItem *callback_completed;
     PxListItem *errback_completed;
@@ -477,16 +552,6 @@ typedef struct _PyParallelContext {
     PxListItem *decref;
 
     volatile long refcnt;
-
-    HANDLE heap_handle;
-    Heap   heap;
-    Heap  *h;
-
-    void  *instance;
-
-    int disassociated;
-
-    Stats  stats;
 
     Objects objects;
     Objects varobjs;
@@ -520,7 +585,10 @@ typedef struct _PyParallelContext {
     char was_persisted;
     int persisted_count;
 
-} PyParallelContext, WorkContext, Context;
+} PyParallelContext, Context;
+
+int PxContext_Snapshot(Context *c);
+int PxContext_Restore(Context *c);
 
 typedef struct _PyParallelIOContext {
     PyObject        *o;
@@ -543,26 +611,37 @@ typedef struct _PxObject {
 #define Px_CTXFLAGS_IS_PERSISTED    (1)
 #define Px_CTXFLAGS_WAS_PERSISTED   (1UL <<  1)
 #define Px_CTXFLAGS_REUSED          (1UL <<  2)
+#define Px_CTXFLAGS_IS_WORK_CTX     (1UL <<  3)
+#define Px_CTXFLAGS_DISASSOCIATED   (1UL <<  4)
+#define Px_CTXFLAGS_HAS_STATS       (1UL <<  5)
+#define Px_CTXFLAGS_TLS_HEAP_ACTIVE (1UL <<  6)
 
 #define Px_CTX_IS_PERSISTED(c)   (Px_CTXFLAGS(c) & Px_CTXFLAGS_IS_PERSISTED)
 #define Px_CTX_WAS_PERSISTED(c)  (Px_CTXFLAGS(c) & Px_CTXFLAGS_WAS_PERSISTED)
 #define Px_CTX_REUSED(c)         (Px_CTXFLAGS(c) & Px_CTXFLAGS_REUSED)
+#define Px_IS_WORK_CTX(c)        (Px_CTXFLAGS(c) & Px_CTXFLAGS_IS_WORK_CTX)
+#define Px_CTX_IS_DISASSOCIATED(c) (Px_CTXFLAGS(c) & Px_CTXFLAGS_DISASSOCIATED)
+#define Px_CTX_HAS_STATS(c)      (Px_CTXFLAGS(c) & Px_CTXFLAGS_HAS_STATS)
+#define Px_TLS_HEAP_ACTIVE(c)    (Px_CTXFLAGS(c) & Px_CTXFLAGS_TLS_HEAP_ACTIVE)
+
+#define STATS(c) \
+    (Px_CTX_HAS_STATS(c) ? ((Stats *)(&(((Context *)c)->stats))) : 0)
 
 #define Px_SOCKFLAGS(s)     (((PxSocket *)s)->flags)
 
 #define Px_SOCKFLAGS_CLIENT                     (1)
 #define Px_SOCKFLAGS_SERVER                     (1UL <<  1)
-#define Px_SOCKFLAGS_BOUND                      (1UL <<  2)
+#define Px_SOCKFLAGS_____________________       (1UL <<  2)
 #define Px_SOCKFLAGS_RECV_MORE                  (1UL <<  3)
 #define Px_SOCKFLAGS_CONNECTED                  (1UL <<  4)
 #define Px_SOCKFLAGS_LONG_LIVED                 (1UL <<  5)
-#define Px_SOCKFLAGS_LISTEN                     (1UL <<  6)
+#define Px_SOCKFLAGS_THROUGHPUT                 (1UL <<  6)
 #define Px_SOCKFLAGS_SERVERCLIENT               (1UL <<  7)
 #define Px_SOCKFLAGS_INITIAL_BYTES              (1UL <<  8)
 #define Px_SOCKFLAGS_INITIAL_BYTES_STATIC       (1UL <<  9)
-#define Px_SOCKFLAGS_INITIAL_BYTES_PYBYTES      (1UL << 10)
-#define Px_SOCKFLAGS_INITIAL_BYTES_UNICODE      (1UL << 11)
-#define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1UL << 12)
+#define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1UL << 10)
+#define Px_SOCKFLAGS_CONCURRENCY                (1UL << 11)
+#define Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE     (1UL << 12)
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
 #define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
 #define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
@@ -577,8 +656,10 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_TIMEDOUT                   (1UL << 24)
 #define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 25)
 #define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
-#define Px_SOCKFLAGS_                           (1UL << 27)
-
+#define Px_SOCKFLAGS_HAS_SHUTDOWN_SEND          (1UL << 27)
+#define Px_SOCKFLAGS_RELOAD_PROTOCOL            (1UL << 29)
+#define Px_SOCKFLAGS_INITIAL_BYTES_PYBYTEARRAY  (1UL << 30)
+#define Px_SOCKFLAGS_                           (1UL << 31)
 
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
@@ -590,6 +671,12 @@ typedef struct _PxObject {
 
 #define PxSocket_HAS_INITIAL_BYTES(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES)
+
+#define PxSocket_HAS_SEND_COMPLETE(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE)
+
+#define PxSocket_HAS_DATA_RECEIVED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
 
 #define PxSocket_IS_SERVERCLIENT(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVERCLIENT)
@@ -611,9 +698,11 @@ typedef struct _PxObject {
 #define PxSocket_IO_CONNECT             (1)
 #define PxSocket_IO_ACCEPT              (1UL << 1)
 #define PxSocket_IO_RECV                (1UL << 2)
+#define PxSocket_IO_RECV_SYNC           (1UL << 3)
 #define PxSocket_IO_SEND                (1UL << 3)
-#define PxSocket_IO_DISCONNECT          (1UL << 4)
-#define PxSocket_IO_CLOSE               (1UL << 5)
+#define PxSocket_IO_SEND_SYNC           (1UL << 4)
+#define PxSocket_IO_DISCONNECT          (1UL << 5)
+#define PxSocket_IO_CLOSE               (1UL << 6)
 
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
@@ -658,6 +747,11 @@ typedef void (*sockcb_t)(Context *c);
 
 #define IS_SBUF(b)
 
+typedef struct _PxSocketListItem {
+    __declspec(align(16)) SLIST_ENTRY slist_entry;
+    SOCKET_T sock_fd;
+} PxSocketListItem;
+
 typedef struct _PxSocket PxSocket;
 
 typedef struct _PxSocket {
@@ -672,9 +766,6 @@ typedef struct _PxSocket {
                                         sets a Python exception */
     double sock_timeout;                 /* Operation timeout in seconds;
                                         0.0 means non-blocking */
-    int sock_backlog;           /* Backlog specified to listen(n). Used for
-                                   pre-allocating sockets for AcceptEx when
-                                   on Windows. */
 
     struct addrinfo local_addrinfo;
     struct addrinfo remote_addrinfo;
@@ -699,19 +790,22 @@ typedef struct _PxSocket {
     int       recvbuf_size;
     int       sendbuf_size;
 
-    size_t last_send_id;
-    size_t this_send_id;
-    size_t next_send_id;
-    size_t cur_send_id;
-    size_t last_successful_send_id;
+    size_t send_id;
+
+    WSABUF **wbufs;
+    DWORD    nbufs;
+
+    PyObject   *send_list;
+    Py_ssize_t  send_nbytes;
 
     PyObject *protocol_type;
     PyObject *protocol;
     PyObject *exception_handler;
     PyObject *initial_bytes_callable;
-    PxSocketBuf *initial_bytes;
+    WSABUF    initial_bytes;
 
-    TP_IO *tp_io;
+    int     io_op;
+    TP_IO  *tp_io;
 
     /* Server-specific stuff. */
     int preallocate;
@@ -781,6 +875,12 @@ typedef struct _PxSocket {
 
 #define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))
 
+#define PxSocket_GET_ATTR(n)                     \
+    (PyObject_HasAttrString(s->protocol, n) ?    \
+        PyObject_GetAttrString(s->protocol, n) : \
+        Py_None)
+
+
 static __inline
 void
 PxList_PushSocket(PxListHead *head, PxSocket *s)
@@ -805,104 +905,14 @@ PxList_PopSocket(PxListHead *head)
 }
 
 
-#define PxSocket_PROTOCOL(c)                                                 \
-    ((PyObject *)(((PxSocket *)((Context *)c)->io_obj)->protocol))
-
-#define PxSocket_GET_ATTR(n)                                                 \
-    (PyObject_HasAttrString(PxSocket_PROTOCOL(c), n) ?                       \
-        PyObject_GetAttrString(PxSocket_PROTOCOL(c), n) :                    \
-        Py_None)
-
-#define DO_SEND_COMPLETE() do {                                              \
-    PxSocket_HandleCallback(c, "send_complete", "(On)", s, s->last_send_id); \
-    if (PyErr_Occurred())                                                    \
-        goto end;                                                            \
-} while (0)
-
-#define MAYBE_DO_SEND_COMPLETE() do {                                        \
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE) &&                \
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES))              \
-        DO_SEND_COMPLETE();                                                  \
-} while (0)
-
-#define DO_CONNECTION_MADE() do {                                            \
-    PxSocket_HandleCallback(c, "connection_made", "(O)", s);                 \
-    if (PyErr_Occurred())                                                    \
-        goto end;                                                            \
-} while (0)
-
-#define DO_DATA_RECEIVED() do {                                              \
-    const char *f = PxSocket_GetRecvCallback(c);                             \
-    PxSocketBuf   *sbuf;                                                     \
-    PyBytesObject *pbuf;                                                     \
-    sbuf = c->rbuf_first;                                                    \
-    sbuf->ob_base.ob_size = c->io_nbytes;                                    \
-    pbuf = PxSocketBuf2PyBytesObject(sbuf);                                  \
-    PxSocket_HandleCallback(c, f, "(OO)", s, pbuf);                          \
-    if (PyErr_Occurred())                                                    \
-        goto end;                                                            \
-} while (0)
-
-#define MAYBE_DO_CONNECTION_MADE() do {                                      \
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) &&              \
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE))             \
-        DO_CONNECTION_MADE();                                                \
-} while (0)
-
-#define MAYBE_DO_SEND_FAILED() do {                                          \
-    if ((c->io_op == PxSocket_IO_SEND) &&                                    \
-        (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_FAILED) &&                  \
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES))              \
-    {                                                                        \
-        PyObject *args, *func;                                               \
-        args = Py_BuildValue("(Oni)", s, s->last_send_id, c->io_result);     \
-        if (!args)                                                           \
-            PxSocket_EXCEPTION();                                            \
-        READ_LOCK(s);                                                        \
-        func = PxSocket_GET_ATTR("send_failed");                             \
-        READ_UNLOCK(s);                                                      \
-        assert(func);                                                        \
-        result = PyObject_CallObject(func, args);                            \
-        if (null_with_exc_or_non_none_return_type(result, c->pstate))        \
-            PxSocket_EXCEPTION();                                            \
-    }                                                                        \
-} while (0)
-
-#define _m_MAYBE_CLOSE() do {                                                \
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||                  \
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))                  \
-    {                                                                        \
-        char error = 0;                                                      \
-                                                                             \
-        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));                    \
-                                                                             \
-        c->io_op = PxSocket_IO_CLOSE;                                        \
-                                                                             \
-        if (closesocket(s->sock_fd) == SOCKET_ERROR) {                       \
-            if (WSAGetLastError() == WSAEWOULDBLOCK)                         \
-                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");           \
-            else                                                             \
-                error = 1;                                                   \
-        }                                                                    \
-                                                                             \
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;                    \
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;                          \
-        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;                             \
-                                                                             \
-        if (error)                                                           \
-            PxSocket_HandleException(c, "closesocket", 0);                   \
-        else                                                                 \
-            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);       \
-        goto end;                                                            \
-    }                                                                        \
-} while (0)
-
 static __inline
 int
-PxSocket_HasCallback(PxSocket *s, const char *callback)
+PxSocket_HasAttr(PxSocket *s, const char *callback)
 {
-    return PyObject_HasAttrString(PxSocket_PROTOCOL(s->ctx), callback);
+    return PyObject_HasAttrString(s->protocol, callback);
 }
+
+void PxSocket_TrySendScheduled(Context *c);
 
 void PxSocket_HandleError(Context *c,
                           int op,
@@ -925,7 +935,8 @@ PxSocket_HandleCallback(
     ...
 );
 
-PxSocketBuf *PxSocket_GetInitialBytes(Context *);
+int PxSocket_ScheduleBufForSending(Context *c, PxSocketBuf *b);
+PxSocketBuf *PxSocket_GetInitialBytes(PxSocket *);
 PxSocketBuf *_try_extract_something_sendable_from_object(Context *c,
                                                          PyObject *o,
                                                          int depth);
@@ -946,70 +957,320 @@ void PxServerSocket_ClientClosed(Context *x);
 
 void PxSocket_HandleException(Context *c, const char *syscall, int fatal);
 
+int PxSocket_LoadInitialBytes(PxSocket *s);
 
-#define MAYBE_SEND() do {                                                    \
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {                     \
-        /* xxx todo */                                                       \
-    }                                                                        \
+__inline
+PyObject *
+_read_lock(PyObject *obj)
+{
+    AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+#define READ_LOCK(o) (_read_lock((PyObject *)o))
+
+__inline
+PyObject *
+_read_unlock(PyObject *obj)
+{
+    ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+#define READ_UNLOCK(o) (_read_unlock((PyObject *)o))
+
+__inline
+char
+_try_read_lock(PyObject *obj)
+{
+    return TryAcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+}
+#define TRY_READ_LOCK(o) (_try_read_lock((PyObject *)o))
+
+__inline
+PyObject *
+_write_lock(PyObject *obj)
+{
+    AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+#define WRITE_LOCK(o) (_write_lock((PyObject *)o))
+
+__inline
+PyObject *
+_write_unlock(PyObject *obj)
+{
+    ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    return obj;
+}
+#define WRITE_UNLOCK(o) (_write_unlock((PyObject *)o))
+
+__inline
+char
+_try_write_lock(PyObject *obj)
+{
+    return TryAcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+}
+#define TRY_WRITE_LOCK(o) (_try_write_lock((PyObject *)o))
+
+
+#define DO_SEND_COMPLETE() do {                                          \
+    PxSocket_HandleCallback(c, "send_complete", "(On)", s, s->send_id);  \
+    if (PyErr_Occurred())                                                \
+        goto end;                                                        \
+} while (0)
+
+#define MAYBE_DO_SEND_COMPLETE() do {                                    \
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE)                \
+        DO_SEND_COMPLETE();                                              \
+} while (0)
+
+#define DO_CONNECTION_MADE() do {                                        \
+    assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED));            \
+    PxSocket_HandleCallback(c, "connection_made", "(O)", s);             \
+    if (PyErr_Occurred())                                                \
+        goto end;                                                        \
+} while (0)
+
+#define DO_DATA_RECEIVED() do {                                          \
+    const char *f = PxSocket_GetRecvCallback(s);                         \
+    PxSocketBuf   *sbuf;                                                 \
+    PyBytesObject *pbuf;                                                 \
+    sbuf = c->rbuf_first;                                                \
+    sbuf->ob_base.ob_size = c->io_nbytes;                                \
+    pbuf = PxSocketBuf2PyBytesObject(sbuf);                              \
+    PxSocket_HandleCallback(c, f, "(OO)", s, pbuf);                      \
+    if (PyErr_Occurred())                                                \
+        goto end;                                                        \
+} while (0)
+
+#define MAYBE_DO_CONNECTION_MADE() do {                                  \
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) &&          \
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE))         \
+        DO_CONNECTION_MADE();                                            \
+} while (0)
+
+#define MAYBE_DO_SEND_FAILED() do {                                      \
+    if ((s->io_op == PxSocket_IO_SEND) &&                                \
+        (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_FAILED))                \
+    {                                                                    \
+        PyObject *args, *func;                                           \
+        args = Py_BuildValue("(Oni)", s, s->send_id, c->io_result);      \
+        if (!args)                                                       \
+            PxSocket_EXCEPTION();                                        \
+        READ_LOCK(s);                                                    \
+        func = PxSocket_GET_ATTR("send_failed");                         \
+        READ_UNLOCK(s);                                                  \
+        assert(func);                                                    \
+        result = PyObject_CallObject(func, args);                        \
+        if (null_with_exc_or_non_none_return_type(result, c->pstate))    \
+            PxSocket_EXCEPTION();                                        \
+    }                                                                    \
+} while (0)
+
+#define _m_MAYBE_CLOSE() do {                                            \
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||              \
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))              \
+    {                                                                    \
+        char error = 0;                                                  \
+                                                                         \
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));                \
+                                                                         \
+        s->io_op = PxSocket_IO_CLOSE;                                    \
+                                                                         \
+        if (closesocket(s->sock_fd) == SOCKET_ERROR) {                   \
+            if (WSAGetLastError() == WSAEWOULDBLOCK)                     \
+                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");       \
+            else                                                         \
+                error = 1;                                               \
+        }                                                                \
+                                                                         \
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;                \
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;                      \
+        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;                         \
+                                                                         \
+        if (error)                                                       \
+            PxSocket_HandleException(c, "closesocket", 0);               \
+        else                                                             \
+            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);   \
+        goto end;                                                        \
+    }                                                                    \
+} while (0)
+
+#define MAYBE_SEND() do {                                                \
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SCHEDULED) {                 \
+        PxSocket_TrySendScheduled(c);                                    \
+        goto end;                                                        \
+    }                                                                    \
+} while (0)
+
+#define MAYBE_RECV() do {                                                \
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED) {              \
+        PxSocket_TryRecv(c);                                             \
+        goto end;                                                        \
+    }                                                                    \
+} while (0)
+
+#define MAYBE_SHUTDOWN_SEND_OR_RECV() do {                               \
+    if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)) {           \
+        if (shutdown(s->sock_fd, SD_RECEIVE) == SOCKET_ERROR)            \
+            PxSocket_WSAERROR("shutdown(SD_RECEIVE)");                   \
+    } else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SHUTDOWN_SEND) {       \
+        if (shutdown(s->sock_fd, SD_SEND) == SOCKET_ERROR)               \
+            PxSocket_WSAERROR("shutdown(SD_SEND)");                      \
+    }                                                                    \
 } while (0)
 
 #ifdef Py_DEBUG
-#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() do {                           \
-    if (!c->io_nbytes)                                                       \
-        assert(c->io_result != NO_ERROR);                                    \
-                                                                             \
-    if (c->io_result == NO_ERROR)                                            \
-        assert(c->io_nbytes > 0);                                            \
-    else                                                                     \
-        assert(!c->io_nbytes);                                               \
+#define CHECK_SEND_RECV_CALLBACK_INVARIANTS() do {                       \
+    if (!c->io_nbytes)                                                   \
+        assert(c->io_result != NO_ERROR);                                \
+                                                                         \
+    if (c->io_result == NO_ERROR)                                        \
+        assert(c->io_nbytes > 0);                                        \
+    else                                                                 \
+        assert(!c->io_nbytes);                                           \
 } while (0)
 #else
 #define CHECK_SEND_RECV_CALLBACK_INVARIANTS() /* no-op */
 #endif
 
 
-#define PxSocket_FATAL() do {                             \
-    assert(PyErr_Occurred());                             \
-    PxSocket_HandleException(c, "", 1);                   \
-    goto end;                                             \
+#define PxSocket_FATAL() do {                                            \
+    assert(PyErr_Occurred());                                            \
+    PxSocket_HandleException(c, "", 1);                                  \
+    goto end;                                                            \
 } while (0)
 
 
-#define PxSocket_EXCEPTION() do {                         \
-    assert(PyErr_Occurred());                             \
-    PxSocket_HandleException(c, "", 0);                   \
-    goto end;                                             \
+#define PxSocket_EXCEPTION() do {                                        \
+    assert(PyErr_Occurred());                                            \
+    PxSocket_HandleException(c, "", 0);                                  \
+    goto end;                                                            \
 } while (0)
 
-#define PxSocket_SYSERROR(n) do {                         \
-    PyErr_SetFromWindowsErr(0);                           \
-    PxSocket_HandleException(c, n, 1);                    \
-    goto end;                                             \
+#define PxSocket_SYSERROR(n) do {                                        \
+    PyErr_SetFromWindowsErr(0);                                          \
+    PxSocket_HandleException(c, n, 1);                                   \
+    goto end;                                                            \
 } while (0)
 
-#define PxSocket_WSAERROR(n) do {                         \
-    PyErr_SetFromWindowsErr(WSAGetLastError());           \
-    PxSocket_HandleException(c, n, 1);                    \
-    goto end;                                             \
+#define PxSocket_WSAERROR(n) do {                                        \
+    PyErr_SetFromWindowsErr(WSAGetLastError());                          \
+    PxSocket_HandleException(c, n, 1);                                   \
+    goto end;                                                            \
 } while (0)
 
-#define PxSocket_SOCKERROR(n) do {                        \
-    PxSocket_HandleError(c, op, n, WSAGetLastError());    \
-    goto end;                                             \
+#define PxSocket_SOCKERROR(n) do {                                       \
+    PxSocket_HandleError(c, op, n, WSAGetLastError());                   \
+    goto end;                                                            \
 } while (0)
 
 #define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
 
 #define OL2PxSocket(ol) (_Py_CAST_BACK(ol, PxSocket *, PxSocket, overlapped))
 
-#define PxSocket_SET_DISCONNECTED(s) do {         \
-    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_DISCONNECTED; \
-    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;   \
+#define PxSocket_SET_DISCONNECTED(s) do {                                \
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_DISCONNECTED;                        \
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;                          \
 } while (0)
 
-#define PxSocket_CLOSE(s) do {                    \
-    (void)closesocket((SOCKET)s->sock_fd);        \
+#define PxSocket_CLOSE(s) do {                                           \
+    (void)closesocket((SOCKET)s->sock_fd);                               \
 } while (0)
+
+static PyTypeObject PxSocket_Type;
+static PyTypeObject PxSocketBuf_Type;
+static PyTypeObject PxClientSocket_Type;
+static PyTypeObject PxServerSocket_Type;
+
+static PySocketModule_APIObject PySocketModule;
+
+#define PySocket_Type           PySocketModule.Sock_Type
+#define getsockaddrarg          PySocketModule.getsockaddrarg
+#define getsockaddrlen          PySocketModule.getsockaddrlen
+#define makesockaddr            PySocketModule.makesockaddr
+#define AcceptEx                PySocketModule.AcceptEx
+#define ConnectEx               PySocketModule.ConnectEx
+#define WSARecvMsg              PySocketModule.WSARecvMsg
+#define WSASendMsg              PySocketModule.WSASendMsg
+#define DisconnectEx            PySocketModule.DisconnectEx
+#define TransmitFile            PySocketModule.TransmitFile
+#define TransmitPackets         PySocketModule.TransmitPackets
+#define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
+
+#define PxSocket_Check(v)         (Py_ORIG_TYPE(v) == &PxSocket_Type)
+#define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)
+#define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
+
+#define PXS2S(s) ((PySocketSockObject *)s)
+
+#define Py_RETURN_BOOL(expr) return (              \
+    ((expr) ? (Py_INCREF(Py_True), Py_True) :      \
+              (Py_INCREF(Py_False), Py_False))     \
+)
+
+#define Px_PROTECTION_GUARD(o)                     \
+    do {                                           \
+        if (!_protected(o)) {                      \
+            PyErr_SetNone(PyExc_ProtectionError);  \
+            return NULL;                           \
+        }                                          \
+    } while (0)
+
+#define Px_PERSISTENCE_GUARD(o)                    \
+    do {                                           \
+        if (!_persistent(o)) {                     \
+            PyErr_SetNone(PyExc_PersistenceError); \
+            return NULL;                           \
+        }                                          \
+    } while (0)
+
+#define ENTERED_IO_CALLBACK()                 \
+    _PyParallel_EnteredIOCallback(c,          \
+                                  instance,   \
+                                  overlapped, \
+                                  io_result,  \
+                                  nbytes,     \
+                                  tp_io)
+
+#define ENTERED_CALLBACK() _PyParallel_EnteredCallback(c, instance)
+
+static __inline
+int
+_i_MAYBE_CLOSE_old(Context *c)
+{
+    PxSocket *s = (PxSocket *)c->io_obj;
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
+       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+    {
+        char error = 0;
+
+        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
+
+        s->io_op = PxSocket_IO_CLOSE;
+
+        if (closesocket(s->sock_fd) == SOCKET_ERROR) {
+            if (WSAGetLastError() == WSAEWOULDBLOCK)
+                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");
+            else
+                error = 1;
+        }
+
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
+        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
+
+        if (error)
+            PxSocket_HandleException(c, "closesocket", 0);
+        else
+            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
+
+        if (PxSocket_IS_SERVERCLIENT(s))
+            PxServerSocket_ClientClosed(c);
+
+        return 1;
+    }
+    return 0;
+}
 
 static const char *pxsocket_kwlist[] = {
     "host",
@@ -1198,145 +1459,6 @@ typedef struct _PxAddrInfo {
 
 
 } PxAddrInfo;
-
-static PyTypeObject PxSocket_Type;
-static PyTypeObject PxSocketBuf_Type;
-static PyTypeObject PxClientSocket_Type;
-static PyTypeObject PxServerSocket_Type;
-
-static PySocketModule_APIObject PySocketModule;
-
-#define PySocket_Type           PySocketModule.Sock_Type
-#define getsockaddrarg          PySocketModule.getsockaddrarg
-#define getsockaddrlen          PySocketModule.getsockaddrlen
-#define makesockaddr            PySocketModule.makesockaddr
-#define AcceptEx                PySocketModule.AcceptEx
-#define ConnectEx               PySocketModule.ConnectEx
-#define WSARecvMsg              PySocketModule.WSARecvMsg
-#define WSASendMsg              PySocketModule.WSASendMsg
-#define DisconnectEx            PySocketModule.DisconnectEx
-#define TransmitFile            PySocketModule.TransmitFile
-#define TransmitPackets         PySocketModule.TransmitPackets
-#define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
-
-#define PxSocket_Check(v)         (Py_ORIG_TYPE(v) == &PxSocket_Type)
-#define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)
-#define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
-
-#define PXS2S(s) ((PySocketSockObject *)s)
-
-#define Py_RETURN_BOOL(expr) return (              \
-    ((expr) ? (Py_INCREF(Py_True), Py_True) :      \
-              (Py_INCREF(Py_False), Py_False))     \
-)
-
-#define Px_PROTECTION_GUARD(o)                     \
-    do {                                           \
-        if (!_protected(o)) {                      \
-            PyErr_SetNone(PyExc_ProtectionError);  \
-            return NULL;                           \
-        }                                          \
-    } while (0)
-
-#define Px_PERSISTENCE_GUARD(o)                    \
-    do {                                           \
-        if (!_persistent(o)) {                     \
-            PyErr_SetNone(PyExc_PersistenceError); \
-            return NULL;                           \
-        }                                          \
-    } while (0)
-
-#define ENTERED_IO_CALLBACK()                 \
-    _PyParallel_EnteredIOCallback(c,          \
-                                  instance,   \
-                                  overlapped, \
-                                  io_result,  \
-                                  nbytes,     \
-                                  tp_io)
-
-#define ENTERED_CALLBACK() _PyParallel_EnteredCallback(c, instance)
-
-static __inline
-int
-_i_MAYBE_CLOSE_old(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
-    {
-        char error = 0;
-
-        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
-
-        c->io_op = PxSocket_IO_CLOSE;
-
-        if (closesocket(s->sock_fd) == SOCKET_ERROR) {
-            if (WSAGetLastError() == WSAEWOULDBLOCK)
-                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");
-            else
-                error = 1;
-        }
-
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
-        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
-
-        if (error)
-            PxSocket_HandleException(c, "closesocket", 0);
-        else
-            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
-
-        if (PxSocket_IS_SERVERCLIENT(s))
-            PxServerSocket_ClientClosed(c);
-
-        return 1;
-    }
-    return 0;
-}
-
-static __inline
-int
-_i_MAYBE_CLOSE(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
-    {
-        BOOL success;
-        char error = 0;
-
-        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
-
-        c->io_op = PxSocket_IO_CLOSE;
-
-        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
-        if (!success) {
-            if (WSAGetLastError() == WSAEWOULDBLOCK)
-                Py_FatalError("DisconnectEx() -> WSAEWOULDBLOCK!");
-            else
-                error = 1;
-        }
-
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
-        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
-
-        if (error)
-            PxSocket_HandleException(c, "DisconnectEx", 0);
-        else
-            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
-
-        if (PxSocket_IS_SERVERCLIENT(s))
-            PxServerSocket_ClientClosed(c);
-
-        return 1;
-    }
-    return 0;
-}
-#define MAYBE_CLOSE() do {  \
-    if (_i_MAYBE_CLOSE(c))  \
-        goto end;           \
-} while (0)
 
 
 #ifdef __cpplus
