@@ -54,7 +54,7 @@ static __inline
 Heap *
 GET_TLS_HEAP_SNAPSHOT(Heap *prev)
 {
-    Heap *h;
+    Heap *h = NULL;
     TLS *t = &tls;
     Context *c = ctx;
     Px_UINTPTR bitmap = Px_PTR(t->snapshots_bitmap);
@@ -66,23 +66,22 @@ GET_TLS_HEAP_SNAPSHOT(Heap *prev)
         h = t->snapshots[i];
 
     if (h)
-        _tls_interlocked_and(&t->snapshots_bitmap, ~(1 << h->index));
+        _tls_interlocked_and(&t->snapshots_bitmap,
+                             ~(Px_UINTPTR_1 << h->bitmap_index));
 
     LeaveCriticalSection(&t->snapshots_cs);
 
     if (!h)
         Py_FatalError("TLS heap snapshots exhausted!");
 
-    h->snapshot_id = t->snapshot_id++;
-
-    if (!prev) {
-        memcpy(h, t->h, sizeof(Heap));
-        h->sle_prev = NULL;
-        h->sle_next = NULL;
-    } else {
-        memset(h, 0, sizeof(Heap));
+    memcpy(h, t->h, PxHeap_SNAPSHOT_COPY_SIZE);
+    h->snapshot_id = ++t->snapshot_id;
+    if (prev) {
         h->sle_prev = prev;
+        h->sle_next = NULL;
+        prev->sle_next = h;
     }
+    h->sle_next = NULL;
 
     return h;
 }
@@ -91,28 +90,24 @@ static __inline
 Heap *
 ENABLE_TLS_HEAP(void)
 {
-    Heap *h1, *h2;
+    Heap *h;
     TLS *t = &tls;
     Context *c = ctx;
 
-    h1 = GET_TLS_HEAP_SNAPSHOT(0);
-    h2 = GET_TLS_HEAP_SNAPSHOT(h1);
+    h = GET_TLS_HEAP_SNAPSHOT(NULL);
 
-    assert(h1);
-    assert(h2);
-    assert(!h1->sle_prev);
-    assert(!h2->sle_next);
-    assert(h1->sle_next == h2);
-    assert(h2->sle_prev == h1);
+    assert(h);
+    assert(!h->sle_prev);
+    assert(!h->sle_next);
 
     assert(!t->ctx_heap);
     assert(c->h != t->h);
 
     t->ctx_heap = c->h;
-
     c->h = t->h;
+    Px_CTXFLAGS(c) |= Px_CTXFLAGS_TLS_HEAP_ACTIVE;
 
-    return h1;
+    return h;
 }
 
 static __inline
@@ -125,54 +120,78 @@ DISABLE_TLS_HEAP(Heap *snapshot)
 
     assert(t->ctx_heap);
     assert(c->h == t->h);
+    assert(c->h != t->ctx_heap);
 
     h1 = snapshot;
-    h2 = h1->sle_next;
+    h2 = GET_TLS_HEAP_SNAPSHOT(h1);
     assert(h2);
-
-    memcpy(h2, t->h, sizeof(Heap));
-    h2->sle_prev = h1;
+    assert(!h2->sle_next);
+    assert(h2->sle_prev == h1);
+    assert(h1->sle_next == h2);
 
     c->h = t->ctx_heap;
     t->ctx_heap = NULL;
+    Px_CTXFLAGS(c) &= ~Px_CTXFLAGS_TLS_HEAP_ACTIVE;
 }
 
 static __inline
 void
-REWIND_TLS_HEAP(Heap *snapshot)
+ROLLBACK_TLS_HEAP(Heap *snapshot)
 {
     TLS *t = &tls;
-    Heap *h1, *h2, *p, *n;
+    Heap *h1, *h2;
+    void *tstart, *hstart = NULL;
+    Px_UINTPTR bitmap = 0;
+    size_t size;
 
     h1 = snapshot;
     h2 = h1->sle_next;
 
-    if (_tls_popcnt(t->snapshots_bitmap) == 2)
-        goto rewind;
+    EnterCriticalSection(&t->snapshots_cs);
 
-    if (h1->index == h2->index && h1->index == t->h->index) {
+    assert(h1->tls == h2->tls);
+
+    if (h1->tls != t)
+        InterlockedIncrement(&PXSTATE()->tls_heap_rollback_mismatch);
+
+    if (h1->snapshot_id == h2->snapshot_id-1)
+        goto rollback;
+
+    if (_tls_popcnt(t->snapshots_bitmap) == 2)
+        goto rollback;
+
+    if (h1->id == h2->id && h1->id == t->h->id) {
         if (h2->allocated == t->h->allocated)
-            goto rewind;
+            goto rollback;
     }
 
     /* xxx todo */
+    assert(0);
     return;
 
-rewind:
-    p = t->h->sle_prev;
-    n = t->h->sle_next;
-    memcpy(t->h, h1, sizeof(Heap));
-    t->h->sle_prev = p;
-    t->h->sle_next = n;
+rollback:
+    /* skip sle_prev and sle_next */
+    tstart = _Py_CAST_FWD(t->h, void *, Heap, base);
+    hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
+    size = PxHeap_SNAPSHOT_COPY_SIZE - _Py_PTR_SUB(tstart, t->h);
+    memcpy(tstart, hstart, size);
+
+    bitmap |= (Px_UINTPTR_1 << h1->bitmap_index);
+    bitmap |= (Px_UINTPTR_1 << h2->bitmap_index);
+
+    _tls_interlocked_or(&t->snapshots_bitmap, bitmap);
+
+    LeaveCriticalSection(&t->snapshots_cs);
+
     return;
 }
 
 static __inline
 void
-DISABLE_AND_REWIND_TLS_HEAP(Heap *snapshot)
+DISABLE_TLS_HEAP_AND_ROLLBACK(Heap *snapshot)
 {
     DISABLE_TLS_HEAP(snapshot);
-    REWIND_TLS_HEAP(snapshot);
+    ROLLBACK_TLS_HEAP(snapshot);
 }
 
 #define TLS_BUF_SPINCOUNT 8
@@ -192,7 +211,8 @@ GET_TLS_SBUF(void)
         w = t->sbufs[i];
 
     if (w)
-        _tls_interlocked_and(&t->sbuf_bitmap, ~(1ULL << W2T(w)->index));
+        _tls_interlocked_and(&t->sbuf_bitmap,
+                             ~(Px_UINTPTR_1 << W2T(w)->bitmap_index));
 
     LeaveCriticalSection(&t->sbuf_cs);
 
@@ -207,11 +227,10 @@ RETURN_TLS_SBUF(WSABUF *w)
     register TLS *t = b->tls;
     register Px_UINTPTR c = Px_PTR(t->sbuf_bitmap);
     register unsigned long i = 0;
-    char mismatch = 0;
 
     EnterCriticalSection(&t->sbuf_cs);
 
-    _tls_interlocked_or(&t->sbuf_bitmap, (1ULL << b->index));
+    _tls_interlocked_or(&t->sbuf_bitmap, (Px_UINTPTR_1 << b->bitmap_index));
 
     LeaveCriticalSection(&t->sbuf_cs);
 
@@ -224,9 +243,20 @@ char
 IS_TLS_SBUF(WSABUF *w)
 {
     TLS *t = &tls;
+    /*
+    Px_UINTPTR p = Px_PTR(w);
+    Px_UINTPTR lower = Px_PTR(t->sbufs[0]);
+    Px_UINTPTR upper = Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1]);
+    if (p >= lower) {
+        if (p <= upper) {
+            return 1;
+        }
+    }
+    return 0;
+    */
     return (
         Px_PTR(w) >= Px_PTR(t->sbufs[0]) &&
-        Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS])
+        Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1])
     );
 }
 
@@ -1106,8 +1136,8 @@ PxPages_Find(PxPages *pages, void *p)
     int found;
     Px_UINTPTR lower, upper;
 
-    lower = Px_PAGE_ALIGN_DOWN(p);
-    upper = Px_PAGE_ALIGN(p);
+    lower = Px_PAGESIZE_ALIGN_DOWN(p, Px_LARGE_PAGE_SIZE);
+    upper = Px_PAGESIZE_ALIGN_UP(p, Px_LARGE_PAGE_SIZE);
 
     found = _PxPages_LookupHeapPage(pages, &lower, p);
     if (!found && lower != upper)
@@ -1181,16 +1211,16 @@ _PxState_RegisterHeap(PxState *px, Heap *h, Context *c)
 
     AcquireSRWLockExclusive(&px->pages_srwlock);
 
-    assert((h->size % Px_PAGE_SIZE) == 0);
+    assert((h->size % h->page_size) == 0);
 
     for (i = 0; i < h->pages; i++) {
         void *p;
         Px_UINTPTR lower, upper;
 
-        p = Px_PTR_ADD(h->base, (i * Px_PAGE_SIZE));
+        p = Px_PTR_ADD(h->base, (i * h->page_size));
 
-        lower = Px_PAGE_ALIGN_DOWN(p);
-        upper = Px_PAGE_ALIGN(p);
+        lower = Px_PAGESIZE_ALIGN_DOWN(p, h->page_size);
+        upper = Px_PAGESIZE_ALIGN_UP(p, h->page_size);
 
         _PxPages_AddHeapPage(&(px->pages), &lower, h);
         if (lower != upper)
@@ -1219,16 +1249,16 @@ _PxContext_UnregisterHeaps(Context *c)
     while (h) {
         heap_count++;
 
-        assert((h->size % Px_PAGE_SIZE) == 0);
+        assert((h->size % h->page_size) == 0);
 
         for (i = 0; i < h->pages; i++) {
             void *p;
             Px_UINTPTR lower, upper;
 
-            p = Px_PTR_ADD(h->base, (i * Px_PAGE_SIZE));
+            p = Px_PTR_ADD(h->base, (i * h->page_size));
 
-            lower = Px_PAGE_ALIGN_DOWN(p);
-            upper = Px_PAGE_ALIGN(p);
+            lower = Px_PAGESIZE_ALIGN_DOWN(p, h->page_size);
+            upper = Px_PAGESIZE_ALIGN_UP(p, h->page_size);
 
             _PxPages_RemoveHeapPage(&(px->pages), &lower, h);
             if (lower != upper)
@@ -1581,7 +1611,7 @@ _PyParallel_ContextGuardFailure(const char *function,
 #define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
 
 void *
-Heap_Init(Context *c, size_t n)
+Heap_Init(Context *c, size_t n, int page_size)
 {
     Heap  *h;
     Stats *s = &(c->stats);
@@ -1590,27 +1620,32 @@ Heap_Init(Context *c, size_t n)
 
     assert(!Px_TLS_HEAP_ACTIVE(c));
 
+    if (!page_size)
+        page_size = Px_LARGE_PAGE_SIZE;
+
     if (n < Px_DEFAULT_HEAP_SIZE)
         size = Px_DEFAULT_HEAP_SIZE;
     else
         size = n;
 
-    size = Px_PAGE_ALIGN(size);
+    size = Px_PAGESIZE_ALIGN_UP(size, page_size);
 
-    assert((size % Px_PAGE_SIZE) == 0);
+    assert((size % page_size) == 0);
 
     if (!c->h) {
         /* First init. */
         h = &(c->heap);
-        h->index = 1;
+        h->id = 1;
     } else {
         h = c->h->sle_next;
         h->sle_prev = c->h;
-        h->index = h->sle_prev->index + 1;
+        h->id = h->sle_prev->id + 1;
     }
 
     assert(h);
-    h->pages = size / Px_PAGE_SIZE;
+
+    h->page_size = page_size;
+    h->pages = size / page_size;
 
     h->size = size;
     flags = HEAP_ZERO_MEMORY;
@@ -1619,7 +1654,7 @@ Heap_Init(Context *c, size_t n)
         return PyErr_SetFromWindowsErr(0);
     h->next_alignment = Px_GET_ALIGNMENT(h->base);
     h->remaining = size;
-    s->remaining += size;
+    s->remaining = size;
     s->size += size;
     s->heaps++;
     c->h = h;
@@ -1633,7 +1668,7 @@ Heap_Init(Context *c, size_t n)
 
 /* 0 = failure, 1 = success */
 int
-_PyTLSHeap_Init(size_t n)
+_PyTLSHeap_Init(size_t n, int page_size)
 {
     TLS *t = &tls;
     Heap *h;
@@ -1641,41 +1676,45 @@ _PyTLSHeap_Init(size_t n)
     size_t size;
     int flags;
 
+    if (!page_size)
+        page_size = Px_LARGE_PAGE_SIZE;
+
     if (n < _PyTLSHeap_DefaultSize)
         size = _PyTLSHeap_DefaultSize;
     else
         size = n;
 
-    size = Px_PAGE_ALIGN(size);
+    size = Px_PAGESIZE_ALIGN_UP(size, page_size);
 
-    assert((size % Px_PAGE_SIZE) == 0);
+    assert((size % page_size) == 0);
 
     if (!t->h) {
         /* First init. */
         h = &(t->heap);
-        h->index = 1;
+        h->id = 1;
     } else {
         h = t->h->sle_next;
         h->sle_prev = t->h;
-        h->index = h->sle_prev->index + 1;
+        h->id = h->sle_prev->id + 1;
     }
 
     assert(h);
 
-    h->pages = size / Px_PAGE_SIZE;
+    h->page_size = page_size;
+    h->pages = size / page_size;
+
     h->size = size;
     flags = HEAP_ZERO_MEMORY;
     h->base = h->next = HeapAlloc(t->handle, flags, h->size);
-    if (!h->base) {
-        PyErr_SetFromWindowsErr(0);
-        return 0;
-    }
+    if (!h->base)
+        return (int)PyErr_SetFromWindowsErr(0);
     h->next_alignment = Px_GET_ALIGNMENT(h->base);
     h->remaining = size;
-    s->remaining += size;
+    s->remaining = size;
     s->size += size;
     s->heaps++;
     t->h = h;
+    h->tls = t;
     h->sle_next = (Heap *)_PyTLSHeap_Malloc(sizeof(Heap), 0);
     assert(h->sle_next);
 #ifdef Py_DEBUG
@@ -1688,7 +1727,7 @@ __inline
 void *
 _PyHeap_Init(Context *c, Py_ssize_t n)
 {
-    return Heap_Init(c, n);
+    return Heap_Init(c, n, 0);
 }
 
 void *
@@ -1818,7 +1857,7 @@ begin:
 
     t->h = h->sle_next;
 
-    if (!t->h->size && !_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size)))
+    if (!t->h->size && !_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size), 0))
         return _aligned_malloc(aligned_size, alignment);
 
     goto begin;
@@ -1902,7 +1941,6 @@ __inline
 void
 _PyHeap_FastFree(Heap *h, Stats *s, void *p)
 {
-    assert(!Px_TLS_HEAP_ACTIVE(ctx));
     h->frees++;
     s->frees++;
 }
@@ -2035,7 +2073,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             s->objects++;
 
     } else {
-        if (!Py_TYPE(p)) {
+        if (tp) {
             /* Case 2: PyObject_INIT/INIT_VAR called against manually
              * allocated memory (i.e. not allocated via PyObject_NEW). */
             init_type = _INIT_INIT;
@@ -2068,7 +2106,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             init_type = _INIT_RESIZE;
             assert(!tp);
             assert(Py_TYPE(p) != NULL);
-            tp = Py_TYPE(p);
             is_varobj = 1;
 
             object_size = _Px_VSZ(tp, nitems);
@@ -2640,7 +2677,7 @@ _PyParallel_InitTLS(void)
     if (!t->handle)
         Py_FatalError("_PyParallel_InitTLSHeap:HeapCreate");
 
-    if (!_PyTLSHeap_Init(0))
+    if (!_PyTLSHeap_Init(0, 0))
         return 0;
 
     InitializeCriticalSectionAndSpinCount(&t->sbuf_cs, TLS_BUF_SPINCOUNT);
@@ -2649,24 +2686,34 @@ _PyParallel_InitTLS(void)
 
 
     for (i = 0; i < Px_NUM_TLS_WSABUFS; i++) {
+        Heap   *h  = &t->snapshot[i];
         TLSBUF *sb = &t->sbuf[i];
         TLSBUF *rb = &t->sbuf[i];
         WSABUF *sw = T2W(sb);
         WSABUF *rw = T2W(rb);
-        sb->index = i;
-        rb->index = i;
+
+        h->bitmap_index  = i;
+        sb->bitmap_index = i;
+        rb->bitmap_index = i;
+
+        h->tls  = t;
         sb->tls = t;
         rb->tls = t;
+
         assert(&sb->w == sw);
         assert(&rb->w == rw);
-        t->sbufs[i] = sw;
-        t->rbufs[i] = rw;
 
-        t->sbuf_bitmap &= (1ULL << i);
-        t->rbuf_bitmap &= (1ULL << i);
+        t->sbufs[i]     = sw;
+        t->rbufs[i]     = rw;
+        t->snapshots[i] = h;
     }
 
+    t->sbuf_bitmap      = ~0;
+    t->rbuf_bitmap      = ~0;
+    t->snapshots_bitmap = ~0;
+
     t->thread_id = _Py_get_current_thread_id();
+    t->snapshot_id = 0;
 
     return 1;
 }
@@ -5201,19 +5248,6 @@ end:
 } while (0)
 
 
-#define pxsock_nop                                                    0
-#define pxsock_reload_protocol                                        1
-#define pxsock_maybe_shutdown_send_or_recv                            2
-#define pxsock_handle_error                                           3
-#define pxsock_connection_made_callback                               4
-#define pxsock_data_received_callback                                 5
-#define pxsock_send_complete_callback                                 6
-#define pxsock_post_callback_that_supports_sending_retval             7
-#define pxsock_post_callback_that_does_not_support_sending_retval     8
-#define pxsock_close_                                                 9
-#define pxsock_try_send                                               10
-#define pxsock_init_line_mode                                         11
-
 #define TARGET(n) \
     case pxsock_##n: goto n
 
@@ -5226,7 +5260,7 @@ PxSocket_IOLoop(PxSocket *s, int opcode)
     int next_opcode = opcode;
     char *syscall;
     TLS *t = &tls;
-    Context *c = s->ctx;
+    Context *c = ctx;
     char *line_mode;
     char *callback;
     char *f;
@@ -5236,7 +5270,7 @@ PxSocket_IOLoop(PxSocket *s, int opcode)
     TLSBUF *b = NULL;
     OVERLAPPED *ol = NULL;
     Heap *snapshot = NULL;
-    int i, n;
+    int i, n, is_tls_buf = 0;
 
     fd = s->sock_fd;
 
@@ -5293,6 +5327,8 @@ reload_protocol:
 
         if (PxSocket_HasAttr(s, "shutdown_send"))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SHUTDOWN_SEND;
+
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RELOAD_PROTOCOL;
     }
 
 init_line_mode:
@@ -5353,7 +5389,8 @@ maybe_send_initial_bytes:
 
 do_send:
     assert(w);
-    assert(w == &s->initial_bytes || IS_TLS_SBUF(w));
+    is_tls_buf = IS_TLS_SBUF(w);
+    assert(w == &s->initial_bytes || is_tls_buf);
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -5376,7 +5413,9 @@ do_send:
     wsa_error = NO_ERROR;
     for (i = 1; i <= n; i++) {
         err = WSASend(fd, w, 1, &nbytes, 0, NULL, NULL);
-        if (err == SOCKET_ERROR) {
+        if (err != SOCKET_ERROR)
+            break;
+        else {
             wsa_error = WSAGetLastError();
             if (wsa_error == WSAEWOULDBLOCK)
                 Sleep(0);
@@ -5387,11 +5426,21 @@ do_send:
 
     if (err != SOCKET_ERROR) {
         /* Send completed synchronously. */
+        if (is_tls_buf) {
+            assert(snapshot);
+            ROLLBACK_TLS_HEAP(snapshot);
+            RETURN_TLS_SBUF(w);
+        }
         s->io_op = PxSocket_IO_SEND_SYNC;
         goto send_complete;
     } else if (wsa_error == WSAEWOULDBLOCK)
         goto do_async_send;
     else {
+        if (is_tls_buf) {
+            assert(snapshot);
+            ROLLBACK_TLS_HEAP(snapshot);
+            RETURN_TLS_SBUF(w);
+        }
         PxSocket_HandleError(c, s->io_op, "WSARecv", wsa_error);
         goto end;
     }
@@ -5416,9 +5465,10 @@ send_complete:
     assert(func && func != Py_None);
 
     snapshot = ENABLE_TLS_HEAP();
+    assert(Px_TLS_HEAP_ACTIVE(c));
     args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
     if (!args) {
-        DISABLE_AND_REWIND_TLS_HEAP(snapshot);
+        DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
         PxSocket_FATAL();
     }
 
@@ -5427,7 +5477,7 @@ send_complete:
     CHECK_POST_CALLBACK_INVARIANTS();
 
     if (result == Py_None) {
-        REWIND_TLS_HEAP(snapshot);
+        ROLLBACK_TLS_HEAP(snapshot);
         /*
         if (has_connection_made && !called_connection_made)
             goto connection_made;
@@ -5450,6 +5500,7 @@ send_complete:
                         "send_complete() did not return a sendable "
                         "objected (bytes, bytearray or unicode)");
         RETURN_TLS_SBUF(w);
+        ROLLBACK_TLS_HEAP(snapshot);
         PxSocket_EXCEPTION();
     }
 
@@ -5505,7 +5556,7 @@ maybe_do_send_complete:
         snapshot = ENABLE_TLS_HEAP();
         args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
         if (!args) {
-            DISABLE_AND_REWIND_TLS_HEAP(snapshot);
+            DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
             PxSocket_FATAL();
         }
 
@@ -6859,7 +6910,8 @@ PxSocketServer_AcceptCallback(
     memcpy(&(s->local_addr), local, llen);
     memcpy(&(s->remote_addr), remote, rlen);
 
-    PxSocket_IOLoop(s, PxSocket_IO_ACCEPT);
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RELOAD_PROTOCOL;
+    PxSocket_IOLoop(s, 0);
 
     goto end;
 

@@ -29,6 +29,8 @@ extern "C" {
 #define Px_PTR_ALIGN_RAW 8
 #define Px_UINTPTR unsigned long long
 #define Px_INTPTR long long
+#define Px_UINTPTR_1 (1ULL)
+#define Px_INTPTR_BITS 64
 #define Px_LARGE_PAGE_SIZE 2 * 1024 * 1024 /* 2MB on x64 */
 #else
 #define Px_LARGE_PAGE_SIZE 4 * 1024 * 1024 /* 4MB on x86 */
@@ -36,6 +38,8 @@ extern "C" {
 #define Px_PTR_ALIGN_RAW 4
 #define Px_UINTPTR unsigned long
 #define Px_INTPTR long
+#define Px_INTPTR_BITS 32
+#define Px_UINTPTR_1 (1UL)
 #endif
 #define Px_PAGE_SIZE (4096)
 #define Px_SMALL_PAGE_SIZE Px_PAGE_SIZE
@@ -60,6 +64,9 @@ extern "C" {
 #define Px_PAGE_ALIGN(n)        (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
 #define Px_PAGE_ALIGN_DOWN(n)   (Px_ALIGN_DOWN((n), Px_PAGE_ALIGN_SIZE))
 
+#define Px_PAGESIZE_ALIGN_UP(n, s)      (Px_ALIGN((n), s))
+#define Px_PAGESIZE_ALIGN_DOWN(n, s)    (Px_ALIGN_DOWN((n), s))
+
 #define Px_PTR(p)           ((Px_UINTPTR)(p))
 #define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
 
@@ -76,7 +83,7 @@ extern "C" {
 
 #define Px_MAX(a, b) ((a > b) ? a : b)
 
-#define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE) /* 4KB */
+#define Px_DEFAULT_HEAP_SIZE (Px_LARGE_PAGE_SIZE)
 #define Px_DEFAULT_TLS_HEAP_SIZE (Px_LARGE_PAGE_SIZE) /* 2MB/4MB */
 #define Px_MAX_SEM (32768)
 
@@ -153,7 +160,7 @@ typedef struct _PxHeap PxHeap;
 typedef struct _PxThreadLocalState TLS;
 
 typedef struct _TLSBUF {
-    char index;
+    char bitmap_index;
     TLS *tls;
     WSABUF w;
 } TLSBUF;
@@ -225,18 +232,20 @@ remove_object(Objects *list, Object *o)
         next->prev = prev;
 }
 
-#define _PxHeap_HEAD_EXTRA  \
-    Heap   *sle_prev;       \
-    Heap   *sle_next;       \
-    void   *base;           \
-    void   *next;           \
-    size_t  pages;          \
-    size_t  next_alignment; \
-    size_t  size;           \
-    size_t  allocated;      \
-    size_t  remaining;      \
-    size_t  snapshot_id;    \
-    int     index;
+#define _PxHeap_HEAD_EXTRA              \
+    Heap   *sle_prev;                   \
+    Heap   *sle_next;                   \
+    void   *base;                       \
+    void   *next;                       \
+    int     page_size;                  \
+    size_t  pages;                      \
+    size_t  next_alignment;             \
+    size_t  size;                       \
+    size_t  allocated;                  \
+    size_t  remaining;                  \
+    int     id;                         \
+    int     flags;                      \
+    TLS    *tls;
 
 #define PxHeap_HEAD PxHeap heap_base;
 
@@ -254,7 +263,13 @@ typedef struct _PyParallelHeap {
     size_t  frees;
     size_t  alignment_mismatches;
     size_t  bytes_wasted;
+
+    /* snapshot-only herein (keep snapshot_id first) */
+    size_t  snapshot_id;
+    char    bitmap_index;
 } PyParallelHeap, Heap;
+
+#define PxHeap_SNAPSHOT_COPY_SIZE (offsetof(Heap, snapshot_id))
 
 typedef struct _PyParallelContextStats {
     unsigned __int64 submitted;
@@ -301,25 +316,23 @@ typedef struct _PxThreadLocalState {
     DWORD       thread_id;
     Stats       stats;
 
-    CRITICAL_SECTION    sbuf_cs;
-    volatile Px_INTPTR  sbuf_bitmap;
-    WSABUF             *sbufs[Px_NUM_TLS_WSABUFS];
-    TLSBUF              sbuf[Px_NUM_TLS_WSABUFS];
+    CRITICAL_SECTION        sbuf_cs;
+    volatile Px_INTPTR      sbuf_bitmap;
+    WSABUF                 *sbufs[Px_NUM_TLS_WSABUFS];
+    TLSBUF                  sbuf[Px_NUM_TLS_WSABUFS];
 
-    CRITICAL_SECTION    rbuf_cs;
-    volatile Px_INTPTR  rbuf_bitmap;
-    WSABUF             *rbufs[Px_NUM_TLS_WSABUFS];
-    TLSBUF              rbuf[Px_NUM_TLS_WSABUFS];
+    CRITICAL_SECTION        rbuf_cs;
+    volatile Px_INTPTR      rbuf_bitmap;
+    WSABUF                 *rbufs[Px_NUM_TLS_WSABUFS];
+    TLSBUF                  rbuf[Px_NUM_TLS_WSABUFS];
 
-    size_t              snapshot_id;
-    CRITICAL_SECTION    snapshots_cs;
-    volatile Px_INTPTR  snapshots_bitmap;
-    Heap               *snapshots[Px_NUM_TLS_WSABUFS];
-    Heap                snapshot[Px_NUM_TLS_WSABUFS];
+    size_t                  snapshot_id;
+    CRITICAL_SECTION        snapshots_cs;
+    volatile Px_INTPTR      snapshots_bitmap;
+    Heap                   *snapshots[Px_NUM_TLS_WSABUFS];
+    Heap                    snapshot[Px_NUM_TLS_WSABUFS];
 
 } PxThreadLocalState, TLS;
-
-
 
 #define _PX_TMPBUF_SIZE 1024
 
@@ -476,6 +489,7 @@ typedef struct _PxState {
     long long last_sync_nowait_submitted_count;
 
     volatile long tls_buf_mismatch;
+    volatile long tls_heap_rollback_mismatch;
 
 } PxState;
 
@@ -703,6 +717,21 @@ typedef struct _PxObject {
 #define PxSocket_IO_SEND_SYNC           (1UL << 4)
 #define PxSocket_IO_DISCONNECT          (1UL << 5)
 #define PxSocket_IO_CLOSE               (1UL << 6)
+
+/* ops for socket IO loop */
+#define pxsock_nop                                                    0
+#define pxsock_reload_protocol                                        1
+#define pxsock_maybe_shutdown_send_or_recv                            2
+#define pxsock_handle_error                                           3
+#define pxsock_connection_made_callback                               4
+#define pxsock_data_received_callback                                 5
+#define pxsock_send_complete_callback                                 6
+#define pxsock_post_callback_that_supports_sending_retval             7
+#define pxsock_post_callback_that_does_not_support_sending_retval     8
+#define pxsock_close_                                                 9
+#define pxsock_try_send                                               10
+#define pxsock_init_line_mode                                         11
+
 
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
