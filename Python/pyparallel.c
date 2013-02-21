@@ -5447,7 +5447,7 @@ do_send:
 
 do_async_send:
     /* Need to memcpy the send buf into the context's heap. */
-
+    assert(0);
 
 
 send_complete:
@@ -5461,11 +5461,11 @@ send_complete:
         goto try_recv;
     }
 
+    snapshot = ENABLE_TLS_HEAP();
+    assert(Px_TLS_HEAP_ACTIVE(c));
     func = PxSocket_GET_ATTR("send_complete");
     assert(func && func != Py_None);
 
-    snapshot = ENABLE_TLS_HEAP();
-    assert(Px_TLS_HEAP_ACTIVE(c));
     args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
     if (!args) {
         DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
@@ -5550,10 +5550,9 @@ maybe_do_send_complete:
         const char *name = "send_complete";
         PyObject *func, *args;
 
+        snapshot = ENABLE_TLS_HEAP();
         func = PxSocket_GET_ATTR(name);
         assert(func && func != Py_None);
-
-        snapshot = ENABLE_TLS_HEAP();
         args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
         if (!args) {
             DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
