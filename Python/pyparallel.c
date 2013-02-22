@@ -66,8 +66,7 @@ GET_TLS_HEAP_SNAPSHOT(Heap *prev)
         h = t->snapshots[i];
 
     if (h)
-        _tls_interlocked_and(&t->snapshots_bitmap,
-                             ~(Px_UINTPTR_1 << h->bitmap_index));
+        _tls_interlocked_and(&t->snapshots_bitmap, ~(Px_UINTPTR_1 << i));
 
     LeaveCriticalSection(&t->snapshots_cs);
 
@@ -170,6 +169,8 @@ ROLLBACK_TLS_HEAP(Heap *snapshot)
     return;
 
 rollback:
+    /* xxx todo: HeapFree() extra heaps if h1 != h2. */
+
     /* skip sle_prev and sle_next */
     tstart = _Py_CAST_FWD(t->h, void *, Heap, base);
     hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
@@ -198,7 +199,7 @@ DISABLE_TLS_HEAP_AND_ROLLBACK(Heap *snapshot)
 
 static __inline
 WSABUF *
-GET_TLS_SBUF(void)
+GET_TLS_SBUF(PxSocket *s)
 {
     WSABUF *w = NULL;
     TLS    *t = &tls;
@@ -210,9 +211,10 @@ GET_TLS_SBUF(void)
     if (_tls_bitscan_fwd(&i, c))
         w = t->sbufs[i];
 
-    if (w)
-        _tls_interlocked_and(&t->sbuf_bitmap,
-                             ~(Px_UINTPTR_1 << W2T(w)->bitmap_index));
+    if (w) {
+        W2T(w)->s = s;
+        _tls_interlocked_and(&t->sbuf_bitmap, ~(Px_UINTPTR_1 << i));
+    }
 
     LeaveCriticalSection(&t->sbuf_cs);
 
@@ -243,17 +245,6 @@ char
 IS_TLS_SBUF(WSABUF *w)
 {
     TLS *t = &tls;
-    /*
-    Px_UINTPTR p = Px_PTR(w);
-    Px_UINTPTR lower = Px_PTR(t->sbufs[0]);
-    Px_UINTPTR upper = Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1]);
-    if (p >= lower) {
-        if (p <= upper) {
-            return 1;
-        }
-    }
-    return 0;
-    */
     return (
         Px_PTR(w) >= Px_PTR(t->sbufs[0]) &&
         Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1])
@@ -2768,6 +2759,8 @@ _PyParallel_EnteredIOCallback(
 
     c->io_result = io_result;
     c->io_nbytes = nbytes;
+    if (overlapped)
+        c->ol = overlapped;
     /*
     if (overlapped)
         assert(overlapped == &(c->overlapped));
@@ -5254,19 +5247,19 @@ end:
 #define OPCODE(n) (pxsock_##n)
 /* Hybrid sync/async IO loop. */
 void
-PxSocket_IOLoop(PxSocket *s, int opcode)
+PxSocket_IOLoop(PxSocket *s)
 {
     PyObject *func, *args, *result;
-    int next_opcode = opcode;
+    int next_opcode = 0;
     char *syscall;
     TLS *t = &tls;
     Context *c = ctx;
     char *line_mode;
     char *callback;
-    char *f;
-    DWORD err, wsa_error, nbytes;
+    char *f, *buf = NULL;
+    DWORD err, wsa_error, nbytes, len;
     SOCKET fd;
-    WSABUF *w = NULL;
+    WSABUF *w = NULL, *old_wsabuf = NULL;
     TLSBUF *b = NULL;
     OVERLAPPED *ol = NULL;
     Heap *snapshot = NULL;
@@ -5274,6 +5267,21 @@ PxSocket_IOLoop(PxSocket *s, int opcode)
 
     fd = s->sock_fd;
 
+    switch (s->io_op) {
+        case PxSocket_IO_ACCEPT:
+        case PxSocket_IO_CONNECT:
+            goto start;
+
+        case PxSocket_IO_SEND:
+            goto overlapped_send_callback;
+
+        case PxSocket_IO_RECV:
+            goto overlapped_recv_callback;
+
+        default:
+            assert(0);
+
+    }
     goto start;
 
 dispatch:
@@ -5400,14 +5408,14 @@ do_send:
             PxSocket_SYSERROR("CreateThreadpoolIo");
     }
 
-    s->send_id++;
-
     n = 1;
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_THROUGHPUT)
         n = _PxSocket_MaxSyncSendAttempts;
     else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
         goto do_async_send;
+
+    s->send_id++;
 
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
@@ -5431,24 +5439,99 @@ do_send:
             ROLLBACK_TLS_HEAP(snapshot);
             RETURN_TLS_SBUF(w);
         }
-        s->io_op = PxSocket_IO_SEND_SYNC;
         goto send_complete;
-    } else if (wsa_error == WSAEWOULDBLOCK)
+    } else if (wsa_error == WSAEWOULDBLOCK) {
+        s->send_id--;
         goto do_async_send;
-    else {
+    } else {
+        s->send_id--;
         if (is_tls_buf) {
             assert(snapshot);
             ROLLBACK_TLS_HEAP(snapshot);
             RETURN_TLS_SBUF(w);
         }
-        PxSocket_HandleError(c, s->io_op, "WSARecv", wsa_error);
+        PxSocket_HandleError(c, s->io_op, "WSASend", wsa_error);
         goto end;
     }
 
 do_async_send:
-    /* Need to memcpy the send buf into the context's heap. */
+    /* Overlap with do_send: above. */
+    assert(w);
+    is_tls_buf = IS_TLS_SBUF(w);
+    assert(w == &s->initial_bytes || is_tls_buf);
+
+    if (!s->tp_io) {
+        PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
+        assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES);
+        s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
+        if (!s->tp_io)
+            PxSocket_SYSERROR("CreateThreadpoolIo");
+    }
+
+    s->send_id++;
+
+    s->io_op = PxSocket_IO_SEND;
+
+    /* xxx todo: take a context-heap snapshot */
+    buf = w->buf;
+    len = w->len;
+
+    b = W2T(w);
+    ol = &b->ol;
+    RESET_OVERLAPPED(ol);
+    assert(s == b->s);
+    assert(w == &b->w);
+    assert(!b->snapshot);
+    b->snapshot = snapshot;
+    s->tls_buf = b;
+    s->ol = ol;
+
+    StartThreadpoolIo(s->tp_io);
+    err = WSASend(fd, w, 1, NULL, 0, ol, NULL);
+    wsa_error = WSAGetLastError();
+    if (err != SOCKET_ERROR || wsa_error == WSA_IO_PENDING) {
+        /* Send either completed synchronously, or the overlapped IO was
+         * successfully initiated.  Either way, a completion packet will
+         * get queued to the completion port and our callback will get
+         * executed -- possibly by another thread, right *now*; as we're
+         * guarding the socket with a critical section, the only thing we
+         * have to do in this case is giddy up and exit (thus leaving the
+         * critical section).  The callback takes care of rollback the TLS
+         * snapshot and returning the TLS sbuf.
+         */
+        return;
+    } else {
+        /* The overlapped send attempt failed.  No completion packet will
+         * ever be queued, so we need to take care of cleanup here. */
+        ROLLBACK_TLS_HEAP(snapshot);
+        RETURN_TLS_SBUF(w);
+        PxSocket_HandleError(c, s->io_op, "WSASend", wsa_error);
+        goto end;
+    }
+
     assert(0);
 
+overlapped_send_callback:
+    /* Entry point for an overlapped send. */
+
+    if (c->io_result != NO_ERROR) {
+        if (s->tls_buf) {
+            b = s->tls_buf;
+            assert(b->snapshot);
+            assert(b->s == s);
+            assert(c->ol == &b->ol);
+            ROLLBACK_TLS_HEAP(b->snapshot);
+            RETURN_TLS_SBUF(T2W(b));
+            s->tls_buf = NULL;
+        } else {
+            /* xxx todo */
+            assert(0);
+        }
+        PxSocket_HandleError(c, s->io_op, "WSASend", c->io_result);
+        goto end;
+    }
+
+    /* Follow-on to send_complete... */
 
 send_complete:
     if (!PxSocket_HAS_SEND_COMPLETE(s)) {
@@ -5492,7 +5575,7 @@ send_complete:
         goto try_recv;
     }
 
-    w = GET_TLS_SBUF();
+    w = GET_TLS_SBUF(s);
     assert(IS_TLS_SBUF(w));
 
     if (!PyObject2WSABUF(result, w)) {
@@ -5526,6 +5609,9 @@ send_complete:
     }
 
     goto do_send;
+
+overlapped_recv_callback:
+    assert(0);
 
 try_extract_something_sendable_from_object:
 
@@ -6384,7 +6470,7 @@ PxServerSocket_ClientClosed(Context *x)
 
     o->flags = Px_SOCKFLAGS_SERVERCLIENT;
 
-    PxList_PushSocket(s->freelist, o);
+    /*PxList_PushSocket(s->freelist, o);*/
     InterlockedIncrement(&(s->num_accepts_wanted));
     SetEvent(s->more_accepts);
 }
@@ -6813,38 +6899,16 @@ PxSocketClient_Callback(
     TP_IO *tp_io
 )
 {
-    int try_recv = 0;
     Context *c = (Context *)context;
     PxSocket *s = (PxSocket *)c->io_obj;
-    sockcb_t cb = NULL;
 
     EnterCriticalSection(&(s->cs));
 
     ENTERED_IO_CALLBACK();
 
-    switch (s->io_op) {
-        case PxSocket_IO_CONNECT:
-            cb = PxSocket_ConnectCallback;
-            break;
-        case PxSocket_IO_RECV:
-            cb = PxSocket_RecvCallback;
-            break;
-        case PxSocket_IO_SEND:
-            cb = PxSocket_SendCallback;
-            break;
-        default:
-            assert(0);
-    }
-
-    cb(c);
-
-    /*
-    if (PxSocket_IS_CONNECTED(s) && s->io_op != PxSocket_IO_SEND)
-        PxSocket_TryRecv(c);
-    */
+    PxSocket_IOLoop(s);
 
     LeaveCriticalSection(&(s->cs));
-
 }
 
 void
@@ -6882,6 +6946,17 @@ PxSocketServer_AcceptCallback(
     c = x;
 
     EnterCriticalSection(&(s->cs));
+
+    /* Reset some of the more sensitive struct members (necessary due to the
+     * AcceptEx() socket recycling). */
+    /*
+    s->io_op = PxSocket_IO_ACCEPT;
+    s->ctx = c;
+    s->send_id = 0;
+    s->tls_buf = 0;
+    s->ol = 0;
+    */
+
     ENTERED_IO_CALLBACK();
 
     if (c->io_result != NO_ERROR) {
@@ -6910,7 +6985,7 @@ PxSocketServer_AcceptCallback(
     memcpy(&(s->remote_addr), remote, rlen);
 
     Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RELOAD_PROTOCOL;
-    PxSocket_IOLoop(s, 0);
+    PxSocket_IOLoop(s);
 
     goto end;
 
@@ -7006,6 +7081,8 @@ more_accepts:
         InterlockedDecrement(&(s->num_accepts_wanted));
         if (!o)
             continue;
+
+        o->io_op = PxSocket_IO_ACCEPT;
 
         x = o->ctx;
 
@@ -7487,6 +7564,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
         bufsize = (DWORD)(s->recvbuf_size - (size * 2));
 
     for (o = s->first; o; o = o->next) {
+        o->io_op = PxSocket_IO_ACCEPT;
         x = o->ctx;
         assert(x->rbuf_first);
         assert(x->rbuf_first->w.len == s->recvbuf_size);

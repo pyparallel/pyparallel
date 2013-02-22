@@ -154,19 +154,25 @@ typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
 typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
 
+typedef struct _PxSocket PxSocket;
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxHeap PxHeap;
 
 typedef struct _PxThreadLocalState TLS;
 
 typedef struct _TLSBUF {
-    char bitmap_index;
-    TLS *tls;
-    WSABUF w;
+    char            bitmap_index;
+    TLS            *tls;
+    Heap           *snapshot;
+    PxSocket       *s;
+    OVERLAPPED      ol;
+    WSABUF          w;
 } TLSBUF;
 
-#define T2W(b) (_Py_CAST_FWD(b, WSABUF *, TLSBUF, w))
-#define W2T(b) (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, w))
+#define T2W(b)      (_Py_CAST_FWD(b, WSABUF *, TLSBUF, w))
+#define W2T(b)      (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, w))
+#define OL2T(b)     (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, ol))
+#define T2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, TLSBUF, ol))
 
 #define usize_t unsigned size_t
 
@@ -537,6 +543,7 @@ typedef struct _PyParallelContext {
     PyObject   *io_obj;
 
     OVERLAPPED  overlapped;
+    OVERLAPPED *ol; /* set to whatever `void *overlapped` is in callback */
 
 
     PxSocketBuf *rbuf_first;
@@ -712,11 +719,9 @@ typedef struct _PxObject {
 #define PxSocket_IO_CONNECT             (1)
 #define PxSocket_IO_ACCEPT              (1UL << 1)
 #define PxSocket_IO_RECV                (1UL << 2)
-#define PxSocket_IO_RECV_SYNC           (1UL << 3)
 #define PxSocket_IO_SEND                (1UL << 3)
-#define PxSocket_IO_SEND_SYNC           (1UL << 4)
-#define PxSocket_IO_DISCONNECT          (1UL << 5)
-#define PxSocket_IO_CLOSE               (1UL << 6)
+#define PxSocket_IO_DISCONNECT          (1UL << 4)
+#define PxSocket_IO_CLOSE               (1UL << 5)
 
 /* ops for socket IO loop */
 #define pxsock_nop                                                    0
@@ -836,6 +841,9 @@ typedef struct _PxSocket {
     int     io_op;
     TP_IO  *tp_io;
 
+    TLSBUF *tls_buf;
+    OVERLAPPED *ol;
+
     /* Server-specific stuff. */
     int preallocate;
     WSAEVENT  fd_accept;
@@ -857,6 +865,7 @@ typedef struct _PxSocket {
     PxSocket *parent;
     PxSocket *prev;
     PxSocket *next;
+
 
     /*
     PyObject *connection_made;
