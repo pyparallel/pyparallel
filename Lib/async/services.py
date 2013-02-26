@@ -27,11 +27,25 @@ def chargen(lineno, nchars=72):
     return b
 
 class Chargen:
-    #long_lived = True
-
     def initial_bytes_to_send(self):
         return chargen(0)
 
     def send_complete(self, transport, send_id):
         return chargen(send_id)
 
+
+class Discard:
+    def data_received(self, data):
+        pass
+
+class EchoData:
+    def data_received(self, data):
+        return data
+
+class EchoLine:
+    line_mode = True
+    def line_received(self, line):
+        return line
+
+class Disconnect:
+    pass
