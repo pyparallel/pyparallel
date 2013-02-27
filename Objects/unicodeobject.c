@@ -980,6 +980,7 @@ PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
     int is_sharing, is_ascii;
     Py_ssize_t char_size;
     Py_ssize_t struct_size;
+    Py_ssize_t alloc_size;
 
     /* Optimization for empty strings */
     if (size == 0 && unicode_empty != NULL) {
@@ -1031,7 +1032,8 @@ PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar)
      * PyObject_New() so we are able to allocate space for the object and
      * it's data buffer.
      */
-    obj = (PyObject *) PyObject_MALLOC(struct_size + (size + 1) * char_size);
+    alloc_size = struct_size + (size + 1) * char_size;
+    obj = (PyObject *) PyObject_MALLOC(alloc_size);
     if (obj == NULL)
         return PyErr_NoMemory();
     obj = PyObject_INIT(obj, &PyUnicode_Type);

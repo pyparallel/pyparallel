@@ -160,6 +160,8 @@ typedef struct _PxHeap PxHeap;
 
 typedef struct _PxThreadLocalState TLS;
 
+typedef struct _PxState PxState;
+
 typedef struct _TLSBUF {
     char            bitmap_index;
     TLS            *tls;
@@ -320,7 +322,10 @@ typedef struct _PxThreadLocalState {
     Heap        heap;
     HANDLE      handle;
     DWORD       thread_id;
+    PxState    *px;
     Stats       stats;
+
+    CRITICAL_SECTION        heap_cs;
 
     CRITICAL_SECTION        sbuf_cs;
     volatile Px_INTPTR      sbuf_bitmap;
@@ -405,6 +410,8 @@ typedef struct _PxState {
     SRWLOCK     pages_srwlock;
     PxPages    *pages;
 #endif
+
+    PyThreadState *tstate;
 
     /*
     PxListHead *free_contexts_4096;
@@ -495,7 +502,9 @@ typedef struct _PxState {
     long long last_sync_nowait_submitted_count;
 
     volatile long tls_buf_mismatch;
+    volatile long tls_buf_match;
     volatile long tls_heap_rollback_mismatch;
+    volatile long tls_heap_rollback_match;
 
 } PxState;
 
@@ -652,10 +661,10 @@ typedef struct _PxObject {
 
 #define Px_SOCKFLAGS_CLIENT                     (1)
 #define Px_SOCKFLAGS_SERVER                     (1UL <<  1)
-#define Px_SOCKFLAGS_____________________       (1UL <<  2)
+#define Px_SOCKFLAGS_HOG                        (1UL <<  2)
 #define Px_SOCKFLAGS_RECV_MORE                  (1UL <<  3)
 #define Px_SOCKFLAGS_CONNECTED                  (1UL <<  4)
-#define Px_SOCKFLAGS_LONG_LIVED                 (1UL <<  5)
+#define Px_SOCKFLAGS_CLEAN_DISCONNECT           (1UL <<  5)
 #define Px_SOCKFLAGS_THROUGHPUT                 (1UL <<  6)
 #define Px_SOCKFLAGS_SERVERCLIENT               (1UL <<  7)
 #define Px_SOCKFLAGS_INITIAL_BYTES              (1UL <<  8)
@@ -666,7 +675,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
 #define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
 #define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
-#define Px_SOCKFLAGS_HAS_SEND_FAILED            (1UL << 16)
+#define Px_SOCKFLAGS_LONG_LIVED                 (1UL << 16)
 #define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
 #define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
 #define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
@@ -677,11 +686,19 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_TIMEDOUT                   (1UL << 24)
 #define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 25)
 #define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
-#define Px_SOCKFLAGS_HAS_SHUTDOWN_SEND          (1UL << 27)
+#define Px_SOCKFLAGS_ACCEPT_CALLBACK_SEEN       (1UL << 27)
 #define Px_SOCKFLAGS_RELOAD_PROTOCOL            (1UL << 29)
 #define Px_SOCKFLAGS_INITIAL_BYTES_PYBYTEARRAY  (1UL << 30)
 #define Px_SOCKFLAGS_                           (1UL << 31)
 
+#define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
+
+#define PxSocket_CBFLAGS_SEND_FAILED            (1)
+#define PxSocket_CBFLAGS_SEND_COMPLETE          (1UL <<  1)
+#define PxSocket_CBFLAGS_CONNECTION_CLOSED      (1UL <<  2)
+#define PxSocket_CBFLAGS_SHUTDOWN_SEND          (1UL <<  3)
+
+#define PxSocket_IS_HOG(s)      (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HOG)
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
 #define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
@@ -698,6 +715,24 @@ typedef struct _PxObject {
 
 #define PxSocket_HAS_DATA_RECEIVED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
+
+#define PxSocket_HAS_SEND_FAILED(s) \
+    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SEND_COMPLETE)
+
+#define PxSocket_SET_SEND_FAILED(s) \
+    (PxSocket_CBFLAGS(s) |= PxSocket_CBFLAGS_SEND_COMPLETE)
+
+#define PxSocket_HAS_CONNECTION_CLOSED(s) \
+    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_CONNECTION_CLOSED)
+
+#define PxSocket_SET_CONNECTION_CLOSED(s) \
+    (PxSocket_CBFLAGS(s) |= PxSocket_CBFLAGS_CONNECTION_CLOSED)
+
+#define PxSocket_HAS_SHUTDOWN_SEND(s) \
+    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SHUTDOWN_SEND)
+
+#define PxSocket_SET_SHUTDOWN_SEND(s) \
+    (PxSocket_CBFLAGS(s) |= PxSocket_CBFLAGS_SHUTDOWN_SEND)
 
 #define PxSocket_IS_SERVERCLIENT(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVERCLIENT)
@@ -810,12 +845,13 @@ typedef struct _PxSocket {
     int          remote_addr_len;
 
     int   flags;
+    int   cb_flags;
     int   error_occurred;
 
     Context *ctx;
 
     /* endpoint */
-    char *ip;
+    char  ip[16];
     char *host;
     int   port;
 
@@ -829,7 +865,6 @@ typedef struct _PxSocket {
     WSABUF **wbufs;
     DWORD    nbufs;
 
-    PyObject   *send_list;
     Py_ssize_t  send_nbytes;
 
     PyObject *protocol_type;
@@ -861,11 +896,13 @@ typedef struct _PxSocket {
     HANDLE  shutdown;
     HANDLE  wait_handles[3];
 
+    volatile int nchildren;
+    volatile int next_child_id;
+
     /* Server socket clients. */
     PxSocket *parent;
     PxSocket *prev;
     PxSocket *next;
-
 
     /*
     PyObject *connection_made;
@@ -990,7 +1027,7 @@ PxSocketClient_Callback(
     TP_IO *tp_io
 );
 
-void PxServerSocket_ClientClosed(Context *x);
+void PxServerSocket_ClientClosed(PxSocket *s);
 
 
 void PxSocket_HandleException(Context *c, const char *syscall, int fatal);
@@ -1151,7 +1188,7 @@ _try_write_lock(PyObject *obj)
     if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)) {           \
         if (shutdown(s->sock_fd, SD_RECEIVE) == SOCKET_ERROR)            \
             PxSocket_WSAERROR("shutdown(SD_RECEIVE)");                   \
-    } else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SHUTDOWN_SEND) {       \
+    } else if (PxSocket_HAS_SHUTDOWN_SEND(s)) {                          \
         if (shutdown(s->sock_fd, SD_SEND) == SOCKET_ERROR)               \
             PxSocket_WSAERROR("shutdown(SD_SEND)");                      \
     }                                                                    \
@@ -1303,7 +1340,7 @@ _i_MAYBE_CLOSE_old(Context *c)
             PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
 
         if (PxSocket_IS_SERVERCLIENT(s))
-            PxServerSocket_ClientClosed(c);
+            PxServerSocket_ClientClosed(s);
 
         return 1;
     }

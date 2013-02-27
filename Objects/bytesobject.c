@@ -26,7 +26,7 @@ _getbuffer(PyObject *obj, Py_buffer *view)
 }
 
 #ifdef COUNT_ALLOCS
-Py_ssize_t null_strings, one_strings;
+Py_TLS Py_ssize_t null_strings, one_strings;
 #endif
 
 static PyBytesObject *characters[UCHAR_MAX + 1];
@@ -103,6 +103,10 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
     if (str != NULL)
         Py_MEMCPY(op->ob_sval, str, size);
     op->ob_sval[size] = '\0';
+
+    if (Py_PXCTX)
+        goto end;
+
     /* share short strings */
     if (size == 0) {
         nullstring = op;
@@ -111,6 +115,7 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
         characters[*str & UCHAR_MAX] = op;
         Py_INCREF(op);
     }
+end:
     return (PyObject *) op;
 }
 
@@ -146,9 +151,13 @@ PyBytes_FromString(const char *str)
     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + size);
     if (op == NULL)
         return PyErr_NoMemory();
-    PyObject_INIT_VAR(op, &PyBytes_Type, size);
+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
     op->ob_shash = -1;
     Py_MEMCPY(op->ob_sval, str, size+1);
+
+    if (Py_PXCTX)
+        goto end;
+
     /* share short strings */
     if (size == 0) {
         nullstring = op;
@@ -157,6 +166,7 @@ PyBytes_FromString(const char *str)
         characters[*str & UCHAR_MAX] = op;
         Py_INCREF(op);
     }
+end:
     return (PyObject *) op;
 }
 
@@ -752,7 +762,7 @@ bytes_repeat(register PyBytesObject *a, register Py_ssize_t n)
     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + nbytes);
     if (op == NULL)
         return PyErr_NoMemory();
-    PyObject_INIT_VAR(op, &PyBytes_Type, size);
+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
     op->ob_shash = -1;
     op->ob_sval[size] = '\0';
     if (Py_SIZE(a) == 1 && n > 0) {
@@ -2911,6 +2921,8 @@ void
 PyBytes_Fini(void)
 {
     int i;
+    if (Py_PXCTX)
+        return;
     for (i = 0; i < UCHAR_MAX + 1; i++)
         Py_CLEAR(characters[i]);
     Py_CLEAR(nullstring);

@@ -672,6 +672,17 @@ function_call(PyObject *func, PyObject *arg, PyObject *kw)
     }
 #endif
 
+#ifdef Py_DEBUG
+    {
+        PyObject *co = PyFunction_GET_CODE(func);
+        if ((__int64)co->is_px == (__int64)0xdbdbdbdbdbdbdbdb) {
+            if (0)
+                fprintf(stderr, "xxxx!\n");
+
+        }
+    }
+#endif
+
     result = PyEval_EvalCodeEx(
         PyFunction_GET_CODE(func),
         PyFunction_GET_GLOBALS(func),
