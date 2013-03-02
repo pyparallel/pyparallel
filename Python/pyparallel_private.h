@@ -176,6 +176,22 @@ typedef struct _TLSBUF {
 #define OL2T(b)     (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, ol))
 #define T2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, TLSBUF, ol))
 
+typedef struct _CTXBUF {
+    DWORD           last_thread_id;
+    Context        *ctx;
+    Heap           *snapshot;
+    PxSocket       *s;
+    OVERLAPPED      ol;
+    WSABUF          w;
+} CTXBUF;
+
+#define CTXBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(CTXBUF)))
+
+#define C2W(b)      (_Py_CAST_FWD(b, WSABUF *, CTXBUF, w))
+#define W2C(b)      (_Py_CAST_BACK(b, CTXBUF *, CTXBUF, w))
+#define OL2C(b)     (_Py_CAST_BACK(b, CTXBUF *, CTXBUF, ol))
+#define C2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, CTXBUF, ol))
+
 #define usize_t unsigned size_t
 
 typedef struct _cpuinfo {
@@ -240,20 +256,21 @@ remove_object(Objects *list, Object *o)
         next->prev = prev;
 }
 
-#define _PxHeap_HEAD_EXTRA              \
-    Heap   *sle_prev;                   \
-    Heap   *sle_next;                   \
-    void   *base;                       \
-    void   *next;                       \
-    int     page_size;                  \
-    size_t  pages;                      \
-    size_t  next_alignment;             \
-    size_t  size;                       \
-    size_t  allocated;                  \
-    size_t  remaining;                  \
-    int     id;                         \
-    int     flags;                      \
-    TLS    *tls;
+#define _PxHeap_HEAD_EXTRA                  \
+    Heap       *sle_prev;                   \
+    Heap       *sle_next;                   \
+    void       *base;                       \
+    void       *next;                       \
+    int         page_size;                  \
+    size_t      pages;                      \
+    size_t      next_alignment;             \
+    size_t      size;                       \
+    size_t      allocated;                  \
+    size_t      remaining;                  \
+    int         id;                         \
+    int         flags;                      \
+    Context    *ctx;                        \
+    TLS        *tls;
 
 #define PxHeap_HEAD PxHeap heap_base;
 
@@ -530,6 +547,14 @@ typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
     Stats     stats;
 
+    CRITICAL_SECTION    heap_cs;
+
+    size_t              snapshot_id;
+    CRITICAL_SECTION    snapshots_cs;
+    volatile Px_INTPTR  snapshots_bitmap;
+    Heap               *snapshots[Px_INTPTR_BITS];
+    Heap                snapshot[Px_INTPTR_BITS];
+
     PyObject *waitobj;
     PyObject *waitobj_timeout;
     PyObject *func;
@@ -553,7 +578,6 @@ typedef struct _PyParallelContext {
 
     OVERLAPPED  overlapped;
     OVERLAPPED *ol; /* set to whatever `void *overlapped` is in callback */
-
 
     PxSocketBuf *rbuf_first;
     PxSocketBuf *rbuf_last;
@@ -877,7 +901,10 @@ typedef struct _PxSocket {
     TP_IO  *tp_io;
 
     TLSBUF *tls_buf;
+    CTXBUF *ctx_buf;
     OVERLAPPED *ol;
+
+    int connect_time; /* seconds */
 
     /* Server-specific stuff. */
     int preallocate;
@@ -900,6 +927,7 @@ typedef struct _PxSocket {
     volatile int next_child_id;
 
     /* Server socket clients. */
+    int child_id;
     PxSocket *parent;
     PxSocket *prev;
     PxSocket *next;
