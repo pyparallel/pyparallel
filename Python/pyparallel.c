@@ -11,6 +11,16 @@ extern "C" {
 #include "frameobject.h"
 #include "structmember.h"
 
+/* XXX TODO:
+ *      - Allocate child sockets within context (not the other way round like
+ *        it currently is).
+ *      - Either investigaete why DisconnectEx/TF_REUSE seems to suck or just
+ *        drop it altogether.
+ *      - Finish inlining exception/error handlers in IOLoop.
+ *      - Implement cleanup routines and bind to thread destroy.
+ *      - Finish IOLoop logic.
+ */
+
 #define CS_SOCK_SPINCOUNT 4
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
@@ -5798,9 +5808,9 @@ do_send:
 
     n = 1;
 
-    if (PxSocket_IS_HOG(s) && _PxSocket_ActiveHogs >= _PyParallel_NumCPUs)
+    if (PxSocket_IS_HOG(s) && _PxSocket_ActiveHogs >= _PyParallel_NumCPUs-1)
         goto do_async_send;
-    else if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs)
+    else if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs-1)
         goto do_async_send;
     else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
         goto do_async_send;
@@ -5809,6 +5819,9 @@ do_send:
 
 try_synchronous_send:
     s->send_id++;
+
+    if (s->send_id % 10000 == 0)
+        printf("trying sync send for client %d/%d\n", s->child_id, s->sock_fd);
 
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
@@ -5847,6 +5860,9 @@ do_async_send:
     w = &b->w;
     ol = &b->ol;
     assert(s->ol == ol);
+
+    if (s->send_id % 10000 == 0)
+        printf("doing async send for client %d/%d\n", s->child_id, s->sock_fd);
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -6059,6 +6075,9 @@ maybe_close:
 
         s->io_op = PxSocket_IO_CLOSE;
 
+        if (1)
+            goto _close_socket;
+
         success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
         if (!success) {
             int last_error = WSAGetLastError();
@@ -6070,6 +6089,11 @@ maybe_close:
             }
         } else
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CLEAN_DISCONNECT;
+
+        goto connection_closed;
+
+        _close_socket:
+            closesocket(s->sock_fd);
 
         goto connection_closed;
     }
@@ -6891,12 +6915,13 @@ PxServerSocket_ClientClosed(PxSocket *o)
     {
         size_t lines, lps;
         double Bs, KBs, MBs;
+        SOCKET fd = o->sock_fd;
 
         lines = o->send_nbytes / 73;
 
         if (o->connect_time <= 0) {
-            printf("[%d/%d] client sent %d bytes (%d lines)\n",
-                   s->nchildren, o->child_id, o->send_nbytes, lines);
+            printf("[%d/%d/%d] client sent %d bytes (%d lines)\n",
+                   s->nchildren, o->child_id, fd, o->send_nbytes, lines);
         } else {
             Bs = (double)o->send_nbytes / o->connect_time;
             KBs = Bs / 1024.0;
@@ -6904,10 +6929,10 @@ PxServerSocket_ClientClosed(PxSocket *o)
             lines = o->send_nbytes / 73;
             lps = lines / o->connect_time;
 
-            printf("[%d/%d] client sent %d bytes total, connect time: "
+            printf("[%d/%d/%d] client sent %d bytes total, connect time: "
                    "%d seconds, %.3fb/s, %.3fKB/s, %.3fMB/s, "
                    "lines: %d, lps: %d\n",
-                   s->nchildren, o->child_id, o->send_nbytes,
+                   s->nchildren, o->child_id, fd, o->send_nbytes,
                    o->connect_time, Bs, KBs, MBs, lines, lps);
         }
     }
@@ -7428,7 +7453,7 @@ PxSocketServer_AcceptCallback(
 start_io_loop:
     InterlockedIncrement(&(s->parent->nchildren));
     s->child_id = InterlockedIncrement(&(s->parent->next_child_id));
-    printf("child %d connected\n", s->child_id);
+    printf("child %d/%d connected\n", s->child_id, s->sock_fd);
     PxSocket_IOLoop(s);
 
     goto end;
