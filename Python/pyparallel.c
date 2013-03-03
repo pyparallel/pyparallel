@@ -12,8 +12,6 @@ extern "C" {
 #include "structmember.h"
 
 /* XXX TODO:
- *      - Allocate child sockets within context (not the other way round like
- *        it currently is).
  *      - Either investigaete why DisconnectEx/TF_REUSE seems to suck or just
  *        drop it altogether.
  *      - Finish inlining exception/error handlers in IOLoop.
@@ -5491,7 +5489,7 @@ _MAYBE_CLOSE(Context *c)
 
         s->io_op = PxSocket_IO_CLOSE;
 
-        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
+        success = DisconnectEx(s->sock_fd, NULL, 0 /*TF_REUSE_SOCKET*/, 0);
         if (!success) {
             if (WSAGetLastError() == WSAEWOULDBLOCK)
                 Py_FatalError("DisconnectEx() -> WSAEWOULDBLOCK!");
@@ -5695,16 +5693,17 @@ start:
 reload_protocol:
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RELOAD_PROTOCOL) {
         if (!s->protocol) {
-            assert(!PxSocket_LONG_LIVED(s));
             assert(s->protocol_type);
             s->protocol = PyObject_CallObject(s->protocol_type, NULL);
             if (!s->protocol)
                 PxSocket_FATAL();
 
+            /* not sure if we still need to do this */
+            /*
             if (!_Px_TryPersist(s->protocol))
                 PxSocket_FATAL();
-        } else
-            assert(!PxSocket_LONG_LIVED(s));
+             */
+        }
 
         assert(s->protocol);
 
@@ -6075,10 +6074,7 @@ maybe_close:
 
         s->io_op = PxSocket_IO_CLOSE;
 
-        if (1)
-            goto _close_socket;
-
-        success = DisconnectEx(s->sock_fd, NULL, TF_REUSE_SOCKET, 0);
+        success = DisconnectEx(s->sock_fd, NULL, 0 /*TF_REUSE_SOCKET*/, 0);
         if (!success) {
             int last_error = WSAGetLastError();
             if (last_error == WSAEWOULDBLOCK)
@@ -6092,10 +6088,6 @@ maybe_close:
 
         goto connection_closed;
 
-        _close_socket:
-            closesocket(s->sock_fd);
-
-        goto connection_closed;
     }
 
     assert(0);
@@ -6331,7 +6323,8 @@ PxSocket_SetProtocolType(PxSocket *s, PyObject *p)
     }
 
     s->protocol_type = p;
-
+    assert(!s->protocol);
+    /*
     if (PyObject_GetAttrString(p, "long_lived") == Py_True) {
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LONG_LIVED;
         i = PyObject_CallObject(p, NULL);
@@ -6340,7 +6333,7 @@ PxSocket_SetProtocolType(PxSocket *s, PyObject *p)
                             "create protocol instance failed");
             return 0;
         }
-        /* xxx should Py_CLEAR() the existing protocol here */
+        * xxx should Py_CLEAR() the existing protocol here *
         WRITE_LOCK(s);
         s->protocol = i;
         WRITE_UNLOCK(s);
@@ -6350,6 +6343,7 @@ PxSocket_SetProtocolType(PxSocket *s, PyObject *p)
 
     } else
         assert(!s->protocol);
+    */
 
     return 1;
 }
@@ -6428,6 +6422,7 @@ error:
     item->p3 = pstate->curexc_traceback;
 
     if (fatal && s->sock_fd != -1) {
+        /* xxx todo: close threadpool io here or in context cleanup? */
         closesocket(s->sock_fd);
         s->sock_fd = -1;
     }
@@ -6592,7 +6587,6 @@ create_pxsocket(
     PyObject *args,
     PyObject *kwds,
     int flags,
-    Context *context,
     PxSocket *parent)
 {
     char *val;
@@ -6601,7 +6595,7 @@ create_pxsocket(
     PxSocket *s;
     SOCKET fd = INVALID_SOCKET;
     char *host;
-    Context *c = context;
+    Context *c;
     Heap *old_heap = NULL;
     Py_ssize_t hostlen;
 
@@ -6635,35 +6629,35 @@ create_pxsocket(
         return (PyObject *)s;
     }
 
-    if (!Py_PXCTX) {
-        assert(!parent);
-        s = (PxSocket *)(tp->tp_alloc(tp, 0));
-    } else if (!parent) {
-        s = (PxSocket *)init_object(c, NULL, tp, 0);
-    } else {
-        assert(flags == Px_SOCKFLAGS_SERVERCLIENT);
-        assert(ctx->h == parent->ctx->h);
-        assert(c == ctx);
-        s = PxList_PopSocket(parent->freelist);
-        if (s) {
-            TP_IO *tp_io;
-            assert(s->flags & Px_SOCKFLAGS_SERVERCLIENT);
-            assert(s->parent = parent);
+    /* First step is to create a new context object that'll encapsulate the
+     * socket for its entire lifetime. */
+    c = new_context(0, 1);
+    if (!c)
+        return NULL;
 
-            /* The only thing we want to keep is the socket fd and tp_io. */
-            fd = s->sock_fd;
-            tp_io = s->tp_io;
-            memset(s, 0, sizeof(PxSocket));
-            s->tp_io = tp_io;
-            /* fd gets set below */
-        }
-        s = (PxSocket *)init_object(c, (PyObject *)s, tp, 0);
-    }
+    c->io_type = Px_IOTYPE_SOCKET;
 
+    s = (PxSocket *)_PyHeap_Malloc(c, sizeof(PxSocket), 0, 0);
     if (!s)
         return NULL;
 
+    c->io_obj = (PyObject *)s;
+
+    if (!init_object(c, c->io_obj, tp, 0))
+        return NULL;
+
+    s->ctx = c;
+
     s->flags = flags;
+
+    if (parent) {
+        assert(PxSocket_IS_SERVERCLIENT(s));
+    } else {
+        assert(
+            ( PxSocket_IS_CLIENT(s) && !PxSocket_IS_SERVER(s)) ||
+            (!PxSocket_IS_CLIENT(s) &&  PxSocket_IS_SERVER(s))
+        );
+    }
 
     s->sock_fd = fd;
     s->sock_timeout = -1.0;
@@ -6676,12 +6670,6 @@ create_pxsocket(
         assert(!PxSocket_IS_CLIENT(s));
         goto serverclient;
     }
-
-    assert(
-        ( PxSocket_IS_CLIENT(s) && !PxSocket_IS_SERVER(s)) ||
-        (!PxSocket_IS_CLIENT(s) &&  PxSocket_IS_SERVER(s))
-    );
-
 
     if (!PyArg_ParseTupleAndKeywords(PxSocket_PARSE_ARGS))
         goto error;
@@ -6712,6 +6700,10 @@ create_pxsocket(
             struct sockaddr_in *sin;
             int *len;
 
+            /* xxx todo: now that we've switched to having a context
+             * encapsulate the socket, we should change these char[n]
+             * arrays into pointers that are _PyHeap_Malloc'd with the
+             * socket's context. */
             memset(&s->ip[0], 0, 16);
             strncpy(&s->ip[0], host, 15);
             assert(s->ip[15] == '\0');
@@ -6752,7 +6744,6 @@ serverclient:
         s->errorhandler();
         goto error;
     }
-
 
 setnonblock:
     fd = s->sock_fd;
@@ -6898,14 +6889,6 @@ PxServerSocket_ClientClosed(PxSocket *o)
 
     x->io_obj = NULL;
 
-    /* This is wildly unthreadsafe.  Luckily we don't use it for anything
-     * useful. */
-    if (o->prev)
-        o->prev->next = o->next;
-
-    if (o->next)
-        o->next->prev = o->prev;
-
     if (PxSocket_IS_HOG(o)) {
         Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_HOG;
         InterlockedDecrement(&_PxSocket_ActiveHogs);
@@ -7015,8 +6998,6 @@ PxSocket_TryRecv(Context *c)
 
     if (ioctlsocket(s->sock_fd, FIONREAD, &avail) == SOCKET_ERROR)
         PxSocket_SOCKERROR("ioctlsocket");
-
-    assert(!PxSocket_LONG_LIVED(s));
 
     /*
     if (PxSocket_LONG_LIVED(s))
@@ -7614,16 +7595,18 @@ PxSocket_InitProtocol(Context *c)
 {
     PxSocket *s = (PxSocket *)c->io_obj;
     if (!s->protocol) {
-        assert(!PxSocket_LONG_LIVED(s));
         assert(s->protocol_type);
         s->protocol = PyObject_CallObject(s->protocol_type, NULL);
         if (!s->protocol)
             PxSocket_FATAL();
 
+        /* xxx: err, do we still need to persist protocols?  Need to review
+         * this logic/codepath. */
+        /*
         if (!_Px_TryPersist(s->protocol))
             PxSocket_FATAL();
-    } else
-        assert(!PxSocket_LONG_LIVED(s));
+         */
+    }
 
     assert(s->protocol);
 
@@ -7884,7 +7867,6 @@ end:
     return;
 }
 
-__inline
 PxSocket *
 PxSocketServer_CreateClientSocket(PxSocket *s)
 {
@@ -7895,7 +7877,7 @@ PxSocketServer_CreateClientSocket(PxSocket *s)
     int flags = Px_SOCKFLAGS_SERVERCLIENT;
     Heap *old_heap = NULL;
 
-    o = (PxSocket *)create_pxsocket(NULL, NULL, flags, c, s);
+    o = (PxSocket *)create_pxsocket(NULL, NULL, flags, s);
 
     if (!o)
         return NULL;
@@ -7905,14 +7887,12 @@ PxSocketServer_CreateClientSocket(PxSocket *s)
     assert(o->parent == s);
 
     o->protocol_type = s->protocol_type;
-
-    o->ctx = NULL;
-
-    if (!new_context_for_socket(o))
-        goto error;
-
     x = o->ctx;
+    assert(x);
 
+    /* xxx todo: review this logic now that we've switched to contexts
+     * encapsulating sockets; should we be using a heap snapshot + rollback
+     * below when calling the protocol? */
     old_heap = ctx->h;
     ctx->h = x->h;
 
@@ -7926,6 +7906,8 @@ PxSocketServer_CreateClientSocket(PxSocket *s)
 
     PxSocket_InitExceptionHandler(o);
 
+    /* xxx todo: this definitely needs to be changed when we work on the
+     * IOLoop try_recv: stuff. */
     b = new_pxsocketbuf(x, o->recvbuf_size);
     if (!b)
         goto error;
@@ -7943,13 +7925,13 @@ error:
     if (old_heap)
         ctx->h = old_heap;
 
-    if (o->ctx) {
-        /* xxx todo: erm, this needs to be cleaned up! */
-    }
     if (closesocket(o->sock_fd) == SOCKET_ERROR) {
         /* xxx: which error is more important? */
         /* x->errorhandler(); */
     }
+
+    assert(x);
+    PxSocket_CallbackComplete(x);
     return NULL;
 }
 
@@ -8254,13 +8236,13 @@ _async_client_or_server(PyObject *self, PyObject *args,
 PyObject *
 _async_client(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    return create_pxsocket(args, kwds, Px_SOCKFLAGS_CLIENT, ctx, 0);
+    return create_pxsocket(args, kwds, Px_SOCKFLAGS_CLIENT, 0);
 }
 
 PyObject *
 _async_server(PyObject *self, PyObject *args, PyObject *kwds)
 {
-    return create_pxsocket(args, kwds, Px_SOCKFLAGS_SERVER, ctx, 0);
+    return create_pxsocket(args, kwds, Px_SOCKFLAGS_SERVER, 0);
 }
 
 PyObject *
@@ -8321,13 +8303,11 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     if (PxSocket_Check(transport)) {
-        Context *c;
         PxSocket *s = (PxSocket *)transport;
+        Context *c = s->ctx;
         PTP_SIMPLE_CALLBACK cb;
 
-        c = new_context_for_socket(s);
-        if (!c)
-            return NULL;
+        assert(c);
 
         if (!PxSocket_SetProtocolType(s, protocol))
             return NULL;

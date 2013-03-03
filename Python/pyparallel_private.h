@@ -699,7 +699,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
 #define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
 #define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
-#define Px_SOCKFLAGS_LONG_LIVED                 (1UL << 16)
+#define Px_SOCKFLAGS___________                 (1UL << 16)
 #define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
 #define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
 #define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
@@ -727,7 +727,6 @@ typedef struct _PxObject {
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
 #define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
 #define PxSocket_IS_CONNECTED(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED)
-#define PxSocket_LONG_LIVED(s)  (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_LONG_LIVED)
 
 #define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
 
