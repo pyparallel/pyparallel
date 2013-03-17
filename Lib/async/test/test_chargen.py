@@ -1,13 +1,30 @@
 import async
-import async.services
 
-CHARGEN_IP = '10.211.55.3'
-CHARGEN_PORT = 20019
+def chargen(lineno, nchars=72):
+    start = ord(' ')
+    end = ord('~')
+    c = lineno + start
+    while c > end:
+        c = (c % end) + start
+    b = bytearray(nchars)
+    for i in range(0, nchars-2):
+        if c > end:
+            c = start
+        b[i] = c
+        c += 1
 
-class Chargen(async.services.Chargen):
-    optimize_for_concurrency = True
+    b[nchars-1] = ord('\n')
 
-server = async.server(CHARGEN_IP, CHARGEN_PORT)
-async.register(transport=server, protocol=async.services.Chargen)
+    return b
+
+class Chargen:
+    def initial_bytes_to_send(self):
+        return chargen(0)
+
+    def send_complete(self, transport, send_id):
+        return chargen(send_id)
+
+server = async.server('10.211.55.3', 20019)
+async.register(transport=server, protocol=Chargen)
 async.run()
 

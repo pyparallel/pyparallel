@@ -146,6 +146,9 @@ PyInterpreterState_Delete(PyInterpreterState *interp)
     }
     if (interp->tstate_head != NULL)
         Py_FatalError("PyInterpreterState_Delete: remaining threads");
+#ifdef WITH_PARALLEL
+    _PyParallel_DeletingInterpreterState(interp);
+#endif
     *p = interp->next;
     HEAD_UNLOCK();
     free(interp);
@@ -250,7 +253,7 @@ _PyThreadState_Init(PyThreadState *tstate)
     _PyGILState_NoteThreadState(tstate);
 #endif
 #ifdef WITH_PARALLEL
-    /*_PyParallel_ThreadStateInitialized(tstate);*/
+    _PyParallel_InitializedThreadState(tstate);
 #endif
 
 }
@@ -338,6 +341,10 @@ PyThreadState_Clear(PyThreadState *tstate)
         fprintf(stderr,
           "PyThreadState_Clear: warning: thread still has a frame\n");
 
+#ifdef WITH_PARALLEL
+    _PyParallel_ClearingThreadState(tstate);
+#endif
+
     Py_CLEAR(tstate->frame);
 
     Py_CLEAR(tstate->dict);
@@ -356,8 +363,6 @@ PyThreadState_Clear(PyThreadState *tstate)
     Py_CLEAR(tstate->c_profileobj);
     Py_CLEAR(tstate->c_traceobj);
 
-#ifdef WITH_PARALLEL
-#endif
 }
 
 
@@ -373,6 +378,10 @@ tstate_delete_common(PyThreadState *tstate)
     interp = tstate->interp;
     if (interp == NULL)
         Py_FatalError("PyThreadState_Delete: NULL interp");
+#ifdef WITH_PARALLEL
+    _PyParallel_DeletingThreadState(tstate);
+#endif
+    free(tstate);
     HEAD_LOCK();
     for (p = &interp->tstate_head; ; p = &(*p)->next) {
         if (*p == NULL)
@@ -396,9 +405,6 @@ tstate_delete_common(PyThreadState *tstate)
     }
     *p = tstate->next;
     HEAD_UNLOCK();
-#ifdef WITH_PARALLEL
-#endif
-    free(tstate);
 }
 
 

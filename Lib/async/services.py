@@ -1,22 +1,34 @@
 import time
 import async
 
+class Disconnect:
+    pass
+
+class Discard:
+    def data_received(self, data):
+        pass
+
 class QOTD:
     initial_bytes_to_send = b'An apple a day keeps the doctor away.\r\n.'
 
-class Daytime:
-    def initial_bytes_to_send(self):
-        return time.ctime() + '\r\n'
+
+class EchoData:
+    def data_received(self, data):
+        return data
+
+class EchoLine:
+    line_mode = True
+    def line_received(self, line):
+        return line
 
 def chargen(lineno, nchars=72):
-    # Err, this is broken for a bunch of linenos (e.g. 45927-45956).
     start = ord(' ')
     end = ord('~')
     c = lineno + start
-    if c > end:
+    while c > end:
         c = (c % end) + start
     b = bytearray(nchars)
-    for i in range(1, nchars-1):
+    for i in range(0, nchars-2):
         if c > end:
             c = start
         b[i] = c
@@ -33,19 +45,3 @@ class Chargen:
     def send_complete(self, transport, send_id):
         return chargen(send_id)
 
-
-class Discard:
-    def data_received(self, data):
-        pass
-
-class EchoData:
-    def data_received(self, data):
-        return data
-
-class EchoLine:
-    line_mode = True
-    def line_received(self, line):
-        return line
-
-class Disconnect:
-    pass

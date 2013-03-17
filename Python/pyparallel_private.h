@@ -176,21 +176,65 @@ typedef struct _TLSBUF {
 #define OL2T(b)     (_Py_CAST_BACK(b, TLSBUF *, TLSBUF, ol))
 #define T2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, TLSBUF, ol))
 
-typedef struct _CTXBUF {
-    DWORD           last_thread_id;
+typedef struct _SBUF {
+    PxSocket       *s;
     Context        *ctx;
     Heap           *snapshot;
-    PxSocket       *s;
+    DWORD           last_thread_id;
     OVERLAPPED      ol;
     WSABUF          w;
-} CTXBUF;
+} SBUF;
 
-#define CTXBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(CTXBUF)))
+#define SBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(SBUF)))
 
-#define C2W(b)      (_Py_CAST_FWD(b, WSABUF *, CTXBUF, w))
-#define W2C(b)      (_Py_CAST_BACK(b, CTXBUF *, CTXBUF, w))
-#define OL2C(b)     (_Py_CAST_BACK(b, CTXBUF *, CTXBUF, ol))
-#define C2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, CTXBUF, ol))
+#define S2W(b)      (_Py_CAST_FWD(b, WSABUF *, SBUF, w))
+#define W2S(b)      (_Py_CAST_BACK(b, SBUF *, SBUF, w))
+#define OL2S(b)     (_Py_CAST_BACK(b, SBUF *, SBUF, ol))
+#define S2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, SBUF, ol))
+
+typedef struct _RBUF RBUF;
+typedef struct _RBUF {
+    PxSocket       *s;
+    Context        *ctx;
+    Heap           *snapshot;
+    DWORD           last_thread_id;
+    OVERLAPPED      ol;
+    WSABUF          w;
+    RBUF           *prev;
+    RBUF           *next;
+    size_t          signature;
+    /* mimic PyBytesObject herein */
+    PyObject_VAR_HEAD
+    Py_hash_t ob_shash;
+    char ob_sval[1];
+} RBUF;
+
+#define RBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(RBUF)))
+
+#define R2W(p)      (_Py_CAST_FWD(p, WSABUF *, RBUF, w))
+#define W2R(p)      (_Py_CAST_BACK(p, RBUF *, RBUF, w))
+#define OL2R(p)     (_Py_CAST_BACK(p, RBUF *, RBUF, ol))
+#define R2OL(p)     (_Py_CAST_FWD(p, OVERLAPPED *, RBUF, ol))
+#define R2B(p)      (_Py_CAST_FWD(p, PyBytesObject *, RBUF, ob_base))
+#define B2S(p)      (_Py_CAST_BACK(p, size_t, RBUF, signature))
+/*
+#define B2R(p)                              \
+    (B2S(p) == _PxSocket_RBUF_Signature ?   \
+        (_Py_CAST_BACK(p, RBUF *, RBUF, ob_base
+
+#define PxSocketBuf2PyBytesObject(s) \
+    (_Py_CAST_FWD(s, PyBytesObject *, PxSocketBuf, ob_base))
+
+#define PyBytesObject2PxSocketBuf(b)                                  \
+    (PyBytesObject2PxSocketBufSignature(b) == _PxSocketBufSignature ? \
+        (_Py_CAST_BACK(b, PxSocketBuf *, PxSocketBuf, ob_base)) :     \
+        (PxSocketBuf *)NULL                                           \
+    )
+
+#define PyBytesObject2PxSocketBufSignature(b) \
+    (_Py_CAST_BACK(b, size_t, PxSocketBuf, ob_base))
+*/
+
 
 #define usize_t unsigned size_t
 
@@ -555,6 +599,15 @@ typedef struct _PyParallelContext {
     Heap               *snapshots[Px_INTPTR_BITS];
     Heap                snapshot[Px_INTPTR_BITS];
 
+    /*
+    size_t               rbuf_id;
+    Px_INTPTR * volatile rbuf_bitmaps;
+    int                  rbuf_nbitmaps;
+    WSABUF            ***rbufs;
+    SBUF             **rbuf;
+    */
+
+
     PyObject *waitobj;
     PyObject *waitobj_timeout;
     PyObject *func;
@@ -794,6 +847,7 @@ typedef struct _PxObject {
 #define pxsock_close_                                                 9
 #define pxsock_try_send                                               10
 #define pxsock_init_line_mode                                         11
+#define pxsock_try_recv                                               12
 
 
 typedef struct _PxSocketBuf PxSocketBuf;
@@ -884,11 +938,10 @@ typedef struct _PxSocket {
     int       sendbuf_size;
 
     size_t send_id;
-
-    WSABUF **wbufs;
-    DWORD    nbufs;
+    size_t recv_id;
 
     Py_ssize_t  send_nbytes;
+    Py_ssize_t  recv_nbytes;
 
     PyObject *protocol_type;
     PyObject *protocol;
@@ -900,7 +953,12 @@ typedef struct _PxSocket {
     TP_IO  *tp_io;
 
     TLSBUF *tls_buf;
-    CTXBUF *ctx_buf;
+
+    SBUF   *sbuf;
+    RBUF   *rbuf_first;
+    RBUF   *rbuf_last;
+    int     num_rbufs;
+
     OVERLAPPED *ol;
 
     int connect_time; /* seconds */

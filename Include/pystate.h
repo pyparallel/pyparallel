@@ -160,7 +160,10 @@ PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
 
 #ifdef WITH_PARALLEL
 PyAPI_FUNC(void) _PyParallel_CreatedNewInterpreterState(PyInterpreterState *);
+PyAPI_FUNC(void) _PyParallel_DeletingInterpreterState(PyInterpreterState *);
+
 PyAPI_FUNC(void *) _PyParallel_CreatedNewThreadState(PyThreadState *);
+PyAPI_FUNC(void) _PyParallel_InitializedThreadState(PyThreadState *);
 
 PyAPI_FUNC(void) _PyParallel_ClearingInterpreterState(PyInterpreterState *);
 PyAPI_FUNC(void) _PyParallel_ClearedInterpreterState(PyInterpreterState *);
@@ -168,7 +171,7 @@ PyAPI_FUNC(void) _PyParallel_ClearedInterpreterState(PyInterpreterState *);
 PyAPI_FUNC(void) _PyParallel_ClearingThreadState(PyThreadState *);
 PyAPI_FUNC(void) _PyParallel_ClearedThreadState(PyThreadState *);
 
-PyAPI_FUNC(void) _PyParallel_DeletingingThreadState(PyThreadState *);
+PyAPI_FUNC(void) _PyParallel_DeletingThreadState(PyThreadState *);
 PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
 
 PyAPI_FUNC(PyThreadState *) _PyParallel_GetThreadState(void);
