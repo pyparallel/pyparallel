@@ -37,6 +37,7 @@ PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
 PyAPI_FUNC(void) _PyParallel_Init(void);
+PyAPI_FUNC(void) _PyParallel_Finalize(void);
 PyAPI_FUNC(void) _PyParallel_BlockingCall(void);
 
 PyAPI_FUNC(void) _PyParallel_CreatedGIL(void);
@@ -114,20 +115,48 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
             0                            \
         );
 
+/* PY tests should be odd, PX tests even. */
+/* Object guards should be less than mem guards. */
 #define _PYOBJ_TEST     (1UL <<  1)
 #define _PXOBJ_TEST     (1UL <<  2)
-#define _PY_ISPX_TEST   (1UL <<  3)
-#define _PYOBJ_GUARD    (1UL <<  4)
-#define _PXOBJ_GUARD    (1UL <<  5)
+/* Note the absence of (1UL << 3) (to maintain odd/even) */
+#define _PY_ISPX_TEST   (1UL <<  4)
+#define _PYOBJ_GUARD    (1UL <<  5)
+#define _PXOBJ_GUARD    (1UL <<  6)
 
-#define _PYMEM_TEST     (1UL <<  6)
-#define _PXMEM_TEST     (1UL <<  7)
-#define _PYMEM_GUARD    (1UL <<  8)
-#define _PXMEM_GUARD    (1UL <<  9)
+#define _PYMEM_TEST     (1UL <<  7)
+#define _PXMEM_TEST     (1UL <<  8)
+#define _PYMEM_GUARD    (1UL <<  9)
+#define _PXMEM_GUARD    (1UL << 10)
+
+#ifdef _WIN64
+#define _px_bitscan_fwd        _BitScanForward64
+#define _px_bitscan_rev        _BitScanReverse64
+#define _px_interlocked_or     _InterlockedOr64
+#define _px_interlocked_and    _InterlockedAnd64
+#define _px_popcnt             _Py_popcnt_u64
+#else
+#define _px_bitscan_fwd        _BitScanForward
+#define _px_bitscan_rev        _BitScanReverse
+#define _px_interlocked_or     _InterlockedOr
+#define _px_interlocked_and    _InterlockedAnd
+#define _px_popcnt             _Py_popcnt_u32
+#endif
+
+static __inline
+int
+_px_bitpos_uint32(unsigned int f)
+{
+    unsigned long i = 0;
+    _px_bitscan_fwd(&i, f);
+    return i;
+}
 
 #define _ONLY_ONE_BIT(f) _Py_UINT32_BITS_SET(f)
 #define _OBJTEST(f) (_ONLY_ONE_BIT(f) && f >= _PYOBJ_TEST && f <= _PXOBJ_GUARD)
 #define _MEMTEST(f) (_ONLY_ONE_BIT(f) && f >= _PYMEM_TEST && f <= _PXMEM_GUARD)
+#define _PYTEST(f)  (_ONLY_ONE_BIT(f) &&  (_px_bitpos_uint32(f) % 2))
+#define _PXTEST(f)  (_ONLY_ONE_BIT(f) && !(_px_bitpos_uint32(f) % 2))
 
 #define Py_ISPY(pointer)           \
     _PyParallel_Guard(             \

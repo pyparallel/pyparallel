@@ -381,7 +381,6 @@ tstate_delete_common(PyThreadState *tstate)
 #ifdef WITH_PARALLEL
     _PyParallel_DeletingThreadState(tstate);
 #endif
-    free(tstate);
     HEAD_LOCK();
     for (p = &interp->tstate_head; ; p = &(*p)->next) {
         if (*p == NULL)
@@ -405,6 +404,7 @@ tstate_delete_common(PyThreadState *tstate)
     }
     *p = tstate->next;
     HEAD_UNLOCK();
+    free(tstate);
 }
 
 

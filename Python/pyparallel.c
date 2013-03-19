@@ -40,6 +40,8 @@ int _PxBlockingCallsThreshold = 5;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
+int _PyParallel_Finalized = 0;
+
 int _PxSocketServer_PreallocatedSockets = 10;
 int _PxSocket_MaxSyncSendAttempts = 3;
 int _PxSocket_MaxSyncRecvAttempts = 3;
@@ -1750,6 +1752,9 @@ _PyParallel_GuardObj(const char *function,
 
     assert(_OBJTEST(flags));
 
+    if (_PyParallel_Finalized)
+        return (_PYTEST(flags) ? 1 : 0);
+
     if (m) {
         o = _Px_SafeObjectSignatureTest(m);
         s = _Px_MemorySignature(m);
@@ -1816,6 +1821,9 @@ _PyParallel_GuardMem(const char *function,
     unsigned long o;
 
     assert(_MEMTEST(flags));
+
+    if (_PyParallel_Finalized)
+        return (_PYTEST(flags) ? 1 : 0);
 
     if (m) {
         o = _Px_SafeObjectSignatureTest(m);
@@ -2827,9 +2835,13 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->io_free)
         goto free_finished_sockets;
 
+    px->work_ready = PxList_New();
+    if (!px->work_ready)
+        goto free_io_free;
+
     px->io_free_wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->io_free_wakeup)
-        goto free_io_free;
+        goto free_work_ready;
 
     px->wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->wakeup)
@@ -2875,6 +2887,9 @@ free_wakeup:
 
 free_io_wakeup:
     CloseHandle(px->io_free_wakeup);
+
+free_work_ready:
+    PxList_FreeListHead(px->work_ready);
 
 free_io_free:
     PxList_FreeListHead(px->io_free);
@@ -2929,16 +2944,7 @@ _PyParallel_DeletingThreadState(PyThreadState *tstate)
 
     assert(px);
 
-    if (px->contexts_active > 0) {
-        if (Py_VerboseFlag)
-            PySys_FormatStdout("_PyParallel_DeletingThreadState: "
-                               "%d contexts still active, calling "
-                               "_async_run() manually", px->contexts_active);
-        result = _async_run(NULL, NULL);
-        if (result != Py_None)
-            PySys_FormatStderr("_PyParallel_DeletingThreadState: "
-                               "_async_run() failed!");
-    }
+    assert(px->contexts_active == 0);
 }
 
 void
@@ -3391,6 +3397,74 @@ _PyParallel_IOCallback(
     _PyParallel_WorkCallback(instance, c);
 }
 
+PyDoc_STRVAR(_async_cpu_count_doc,
+"cpu_count() -> integer\n\n\
+Return an integer representing the number of online logical CPUs,\n\
+or -1 if this value cannot be established.");
+
+#if defined(__DragonFly__) || \
+    defined(__OpenBSD__)   || \
+    defined(__FreeBSD__)   || \
+    defined(__NetBSD__)    || \
+    defined(__APPLE__)
+int
+_bsd_cpu_count(void)
+{
+    int err = -1;
+    int ncpu = -1;
+    int mib[4];
+    size_t len = sizeof(int);
+    mib[0] = CTL_HW;
+    mib[1] = HW_NCPU;
+    err = sysctl(mib, 2, &ncpu, &len, NULL, 0);
+    if (!err)
+        return ncpu;
+    else
+        return -1;
+}
+#endif
+
+int
+_cpu_count(void)
+{
+#ifdef MS_WINDOWS
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    return sysinfo.dwNumberOfProcessors;
+#elif __hpux
+    return mpctl(MPC_GETNUMSPUS, NULL, NULL);
+#ifndef _SC_NPROCESSORS_ONLN
+#ifdef _SC_NPROC_ONLN /* IRIX */
+#define _SC_NPROCESSORS_ONLN _SC_NPROC_ONLN
+#endif
+#endif /* ! defined(_SC_NPROCESSORS_ONLN) */
+#elif defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    return sysconf(_SC_NPROCESSORS_ONLN);
+#elif __APPLE__
+    int err = -1;
+    int ncpu = -1;
+    size_t len = sizeof(int);
+    err = sysctlnametomib("hw.logicalcpu", &ncpu, &len, NULL, 0);
+    if (!err)
+        return ncpu;
+    else
+        return _bsd_cpu_count();
+#elif defined(__DragonFly__) || \
+      defined(__OpenBSD__)   || \
+      defined(__FreeBSD__)   || \
+      defined(__NetBSD__)
+    return _bsd_cpu_count();
+#else
+    return -1;
+#endif
+}
+
+PyObject *
+_async_cpu_count(PyObject *self)
+{
+    return PyLong_FromLong(_cpu_count());
+}
+
 void
 _PyParallel_Init(void)
 {
@@ -3436,10 +3510,32 @@ _PyParallel_Init(void)
     _Py_lfence();
     _Py_clflush(&Py_MainThreadId);
 
-    _PyParallel_NumCPUs = GetActiveProcessorCount(0);
+    _PyParallel_NumCPUs = _cpu_count();
     if (!_PyParallel_NumCPUs)
         Py_FatalError("_PyParallel_Init: GetActiveProcessorCount() failed");
 
+}
+
+void
+_PyParallel_Finalize(void)
+{
+    PyObject *result;
+    PxState *px = PXSTATE();
+
+    assert(px);
+
+    if (px->contexts_active > 0) {
+        if (Py_VerboseFlag)
+            PySys_FormatStdout("_PyParallel_DeletingThreadState: "
+                               "%d contexts still active, calling "
+                               "_async_run() manually", px->contexts_active);
+        result = _async_run(NULL, NULL);
+        if (result != Py_None)
+            PySys_FormatStderr("_PyParallel_DeletingThreadState: "
+                               "_async_run() failed!");
+    }
+
+    _PyParallel_Finalized = 1;
 }
 
 void
@@ -4360,6 +4456,7 @@ _async_submit_work(PyObject *self, PyObject *args)
     PyObject *result = NULL;
     Context  *c;
     PxState  *px;
+    PxListItem *item;
 
     c = new_context(0, 0);
     if (!c)
@@ -4369,6 +4466,12 @@ _async_submit_work(PyObject *self, PyObject *args)
 
     if (!extract_args(args, c))
         goto free_context;
+
+    item = _PyHeap_NewListItem(c);
+    if (!item)
+        goto free_context;
+
+    item->from = c;
 
     InterlockedIncrement64(&(px->submitted));
     InterlockedIncrement(&(px->pending));
@@ -4389,6 +4492,7 @@ error:
     InterlockedDecrement(&(px->active));
     InterlockedIncrement64(&(px->done));
     decref_args(c);
+
 free_context:
     HeapDestroy(c->heap_handle);
     free(c);
@@ -5692,7 +5796,7 @@ PxSocket_IOLoop(PxSocket *s)
     DWORD recv_nbytes = 0;
     OVERLAPPED *ol = NULL;
     Heap *snapshot = NULL;
-    int i, n, is_tls_buf, is_sbuf = 0;
+    int i, n, is_sbuf = 0;
 
     fd = s->sock_fd;
 
@@ -8658,6 +8762,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(_rawfile),
     _ASYNC_K(register),
     _ASYNC_N(run_once),
+    _ASYNC_N(cpu_count),
     _ASYNC_O(unprotect),
     _ASYNC_O(protected),
     _ASYNC_N(is_active),

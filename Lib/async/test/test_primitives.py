@@ -49,6 +49,20 @@ class TestProtect(unittest.TestCase):
         self.assertEqual(o.cat, 'dog')
         self.assertEqual(async.protected(o), False)
 
+
+class TestUnprotectedDetection(unittest.TestCase):
+    def _test_dict(self):
+        d = dict()
+
+        def foo():
+            d['foo'] = async.rdtsc()
+
+        def callback():
+            self.assertRaises(async.ProtectionError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
 class TestProtectionError(unittest.TestCase):
     def test_protection_error_basic(self):
         o = _object()

@@ -509,6 +509,10 @@ Py_Finalize(void)
 
     wait_for_thread_shutdown();
 
+#ifdef WITH_PARALLEL
+    _PyParallel_Finalize();
+#endif
+
     /* The interpreter is still entirely intact at this point, and the
      * exit funcs may be relying on that.  In particular, if some thread
      * or exit func is still waiting to do an import, the import machinery

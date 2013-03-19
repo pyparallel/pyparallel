@@ -461,6 +461,8 @@ typedef struct _PxState {
     PxListHead *finished;
     PxListHead *finished_sockets;
 
+    PxListHead *work_ready;
+
     PxListHead *io_ondemand;
     PxListHead *io_free;
     HANDLE      io_free_wakeup;
@@ -574,7 +576,7 @@ typedef struct _PxState {
     SLIST_ENTRY slist_entry;        \
     HANDLE  heap_handle;            \
     Heap    heap;                   \
-    Heap    *h;                      \
+    Heap   *h;                      \
     PxState *px;                    \
     PyThreadState *tstate;          \
     PyThreadState *pstate;          \

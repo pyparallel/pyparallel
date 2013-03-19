@@ -21,22 +21,22 @@ class EchoLine:
     def line_received(self, line):
         return line
 
-def chargen(lineno, nchars=72):
-    start = ord(' ')
-    end = ord('~')
-    c = lineno + start
-    while c > end:
-        c = (c % end) + start
-    b = bytearray(nchars)
-    for i in range(0, nchars-2):
-        if c > end:
-            c = start
-        b[i] = c
-        c += 1
+    def chargen(lineno, nchars=72):
+        start = ord(' ')
+        end = ord('~')
+        c = lineno + start
+        while c > end:
+            c = (c % end) + start
+        b = bytearray(nchars)
+        for i in range(0, nchars-2):
+            if c > end:
+                c = start
+            b[i] = c
+            c += 1
 
-    b[nchars-1] = ord('\n')
+        b[nchars-1] = ord('\n')
 
-    return b
+        return b
 
 class Chargen:
     def initial_bytes_to_send(self):
