@@ -32,6 +32,8 @@ extern "C" {
 #define Px_PERSISTED(o)     (Py_PXFLAGS((o)) & Py_PXFLAGS_PERSISTED)
 #define Px_PROMOTED(o)      (Py_PXFLAGS((o)) & Py_PXFLAGS_PROMOTED)
 
+#define Px_ISPROTECTED(o)   (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
+
 PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
@@ -57,6 +59,8 @@ PyAPI_FUNC(void) _PyParallel_EndAllowThreads(void);
 
 PyAPI_FUNC(void) _PyParallel_EnteredParallelContext(void *c);
 PyAPI_FUNC(void) _PyParallel_LeavingParallelContext(void);
+
+PyAPI_FUNC(void) _PyParallel_SchedulePyNoneDecref(long);
 
 PyAPI_FUNC(int)  _PyParallel_ExecutingCallbackFromMainThread(void);
 
@@ -367,6 +371,8 @@ _px_bitpos_uint32(unsigned int f)
 #define Py_CTX 0
 #define PyPx_GUARD_OBJECT(o)
 #define PyPx_GUARD_MEM(o)
+
+#define Px_CHECK_PROTECTION(left, right) (1)
 #endif
 
 #ifdef __cplusplus

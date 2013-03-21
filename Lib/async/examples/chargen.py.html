@@ -1,0 +1,59 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<title>~/cpy/win64-3.x-vs11/px/Lib/async/examples/chargen.py.html</title>
+<meta name="Generator" content="Vim/7.3">
+<meta name="plugin-version" content="vim7.3_v6">
+<meta name="syntax" content="python">
+<meta name="settings" content="use_css">
+<style type="text/css">
+<!--
+pre { font-family: monospace; color: #ffffff; background-color: #000000; }
+body { font-family: monospace; color: #ffffff; background-color: #000000; }
+.Special { color: #ffa500; }
+.pythonConditional { color: #87ceeb; }
+.Statement { color: #4169e1; font-weight: bold; }
+.pythonString { color: #db7093; }
+.pythonBuiltin { color: #00bfff; }
+.Constant { color: #ffbbbb; }
+.Identifier { color: #00ced1; }
+.pythonStatement { color: #eedd82; }
+.PreProc { color: #ff80ff; }
+-->
+</style>
+</head>
+<body>
+<pre>
+<span class="PreProc">import</span> async
+
+<span class="pythonStatement">def</span> <span class="Identifier">chargen</span>(lineno, nchars=<span class="Constant">72</span>):
+    start = <span class="pythonBuiltin">ord</span>(<span class="pythonString">' '</span>)
+    end = <span class="pythonBuiltin">ord</span>(<span class="pythonString">'~'</span>)
+    c = lineno + start
+    <span class="Statement">while</span> c &gt; end:
+        c = (c % end) + start
+    b = <span class="pythonBuiltin">bytearray</span>(nchars)
+    <span class="Statement">for</span> i <span class="Statement">in</span> <span class="pythonBuiltin">range</span>(<span class="Constant">0</span>, nchars-<span class="Constant">2</span>):
+        <span class="pythonConditional">if</span> c &gt; end:
+            c = start
+        b[i] = c
+        c += <span class="Constant">1</span>
+
+    b[nchars-<span class="Constant">1</span>] = <span class="pythonBuiltin">ord</span>(<span class="pythonString">'</span><span class="Special">\n</span><span class="pythonString">'</span>)
+
+    <span class="pythonStatement">return</span> b
+
+<span class="pythonStatement">class</span> <span class="Identifier">Chargen</span>:
+    <span class="pythonStatement">def</span> <span class="Identifier">initial_bytes_to_send</span>(self):
+        <span class="pythonStatement">return</span> chargen(<span class="Constant">0</span>)
+
+    <span class="pythonStatement">def</span> <span class="Identifier">send_complete</span>(self, transport, send_id):
+        <span class="pythonStatement">return</span> chargen(send_id)
+
+server = async.server(<span class="pythonString">'10.211.55.3'</span>, <span class="Constant">20019</span>)
+async.register(transport=server, protocol=Chargen)
+async.run()
+</pre>
+</body>
+</html>

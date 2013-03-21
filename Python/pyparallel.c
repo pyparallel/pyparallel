@@ -60,6 +60,8 @@ void *_PyTLSHeap_Malloc(size_t n, size_t align);
 
 static PyObject *PyExc_AsyncError;
 static PyObject *PyExc_ProtectionError;
+static PyObject *PyExc_UnprotectedError;
+static PyObject *PyExc_AssignmentError;
 static PyObject *PyExc_NoWaitersError;
 static PyObject *PyExc_WaitError;
 static PyObject *PyExc_WaitTimeoutError;
@@ -764,7 +766,10 @@ __inline
 char
 _protected(PyObject *obj)
 {
-    return (obj->px_flags & Py_PXFLAGS_RWLOCK);
+    PyObject **dp;
+    dp = _PyObject_GetDictPtr(obj);
+    return (!dp ? Px_ISPROTECTED(obj) :
+                  Px_ISPROTECTED(obj) && Px_ISPROTECTED(*dp));
 }
 
 PyObject *
@@ -778,9 +783,15 @@ __inline
 void
 _unprotect(PyObject *obj)
 {
+    PyObject **dp;
     if (_protected(obj)) {
-        obj->px_flags &= ~Py_PXFLAGS_RWLOCK;
+        Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
         obj->srw_lock = NULL;
+    }
+    dp = _PyObject_GetDictPtr(obj);
+    if (dp && _protected(*dp)) {
+        (*dp)->px_flags &= ~Py_PXFLAGS_RWLOCK;
+        (*dp)->srw_lock = NULL;
     }
 }
 
@@ -923,9 +934,6 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
     int result;
     assert(Py_ORIG_TYPE(o));
 
-    if (!_Px_objobjargproc_ass(o, n, v))
-        return -1;
-
     _Px_WRITE_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_setattro)
@@ -933,6 +941,9 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
     else
         result = PyObject_GenericSetAttr(o, n, v);
     _Px_WRITE_UNLOCK(o);
+    if (result == -1 || !_Px_objobjargproc_ass(o, n, v))
+        return -1;
+
     return result;
 }
 
@@ -961,9 +972,6 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
     int result;
     assert(Py_ORIG_TYPE(o));
 
-    if (!_Px_objobjargproc_ass(o, NULL, v))
-        return -1;
-
     _Px_WRITE_LOCK(o);
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_setattr)
@@ -977,6 +985,9 @@ _PyObject_SetAttrString(PyObject *o, char *n, PyObject *v)
         Py_DECREF(s);
     }
     _Px_WRITE_UNLOCK(o);
+    if (result != -1 && !_Px_objobjargproc_ass(o, NULL, v))
+        result = -1;
+
     return result;
 }
 
@@ -1032,11 +1043,11 @@ _Px_mp_ass_subscript(PyObject *o, PyObject *k, PyObject *v)
 {
     int result;
     assert(Py_ORIG_TYPE(o));
-    if (!_Px_objobjargproc_ass(o, k, v))
-        return -1;
     _Px_WRITE_LOCK(o);
     result = Py_ORIG_TYPE_CAST(o)->tp_as_mapping->mp_ass_subscript(o, k, v);
     _Px_WRITE_UNLOCK(o);
+    if (result == -1 || !_Px_objobjargproc_ass(o, k, v))
+        return -1;
     return result;
 }
 
@@ -1370,13 +1381,27 @@ __inline
 PyObject *
 _protect(PyObject *obj)
 {
+    PyObject **dp;
     if (!obj)
         return NULL;
+
     if (!_protected(obj)) {
         if (!_PyObject_PrepOrigType(obj, 0))
             return NULL;
         InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
         Py_PXFLAGS(obj) |= Py_PXFLAGS_RWLOCK;
+    }
+
+    dp = _PyObject_GetDictPtr(obj);
+    if (dp && !_protected(*dp)) {
+        if (!_PyObject_PrepOrigType(*dp, 0)) {
+            /* Manually undo the protection we applied above. */
+            Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
+            obj->srw_lock = NULL;
+            return NULL;
+        }
+        InitializeSRWLock((PSRWLOCK)&((*dp)->srw_lock));
+        Py_PXFLAGS((*dp)) |= Py_PXFLAGS_RWLOCK;
     }
     return obj;
 }
@@ -3688,6 +3713,83 @@ _PyParallel_ModInit(void)
     return m;
 }
 
+/* xlist */
+PyObject *
+xlist_pop(PyObject *self, PyObject *arg)
+{
+    return NULL;
+}
+
+PyObject *
+xlist_push(PyObject *self, PyObject *arg)
+{
+    return NULL;
+}
+
+PyObject *
+xlist_flush(PyObject *self, PyObject *arg)
+{
+    return NULL;
+}
+
+
+PyDoc_STRVAR(xlist_pop_doc,   "XXX TODO\n");
+PyDoc_STRVAR(xlist_push_doc,  "XXX TODO\n");
+PyDoc_STRVAR(xlist_flush_doc, "XXX TODO\n");
+#define _XLIST(n, a) _METHOD(xlist, n, a)
+#define _XLIST_N(n) _XLIST(n, METH_NOARGS)
+#define _XLIST_O(n) _XLIST(n, METH_O)
+#define _XLIST_V(n) _XLIST(n, METH_VARARGS)
+#define _XLIST_K(n) _XLIST(n, METH_VARARGS | METH_KEYWORDS)
+PyMethodDef xlist_methods[] = {
+    _XLIST_N(pop),
+    _XLIST_O(push),
+    _XLIST_N(flush),
+};
+
+PyTypeObject PyXList_Type = {
+    PyObject_HEAD_INIT(&PyType_Type)
+    "xlist",
+    sizeof(PyXListObject),
+    0,
+    0,/*(destructor)xlist_dealloc,*/                   /* tp_dealloc */
+    0,                                          /* tp_print */
+    0,                                          /* tp_getattr */
+    0,                                          /* tp_setattr */
+    0,                                          /* tp_reserved */
+    0,                                           /* tp_repr */
+    0,                                          /* tp_as_number */
+    0,                                          /* tp_as_sequence */
+    0,                                          /* tp_as_mapping */
+    0,                                          /* tp_hash */
+    0,                                          /* tp_call */
+    0,                                          /* tp_str */
+    PyObject_GenericGetAttr,                    /* tp_getattro */
+    0,                                          /* tp_setattro */
+    0,                                          /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT,                         /* tp_flags */
+    "Interlocked List Object",                   /* tp_doc */
+    0,                                          /* tp_traverse */
+    0,                                          /* tp_clear */
+    0,                                          /* tp_richcompare */
+    0,                                          /* tp_weaklistoffset */
+    0,                                            /* tp_iter */
+    0,                                          /* tp_iternext */
+    xlist_methods,                               /* tp_methods */
+    0,                                          /* tp_members */
+    0,                                          /* tp_getset */
+    0,                                          /* tp_base */
+    0,                                          /* tp_dict */
+    0,                                          /* tp_descr_get */
+    0,                                          /* tp_descr_set */
+    0,                                          /* tp_dictoffset */
+    0,/*(initproc)xlist_init,*/                        /* tp_init */
+    PyType_GenericAlloc,                        /* tp_alloc */
+    PyType_GenericNew,                          /* tp_new */
+    0,                                          /* tp_free */
+};
+
+
 /* mod _async */
 __inline
 int
@@ -3974,6 +4076,14 @@ _Py_CheckCtrlC(void)
     return 0;
 }
 
+void
+_PyParallel_SchedulePyNoneDecref(long refs)
+{
+    PxState *px = PXSTATE();
+    assert(refs > 0);
+    InterlockedAdd(&(px->incoming_pynone_decrefs), refs);
+}
+
 PyObject *
 _async_run_once(PyObject *self, PyObject *args)
 {
@@ -4021,6 +4131,16 @@ _async_run_once(PyObject *self, PyObject *args)
     {
         PyErr_SetNone(PyExc_AsyncRunCalledWithoutEventsError);
         return NULL;
+    }
+
+    if (px->incoming_pynone_decrefs) {
+        long r = InterlockedExchange(&(px->incoming_pynone_decrefs), 0);
+        assert(r >= 0);
+        if (r > 0) {
+            PyObject *o = Py_None;
+            assert((Py_REFCNT(o) - r) > 0);
+            o->ob_refcnt -= r;
+        }
     }
 
     px->last_done_count = px->done;
@@ -8744,6 +8864,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(read),
     _ASYNC_K(dict),
     _ASYNC_K(list),
+    /*_ASYNC_N(xlist),*/
     //_ASYNC_V(open),
     _ASYNC_V(print),
     _ASYNC_V(write),
@@ -8838,6 +8959,16 @@ _PyAsync_ModInit(void)
     if (!PyExc_ProtectionError)
         return NULL;
 
+    PyExc_UnprotectedError = \
+        PyErr_NewException("_async.UnprotectedError", PyExc_AsyncError, NULL);
+    if (!PyExc_UnprotectedError)
+        return NULL;
+
+    PyExc_AssignmentError = \
+        PyErr_NewException("_async.AssignmentError", PyExc_AsyncError, NULL);
+    if (!PyExc_AssignmentError)
+        return NULL;
+
     PyExc_PersistenceError = \
         PyErr_NewException("_async.PersistenceError", PyExc_AsyncError, NULL);
     if (!PyExc_PersistenceError)
@@ -8871,6 +9002,12 @@ _PyAsync_ModInit(void)
     if (PyModule_AddObject(m, "ProtectionError", PyExc_ProtectionError))
         return NULL;
 
+    if (PyModule_AddObject(m, "UnprotectedError", PyExc_UnprotectedError))
+        return NULL;
+
+    if (PyModule_AddObject(m, "AssignmentError", PyExc_AssignmentError))
+        return NULL;
+
     if (PyModule_AddObject(m, "PersistenceError", PyExc_PersistenceError))
         return NULL;
 
@@ -8889,6 +9026,8 @@ _PyAsync_ModInit(void)
 
     Py_INCREF(PyExc_AsyncError);
     Py_INCREF(PyExc_ProtectionError);
+    Py_INCREF(PyExc_UnprotectedError);
+    Py_INCREF(PyExc_AssignmentError);
     Py_INCREF(PyExc_PersistenceError);
     Py_INCREF(PyExc_NoWaitersError);
     Py_INCREF(PyExc_WaitError);

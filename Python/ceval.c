@@ -2341,9 +2341,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             PREDICT(POP_JUMP_IF_TRUE);
             DISPATCH();
 
+#ifdef WITH_PARALLEL
+#define PREVENT_PARALLEL_IMPORT() do {                                      \
+    if (Py_PXCTX) {                                                         \
+        PyErr_SetString(PyExc_ImportError,                                  \
+                        "import not permitted within parallel context");    \
+        goto error;                                                         \
+    }                                                                       \
+} while (0)
+#else
+#define PREVENT_PARALLEL_IMPORT()
+#endif
+
         TARGET(IMPORT_NAME)
         {
             _Py_IDENTIFIER(__import__);
+            PREVENT_PARALLEL_IMPORT();
             w = GETITEM(names, oparg);
             x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
             if (x == NULL) {
@@ -2389,6 +2402,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         }
 
         TARGET(IMPORT_STAR)
+            PREVENT_PARALLEL_IMPORT();
             v = POP();
             PyFrame_FastToLocals(f);
             if ((x = f->f_locals) == NULL) {
@@ -2405,6 +2419,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             break;
 
         TARGET(IMPORT_FROM)
+            PREVENT_PARALLEL_IMPORT();
             w = GETITEM(names, oparg);
             v = TOP();
             READ_TIMESTAMP(intr0);

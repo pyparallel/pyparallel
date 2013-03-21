@@ -51,17 +51,196 @@ class TestProtect(unittest.TestCase):
 
 
 class TestUnprotectedDetection(unittest.TestCase):
-    def _test_dict(self):
+    def test_dict(self):
         d = dict()
+
+        def foo():
+            tsc = async.rdtsc()
+            d['foo'] = tsc
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_dict_delitem(self):
+        d = { 'foo' : None }
+
+        def foo():
+            del d['foo']
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_object(self):
+        o = _object(foo=None)
+
+        def foo():
+            o.foo = async.rdtsc()
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_object_delattr(self):
+        o = _object(foo=None)
+
+        def foo():
+            del o.foo
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_list_append(self):
+        l = list()
+
+        def foo():
+            l.append(async.rdtsc())
+
+        def callback():
+            self.assertRaises(async.AssignmentError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_list_assign(self):
+        l = [ None, ]
+
+        def foo():
+            l[0] = async.rdtsc()
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+    def test_list_sort(self):
+        l = [ 3, 2, 1 ]
+
+        def foo():
+            l.sort()
+
+        def callback():
+            self.assertRaises(async.UnprotectedError, foo)
+
+        async.submit_work(callback)
+        async.run()
+
+class TestDictAssignmentDetectionAndProtection(unittest.TestCase):
+    def test_assign_new_subscript(self):
+        d = async.dict()
+
+        def callback():
+            d['foo'] = async.rdtsc()
+
+        async.submit_work(callback)
+        async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_assign_subscript_over_none(self):
+        d = async.dict()
+        d['foo'] = None
+
+        def callback():
+            d['foo'] = async.rdtsc()
+
+        async.submit_work(callback)
+        async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_assign_subscript_over_non_none(self):
+        d = async.dict()
+        d['foo'] = 'alsdkjf'
 
         def foo():
             d['foo'] = async.rdtsc()
 
         def callback():
-            self.assertRaises(async.ProtectionError, foo)
+            self.assertRaises(async.AssignmentError, foo)
 
         async.submit_work(callback)
         async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_assign_subscript_over_previous_context(self):
+        d = async.dict()
+        o = async.object()
+        t = async.object()
+
+        async.prewait(o)
+        async.prewait(t)
+
+        def one():
+            self.assertTrue('foo' not in d)
+            d['foo'] = async.rdtsc()
+            async.signal(t)
+
+        def two():
+            def foo():
+                d['foo'] = async.rdtsc()
+            async.wait(t)
+            self.assertTrue('foo' in d)
+            self.assertRaises(async.AssignmentError, foo)
+
+        async.submit_wait(o, one)
+        async.submit_work(two)
+        async.signal(o)
+        async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_del_none_subscript(self):
+        d = async.dict()
+        d['foo'] = None
+
+        def callback():
+            del d['foo']
+
+        async.submit_work(callback)
+        async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
+    def test_del_subscript_from_previous_context(self):
+        d = async.dict()
+        o = async.object()
+        t = async.object()
+
+        async.prewait(o)
+        async.prewait(t)
+
+        def one():
+            self.assertTrue('foo' not in d)
+            d['foo'] = async.rdtsc()
+            async.signal(t)
+
+        def two():
+            def foo():
+                del d['foo']
+            async.wait(t)
+            self.assertTrue('foo' in d)
+            self.assertRaises(async.AssignmentError, foo)
+
+        async.submit_wait(o, one)
+        async.submit_work(two)
+        async.signal(o)
+        async.run()
+        del d
+        self.assertEqual(async.persisted_contexts(), 0)
+
 
 class TestProtectionError(unittest.TestCase):
     def test_protection_error_basic(self):
@@ -288,7 +467,7 @@ class TestPersistence(unittest.TestCase):
         del o.foo
         self.assertEqual(async.persisted_contexts(), 0)
 
-    def test_persistence_via_setattr(self):
+    def _test_persistence_via_setattr(self):
         self.assertEqual(async.persisted_contexts(), 0)
 
         def cb(w, o):
@@ -309,7 +488,7 @@ class TestPersistence(unittest.TestCase):
         delattr(o, 'foo')
         self.assertEqual(async.persisted_contexts(), 0)
 
-    def test_protect_against_object(self):
+    def _test_protect_against_object(self):
         self.assertEqual(async.persisted_contexts(), 0)
 
         o = async.object()

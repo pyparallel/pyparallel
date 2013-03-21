@@ -39,6 +39,11 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
         return 0;
     }
 
+    if (Py_PXCTX && Py_ISPY(self)) {
+        PyErr_SetString(PyExc_AssignmentError, "list_resize from px thread");
+        return -1;
+    }
+
     /* This over-allocates proportional to the list size, making room
      * for additional growth.  The over-allocation is mild, but is
      * enough to give linear-time amortized behavior over a long
@@ -225,6 +230,10 @@ PyList_SetItem(register PyObject *op, register Py_ssize_t i,
         PyErr_BadInternalCall();
         return -1;
     }
+
+    if (Px_PROTECTION_ERROR(op))
+        return -1;
+
     if (i < 0 || i >= Py_SIZE(op)) {
         Py_XDECREF(newitem);
         PyErr_SetString(PyExc_IndexError,
@@ -233,6 +242,8 @@ PyList_SetItem(register PyObject *op, register Py_ssize_t i,
     }
     p = ((PyListObject *)op) -> ob_item + i;
     olditem = *p;
+    if (Px_ASSIGNMENT_ERROR(op, olditem))
+        return -1;
     *p = newitem;
     Py_XDECREF(olditem);
     return 0;
@@ -253,6 +264,7 @@ ins1(PyListObject *self, Py_ssize_t where, PyObject *v)
         return -1;
     }
 
+    /* Px_CHECK_PROTECTION handled by list_resize() */
     if (list_resize(self, n+1) == -1)
         return -1;
 
@@ -278,6 +290,7 @@ PyList_Insert(PyObject *op, Py_ssize_t where, PyObject *newitem)
         PyErr_BadInternalCall();
         return -1;
     }
+    /* Px_CHECK_PROTECTION handled by inst1()->list_resize() */
     return ins1((PyListObject *)op, where, newitem);
 }
 
@@ -293,6 +306,7 @@ app1(PyListObject *self, PyObject *v)
         return -1;
     }
 
+    /* Px_CHECK_PROTECTION handled by list_resize() */
     if (list_resize(self, n+1) == -1)
         return -1;
 
@@ -305,6 +319,7 @@ int
 PyList_Append(PyObject *op, PyObject *newitem)
 {
     if (PyList_Check(op) && (newitem != NULL))
+        /* Px_CHECK_PROTECTION handled by app1()->list_resize() */
         return app1((PyListObject *)op, newitem);
     PyErr_BadInternalCall();
     return -1;
@@ -598,6 +613,12 @@ list_ass_slice(PyListObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     Py_ssize_t k;
     size_t s;
     int result = -1;            /* guilty until proved innocent */
+    if (Py_PXCTX && Px_ISPY(a)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "parallel thread attempted to assign to a slice "
+                        "of a main thread list");
+        return result;
+    }
 #define b ((PyListObject *)v)
     if (v == NULL)
         n = 0;
@@ -683,6 +704,8 @@ PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
         PyErr_BadInternalCall();
         return -1;
     }
+
+    /* Px_CHECK_PROTECTION handled by list_ass_slice(). */
     return list_ass_slice((PyListObject *)a, ilow, ihigh, v);
 }
 
@@ -692,6 +715,8 @@ list_inplace_repeat(PyListObject *self, Py_ssize_t n)
     PyObject **items;
     Py_ssize_t size, i, j, p;
 
+    if (Px_PROTECTION_ERROR(self))
+        return NULL;
 
     size = PyList_GET_SIZE(self);
     if (size == 0 || n == 1) {
@@ -735,9 +760,12 @@ list_ass_item(PyListObject *a, Py_ssize_t i, PyObject *v)
         return -1;
     }
     if (v == NULL)
+        /* Px_CHECK_PROTECTION handled by list_ass_slice() */
         return list_ass_slice(a, i, i+1, v);
-    Py_INCREF(v);
     old_value = a->ob_item[i];
+    if (Px_ASSIGNMENT_ERROR(a, old_value))
+        return -1;
+    Py_INCREF(v);
     a->ob_item[i] = v;
     Py_DECREF(old_value);
     return 0;
@@ -750,6 +778,7 @@ listinsert(PyListObject *self, PyObject *args)
     PyObject *v;
     if (!PyArg_ParseTuple(args, "nO:insert", &i, &v))
         return NULL;
+    /* Px_CHECK_PROTECTION handled by ins1()->list_resize() */
     if (ins1(self, i, v) == 0)
         Py_RETURN_NONE;
     return NULL;
@@ -758,6 +787,8 @@ listinsert(PyListObject *self, PyObject *args)
 static PyObject *
 listclear(PyListObject *self)
 {
+    if (Px_PROTECTION_ERROR(self))
+        return NULL;
     list_clear(self);
     Py_RETURN_NONE;
 }
@@ -771,6 +802,7 @@ listcopy(PyListObject *self)
 static PyObject *
 listappend(PyListObject *self, PyObject *v)
 {
+    /* Px_CHECK_PROTECTION handled by app1()->list_resize() */
     if (app1(self, v) == 0)
         Py_RETURN_NONE;
     return NULL;
@@ -785,6 +817,9 @@ listextend(PyListObject *self, PyObject *b)
     Py_ssize_t mn;                 /* m + n */
     Py_ssize_t i;
     PyObject *(*iternext)(PyObject *);
+
+    if (Px_PROTECTION_ERROR(self))
+        return NULL;
 
     /* Special cases:
        1) lists and tuples which can use PySequence_Fast ops
@@ -888,6 +923,7 @@ listextend(PyListObject *self, PyObject *b)
 PyObject *
 _PyList_Extend(PyListObject *self, PyObject *b)
 {
+    /* Px_CHECK_PROTECTION handled by listextend() */
     return listextend(self, b);
 }
 
@@ -896,6 +932,7 @@ list_inplace_concat(PyListObject *self, PyObject *other)
 {
     PyObject *result;
 
+    /* Px_CHECK_PROTECTION handled by listextend() */
     result = listextend(self, other);
     if (result == NULL)
         return result;
@@ -926,6 +963,7 @@ listpop(PyListObject *self, PyObject *args)
         return NULL;
     }
     v = self->ob_item[i];
+    /* Px_CHECK_PROTECTION handled by list_resize() or list_ass_slice() */
     if (i == Py_SIZE(self) - 1) {
         status = list_resize(self, Py_SIZE(self) - 1);
         assert(status >= 0);
@@ -947,6 +985,10 @@ static void
 reverse_slice(PyObject **lo, PyObject **hi)
 {
     assert(lo && hi);
+
+    /* Px_CHECK_PROTECTION handled by callers (listreverse, listsort,
+     * PyList_Reverse()).
+     */
 
     --hi;
     while (lo < hi) {
@@ -1920,6 +1962,10 @@ listsort(PyListObject *self, PyObject *args, PyObject *kwds)
 
     assert(self != NULL);
     assert (PyList_Check(self));
+
+    if (Px_PROTECTION_ERROR(self))
+        return NULL;
+
     if (args != NULL) {
         if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Oi:sort",
             kwlist, &keyfunc, &reverse))
@@ -2083,6 +2129,8 @@ PyList_Sort(PyObject *v)
         PyErr_BadInternalCall();
         return -1;
     }
+    if (Px_CHECK_PROTECTION(v, NULL, NULL))
+        return -1;
     v = listsort((PyListObject *)v, (PyObject *)NULL, (PyObject *)NULL);
     if (v == NULL)
         return -1;
@@ -2102,6 +2150,9 @@ int
 PyList_Reverse(PyObject *v)
 {
     PyListObject *self = (PyListObject *)v;
+
+    if (Px_CHECK_PROTECTION(v, NULL, NULL))
+        return -1;
 
     if (v == NULL || !PyList_Check(v)) {
         PyErr_BadInternalCall();
@@ -2188,6 +2239,9 @@ static PyObject *
 listremove(PyListObject *self, PyObject *v)
 {
     Py_ssize_t i;
+
+    if (Px_PROTECTION_ERROR(self))
+        return NULL;
 
     for (i = 0; i < Py_SIZE(self); i++) {
         int cmp = PyObject_RichCompareBool(self->ob_item[i], v, Py_EQ);
@@ -2449,6 +2503,18 @@ list_subscript(PyListObject* self, PyObject* item)
 static int
 list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
 {
+    /* Although Px_CHECK_PROTECTION will be called again from various other
+     * methods we might call from this function (e.g. list_ass_slice()), it
+     * simplifies the code greatly if we do the check up-front (even though
+     * it might be checked again a short time later by one of the other
+     * methods).
+     */
+    if (Py_PXCTX && Px_ISPY(self)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "parallel thread attempted to assign to main thread list");
+        return -1;
+    }
+
     if (PyIndex_Check(item)) {
         Py_ssize_t i = PyNumber_AsSsize_t(item, PyExc_IndexError);
         if (i == -1 && PyErr_Occurred())

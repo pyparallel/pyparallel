@@ -146,6 +146,20 @@ Px_GET_ALIGNMENT(void *p)
 #define Px_NUM_TLS_WSABUFS 32
 #endif
 
+typedef struct _PyXList {
+    PyObject_HEAD
+    SLIST_HEADER        head;
+    CONDITION_VARIABLE  cv;
+    CRITICAL_SECTION    cs;
+} PyXListObject;
+
+PyAPI_DATA(PyTypeObject) PyXList_Type;
+#define PyXList_Check(op) (Py_TYPE(op) == &PyXList_Type)
+PyAPI_FUNC(PyObject *)  PyXList_New(void);
+PyAPI_FUNC(PyObject *)  PyXList_Pop(void);
+PyAPI_FUNC(int)         PyXList_Push(PyObject *);
+PyAPI_FUNC(PyObject *)  PyXList_Flush(void);
+PyAPI_FUNC(Py_ssize_t)  PyList_Size(PyObject *);
 
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
 typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
@@ -508,6 +522,8 @@ typedef struct _PxState {
 
     volatile long active;
     volatile long persistent;
+
+    volatile long incoming_pynone_decrefs;
 
     //__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
     volatile long long  submitted;
