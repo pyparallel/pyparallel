@@ -12,7 +12,7 @@ extern "C" {
 
 #define E2I(p) ((PxListItem  *)p)
 #define I2E(p) ((PxListEntry *)p)
-#define O2I(o) ((PxListEntry *)(((PyObject *)(o))->slist_entry))
+#define O2E(o) ((PxListEntry *)(&((PyObject *)(o))->slist_entry)))
 #define I2O(i) (_Py_CAST_BACK(i, PyObject *, PyObject, slist_entry))
 #define I2C(i) (_Py_CAST_BACK(i, Context *, Context, slist_entry))
 #define C2E(i) (_Py_CAST_FWD(i, PxListEntry *, Context, slist_entry))
@@ -70,6 +70,18 @@ PxList_Malloc(Py_ssize_t size)
 }
 
 static __inline
+void *
+PxList_MallocFromHeap(HANDLE heap_handle, Py_ssize_t size)
+{
+    register void *p;
+    Py_ssize_t aligned = _Py_SIZE_ROUND_UP(size, MEMORY_ALLOCATION_ALIGNMENT);
+    p = HeapAlloc(heap_handle, HEAP_ZERO_MEMORY, aligned);
+    if (!p)
+        PyErr_SetFromWindowsErr(0);
+    return p;
+}
+
+static __inline
 void
 PxList_Free(void *p)
 {
@@ -83,6 +95,19 @@ PxListHead *
 PxList_New(void)
 {
     PxListHead *l = (PxListHead *)PxList_Malloc(sizeof(PxListHead));
+    if (!l)
+        return NULL;
+
+    InitializeSListHead(l);
+    return l;
+}
+
+static __inline
+PxListHead *
+PxList_NewFromHeap(HANDLE heap_handle)
+{
+    PxListHead *l = (PxListHead *)PxList_MallocFromHeap(heap_handle,
+                                                        sizeof(PxListHead));
     if (!l)
         return NULL;
 
@@ -231,7 +256,23 @@ PxList_Push(PxListHead *head, PxListItem *item)
 {
     return E2I(InterlockedPushEntrySList(head, I2E(&item->slist_entry)));
 }
-#define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2I((o)))))
+
+static __inline
+PyObject *
+PxList_PushObject(PxListHeaed *head, PyObject *op)
+{
+    PxListEntry *entry = O2E(op);
+    PxListEntry *result = InterlockedPushEntrySList(head, entry);
+    if (!result) {
+        PyErr_SetFromWindowsErr(0);
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+
+/*
+#define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2E((o)))))
+*/
 #define PxList_PushContext(h, c) (PxList_Push((PxListHead *)(h), C2I((c))))
 
 static __inline

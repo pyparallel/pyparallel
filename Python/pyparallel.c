@@ -25,6 +25,23 @@ __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 __declspec(thread) Context *ctx = NULL;
 __declspec(thread) TLS tls;
 __declspec(thread) PyThreadState *TSTATE;
+__declspec(thread) HANDLE heap_override;
+
+static __inline
+void
+_PyParallel_SetHeapOverride(HANDLE heap_handle)
+{
+    assert(heap_override == NULL);
+    heap_override = heap_handle;
+}
+
+static __inline
+void
+_PyParallel_RemoveHeapOverride(void)
+{
+    assert(heap_override != NULL);
+    heap_override = NULL;
+}
 
 Py_TLS static int _PxNewThread = 1;
 
@@ -3715,15 +3732,139 @@ _PyParallel_ModInit(void)
 
 /* xlist */
 PyObject *
-xlist_pop(PyObject *self, PyObject *arg)
+PyXList_New(void)
 {
-    return NULL;
+    PyXListObject *xlist;
+
+    if (Py_PXCTX) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "xlist objects cannot be "
+                        "created from parallel threads");
+        return NULL;
+    }
+
+    xlist = (PyXListObject *)malloc(sizeof(PyXListObject));
+    if (!xlist)
+        return PyErr_NoMemory();
+
+    memset(xlist, 0, sizeof(PyXListObject));
+
+    xlist->heap_handle = HeapCreate(0, 0, 0);
+    if (!xlist->heap_handle) {
+        PyErr_SetFromWindowsErr(0);
+        free(xlist);
+        return NULL;
+    }
+
+    xlist->head = PxList_NewFromHeap(xlist->heap_handle);
+    if (!xlist->head) {
+        free(xlist);
+        return NULL;
+    }
+
+    /* Manually initialize the type. */
+    xlist->ob_base.ob_type = &PyXList_Type;
+    xlist->ob_base.ob_refcnt = 1;
+
+    InitializeCriticalSectionAndSpinCount(&(xlist->cs), 4);
+
+    return (PyObject *)xlist;
 }
 
 PyObject *
-xlist_push(PyObject *self, PyObject *arg)
+xlist_new(PyTypeObject *tp, PyObject *self, PyObject *args)
 {
-    return NULL;
+    assert(tp == &PyXList_Type);
+    assert(self == NULL);
+    assert(args == NULL);
+    return PyXList_New();
+}
+
+PyObject *
+xlist_alloc(PyTypeObject *tp, Py_ssize_t nitems)
+{
+    assert(nitems == 0);
+    assert(tp == &PyXList_Type);
+
+    return PyXList_New();
+}
+
+PyObject *
+xlist_pop(PyObject *self, PyObject *args)
+{
+    PyXListObject *xlist = (PyXListObject *)self;
+    PxListItem *item;
+    assert(args == NULL);
+    item = PxList_Pop(xlist->head);
+    return (item ? I2O(item) : NULL);
+}
+
+PyObject *
+PyXList_Pop(PyObject *xlist)
+{
+    return xlist_pop(xlist, NULL);
+}
+
+PyObject *
+PyObject_Clone(PyObject *src, const char *errmsg)
+{
+    int valid_type;
+    PyObject *dst;
+    PyTypeObject *tp;
+
+    tp = Py_TYPE(src);
+
+    valid_type = (
+        PyBytes_CheckExact(src)         ||
+        PyByteArray_CheckExact(src)     ||
+        PyUnicode_CheckExact(src)       ||
+        PyLong_CheckExact(src)          ||
+        PyFloat_CheckExact(src)
+    );
+
+    if (!valid_type) {
+        PyErr_Format(PyExc_ValueError, errmsg, tp->tp_name);
+        return NULL;
+    }
+
+    if (PyLong_CheckExact(src)) {
+
+    } else if (PyFloat_CheckExact(src)) {
+
+    } else if (PyUnicode_CheckExact(src)) {
+
+    } else {
+        assert(0);
+    }
+
+
+}
+
+PyObject *
+xlist_push(PyObject *obj, PyObject *src)
+{
+    PyXListObject *xlist = (PyXListObject *)obj;
+    assert(src);
+
+    if (!Py_PXCTX)
+        PxList_PushObject(xlist->head, src);
+    else {
+        PyObject *dst;
+        _PyParallel_SetHeapOverride(xlist->heap_handle);
+        dst = PyObject_Clone(src, "objects of type %s cannot "
+                                  "be pushed to xlists");
+        _PyParallel_RemoveHeapOverride();
+        if (!dst)
+            return NULL;
+        PxList_PushObject(xlist->head, dst);
+    }
+
+    /*
+    if (Px_CV_WAITERS(xlist))
+        ConditionVariableWakeOne(&(xlist->cv));
+    */
+
+    Py_RETURN_NONE;
 }
 
 PyObject *

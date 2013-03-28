@@ -21,6 +21,8 @@ extern "C" {
 #define Py_PXFLAGS_WASPX                (1UL <<  4)
 #define Py_PXFLAGS_PERSISTED            (1UL <<  5)
 #define Py_PXFLAGS_PROMOTED             (1UL <<  6)
+#define Py_PXFLAGS_CLONED               (1UL <<  7)
+#define Py_PXFLAGS_CV_WAITERS           (1UL <<  8)
 
 #define Py_HAS_RWLOCK(o)    (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
 #define Py_HAS_EVENT(o)     (Py_PXFLAGS((o)) & Py_PXFLAGS_EVENT)
@@ -31,6 +33,8 @@ extern "C" {
 #define Px_WASPX(o)         (Py_PXFLAGS((o)) & Py_PXFLAGS_WASPX)
 #define Px_PERSISTED(o)     (Py_PXFLAGS((o)) & Py_PXFLAGS_PERSISTED)
 #define Px_PROMOTED(o)      (Py_PXFLAGS((o)) & Py_PXFLAGS_PROMOTED)
+#define Px_CLONED(o)        (Py_PXFLAGS((o)) & Py_PXFLAGS_CLONED)
+#define Px_CV_WAITERS(o)    (Py_PXFLAGS((o)) & Py_PXFLAGS_CV_WAITERS)
 
 #define Px_ISPROTECTED(o)   (Py_PXFLAGS((o)) & Py_PXFLAGS_RWLOCK)
 

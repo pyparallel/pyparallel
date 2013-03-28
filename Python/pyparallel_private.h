@@ -146,20 +146,6 @@ Px_GET_ALIGNMENT(void *p)
 #define Px_NUM_TLS_WSABUFS 32
 #endif
 
-typedef struct _PyXList {
-    PyObject_HEAD
-    SLIST_HEADER        head;
-    CONDITION_VARIABLE  cv;
-    CRITICAL_SECTION    cs;
-} PyXListObject;
-
-PyAPI_DATA(PyTypeObject) PyXList_Type;
-#define PyXList_Check(op) (Py_TYPE(op) == &PyXList_Type)
-PyAPI_FUNC(PyObject *)  PyXList_New(void);
-PyAPI_FUNC(PyObject *)  PyXList_Pop(void);
-PyAPI_FUNC(int)         PyXList_Push(PyObject *);
-PyAPI_FUNC(PyObject *)  PyXList_Flush(void);
-PyAPI_FUNC(Py_ssize_t)  PyList_Size(PyObject *);
 
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
 typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
@@ -1638,6 +1624,41 @@ typedef struct _PxAddrInfo {
 
 } PxAddrInfo;
 
+
+#ifndef Py_LIMITED_API
+typedef struct _PyXList {
+    PyObject_HEAD
+    PxListHead *head;
+    HANDLE heap_handle;
+    CRITICAL_SECTION cs;
+    CONDITION_VARIABLE cv;
+} PyXListObject;
+#endif
+
+PyAPI_DATA(PyTypeObject) PyXList_Type;
+
+#define PyXList_Check(op) PyObject_TypeCheck(op, &PyXList_Type)
+#define PyXList_CheckExact(op) (Py_TYPE(op) == &PyXList_Type)
+
+/* Create a new, empty xlist. */
+PyAPI_FUNC(PyObject *)  PyXList_New(void);
+
+PyAPI_FUNC(int) PyXList_Clear(PyObject *op);
+
+/* Pops the first object off the xlist. */
+PyAPI_FUNC(PyObject *)  PyXList_Pop(PyObject *xlist);
+
+/* Push a PyObject *op onto xlist.  0 on success, -1 on error. */
+PyAPI_FUNC(int) PyXList_Push(PyObject *xlist, PyObject *op);
+
+/* Flush an entire xlist in a single interlocked operation.  Returns a tuple
+ * with all elements. */
+PyAPI_FUNC(PyObject *) PyXList_Flush(PyObject *xlist);
+
+/* Returns the number of elements in the xlist.  On Windows, this will only
+ * return a max ushort (2^16/65536), even if there are more than 2^16 entries
+ * in the list. */
+PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject *);
 
 #ifdef __cpplus
 }
