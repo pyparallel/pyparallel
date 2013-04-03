@@ -26,20 +26,37 @@ __declspec(thread) Context *ctx = NULL;
 __declspec(thread) TLS tls;
 __declspec(thread) PyThreadState *TSTATE;
 __declspec(thread) HANDLE heap_override;
+__declspec(thread) void *last_heap_override_malloc_addr;
+__declspec(thread) void *last_context_heap_malloc_addr;
+
+static __inline
+char
+_PyParallel_IsHeapOverrideActive(void)
+{
+    return (heap_override != NULL);
+}
 
 static __inline
 void
 _PyParallel_SetHeapOverride(HANDLE heap_handle)
 {
-    assert(heap_override == NULL);
+    assert(!_PyParallel_IsHeapOverrideActive());
     heap_override = heap_handle;
 }
+
+static __inline
+HANDLE
+_PyParallel_GetHeapOverride(void)
+{
+    return heap_override;
+}
+
 
 static __inline
 void
 _PyParallel_RemoveHeapOverride(void)
 {
-    assert(heap_override != NULL);
+    assert(_PyParallel_IsHeapOverrideActive());
     heap_override = NULL;
 }
 
@@ -1859,7 +1876,7 @@ _PyParallel_GuardMem(const char *function,
                      void *m,
                      unsigned int flags)
 {
-    unsigned long s;
+    unsigned long s = 0;
     unsigned long o;
 
     assert(_MEMTEST(flags));
@@ -1868,10 +1885,20 @@ _PyParallel_GuardMem(const char *function,
         return (_PYTEST(flags) ? 1 : 0);
 
     if (m) {
-        o = _Px_SafeObjectSignatureTest(m);
-        s = _Px_MemorySignature(m);
-        if (s & _MEMSIG_NOT_READY || (o > s))
-            s = o;
+        if (_PyParallel_IsHeapOverrideActive()) {
+            if (m == last_heap_override_malloc_addr)
+                s = _MEMSIG_PX;
+        }
+        if (!s) {
+            if (m == last_context_heap_malloc_addr)
+                s = _MEMSIG_PX;
+        }
+        if (!s) {
+            o = _Px_SafeObjectSignatureTest(m);
+            s = _Px_MemorySignature(m);
+            if (s & _MEMSIG_NOT_READY || (o > s))
+                s = o;
+        }
     }
 
     if (flags & (_PYMEM_TEST | _PXMEM_TEST)) {
@@ -2231,6 +2258,26 @@ begin:
 }
 
 void *
+_PyHeapOverride_Malloc(size_t n, size_t align)
+{
+    void *p;
+    HANDLE h;
+    int flags = HEAP_ZERO_MEMORY;
+    size_t aligned_size = Px_ALIGN(n, Px_MAX(align, Px_PTR_ALIGN_SIZE));
+    assert(_PyParallel_IsHeapOverrideActive());
+
+    h = _PyParallel_GetHeapOverride();
+
+    p = HeapAlloc(h, HEAP_ZERO_MEMORY, aligned_size);
+    if (!p)
+        PyErr_SetFromWindowsErr(0);
+
+    last_heap_override_malloc_addr = p;
+
+    return p;
+}
+
+void *
 _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 {
     void  *next;
@@ -2243,6 +2290,9 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 
     if (Px_TLS_HEAP_ACTIVE(c))
         return _PyTLSHeap_Malloc(n, align);
+
+    if (_PyParallel_IsHeapOverrideActive())
+        return _PyHeapOverride_Malloc(n, align);
 
     s = &c->stats;
     if (!alignment)
@@ -2291,6 +2341,7 @@ begin:
         assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
         assert(_Py_IS_ALIGNED(h->base, alignment));
         assert(Px_GET_ALIGNMENT(next) >= alignment);
+        last_context_heap_malloc_addr = next;
         return next;
     }
 
@@ -2411,6 +2462,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     int       init_type;
     int       is_varobj = -1;
     int       is_tls_heap_active = Px_TLS_HEAP_ACTIVE(c);
+    int       is_heap_override_active = _PyParallel_IsHeapOverrideActive();
 
 #define _INIT_NEW       1
 #define _INIT_INIT      2
@@ -2532,6 +2584,11 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
     if (is_tls_heap_active)
         goto end;
+
+    if (is_heap_override_active) {
+        Py_PXFLAGS(n) |= Py_PXFLAGS_CLONED;
+        goto end;
+    }
 
     o->op = n;
     append_object((is_varobj ? &c->varobjs : &c->objects), o);
@@ -3710,7 +3767,7 @@ static struct PyModuleDef _parallelmodule = {
     PyModuleDef_HEAD_INIT,
     "_parallel",
     _parallel_doc,
-    -1, /* multiple "initialization" just copies the module dict. */
+    /*-1, *//* multiple "initialization" just copies the module dict. */
     _parallel_methods,
     NULL,
     NULL,
@@ -3731,6 +3788,13 @@ _PyParallel_ModInit(void)
 }
 
 /* xlist */
+void
+xlist_dealloc(PyXListObject *xlist)
+{
+    HeapDestroy(xlist->heap_handle);
+    free(xlist);
+}
+
 PyObject *
 PyXList_New(void)
 {
@@ -3772,11 +3836,9 @@ PyXList_New(void)
 }
 
 PyObject *
-xlist_new(PyTypeObject *tp, PyObject *self, PyObject *args)
+xlist_new(PyTypeObject *tp, PyObject *args, PyObject *kwds)
 {
     assert(tp == &PyXList_Type);
-    assert(self == NULL);
-    assert(args == NULL);
     return PyXList_New();
 }
 
@@ -3794,9 +3856,15 @@ xlist_pop(PyObject *self, PyObject *args)
 {
     PyXListObject *xlist = (PyXListObject *)self;
     PxListItem *item;
+    PyObject *obj;
     assert(args == NULL);
+    Py_GUARD
+    /*Py_INCREF(xlist);*/
     item = PxList_Pop(xlist->head);
-    return (item ? I2O(item) : NULL);
+    obj = (item ? I2O(item) : NULL);
+    if (obj)
+        Py_REFCNT(obj) = 1;
+    return obj;
 }
 
 PyObject *
@@ -3809,7 +3877,7 @@ PyObject *
 PyObject_Clone(PyObject *src, const char *errmsg)
 {
     int valid_type;
-    PyObject *dst;
+    PyObject *result = NULL;
     PyTypeObject *tp;
 
     tp = Py_TYPE(src);
@@ -3827,17 +3895,28 @@ PyObject_Clone(PyObject *src, const char *errmsg)
         return NULL;
     }
 
+    assert(_PyParallel_IsHeapOverrideActive());
+
     if (PyLong_CheckExact(src)) {
+        result = _PyLong_Copy((PyLongObject *)src);
 
     } else if (PyFloat_CheckExact(src)) {
+        result = _PxObject_Init(NULL, &PyFloat_Type);
+        if (!result)
+            return NULL;
+        PyFloat_AS_DOUBLE(result) = PyFloat_AS_DOUBLE(src);
 
     } else if (PyUnicode_CheckExact(src)) {
+        result = _PyUnicode_Copy(src);
 
     } else {
         assert(0);
     }
 
+    assert(result);
+    assert(Px_CLONED(result));
 
+    return result;
 }
 
 PyObject *
@@ -3845,6 +3924,9 @@ xlist_push(PyObject *obj, PyObject *src)
 {
     PyXListObject *xlist = (PyXListObject *)obj;
     assert(src);
+
+    /*Py_INCREF(xlist);*/
+    /*Py_INCREF(src);*/
 
     if (!Py_PXCTX)
         PxList_PushObject(xlist->head, src);
@@ -3856,6 +3938,7 @@ xlist_push(PyObject *obj, PyObject *src)
         _PyParallel_RemoveHeapOverride();
         if (!dst)
             return NULL;
+
         PxList_PushObject(xlist->head, dst);
     }
 
@@ -3870,37 +3953,60 @@ xlist_push(PyObject *obj, PyObject *src)
 PyObject *
 xlist_flush(PyObject *self, PyObject *arg)
 {
-    return NULL;
+    Py_RETURN_NONE;
 }
 
+Py_ssize_t
+PyXList_Length(PyObject *self)
+{
+    PyXListObject *xlist = (PyXListObject *)self;
+    Py_INCREF(xlist);
+    return PxList_QueryDepth(xlist->head);
+}
 
 PyDoc_STRVAR(xlist_pop_doc,   "XXX TODO\n");
 PyDoc_STRVAR(xlist_push_doc,  "XXX TODO\n");
+PyDoc_STRVAR(xlist_size_doc,  "XXX TODO\n");
 PyDoc_STRVAR(xlist_flush_doc, "XXX TODO\n");
 #define _XLIST(n, a) _METHOD(xlist, n, a)
 #define _XLIST_N(n) _XLIST(n, METH_NOARGS)
 #define _XLIST_O(n) _XLIST(n, METH_O)
 #define _XLIST_V(n) _XLIST(n, METH_VARARGS)
 #define _XLIST_K(n) _XLIST(n, METH_VARARGS | METH_KEYWORDS)
-PyMethodDef xlist_methods[] = {
+static PyMethodDef xlist_methods[] = {
     _XLIST_N(pop),
     _XLIST_O(push),
     _XLIST_N(flush),
+    { NULL, NULL }
 };
 
-PyTypeObject PyXList_Type = {
-    PyObject_HEAD_INIT(&PyType_Type)
+static PySequenceMethods xlist_as_sequence = {
+    (lenfunc)PyXList_Length,                    /* sq_length */
+    0,                                          /* sq_concat */
+    0,                                          /* sq_repeat */
+    0,                                          /* sq_item */
+    0,                                          /* sq_slice */
+    0,                                          /* sq_ass_item */
+    0,                                          /* sq_ass_slice */
+    0,                                          /* sq_contains */
+    0,                                          /* sq_inplace_concat */
+    0,                                          /* sq_inplace_repeat */
+};
+
+
+static PyTypeObject PyXList_Type = {
+    PyObject_HEAD_INIT(0)
     "xlist",
     sizeof(PyXListObject),
     0,
-    0,/*(destructor)xlist_dealloc,*/                   /* tp_dealloc */
+    (destructor)xlist_dealloc,                  /* tp_dealloc */
     0,                                          /* tp_print */
     0,                                          /* tp_getattr */
     0,                                          /* tp_setattr */
     0,                                          /* tp_reserved */
-    0,                                           /* tp_repr */
+    0,                                          /* tp_repr */
     0,                                          /* tp_as_number */
-    0,                                          /* tp_as_sequence */
+    &xlist_as_sequence,                         /* tp_as_sequence */
     0,                                          /* tp_as_mapping */
     0,                                          /* tp_hash */
     0,                                          /* tp_call */
@@ -3909,14 +4015,14 @@ PyTypeObject PyXList_Type = {
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
     Py_TPFLAGS_DEFAULT,                         /* tp_flags */
-    "Interlocked List Object",                   /* tp_doc */
+    "Interlocked List Object",                  /* tp_doc */
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
     0,                                          /* tp_richcompare */
     0,                                          /* tp_weaklistoffset */
-    0,                                            /* tp_iter */
+    0,                                          /* tp_iter */
     0,                                          /* tp_iternext */
-    xlist_methods,                               /* tp_methods */
+    xlist_methods,                              /* tp_methods */
     0,                                          /* tp_members */
     0,                                          /* tp_getset */
     0,                                          /* tp_base */
@@ -3924,9 +4030,9 @@ PyTypeObject PyXList_Type = {
     0,                                          /* tp_descr_get */
     0,                                          /* tp_descr_set */
     0,                                          /* tp_dictoffset */
-    0,/*(initproc)xlist_init,*/                        /* tp_init */
-    PyType_GenericAlloc,                        /* tp_alloc */
-    PyType_GenericNew,                          /* tp_new */
+    0,/*(initproc)xlist_init,*/                 /* tp_init */
+    xlist_alloc,                                /* tp_alloc */
+    xlist_new,                                  /* tp_new */
     0,                                          /* tp_free */
 };
 
@@ -5857,7 +5963,7 @@ void
 Px_DecRef(PyObject *o)
 {
     assert(!Py_PXCTX);
-    assert(Px_PERSISTED(o));
+    assert(Px_PERSISTED(o) || Px_CLONED(o));
 
     _Py_DEC_REFTOTAL;
     if ((--((PyObject *)(o))->ob_refcnt) != 0) {
@@ -5873,6 +5979,10 @@ Px_DecRef(PyObject *o)
                 _PxState_FreeContext(c->px, c);
             }
             return;
+        } else {
+            assert(Px_CLONED(o));
+            /* xxx todo: decref parent's children count */
+
         }
 
         assert(0);
@@ -9079,6 +9189,9 @@ _PyAsync_ModInit(void)
     if (!PyType_Ready(&PxSocket_Type) < 0)
         return NULL;
 
+    if (!PyType_Ready(&PyXList_Type) < 0)
+        return NULL;
+
     m = PyModule_Create(&_asyncmodule);
     if (m == NULL)
         return NULL;
@@ -9089,6 +9202,9 @@ _PyAsync_ModInit(void)
     PySocketModule = *socket_api;
 
     if (PyModule_AddObject(m, "socket", (PyObject *)&PxSocket_Type))
+        return NULL;
+
+    if (PyModule_AddObject(m, "xlist", (PyObject *)&PyXList_Type))
         return NULL;
 
     PyExc_AsyncError = PyErr_NewException("_async.AsyncError", NULL, NULL);

@@ -1658,7 +1658,7 @@ PyAPI_FUNC(PyObject *) PyXList_Flush(PyObject *xlist);
 /* Returns the number of elements in the xlist.  On Windows, this will only
  * return a max ushort (2^16/65536), even if there are more than 2^16 entries
  * in the list. */
-PyAPI_FUNC(Py_ssize_t) PyList_Size(PyObject *);
+PyAPI_FUNC(Py_ssize_t) PyXList_Size(PyObject *);
 
 #ifdef __cpplus
 }

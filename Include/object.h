@@ -913,7 +913,7 @@ void
 _Py_DecRef(PyObject *op)
 {
     if (!Py_PXCTX) {
-        if (Px_PERSISTED(op))
+        if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
         else if (!Px_ISPX(op)) {
             _Py_DEC_REFTOTAL;
