@@ -5983,6 +5983,7 @@ Px_DecRef(PyObject *o)
             assert(Px_CLONED(o));
             /* xxx todo: decref parent's children count */
 
+            return;
         }
 
         assert(0);
