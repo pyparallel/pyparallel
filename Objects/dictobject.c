@@ -1215,7 +1215,11 @@ PyDict_SetItem(PyObject *op, PyObject *key, PyObject *value)
     assert(key);
     assert(value);
 
+    /*
     if (Px_CHECK_PROTECTION(op, key, value))
+        return -1;
+    */
+    if (Px_PROTECTION_ERROR(op))
         return -1;
 
     mp = (PyDictObject *)op;

@@ -194,12 +194,14 @@ typedef struct _SBUF {
 
 typedef struct _RBUF RBUF;
 typedef struct _RBUF {
+    /* mirror sbuf */
     PxSocket       *s;
     Context        *ctx;
     Heap           *snapshot;
     DWORD           last_thread_id;
     OVERLAPPED      ol;
     WSABUF          w;
+    /* end of sbuf */
     RBUF           *prev;
     RBUF           *next;
     size_t          signature;
@@ -636,9 +638,6 @@ typedef struct _PyParallelContext {
     OVERLAPPED  overlapped;
     OVERLAPPED *ol; /* set to whatever `void *overlapped` is in callback */
 
-    PxSocketBuf *rbuf_first;
-    PxSocketBuf *rbuf_last;
-
     LARGE_INTEGER filesize;
     LARGE_INTEGER next_read_offset;
 
@@ -756,7 +755,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
 #define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
 #define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
-#define Px_SOCKFLAGS___________                 (1UL << 16)
+#define Px_SOCKFLAGS_HAS_LINE_RECEIVED          (1UL << 16)
 #define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
 #define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
 #define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
@@ -795,6 +794,14 @@ typedef struct _PxObject {
 
 #define PxSocket_HAS_DATA_RECEIVED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
+
+#define PxSocket_HAS_LINE_RECEIVED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINE_RECEIVED)
+
+#define PxSocket_CAN_RECV(s) (        \
+    PxSocket_HAS_DATA_RECEIVED(s) ||  \
+    PxSocket_HAS_LINE_RECEIVED(s)     \
+)
 
 #define PxSocket_HAS_SEND_FAILED(s) \
     (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SEND_COMPLETE)
@@ -852,6 +859,7 @@ typedef struct _PxObject {
 #define pxsock_try_send                                               10
 #define pxsock_init_line_mode                                         11
 #define pxsock_try_recv                                               12
+#define pxsock_overlapped_recv_callback                               13
 
 
 typedef struct _PxSocketBuf PxSocketBuf;
@@ -959,8 +967,7 @@ typedef struct _PxSocket {
     TLSBUF *tls_buf;
 
     SBUF   *sbuf;
-    RBUF   *rbuf_first;
-    RBUF   *rbuf_last;
+    RBUF   *rbuf;
     int     num_rbufs;
 
     OVERLAPPED *ol;
@@ -993,11 +1000,14 @@ typedef struct _PxSocket {
     PxSocket *prev;
     PxSocket *next;
 
+    PyObject *data_received;
+    PyObject *line_received;
+
+    char      line_mode;
+    char     *eol[2];
     /*
     PyObject *connection_made;
-    PyObject *data_received;
     PyObject *data_sent;
-    PyObject *line_received;
     PyObject *eof_received;
     PyObject *connection_lost;
     PyObject *connection_error;
@@ -1016,10 +1026,8 @@ typedef struct _PxSocket {
     PyObject *initial_words_to_expect;
     PyObject *initial_regex_to_expect;
 
-    char      line_mode;
     char      wait_for_eol;
     char      auto_reconnect;
-    char     *eol[2];
     int       max_line_length;
 
 
@@ -1361,7 +1369,10 @@ static PySocketModule_APIObject PySocketModule;
 #define TransmitPackets         PySocketModule.TransmitPackets
 #define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
 
-#define PxSocket_Check(v)         (Py_ORIG_TYPE(v) == &PxSocket_Type)
+#define PxSocket_Check(v)         (     \
+    Py_TYPE(v) == &PxSocket_Type ||     \
+    Py_ORIG_TYPE(v) == &PxSocket_Type   \
+)
 #define PxClientSocket_Check(v)   (Py_TYPE(v) == &PxClientSocket_Type)
 #define PxServerSocket_Check(v)   (Py_TYPE(v) == &PxServerSocket_Type)
 

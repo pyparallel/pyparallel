@@ -5,7 +5,7 @@ class Disconnect:
     pass
 
 class Discard:
-    def data_received(self, data):
+    def data_received(self, transport, data):
         pass
 
 class QOTD:
@@ -13,30 +13,44 @@ class QOTD:
 
 
 class EchoData:
-    def data_received(self, data):
+    def data_received(self, transport, data):
         return data
+
+class EchoUpperData:
+    def data_received(self, transport, data):
+        a = ord('a')
+        z = ord('z')
+        nchars = len(data)
+        b = bytearray(nchars)
+        for i in range(0, nchars):
+            c = data[i]
+            if c >= a and c <= z:
+                c -= 32
+            b[i] = c
+
+        return b
 
 class EchoLine:
     line_mode = True
-    def line_received(self, line):
+    def line_received(self, transport, line):
         return line
 
-    def chargen(lineno, nchars=72):
-        start = ord(' ')
-        end = ord('~')
-        c = lineno + start
-        while c > end:
-            c = (c % end) + start
-        b = bytearray(nchars)
-        for i in range(0, nchars-2):
-            if c > end:
-                c = start
-            b[i] = c
-            c += 1
+def chargen(lineno, nchars=72):
+    start = ord(' ')
+    end = ord('~')
+    c = lineno + start
+    while c > end:
+        c = (c % end) + start
+    b = bytearray(nchars)
+    for i in range(0, nchars-2):
+        if c > end:
+            c = start
+        b[i] = c
+        c += 1
 
-        b[nchars-1] = ord('\n')
+    b[nchars-1] = ord('\n')
 
-        return b
+    return b
 
 class Chargen:
     def initial_bytes_to_send(self):
