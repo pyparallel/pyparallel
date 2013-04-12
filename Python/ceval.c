@@ -431,6 +431,10 @@ _PyEval_SignalAsyncExc(void)
    dynamically loaded modules needn't be compiled separately for use
    with and without threads: */
 
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(PyThreadState *) _PyParallel_GetCurrentThreadState(void);
+#endif
+
 PyThreadState *
 PyEval_SaveThread(void)
 {
@@ -438,7 +442,8 @@ PyEval_SaveThread(void)
 #ifdef WITH_PARALLEL
     PyThreadState *pstate;
     long cur_thread_id = _Py_get_current_thread_id();
-    tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);
+    tstate = _PyParallel_GetCurrentThreadState();
+    /*tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);*/
     if (tstate->thread_id != cur_thread_id) {
         /* Verify we've been called from a parallel thread. */
         pstate = _PyParallel_GetThreadState();

@@ -999,10 +999,11 @@ _Py_DecRef(PyObject *op)
 
 #define Py_CLEAR(op)                              \
     do {                                          \
-        if (op && !Py_ISPX(op)) {                 \
+        if (op) {                                 \
             PyObject *_py_tmp = (PyObject *)(op); \
             (op) = NULL;                          \
-            Py_DECREF(_py_tmp);                   \
+            if (!Py_PXCTX)                        \
+                Py_DECREF(_py_tmp);               \
         }                                         \
     } while (0)
 

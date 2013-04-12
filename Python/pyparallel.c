@@ -132,6 +132,12 @@ get_main_thread_state(void)
     return tstate;
 }
 
+PyThreadState *
+_PyParallel_GetCurrentThreadState(void)
+{
+    return get_main_thread_state();
+}
+
 static
 PyThreadState *
 get_main_thread_state_old(void)
@@ -574,7 +580,7 @@ PyObject2WSABUF(PyObject *o, WSABUF *w)
     int result = 1;
     if (PyBytes_Check(o)) {
         w->len = (ULONG)((PyVarObject *)o)->ob_size;
-        w->buf = (char *)((PyBytesObject *)o)->ob_sval[0];
+        w->buf = (char *)((PyBytesObject *)o)->ob_sval;
     } else if (PyByteArray_Check(o)) {
         w->len = (ULONG)((PyByteArrayObject *)o)->ob_alloc;
         w->buf = ((PyByteArrayObject *)o)->ob_bytes;
@@ -2484,7 +2490,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         o = _Px_O_PTR(n, object_size);
 
         Py_TYPE(n) = tp;
-        Py_REFCNT(n) = -1;
         if (is_varobj = (tp->tp_itemsize > 0)) {
             s->varobjs++;
             Py_SIZE(n) = nitems;
@@ -2508,7 +2513,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             n = p;
 
             Py_TYPE(n) = tp;
-            Py_REFCNT(n) = -1;
 
             if (is_varobj = (tp->tp_itemsize > 0))
                 Py_SIZE(n) = nitems;
@@ -2552,7 +2556,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
             Py_TYPE(n) = tp;
             Py_SIZE(n) = nitems;
-            Py_REFCNT(n) = -1;
 
             if (Py_PXOBJ(p)) {
                 /* XXX do we really need to do this?  (Original line of
@@ -2567,9 +2570,10 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             s->resizes++;
         }
     }
+    Py_REFCNT(n) = 1;
+
     assert(tp);
     assert(Py_TYPE(n) == tp);
-    assert(Py_REFCNT(n) == -1);
     assert(is_varobj == 0 || is_varobj == 1);
 
     Py_EVENT(n) = NULL;
@@ -3635,10 +3639,12 @@ _PyParallel_Finalize(void)
             PySys_FormatStdout("_PyParallel_DeletingThreadState: "
                                "%d contexts still active, calling "
                                "_async_run() manually", px->contexts_active);
+        /*
         result = _async_run(NULL, NULL);
         if (result != Py_None)
             PySys_FormatStderr("_PyParallel_DeletingThreadState: "
                                "_async_run() failed!");
+        */
     }
 
     _PyParallel_Finalized = 1;
@@ -6046,11 +6052,11 @@ __inline
 const char *
 PxSocket_GetRecvCallback(PxSocket *s)
 {
-    int line_mode;
+    int lines_mode;
     READ_LOCK(s);
-    line_mode = PyObject_IsTrue(PxSocket_GET_ATTR("line_mode"));
+    lines_mode = PyObject_IsTrue(PxSocket_GET_ATTR("lines_mode"));
     READ_UNLOCK(s);
-    return (line_mode ? "line_received" : "data_received");
+    return (lines_mode ? "lines_received" : "data_received");
 }
 
 #undef MAYBE_DO_SEND_FAILED
@@ -6140,6 +6146,7 @@ PxSocket_IOLoop(PxSocket *s)
     char *f, *buf = NULL;
     DWORD err, wsa_error, nbytes;
     SOCKET fd;
+    HANDLE h;
     WSABUF *w = NULL, *old_wsabuf = NULL, tmp_wsabuf;
     SBUF *sbuf = NULL;
     RBUF *rbuf = NULL;
@@ -6150,7 +6157,7 @@ PxSocket_IOLoop(PxSocket *s)
     OVERLAPPED *ol = NULL;
     Heap *snapshot = NULL;
     int i, n, is_sbuf = 0;
-
+    TRANSMIT_FILE_BUFFERS *tf = NULL;
 
     fd = s->sock_fd;
 
@@ -6165,6 +6172,9 @@ PxSocket_IOLoop(PxSocket *s)
 
         case PxSocket_IO_SEND:
             goto overlapped_send_callback;
+
+        case PxSocket_IO_SENDFILE:
+            goto overlapped_sendfile_callback;
 
         case PxSocket_IO_RECV:
             goto overlapped_recv_callback;
@@ -6197,6 +6207,8 @@ start:
 
 reload_protocol:
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RELOAD_PROTOCOL) {
+        int has_lines_mode;
+
         if (!s->protocol) {
             assert(s->protocol_type);
             s->protocol = PyObject_CallObject(s->protocol_type, NULL);
@@ -6223,8 +6235,8 @@ reload_protocol:
         if (PxSocket_HasAttr(s, "data_received"))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
 
-        if (PxSocket_HasAttr(s, "line_received"))
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_LINE_RECEIVED;
+        if (PxSocket_HasAttr(s, "lines_received"))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_LINES_RECEIVED;
 
         if (PxSocket_HasAttr(s, "send_complete"))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
@@ -6238,6 +6250,8 @@ reload_protocol:
         if (PxSocket_HasAttr(s, "connection_closed"))
             PxSocket_SET_CONNECTION_CLOSED(s);
 
+        has_lines_mode = PxSocket_HasAttr(s, "lines_mode");
+
         Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RELOAD_PROTOCOL;
 
         PxContext_RollbackHeap(c, &snapshot);
@@ -6247,15 +6261,23 @@ reload_protocol:
         else
             s->data_received = NULL;
 
-        if (PxSocket_HAS_LINE_RECEIVED(s)) {
-            int line_mode = PyObject_IsTrue(PxSocket_GET_ATTR("line_mode"));
-            if (line_mode == -1)
-                PxSocket_EXCEPTION();
-            s->line_mode = line_mode;
-            s->line_received = PxSocket_GET_ATTR("line_received");
+        if (PxSocket_HAS_LINES_RECEIVED(s)) {
+            if (!PxSocket_HAS_DATA_RECEIVED(s))
+                s->lines_mode = 1;
+            else {
+                if (has_lines_mode) {
+                    int m;
+                    m = PyObject_IsTrue(PxSocket_GET_ATTR("lines_mode"));
+                    if (m == -1)
+                        PxSocket_EXCEPTION();
+                    s->lines_mode = m;
+                } else
+                    s->lines_mode = 0;
+            }
+            s->lines_received = PxSocket_GET_ATTR("lines_received");
         } else {
-            s->line_mode = 0;
-            s->line_received = NULL;
+            s->lines_mode = 0;
+            s->lines_received = NULL;
         }
 
     }
@@ -6347,7 +6369,21 @@ definitely_do_connection_made:
 
     Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CALLED_CONNECTION_MADE;
 
+    if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "data_received callback scheduled sendfile but "
+                            "returned non-None data");
+            PxSocket_EXCEPTION();
+        }
+    }
+
     if (result == Py_None) {
+        if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+            s->sendfile_snapshot = snapshot;
+            snapshot = NULL;
+            goto do_sendfile;
+        }
         PxContext_RollbackHeap(c, &snapshot);
         if (next_opcode)
             goto dispatch;
@@ -6529,19 +6565,22 @@ send_complete:
         PxSocket_EXCEPTION();
     }
 
-    if (result == Py_None) {
-        PxContext_RollbackHeap(c, &snapshot);
-        /*
-        if (has_connection_made && !called_connection_made)
-            goto connection_made;
-        else if (shutdowns)
-            ...
-        else if (close scheduled)
-            ...
+    if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "data_received callback scheduled sendfile but "
+                            "returned non-None data");
+            PxSocket_EXCEPTION();
+        }
+    }
 
-            goto try_recv;
-         */
-        /* xxx todo */
+    if (result == Py_None) {
+        if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+            s->sendfile_snapshot = snapshot;
+            snapshot = NULL;
+            goto do_sendfile;
+        }
+        PxContext_RollbackHeap(c, &snapshot);
         goto try_recv;
     }
 
@@ -6569,7 +6608,7 @@ send_complete:
     if (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE)) {
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE;
         if (PxSocket_CAN_RECV(s)) {
-            char *msg = "protocol has data_received|line_received " \
+            char *msg = "protocol has data_received|lines_received " \
                         "callback, but send_complete() is sending " \
                         "more data, so it may never be called";
             PyErr_WarnEx(PyExc_RuntimeWarning, msg, 1);
@@ -6665,11 +6704,12 @@ try_recv:
         next_opcode = pxsock_try_recv;
         goto definitely_do_connection_made;
     }
+    */
 
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
         (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)))
         goto definitely_close;
-    */
+
     if (s->io_op == PxSocket_IO_ACCEPT && (!(PxSocket_HAS_INITIAL_BYTES(s)))) {
         /*
          * This code path will cover a newly connected client that's just sent
@@ -6679,6 +6719,8 @@ try_recv:
         assert(recv_nbytes == 0);
         assert(s->recv_id == 0);
         recv_nbytes = c->overlapped.InternalHigh;
+        if (recv_nbytes == 0)
+            goto connection_closed;
         goto process_data_received;
     }
 
@@ -6739,7 +6781,8 @@ try_synchronous_recv:
 
     if (err != SOCKET_ERROR) {
         /* Receive completed synchronously. */
-        assert(recv_nbytes > 0);
+        if (recv_nbytes == 0)
+            goto connection_closed;
         goto process_data_received;
     } else if (wsa_error == WSAEWOULDBLOCK) {
         s->recv_id--;
@@ -6835,7 +6878,7 @@ process_data_received:
      * b) invoke the protocol's (data|line)_received callback with the data.
      *
      * The former situation will occur when receive filters have been set on
-     * the protocol, such as 'line_mode' (we keep recv'ing until we find a
+     * the protocol, such as 'lines_mode' (we keep recv'ing until we find a
      * linebreak) or one of the 'expect_*' filters (expect_command, expect_
      * regex etc).  Or any number of other filters that allow us to determine
      * within C code (i.e. within this IO loop) whether or not we've received
@@ -6864,8 +6907,8 @@ do_data_received_callback:
     if (recv_nbytes < s->recvbuf_size)
         rbuf->ob_sval[recv_nbytes] = 0;
 
-    if (s->line_mode)
-        goto do_line_received_callback;
+    if (s->lines_mode)
+        goto do_lines_received_callback;
 
     assert(!rbuf->snapshot);
     rbuf->snapshot = PxContext_HeapSnapshot(c, NULL);
@@ -6905,13 +6948,24 @@ do_data_received_callback:
         PxSocket_EXCEPTION();
     }
 
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) {
-        PxContext_RollbackHeap(c, &rbuf->snapshot);
-        goto definitely_close;
+    if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "data_received callback scheduled sendfile but "
+                            "returned non-None data");
+            PxSocket_EXCEPTION();
+        }
     }
 
     if (result == Py_None) {
+        if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+            s->sendfile_snapshot = rbuf->snapshot;
+            rbuf->snapshot = NULL;
+            goto do_sendfile;
+        }
         PxContext_RollbackHeap(c, &rbuf->snapshot);
+        if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED)
+            goto definitely_close;
         /* Nothing to send, no close requested, so try recv again. */
         w = NULL;
         rbuf = NULL;
@@ -6951,39 +7005,125 @@ do_data_received_callback:
         snapshot = NULL;
         recv_nbytes = 0;
         goto do_send;
-
-        /*
-        sbuf = NULL;
-        if (!PxSocket_NEW_SBUF(c, s, snapshot, 0, 0, result, &sbuf, 0)) {
-            PxContext_RollbackHeap(c, &snapshot);
-            if (!PyErr_Occurred())
-                PyErr_SetString(PyExc_ValueError,
-                                "data_received() did not return a sendable "
-                                "object (bytes, bytearray or unicode)");
-            PxSocket_EXCEPTION();
-        }
-        assert(sbuf->snapshot == snapshot);
-
-        w = NULL;
-        rbuf = NULL;
-        snapshot = NULL;
-        recv_nbytes = 0;
-
-        goto do_send;
-        */
     }
 
     assert(0);
 
-do_line_received_callback:
-    /* XXX TODO: create a list to encapsulate the receive buffers (which we
-     * expose as PyBytesObjects. */
-    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINE_RECEIVED);
+do_sendfile:
+
+    if (!s->tp_io) {
+        PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
+        s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd, cb, c, NULL);
+        if (!s->tp_io)
+            PxSocket_SYSERROR("CreateThreadpoolIo");
+    }
+
+    StartThreadpoolIo(s->tp_io);
+
+    err = SOCKET_ERROR;
+    wsa_error = NO_ERROR;
+
+    s->send_id++;
+    s->io_op = PxSocket_IO_SENDFILE;
+
+    h = s->sendfile_handle;
+    tf = &s->sendfile_tfbuf;
+    ol = &c->overlapped;
+    RESET_OVERLAPPED(ol);
+    s->ol = c->ol = ol;
+
+    if (TransmitFile(fd, h, 0, 0, ol, tf, 0)) {
+        /* TransmitFile completed synchronously.  Completion packet will be
+         * queued. */
+        goto end;
+    } else {
+        wsa_error = WSAGetLastError();
+        if (wsa_error == WSA_IO_PENDING)
+            /* Overlapped transmit file request successfully initiated;
+             * completion packet will be queued once transmission completes
+             * (or an error occurs). */
+            goto end;
+
+        /* Overlapped transmit file attempt failed.  No completion packet will
+         * be queued, so we need to take care of cleanup ourselves. */
+        if (s->sendfile_snapshot)
+            PxContext_RollbackHeap(c, &s->sendfile_snapshot);
+
+        s->send_id--;
+        goto send_failed;
+    }
+
+    assert(0);
+
+overlapped_sendfile_callback:
+    /* Entry point for an overlapped TransmitFile */
+    if (s->sendfile_snapshot)
+        PxContext_RollbackHeap(c, &s->sendfile_snapshot);
+
+    assert(c->ol == s->ol);
+    wsa_error = c->io_result;
+
+    if (wsa_error != NO_ERROR) {
+        s->send_id--;
+        goto send_failed;
+    }
+
+    /* xxx todo: check s->ol->InternalHigh against expected filesize? */
+
+    CloseHandle(s->sendfile_handle);
+    s->send_nbytes += s->sendfile_nbytes;
+    s->sendfile_nbytes = 0;
+    s->sendfile_handle = 0;
+    memset(&s->sendfile_tfbuf, 0, sizeof(TRANSMIT_FILE_BUFFERS));
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDFILE_SCHEDULED;
+
+    goto send_complete;
+
+do_lines_received_callback:
+    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINES_RECEIVED);
+
+    assert(0);
+
+    assert(!rbuf->snapshot);
+    rbuf->snapshot = PxContext_HeapSnapshot(c, NULL);
+
+    func = s->lines_received;
+    assert(func && func != Py_None);
+
+    /* For now, num_rbufs should only ever be 1. */
+    assert(s->num_rbufs == 1);
+
+    if (s->num_rbufs == 1) {
+        PyObject *n;
+        PyObject *o;
+        PyTypeObject *tp = &PyBytes_Type;
+        bytes = R2B(rbuf);
+        o = (PyObject *)bytes;
+        Py_PXFLAGS(bytes) = Py_PXFLAGS_MIMIC;
+        n = init_object(c, o, tp, recv_nbytes);
+        assert(n == o);
+        assert(Py_SIZE(bytes) == recv_nbytes);
+        args = PyTuple_Pack(2, s, o);
+        if (!args) {
+            PxContext_RollbackHeap(c, &rbuf->snapshot);
+            PxSocket_FATAL();
+        }
+    } else {
+        /* xxx todo */
+        assert(0);
+    }
 
     assert(0);
 
 recv_failed:
-    assert(0);
+    assert(wsa_error);
+    if (PxSocket_HAS_RECV_FAILED(s)) {
+        /* xxx todo */
+        assert(0 == "recv_failed");
+    }
+    assert(s->io_op == PxSocket_IO_RECV);
+    syscall = "WSARecv";
+    goto handle_error;
 
 handle_error:
     /* inline PxSocket_HandleError() */
@@ -8477,9 +8617,11 @@ PxSocket_InitProtocol(Context *c)
     if (PxSocket_HasAttr(s, "connection_made"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_CONNECTION_MADE;
 
-    if (PxSocket_HasAttr(s, "data_received") ||
-        PxSocket_HasAttr(s, "line_received"))
+    if (PxSocket_HasAttr(s, "data_received"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
+
+    if (PxSocket_HasAttr(s, "lines_received"))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_LINES_RECEIVED;
 
     if (PxSocket_HasAttr(s, "send_complete"))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
@@ -8989,6 +9131,95 @@ pxsocket_next_send_id(PxSocket *s, PyObject *args)
     return PyLong_FromUnsignedLongLong(s->send_id+1);
 }
 
+PyDoc_STRVAR(pxsocket_sendfile_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_sendfile(PxSocket *s, PyObject *args)
+{
+    PyObject *result = NULL;
+    LPCWSTR name;
+    Py_UNICODE *uname;
+    int name_len;
+    int access = GENERIC_READ;
+    int share = FILE_SHARE_READ;
+    int create_flags = OPEN_EXISTING;
+    int file_flags = (
+        FILE_FLAG_OVERLAPPED    |
+        FILE_ATTRIBUTE_READONLY |
+        FILE_FLAG_SEQUENTIAL_SCAN
+    );
+    HANDLE h;
+    LARGE_INTEGER size;
+    TRANSMIT_FILE_BUFFERS *tf;
+
+    char *before_bytes = NULL, *after_bytes = NULL;
+    int before_len = 0, after_len = 0;
+    int max_fsize = INT_MAX - 1;
+
+    Px_GUARD
+
+    if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "sendfile already scheduled for this callback");
+        goto done;
+    }
+
+    assert(!s->sendfile_handle);
+
+    if (!PyArg_ParseTuple(args, "z#u#z#:sendfile",
+                          &before_bytes, &before_len,
+                          &uname, &name_len,
+                          &after_bytes, &after_len))
+        goto done;
+
+    name = (LPCWSTR)uname;
+
+    h = CreateFile(name, access, share, 0, create_flags, file_flags, 0);
+    if (!h || (h == INVALID_HANDLE_VALUE)) {
+        PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+        goto done;
+    }
+
+    if (!GetFileSizeEx(h, &size)) {
+        CloseHandle(h);
+        PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+        goto done;
+    }
+
+    /* Subtract before/after buffer sizes from maximum sendable file size. */
+    max_fsize -= before_len;
+    max_fsize -= after_len;
+
+    if ((size.QuadPart > (long)INT_MAX) || (size.LowPart > max_fsize)) {
+        CloseHandle(h);
+        PyErr_SetString(PyExc_ValueError,
+                        "file is too large to send via sendfile()");
+        goto done;
+    }
+
+    tf = &s->sendfile_tfbuf;
+    memset(tf, 0, sizeof(TRANSMIT_FILE_BUFFERS));
+    if (before_len) {
+        tf->Head = before_bytes;
+        tf->HeadLength = before_len;
+    }
+    if (after_len) {
+        tf->Tail = after_bytes;
+        tf->TailLength = after_len;
+    }
+
+    s->sendfile_nbytes = size.LowPart + before_len + after_len;
+    s->sendfile_handle = h;
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDFILE_SCHEDULED;
+    result = Py_None;
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+
+    return result;
+}
+
 #define _PXSOCKET(n, a) _METHOD(pxsocket, n, a)
 #define _PXSOCKET_N(n) _PXSOCKET(n, METH_NOARGS)
 #define _PXSOCKET_O(n) _PXSOCKET(n, METH_O)
@@ -8996,6 +9227,7 @@ pxsocket_next_send_id(PxSocket *s, PyObject *args)
 
 static PyMethodDef PxSocketMethods[] = {
     _PXSOCKET_N(close),
+    _PXSOCKET_V(sendfile),
     _PXSOCKET_N(next_send_id),
     { NULL, NULL }
 };
@@ -9039,7 +9271,7 @@ static PyMemberDef PxSocketMembers[] = {
 
     ///* attributes */
     //_PXSOCKET_ATTR_S(eol),
-    //_PXSOCKET_ATTR_B(line_mode),
+    //_PXSOCKET_ATTR_B(lines_mode),
     //_PXSOCKET_ATTR_BR(is_client),
     //_PXSOCKET_ATTR_I(wait_for_eol),
     //_PXSOCKET_ATTR_BR(is_connected),

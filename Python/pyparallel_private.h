@@ -755,7 +755,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
 #define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
 #define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
-#define Px_SOCKFLAGS_HAS_LINE_RECEIVED          (1UL << 16)
+#define Px_SOCKFLAGS_HAS_LINES_RECEIVED         (1UL << 16)
 #define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
 #define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
 #define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
@@ -768,7 +768,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
 #define Px_SOCKFLAGS_ACCEPT_CALLBACK_SEEN       (1UL << 27)
 #define Px_SOCKFLAGS_RELOAD_PROTOCOL            (1UL << 29)
-#define Px_SOCKFLAGS_INITIAL_BYTES_PYBYTEARRAY  (1UL << 30)
+#define Px_SOCKFLAGS_SENDFILE_SCHEDULED         (1UL << 30)
 #define Px_SOCKFLAGS_                           (1UL << 31)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -777,12 +777,15 @@ typedef struct _PxObject {
 #define PxSocket_CBFLAGS_SEND_COMPLETE          (1UL <<  1)
 #define PxSocket_CBFLAGS_CONNECTION_CLOSED      (1UL <<  2)
 #define PxSocket_CBFLAGS_SHUTDOWN_SEND          (1UL <<  3)
+#define PxSocket_CBFLAGS_RECV_FAILED            (1UL <<  4)
 
 #define PxSocket_IS_HOG(s)      (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HOG)
 #define PxSocket_IS_CLIENT(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT)
 #define PxSocket_IS_SERVER(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SERVER)
 #define PxSocket_IS_BOUND(s)    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_BOUND)
 #define PxSocket_IS_CONNECTED(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED)
+#define PxSocket_IS_SENDFILE_SCHEDULED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDFILE_SCHEDULED)
 
 #define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
 
@@ -792,19 +795,23 @@ typedef struct _PxObject {
 #define PxSocket_HAS_SEND_COMPLETE(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE)
 
+
 #define PxSocket_HAS_DATA_RECEIVED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
 
-#define PxSocket_HAS_LINE_RECEIVED(s) \
-    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINE_RECEIVED)
+#define PxSocket_HAS_LINES_RECEIVED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINES_RECEIVED)
 
 #define PxSocket_CAN_RECV(s) (        \
     PxSocket_HAS_DATA_RECEIVED(s) ||  \
-    PxSocket_HAS_LINE_RECEIVED(s)     \
+    PxSocket_HAS_LINES_RECEIVED(s)    \
 )
 
 #define PxSocket_HAS_SEND_FAILED(s) \
-    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SEND_COMPLETE)
+    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SEND_FAILED)
+
+#define PxSocket_HAS_RECV_FAILED(s) \
+    (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_RECV_FAILED)
 
 #define PxSocket_SET_SEND_FAILED(s) \
     (PxSocket_CBFLAGS(s) |= PxSocket_CBFLAGS_SEND_COMPLETE)
@@ -833,7 +840,7 @@ typedef struct _PxObject {
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
 #define PxSocket_CB_CONNECTION_MADE     (1)
-#define PxSocket_CB_DATA_RECEIVED       (1UL <<  1)
+
 #define PxSocket_CB_LINES_RECEIVED      (1UL <<  2)
 #define PxSocket_CB_EOF_RECEIVED        (1UL <<  3)
 #define PxSocket_CB_CONNECTION_LOST     (1UL <<  4)
@@ -844,6 +851,7 @@ typedef struct _PxObject {
 #define PxSocket_IO_SEND                (1UL << 3)
 #define PxSocket_IO_DISCONNECT          (1UL << 4)
 #define PxSocket_IO_CLOSE               (1UL << 5)
+#define PxSocket_IO_SENDFILE            (1UL << 6)
 
 /* ops for socket IO loop */
 #define pxsock_nop                                                    0
@@ -961,6 +969,12 @@ typedef struct _PxSocket {
     PyObject *initial_bytes_callable;
     WSABUF    initial_bytes;
 
+    /* sendfile stuff */
+    DWORD  sendfile_nbytes;
+    HANDLE sendfile_handle;
+    Heap  *sendfile_snapshot;
+    TRANSMIT_FILE_BUFFERS sendfile_tfbuf;
+
     int     io_op;
     TP_IO  *tp_io;
 
@@ -1001,9 +1015,9 @@ typedef struct _PxSocket {
     PxSocket *next;
 
     PyObject *data_received;
-    PyObject *line_received;
+    PyObject *lines_received;
 
-    char      line_mode;
+    char      lines_mode;
     char     *eol[2];
     /*
     PyObject *connection_made;
@@ -1459,7 +1473,7 @@ static const char *pxsocket_kwlist[] = {
     /*
     "connection_made",
     "data_received",
-    "line_received",
+    "lines_received",
     "eof_received",
     "connection_lost",
     "connection_closed",
@@ -1486,7 +1500,7 @@ static const char *pxsocket_kwlist[] = {
 static const char *pxsocket_protocol_attrs[] = {
     "connection_made",
     "data_received",
-    "line_received",
+    "lines_received",
     "eof_received",
     "connection_lost",
     "connection_closed",
@@ -1526,7 +1540,7 @@ static const char *pxsocket_kwlist_formatstring = \
 
 //    "O"     /* connection_made */
 //    "O"     /* data_received */
-//    "O"     /* line_received */
+//    "O"     /* lines_received */
 //    "O"     /* eof_received */
 //    "O"     /* connection_lost */
 //    "O"     /* connection_closed */
@@ -1565,7 +1579,7 @@ static const char *pxsocket_kwlist_formatstring = \
     &(s->data_received),                     \
     &(s->data_sent),                         \
     &(s->send_failed),                       \
-    &(s->line_received),                     \
+    &(s->lines_received),                     \
     &(s->eof_received),                      \
     &(s->connection_lost),                   \
     &(s->exception_handler),                 \
@@ -1586,7 +1600,7 @@ static const char *pxsocket_kwlist_formatstring = \
     Py_XINCREF(s->connection_made);          \
     Py_XINCREF(s->data_received);            \
     Py_XINCREF(s->data_sent);                \
-    Py_XINCREF(s->line_received);            \
+    Py_XINCREF(s->lines_received);            \
     Py_XINCREF(s->eof_received);             \
     Py_XINCREF(s->connection_lost);          \
     Py_XINCREF(s->exception_handler);        \
@@ -1603,7 +1617,7 @@ static const char *pxsocket_kwlist_formatstring = \
     Py_XDECREF(s->connection_made);          \
     Py_XDECREF(s->data_received);            \
     Py_XDECREF(s->data_sent);                \
-    Py_XDECREF(s->line_received);            \
+    Py_XDECREF(s->lines_received);            \
     Py_XDECREF(s->eof_received);             \
     Py_XDECREF(s->connection_lost);          \
     Py_XDECREF(s->exception_handler);        \

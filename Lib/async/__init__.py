@@ -45,9 +45,13 @@ def call_from_main_thread(f):
 def synchronized(f):
     cs = _async.critical_section()
     def decorator(*_args, **_kwds):
-        cs.enter()
-        f(*_args, **_kwds)
-        cs.leave()
+        class _cs_wrap:
+            def __enter__(self):
+                cs.enter()
+            def __exit__(self, *exc):
+                cs.leave()
+        with _cs_wrap() as _cs:
+            return f(*_args, **_kwds)
     return decorator
 
 def submit_work(func, args=None, kwds=None, callback=None, errback=None):
@@ -113,6 +117,13 @@ def wait_any(waits):
 
 def wait_all(waits):
     raise NotImplementedError
+
+def sendfile(transport=None, before=None, filename=None, after=None):
+    if not transport:
+        raise ValueError("transport can not be None")
+    if not filename:
+        raise ValueError("filename can not be None")
+    return transport.sendfile(before, filename, after)
 
 QOTD = b'An apple a day keeps the doctor away.\r\n'
 

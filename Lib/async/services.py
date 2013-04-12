@@ -16,6 +16,10 @@ class EchoData:
     def data_received(self, transport, data):
         return data
 
+class TimestampData:
+    def data_received(self, transport, data):
+        return '%d%s' % (async.rdtsc(), '\r\n')
+
 class EchoUpperData:
     def data_received(self, transport, data):
         a = ord('a')
