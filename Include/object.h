@@ -205,7 +205,12 @@ typedef struct _Py_Identifier {
     PyObject *object;
 } _Py_Identifier;
 
+#ifndef WITH_PARALLEL
 #define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
+#else
+#define _Py_static_string(varname, value)  Py_TLS static _Py_Identifier varname = { 0, value, 0 }
+#endif
+
 #define _Py_IDENTIFIER(varname) _Py_static_string(PyId_##varname, #varname)
 
 /*
@@ -852,6 +857,9 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
 
 #ifdef Py_LIMITED_API
 PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void) _Px_Dealloc(PyObject *);
+#endif
 #else
 #ifndef WITH_PARALLEL
 #define _Py_Dealloc(op) (                           \
@@ -1064,50 +1072,53 @@ PyAPI_DATA(PyObject) _Py_NotImplementedStruct; /* Don't use this directly */
 PyAPI_DATA(int) _Py_SwappedOp[];
 
 #ifdef WITH_PARALLEL
+/*
 PyAPI_DATA(PyObject *) PyExc_ProtectionError;
 PyAPI_DATA(PyObject *) PyExc_UnprotectedError;
+*/
 PyAPI_DATA(PyObject *) PyExc_AssignmentError;
 
 PyAPI_FUNC(void) PyErr_SetNone(PyObject *);
 
 /* 0 on success, -1 on error */
 /* Sets PyErr_Occurred() to PyExc_UnprotectedError on error. */
-static __inline
-int
-_Px_CHECK_PROTECTION(PyObject *container, PyObject *name, PyObject *value)
-{
-    /* Container is a parallel object?  No protection needed. */
-    if (!Px_ISPY(container))
-        return 0;
-
-    /* Container is protected?  Great. */
-    if (Px_ISPROTECTED(container))
-        return 0;
-
-    /* Any attempt to access an unprotected main-thread object from within a
-     * parallel context constitutes a 'unprotection error'. */
-    if (Py_PXCTX)
-        goto error;
-
-    /* Container isn't protected, so name and value can't be parallel objects.
-     * If they are, bomb out with an 'UnprotectedError'. */
-    if ((name && Px_ISPX(name)) || (value && Px_ISPX(value)))
-        goto error;
-
-    return 0;
-
-error:
-    PyErr_SetNone(PyExc_UnprotectedError);
-    return -1;
-}
-#define Px_CHECK_PROTECTION(c, n, v)        \
-    (_Px_CHECK_PROTECTION((PyObject *)c,    \
-                          (PyObject *)n,    \
-                          (PyObject *)v))
+//static __inline
+//int
+//_Px_CHECK_PROTECTION(PyObject *container, PyObject *name, PyObject *value)
+//{
+//    /* Container is a parallel object?  No protection needed. */
+//    if (!Px_ISPY(container))
+//        return 0;
+//
+//    /* Container is protected?  Great. */
+//    if (Px_ISPROTECTED(container))
+//        return 0;
+//
+//    /* Any attempt to access an unprotected main-thread object from within a
+//     * parallel context constitutes a 'unprotection error'. */
+//    if (Py_PXCTX)
+//        goto error;
+//
+//    /* Container isn't protected, so name and value can't be parallel objects.
+//     * If they are, bomb out with an 'UnprotectedError'. */
+//    if ((name && Px_ISPX(name)) || (value && Px_ISPX(value)))
+//        goto error;
+//
+//    return 0;
+//
+//error:
+//    PyErr_SetNone(PyExc_UnprotectedError);
+//    return -1;
+//}
+//#define Px_CHECK_PROTECTION(c, n, v)        \
+//    (_Px_CHECK_PROTECTION((PyObject *)c,    \
+//                          (PyObject *)n,    \
+//                          (PyObject *)v))
 
 
 /* 0 on success, -1 on error */
 /* Sets PyErr_Occurred() to PyExc_UnprotectedError on error. */
+/*
 static __inline
 int
 _Px_PROTECTION_ERROR(PyObject *container)
@@ -1126,9 +1137,11 @@ _Px_PROTECTION_ERROR(PyObject *container)
 }
 
 #define Px_PROTECTION_ERROR(c) (_Px_PROTECTION_ERROR((PyObject *)c))
+*/
 
 /* 0 on success, -1 on error */
 /* Sets PyErr_Occurred() to PyExc_AssignmentError on error. */
+/*
 static __inline
 int
 _Px_ASSIGNMENT_ERROR(PyObject *container, PyObject *old_value)
@@ -1154,6 +1167,7 @@ _Px_ASSIGNMENT_ERROR(PyObject *container, PyObject *old_value)
 #define Px_ASSIGNMENT_ERROR(c, ov)          \
     (_Px_ASSIGNMENT_ERROR((PyObject *)c,    \
                           (PyObject *)ov))
+*/
 
 /*
 static __inline

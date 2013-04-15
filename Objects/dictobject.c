@@ -824,8 +824,10 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         return -1;
     }
     old_value = *value_addr;
+    /*
     if (Px_ASSIGNMENT_ERROR(mp, old_value))
         return -1;
+    */
     Py_INCREF(value);
     MAINTAIN_TRACKING(mp, key, value);
     if (old_value != NULL) {
@@ -1218,9 +1220,9 @@ PyDict_SetItem(PyObject *op, PyObject *key, PyObject *value)
     /*
     if (Px_CHECK_PROTECTION(op, key, value))
         return -1;
-    */
     if (Px_PROTECTION_ERROR(op))
         return -1;
+    */
 
     mp = (PyDictObject *)op;
     if (!PyUnicode_CheckExact(key) ||
@@ -1250,8 +1252,10 @@ PyDict_DelItem(PyObject *op, PyObject *key)
     }
     assert(key);
 
+    /*
     if (Px_CHECK_PROTECTION(op, key, NULL))
         return -1;
+    */
 
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1) {
@@ -1268,8 +1272,10 @@ PyDict_DelItem(PyObject *op, PyObject *key)
         return -1;
     }
     old_value = *value_addr;
+    /*
     if (Px_ASSIGNMENT_ERROR(op, old_value))
         return -1;
+    */
     *value_addr = NULL;
     mp->ma_used--;
     if (!_PyDict_HasSplitTable(mp)) {
@@ -1877,8 +1883,10 @@ PyDict_MergeFromSeq2(PyObject *d, PyObject *seq2, int override)
     assert(PyDict_Check(d));
     assert(seq2 != NULL);
 
+    /*
     if (Px_CHECK_PROTECTION(d, seq2, NULL))
         return -1;
+    */
 
     it = PyObject_GetIter(seq2);
     if (it == NULL)
@@ -1961,9 +1969,11 @@ PyDict_Merge(PyObject *a, PyObject *b, int override)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(a, b, NULL) ||
         Px_CHECK_PROTECTION(b, a, NULL))
         return -1;
+    */
 
     mp = (PyDictObject*)a;
     if (PyDict_Check(b)) {
@@ -2273,8 +2283,10 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
     if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &key, &failobj))
         return NULL;
 
+    /*
     if (Px_CHECK_PROTECTION(mp, args, NULL))
         return NULL;
+    */
 
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1) {
@@ -2330,8 +2342,10 @@ dict_pop(PyDictObject *mp, PyObject *args)
     PyDictKeyEntry *ep;
     PyObject **value_addr;
 
+    /*
     if (Px_CHECK_PROTECTION(mp, args, NULL))
         return NULL;
+    */
 
     if(!PyArg_UnpackTuple(args, "pop", 1, 2, &key, &deflt))
         return NULL;
@@ -2380,8 +2394,10 @@ dict_popitem(PyDictObject *mp)
     PyDictKeyEntry *ep;
     PyObject *res;
 
+    /*
     if (Px_CHECK_PROTECTION(mp, NULL, NULL))
         return NULL;
+    */
 
     /* Allocate the result tuple before checking the size.  Believe it
      * or not, this allocation could trigger a garbage collection which

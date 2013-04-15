@@ -59,6 +59,8 @@ PyCode_New(int argcount, int kwonlyargcount,
     unsigned char *cell2arg = NULL;
     Py_ssize_t i, n_cellvars;
 
+    Py_GUARD
+
     /* Check argument types */
     if (argcount < 0 || kwonlyargcount < 0 || nlocals < 0 ||
         code == NULL ||

@@ -60,6 +60,13 @@ PyAPI_FUNC(void) _PyParallel_RestoreMainProcessId(void);
 PyAPI_FUNC(void) _PyParallel_EnableParallelContexts(void);
 PyAPI_FUNC(void) _PyParallel_DisableParallelContexts(void);
 
+PyAPI_FUNC(int)  _PyParallel_IsTLSHeapActive(void);
+PyAPI_FUNC(int)  _PyParallel_GetTLSHeapDepth(void);
+PyAPI_FUNC(void) _PyParallel_EnableTLSHeap(void);
+PyAPI_FUNC(void) _PyParallel_DisableTLSHeap(void);
+
+PyAPI_FUNC(int)  _PyParallel_DoesContextHaveActiveHeapSnapshot(void);
+
 PyAPI_FUNC(void) _PyParallel_BeginAllowThreads(void);
 PyAPI_FUNC(void) _PyParallel_EndAllowThreads(void);
 
@@ -378,7 +385,6 @@ _px_bitpos_uint32(unsigned int f)
 #define PyPx_GUARD_OBJECT(o)
 #define PyPx_GUARD_MEM(o)
 
-#define Px_CHECK_PROTECTION(left, right) (1)
 #endif
 
 #ifdef __cplusplus

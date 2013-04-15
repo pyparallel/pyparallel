@@ -60,6 +60,76 @@ _PyParallel_RemoveHeapOverride(void)
     heap_override = NULL;
 }
 
+/* tls-oriented stuff */
+int
+_PyParallel_DoesContextHaveActiveHeapSnapshot(void)
+{
+    return (!Py_PXCTX ? 0 : (ctx->snapshot_id == 0));
+}
+
+#define Px_TLS_HEAP_ACTIVE (tls.heap_depth > 0)
+
+int
+_PyParallel_IsTLSHeapActive(void)
+{
+    return (!Py_PXCTX ? 0 : Px_TLS_HEAP_ACTIVE);
+}
+
+int
+_PyParallel_GetTLSHeapDepth(void)
+{
+    return (!Py_PXCTX ? 0 : tls.heap_depth);
+}
+
+void
+_PyParallel_EnableTLSHeap(void)
+{
+    TLS     *t = &tls;
+    Context *c = ctx;
+
+    if (!Py_PXCTX)
+        return;
+
+    if (++t->heap_depth > 1)
+        /* Heap already active. */
+        return;
+
+    if (t->heap_depth < 0)
+        Py_FatalError("PyParallel_EnableTLSHeap(): heap depth overflow");
+
+    assert(t->heap_depth == 1);
+    assert(!t->ctx_heap);
+    assert(c->h != t->h);
+
+    t->ctx_heap = c->h;
+    c->h = t->h;
+}
+
+void
+_PyParallel_DisableTLSHeap(void)
+{
+    TLS     *t = &tls;
+    Context *c = ctx;
+
+    if (!Py_PXCTX)
+        return;
+
+    if (--t->heap_depth > 0)
+        return;
+
+    if (t->heap_depth < 0)
+        Py_FatalError("PyParallel_DisableTLSHeap: negative heap depth");
+
+    assert(t->heap_depth == 0);
+    assert(t->ctx_heap);
+    assert(c->h == t->h);
+    assert(c->h != t->ctx_heap);
+
+    c->h = t->ctx_heap;
+    t->ctx_heap = NULL;
+}
+
+
 Py_TLS static int _PxNewThread = 1;
 
 __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
@@ -69,7 +139,7 @@ long Py_ParallelContextsEnabled = -1;
 size_t _PxObjectSignature = -1;
 size_t _PxSocketSignature = -1;
 size_t _PxSocketBufSignature = -1;
-int _PxBlockingCallsThreshold = 5;
+int _PxBlockingCallsThreshold = 20;
 
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
@@ -206,6 +276,7 @@ PXSTATE(void)
     return px;
 }
 
+/*
 static __inline
 Heap *
 GET_TLS_HEAP_SNAPSHOT(Heap *prev)
@@ -245,6 +316,7 @@ GET_TLS_HEAP_SNAPSHOT(Heap *prev)
 
     return h;
 }
+*/
 
 Heap *
 PxContext_HeapSnapshot(Context *c, Heap *prev)
@@ -289,7 +361,7 @@ void
 PxContext_RollbackHeap(Context *c, Heap **snapshot)
 {
     Heap *h1, *h2;
-    void *tstart, *hstart = NULL;
+    void *tstart, *hstart, *next;
     Px_UINTPTR bitmap = 0;
     size_t size;
 
@@ -338,6 +410,11 @@ PxContext_RollbackHeap(Context *c, Heap **snapshot)
 rollback:
     /* xxx todo: HeapFree() extra heaps if h1 != h2. */
 
+    next = (h2 ? h2->next : c->h->next);
+    size = _Py_PTR(next) - _Py_PTR(h1->next);
+    assert(size > 0 && size < Px_LARGE_PAGE_SIZE);
+    memset(h1->next, 0, size);
+
     /* skip sle_prev and sle_next */
     tstart = _Py_CAST_FWD(c->h, void *, Heap, base);
     hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
@@ -358,6 +435,7 @@ rollback:
     return;
 }
 
+/*
 static __inline
 Heap *
 ENABLE_TLS_HEAP(void)
@@ -445,14 +523,11 @@ ROLLBACK_TLS_HEAP(Heap *snapshot)
             goto rollback;
     }
 
-    /* xxx todo */
     assert(0);
     return;
 
 rollback:
-    /* xxx todo: HeapFree() extra heaps if h1 != h2. */
 
-    /* skip sle_prev and sle_next */
     tstart = _Py_CAST_FWD(t->h, void *, Heap, base);
     hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
     size = PxHeap_SNAPSHOT_COPY_SIZE - _Py_PTR_SUB(tstart, t->h);
@@ -481,9 +556,11 @@ DISABLE_TLS_HEAP_AND_ROLLBACK(Heap *snapshot)
     LeaveCriticalSection(&t->snapshots_cs);
     LeaveCriticalSection(&t->heap_cs);
 }
+*/
 
 #define TLS_BUF_SPINCOUNT 8
 
+/*
 static __inline
 WSABUF *
 GET_TLS_SBUF(PxSocket *s)
@@ -531,7 +608,7 @@ RETURN_TLS_SBUF(WSABUF *w)
 
 #ifdef Py_DEBUG
     if (b->snapshot) {
-        /* Make sure snapshots have been rolled back. */
+        // Make sure snapshots have been rolled back.
         Heap *h1, *h2;
         TLS *t2 = b->snapshot->tls;
         EnterCriticalSection(&t2->heap_cs);
@@ -544,10 +621,8 @@ RETURN_TLS_SBUF(WSABUF *w)
             OutputDebugString(L"h1 bitmap mismatch (RETURN_TLS_SBUF)");
         if (!(t2->snapshots_bitmap & (Px_UINTPTR_1 << h2->bitmap_index)))
             OutputDebugString(L"h2 bitmap mismatch (RETURN_TLS_SBUF)");
-        /*
-        assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h1->bitmap_index));
-        assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h2->bitmap_index));
-        */
+        //assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h1->bitmap_index));
+        //assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h2->bitmap_index));
         LeaveCriticalSection(&t2->snapshots_cs);
         LeaveCriticalSection(&t2->heap_cs);
         b->snapshot = NULL;
@@ -571,6 +646,7 @@ IS_TLS_SBUF(WSABUF *w)
         Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1])
     );
 }
+*/
 
 /* 0 on failure, 1 on success */
 static __inline
@@ -2009,7 +2085,7 @@ Heap_Init(Context *c, size_t n, int page_size)
     size_t size;
     int flags;
 
-    assert(!Px_TLS_HEAP_ACTIVE(c));
+    assert(!Px_TLS_HEAP_ACTIVE);
 
     if (!page_size)
         page_size = Px_LARGE_PAGE_SIZE;
@@ -2068,8 +2144,6 @@ _PyTLSHeap_Init(size_t n, int page_size)
     size_t size;
     int flags;
 
-    EnterCriticalSection(&t->heap_cs);
-
     if (!page_size)
         page_size = Px_LARGE_PAGE_SIZE;
 
@@ -2114,7 +2188,6 @@ _PyTLSHeap_Init(size_t n, int page_size)
 #ifdef Py_DEBUG
     _PxState_RegisterHeap(t->px, h, 0);
 #endif
-    LeaveCriticalSection(&t->heap_cs);
     return 1;
 }
 
@@ -2200,9 +2273,7 @@ _PyTLSHeap_Malloc(size_t n, size_t align)
     size_t requested_size = n;
     size_t aligned_size;
 
-    EnterCriticalSection(&t->heap_cs);
-
-    assert(Px_TLS_HEAP_ACTIVE(ctx) || _PxNewThread);
+    assert(t->heap_depth > 0 || _PxNewThread);
 
     if (!alignment)
         alignment = Px_PTR_ALIGN_SIZE;
@@ -2249,14 +2320,12 @@ begin:
         assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
         assert(_Py_IS_ALIGNED(h->base, alignment));
         assert(Px_GET_ALIGNMENT(next) >= alignment);
-        LeaveCriticalSection(&t->heap_cs);
         return next;
     }
 
     t->h = h->sle_next;
 
     if (!t->h->size && !_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size), 0)) {
-        LeaveCriticalSection(&t->heap_cs);
         return _aligned_malloc(aligned_size, alignment);
     }
 
@@ -2294,7 +2363,7 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
     size_t requested_size = n;
     size_t aligned_size;
 
-    if (Px_TLS_HEAP_ACTIVE(c))
+    if (Px_TLS_HEAP_ACTIVE)
         return _PyTLSHeap_Malloc(n, align);
 
     if (_PyParallel_IsHeapOverrideActive())
@@ -2389,7 +2458,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
     Heap  *h;
     Stats *s;
 
-    if (Px_TLS_HEAP_ACTIVE(c))
+    if (Px_TLS_HEAP_ACTIVE)
         return _PyTLSHeap_Realloc(p, n);
 
     h = c->h;
@@ -2411,7 +2480,7 @@ _PyHeap_Free(Context *c, void *p)
     Heap  *h;
     Stats *s;
 
-    if (Px_TLS_HEAP_ACTIVE(c))
+    if (Px_TLS_HEAP_ACTIVE)
         return;
 
     Px_GUARD_MEM(p);
@@ -2467,14 +2536,13 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     size_t    bytes_to_copy;
     int       init_type;
     int       is_varobj = -1;
-    int       is_tls_heap_active = Px_TLS_HEAP_ACTIVE(c);
     int       is_heap_override_active = _PyParallel_IsHeapOverrideActive();
 
 #define _INIT_NEW       1
 #define _INIT_INIT      2
 #define _INIT_RESIZE    3
 
-    s = (is_tls_heap_active ? &t->stats : &c->stats);
+    s = (Px_TLS_HEAP_ACTIVE ? &t->stats : &c->stats);
 
     if (!p) {
         /* Case 1: PyObject_NEW/NEW_VAR (via (Object|VarObject)_New). */
@@ -2593,7 +2661,7 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     if (Px_ISMIMIC(n))
         goto end;
 
-    if (is_tls_heap_active)
+    if (Px_TLS_HEAP_ACTIVE)
         goto end;
 
     if (is_heap_override_active) {
@@ -2621,7 +2689,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     }
 
 end:
-
     return n;
 }
 
@@ -3160,7 +3227,6 @@ _PyParallel_InitTLS(void)
     t->px = (PxState *)TSTATE->px;
     assert(t->px);
 
-    InitializeCriticalSectionAndSpinCount(&t->heap_cs, TLS_BUF_SPINCOUNT);
     InitializeCriticalSectionAndSpinCount(&t->sbuf_cs, TLS_BUF_SPINCOUNT);
     InitializeCriticalSectionAndSpinCount(&t->rbuf_cs, TLS_BUF_SPINCOUNT);
     InitializeCriticalSectionAndSpinCount(&t->snapshots_cs, TLS_BUF_SPINCOUNT);
@@ -4321,6 +4387,7 @@ _Py_HandleCtrlC(DWORD ctrltype)
     }
     return FALSE;
 }
+PHANDLER_ROUTINE _Py_CtrlCHandlerRoutine = (PHANDLER_ROUTINE)_Py_HandleCtrlC;
 
 int
 _Py_CheckCtrlC(void)
@@ -4372,7 +4439,7 @@ _async_run_once(PyObject *self, PyObject *args)
         return NULL;
 
     if (!_Py_InstalledCtrlCHandler) {
-        if (!SetConsoleCtrlHandler(_Py_HandleCtrlC, TRUE)) {
+        if (!SetConsoleCtrlHandler(_Py_CtrlCHandlerRoutine, TRUE)) {
             PyErr_SetFromWindowsErr(0);
             return NULL;
         }
@@ -6010,7 +6077,7 @@ _MAYBE_CLOSE(Context *c)
 {
     PxSocket *s = (PxSocket *)c->io_obj;
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
+       !(s->data_received))
     {
         BOOL success;
         char error = 0;
@@ -6147,7 +6214,7 @@ PxSocket_IOLoop(PxSocket *s)
     DWORD err, wsa_error, nbytes;
     SOCKET fd;
     HANDLE h;
-    WSABUF *w = NULL, *old_wsabuf = NULL, tmp_wsabuf;
+    WSABUF *w = NULL, *old_wsabuf = NULL;
     SBUF *sbuf = NULL;
     RBUF *rbuf = NULL;
     ULONG recv_avail = 0;
@@ -6161,9 +6228,16 @@ PxSocket_IOLoop(PxSocket *s)
 
     fd = s->sock_fd;
 
+    assert(s->ctx == c);
+    assert(c->io_obj == s);
+
     PxSocket_UpdateConnectTime(s);
 
     InterlockedIncrement(&_PxSocket_ActiveIOLoops);
+
+    s->last_thread_id = s->this_thread_id;
+    s->this_thread_id = _Py_get_current_thread_id();
+    s->ioloops++;
 
     switch (s->io_op) {
         case PxSocket_IO_ACCEPT:
@@ -6187,7 +6261,6 @@ PxSocket_IOLoop(PxSocket *s)
 
 dispatch:
     switch (next_opcode) {
-        TARGET(reload_protocol);
         TARGET(maybe_shutdown_send_or_recv);
         TARGET(handle_error);
         TARGET(connection_made_callback);
@@ -6205,91 +6278,30 @@ dispatch:
 
 start:
 
-reload_protocol:
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RELOAD_PROTOCOL) {
-        int has_lines_mode;
-
-        if (!s->protocol) {
-            assert(s->protocol_type);
-            s->protocol = PyObject_CallObject(s->protocol_type, NULL);
-            if (!s->protocol)
-                PxSocket_FATAL();
-
-            /* not sure if we still need to do this */
-            /*
-            if (!_Px_TryPersist(s->protocol))
-                PxSocket_FATAL();
-             */
-        }
-
-        assert(s->protocol);
-
-        /* PxSocket_HasAttr() can allocate new objects (via string interning
-         * in PyObject_GetAttrString()), so take a heap snapshot. */
-        snapshot = PxContext_HeapSnapshot(c, NULL);
-
-        /* Ugh, need to switch everything over to PxSocket_HAS_*callback*...*/
-        if (PxSocket_HasAttr(s, "connection_made"))
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_CONNECTION_MADE;
-
-        if (PxSocket_HasAttr(s, "data_received"))
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
-
-        if (PxSocket_HasAttr(s, "lines_received"))
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_LINES_RECEIVED;
-
-        if (PxSocket_HasAttr(s, "send_complete"))
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
-
-        if (PxSocket_HasAttr(s, "shutdown_send"))
-            PxSocket_SET_SEND_FAILED(s);
-
-        if (PxSocket_HasAttr(s, "send_failed"))
-            PxSocket_SET_SEND_FAILED(s);
-
-        if (PxSocket_HasAttr(s, "connection_closed"))
-            PxSocket_SET_CONNECTION_CLOSED(s);
-
-        has_lines_mode = PxSocket_HasAttr(s, "lines_mode");
-
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RELOAD_PROTOCOL;
-
-        PxContext_RollbackHeap(c, &snapshot);
-
-        if (PxSocket_HAS_DATA_RECEIVED(s))
-            s->data_received = PxSocket_GET_ATTR("data_received");
-        else
-            s->data_received = NULL;
-
-        if (PxSocket_HAS_LINES_RECEIVED(s)) {
-            if (!PxSocket_HAS_DATA_RECEIVED(s))
-                s->lines_mode = 1;
-            else {
-                if (has_lines_mode) {
-                    int m;
-                    m = PyObject_IsTrue(PxSocket_GET_ATTR("lines_mode"));
-                    if (m == -1)
-                        PxSocket_EXCEPTION();
-                    s->lines_mode = m;
-                } else
-                    s->lines_mode = 0;
-            }
-            s->lines_received = PxSocket_GET_ATTR("lines_received");
-        } else {
-            s->lines_mode = 0;
-            s->lines_received = NULL;
-        }
-
-    }
+    assert(s->protocol);
 
 maybe_shutdown_send_or_recv:
     if (!PxSocket_CAN_RECV(s)) {
         if (shutdown(s->sock_fd, SD_RECEIVE) == SOCKET_ERROR)
             PxSocket_WSAERROR("shutdown(SD_RECEIVE)");
-    } else if (PxSocket_HAS_SHUTDOWN_SEND(s)) {
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RECV_SHUTDOWN;
+        if (s->recv_shutdown) {
+            assert(0 == "xxx todo: recv_shutdown");
+        }
+    }
+
+    if (PxSocket_SHUTDOWN_SEND(s)) {
         if (shutdown(s->sock_fd, SD_SEND) == SOCKET_ERROR)
             PxSocket_WSAERROR("shutdown(SD_SEND)");
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SEND_SHUTDOWN;
+        if (s->send_shutdown) {
+            assert(0 == "xxx todo: send_shutdown");
+        }
     }
+
+    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_SHUTDOWN) &&
+        (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SEND_SHUTDOWN))
+        goto definitely_close;
 
     if (next_opcode)
         goto dispatch;
@@ -6303,7 +6315,7 @@ maybe_send_initial_bytes:
     assert(PxSocket_IS_SERVERCLIENT(s));
     assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES));
 
-    if (PxSocket_HAS_INITIAL_BYTES(s)) {
+    if (s->initial_bytes_to_send) {
         DWORD *len;
 
         assert(!snapshot);
@@ -6337,7 +6349,7 @@ maybe_do_connection_made:
         s->io_op == PxSocket_IO_CONNECT
     );
 
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) &&
+    if (s->connection_made &&
        !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE))
         goto definitely_do_connection_made;
 
@@ -6345,10 +6357,10 @@ maybe_do_connection_made:
 
 definitely_do_connection_made:
     assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE));
+    func = s->connection_made;
+    assert(func);
 
     snapshot = PxContext_HeapSnapshot(c, NULL);
-    func = PxSocket_GET_ATTR("connection_made");
-    assert(func && func != Py_None);
 
     /* xxx todo: add peer argument */
     args = PyTuple_Pack(1, s);
@@ -6424,22 +6436,25 @@ do_send:
 
     s->io_op = PxSocket_IO_SEND;
 
-    n = 1;
+    if (PxSocket_THROUGHPUT(s)) {
+        n = s->max_sync_send_attempts;
+        goto try_synchronous_send;
+    }
 
+    n = 1;
     if (PxSocket_IS_HOG(s) && _PxSocket_ActiveHogs >= _PyParallel_NumCPUs-1)
         goto do_async_send;
     else if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs-1)
         goto do_async_send;
-    else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
+    else if (PxSocket_CONCURRENCY(s))
         goto do_async_send;
-    else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_THROUGHPUT)
-        n = _PxSocket_MaxSyncSendAttempts;
 
 try_synchronous_send:
     s->send_id++;
 
-    if (s->send_id % 10000 == 0)
-        printf("trying sync send for client %d/%d\n", s->child_id, s->sock_fd);
+    /*if (s->send_id % 10000 == 0)*/
+        printf("\ntrying sync send for client %d/%d\n",
+               s->child_id, s->sock_fd);
 
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
@@ -6485,8 +6500,9 @@ do_async_send:
     ol = &sbuf->ol;
     assert(s->ol == ol);
 
-    if (s->send_id % 10000 == 0)
-        printf("doing async send for client %d/%d\n", s->child_id, s->sock_fd);
+    /*if (s->send_id % 10000 == 0)*/
+        printf("\ndoing async send for client %d/%d\n",
+               s->child_id, s->sock_fd);
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -6542,12 +6558,11 @@ overlapped_send_callback:
     /* Intentional follow-on to send_complete... */
 
 send_complete:
-    if (!PxSocket_HAS_SEND_COMPLETE(s))
+    func = s->send_complete;
+    if (!func)
         goto try_recv;
 
     snapshot = PxContext_HeapSnapshot(c, NULL);
-    func = PxSocket_GET_ATTR("send_complete");
-    assert(func && func != Py_None);
 
     args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
     if (!args) {
@@ -6595,7 +6610,7 @@ send_complete:
     }
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES) {
-        if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) {
+        if (s->connection_made) {
             char *msg = "protocol's connection_made() callback "        \
                         "may never be called (because send_complete() " \
                         "is sending more data on the back of the "      \
@@ -6624,7 +6639,8 @@ send_complete:
 
 send_failed:
     assert(wsa_error);
-    if (PxSocket_HAS_SEND_FAILED(s)) {
+    func = s->send_failed;
+    if (func) {
         /* xxx todo */
         assert(0);
     }
@@ -6633,8 +6649,6 @@ send_failed:
     syscall = "WSASend";
 
     goto handle_error;
-
-
 
 try_extract_something_sendable_from_object:
 
@@ -6686,7 +6700,8 @@ connection_closed:
     if (PyErr_Occurred())
         goto handle_exception;
 
-    if (PxSocket_HAS_CONNECTION_CLOSED(s)) {
+    func = s->connection_closed;
+    if (func) {
         /* xxx todo */
         assert(0);
     }
@@ -6707,10 +6722,10 @@ try_recv:
     */
 
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
-        (!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)))
+        (!(PxSocket_CAN_RECV(s))))
         goto definitely_close;
 
-    if (s->io_op == PxSocket_IO_ACCEPT && (!(PxSocket_HAS_INITIAL_BYTES(s)))) {
+    if (s->io_op == PxSocket_IO_ACCEPT && !s->initial_bytes_to_send) {
         /*
          * This code path will cover a newly connected client that's just sent
          * some data.
@@ -6742,20 +6757,23 @@ do_recv:
     s->io_op = PxSocket_IO_RECV;
     c->io_result = NO_ERROR;
 
-    n = 1;
+    if (PxSocket_THROUGHPUT(s)) {
+        n = s->max_sync_recv_attempts;
+        goto try_synchronous_recv;
+    }
 
+    n = 1;
     if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs-1)
         goto do_async_recv;
-    else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
+    else if (PxSocket_CONCURRENCY(s))
         goto do_async_recv;
-    else if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_THROUGHPUT)
-        n = _PxSocket_MaxSyncRecvAttempts;
 
 try_synchronous_recv:
     s->recv_id++;
 
-    if (s->recv_id % 10000 == 0)
-        printf("trying sync recv for client %d/%d\n", s->child_id, s->sock_fd);
+    /*if (s->recv_id % 10000 == 0)*/
+        printf("\ntrying sync recv for client %d/%d\n",
+               s->child_id, s->sock_fd);
 
     /*
      * Again, this next chunk of code reuses the same pattern employed by
@@ -6783,6 +6801,8 @@ try_synchronous_recv:
         /* Receive completed synchronously. */
         if (recv_nbytes == 0)
             goto connection_closed;
+        w = NULL;
+        rbuf = NULL;
         goto process_data_received;
     } else if (wsa_error == WSAEWOULDBLOCK) {
         s->recv_id--;
@@ -6805,8 +6825,9 @@ do_async_recv:
     assert(rbuf);
     assert(w);
 
-    if (s->recv_id % 10000 == 0)
-        printf("trying sync recv for client %d/%d\n", s->child_id, s->sock_fd);
+    /*if (s->recv_id % 10000 == 0)*/
+        printf("\ntrying sync recv for client %d/%d\n",
+               s->child_id, s->sock_fd);
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -6895,7 +6916,6 @@ process_data_received:
     goto do_data_received_callback;
 
 do_data_received_callback:
-    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED);
 
     assert(recv_nbytes > 0);
     s->recv_nbytes += recv_nbytes;
@@ -6907,14 +6927,14 @@ do_data_received_callback:
     if (recv_nbytes < s->recvbuf_size)
         rbuf->ob_sval[recv_nbytes] = 0;
 
-    if (s->lines_mode)
+    if (PxSocket_LINES_MODE_ACTIVE(s))
         goto do_lines_received_callback;
 
     assert(!rbuf->snapshot);
     rbuf->snapshot = PxContext_HeapSnapshot(c, NULL);
 
     func = s->data_received;
-    assert(func && func != Py_None);
+    assert(func);
 
     /* For now, num_rbufs should only ever be 1. */
     assert(s->num_rbufs == 1);
@@ -7080,15 +7100,14 @@ overlapped_sendfile_callback:
     goto send_complete;
 
 do_lines_received_callback:
-    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINES_RECEIVED);
+    func = s->lines_received;
+    assert(func);
 
     assert(0);
 
     assert(!rbuf->snapshot);
     rbuf->snapshot = PxContext_HeapSnapshot(c, NULL);
 
-    func = s->lines_received;
-    assert(func && func != Py_None);
 
     /* For now, num_rbufs should only ever be 1. */
     assert(s->num_rbufs == 1);
@@ -7117,9 +7136,10 @@ do_lines_received_callback:
 
 recv_failed:
     assert(wsa_error);
-    if (PxSocket_HAS_RECV_FAILED(s)) {
+    func = s->recv_failed;
+    if (func) {
         /* xxx todo */
-        assert(0 == "recv_failed");
+        assert(0 == "xxx todo: recv_failed");
     }
     assert(s->io_op == PxSocket_IO_RECV);
     syscall = "WSARecv";
@@ -7305,45 +7325,22 @@ new_pxsocketbuf_from_unicode(Context *c, PyUnicodeObject *o)
     return sbuf;
 }
 
+/* 0 = failure, 1 = success */
 int
-PxSocket_SetProtocolType(PxSocket *s, PyObject *p)
+PxSocket_SetProtocolType(PxSocket *s, PyObject *protocol_type)
 {
-    PyObject *i; /* protocol instance */
-
-    if (!p) {
+    if (!protocol_type) {
         PyErr_SetString(PyExc_ValueError, "missing protocol value");
         return 0;
     }
 
-    if (!PyType_CheckExact(p)) {
+    if (!PyType_CheckExact(protocol_type)) {
         PyErr_SetString(PyExc_ValueError, "protocol must be a class");
         return 0;
     }
 
-    s->protocol_type = p;
-    assert(!s->protocol);
-    /*
-    if (PyObject_GetAttrString(p, "long_lived") == Py_True) {
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LONG_LIVED;
-        i = PyObject_CallObject(p, NULL);
-        if (!i) {
-            PyErr_SetString(PyExc_ValueError,
-                            "create protocol instance failed");
-            return 0;
-        }
-        * xxx should Py_CLEAR() the existing protocol here *
-        WRITE_LOCK(s);
-        s->protocol = i;
-        WRITE_UNLOCK(s);
-
-        if (!_protect(s->protocol))
-            return 0;
-
-    } else
-        assert(!s->protocol);
-    */
-
-    return 1;
+    s->protocol_type = protocol_type;
+    return PxSocket_InitProtocol(s);
 }
 
 void
@@ -7805,6 +7802,8 @@ PxSocket_SendCallback(Context *c)
     int op = PxSocket_IO_SEND;
     const char *syscall = "WSASendCallback";
 
+    assert(0);
+
     CHECK_SEND_RECV_CALLBACK_INVARIANTS();
 
     if (c->io_result != NO_ERROR) {
@@ -7812,17 +7811,20 @@ PxSocket_SendCallback(Context *c)
         goto maybe_close;
     }
 
+    /*
     MAYBE_DO_CONNECTION_MADE();
 
     MAYBE_DO_SEND_COMPLETE();
 
     MAYBE_SEND();
+    */
 
 maybe_close:
+    /*
     MAYBE_CLOSE();
 
     MAYBE_RECV();
-
+    */
 end:
     return;
 }
@@ -8247,6 +8249,8 @@ PxSocket_ConnectCallback(Context *c)
     const char *syscall = "ConnectEx";
     PxSocket *s = (PxSocket *)c->io_obj;
 
+    assert(0);
+
     assert(PxSocket_IS_CONNECTED(s));
     if (c->io_result != NO_ERROR) {
         PxSocket_HandleError(c, op, syscall, c->io_result);
@@ -8260,7 +8264,7 @@ PxSocket_ConnectCallback(Context *c)
     /*
     if (!PxSocket_InitSendList(c))
         PxSocket_EXCEPTION();
-     */
+
 
     MAYBE_SHUTDOWN_SEND_OR_RECV();
 
@@ -8274,6 +8278,7 @@ PxSocket_ConnectCallback(Context *c)
 
     MAYBE_RECV();
 
+    */
 end:
     return;
 }
@@ -8434,34 +8439,12 @@ PxSocketServer_AcceptCallback(
     memcpy(&(s->local_addr), local, llen);
     memcpy(&(s->remote_addr), remote, rlen);
 
-    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RELOAD_PROTOCOL;
+    /*Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RELOAD_PROTOCOL;*/
 start_io_loop:
     InterlockedIncrement(&(s->parent->nchildren));
     s->child_id = InterlockedIncrement(&(s->parent->next_child_id));
     printf("child %d/%d connected\n", s->child_id, s->sock_fd);
     PxSocket_IOLoop(s);
-
-    goto end;
-
-    MAYBE_SHUTDOWN_SEND_OR_RECV();
-
-    /*
-    if (PxSocket_HAS_INITIAL_BYTES(s)) {
-        memset(p, 0, sz * 2);
-        b = PxSocket_GetInitialBytes(s);
-        if (!b)
-            PxSocket_EXCEPTION();
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDING_INITIAL_BYTES;
-        if (!PxSocket_ScheduleBufForSending(c, b))
-            PxSocket_EXCEPTION();
-    }
-    */
-
-    MAYBE_SEND();
-
-    MAYBE_CLOSE();
-
-    MAYBE_RECV();
 
 end:
     LeaveCriticalSection(&(s->cs));
@@ -8593,52 +8576,186 @@ end:
     LeaveCriticalSection(&(s->acceptex_cs));
 }
 
+/* objects */
+_Py_IDENTIFIER(send_failed);
+_Py_IDENTIFIER(recv_failed);
+_Py_IDENTIFIER(send_shutdown);
+_Py_IDENTIFIER(recv_shutdown);
+_Py_IDENTIFIER(send_complete);
+_Py_IDENTIFIER(data_received);
+_Py_IDENTIFIER(lines_received);
+_Py_IDENTIFIER(connection_made);
+_Py_IDENTIFIER(connection_closed);
+_Py_IDENTIFIER(exception_handler);
+_Py_IDENTIFIER(initial_bytes_to_send);
+
+/* bools */
+_Py_IDENTIFIER(lines_mode);
+_Py_IDENTIFIER(throughput);
+_Py_IDENTIFIER(concurrency);
+_Py_IDENTIFIER(shutdown_send);
+
+/* ints */
+_Py_IDENTIFIER(max_sync_send_attempts);
+_Py_IDENTIFIER(max_sync_recv_attempts);
+
+
 /* 0 = failure, 1 = success */
 int
-PxSocket_InitProtocol(Context *c)
+PxSocket_InitProtocol(PxSocket *s)
 {
-    PxSocket *s = (PxSocket *)c->io_obj;
-    if (!s->protocol) {
-        assert(s->protocol_type);
-        s->protocol = PyObject_CallObject(s->protocol_type, NULL);
-        if (!s->protocol)
-            PxSocket_FATAL();
+    PyObject *p;
+    assert(s->protocol_type);
+    assert(!s->protocol);
 
-        /* xxx: err, do we still need to persist protocols?  Need to review
-         * this logic/codepath. */
-        /*
-        if (!_Px_TryPersist(s->protocol))
-            PxSocket_FATAL();
-         */
+    s->protocol = PyObject_CallObject(s->protocol_type, NULL);
+    if (!s->protocol)
+        return 0;
+
+    p = s->protocol;
+
+    assert(!PyErr_Occurred());
+
+#define _PxSocket_RESOLVE_OBJECT(name) do {             \
+    PyObject *o = _PyObject_GetAttrId(p, &PyId_##name); \
+    if (!o)                                             \
+        PyErr_Clear();                                  \
+    else if (!PyCallable_Check(o)) {                    \
+        PyErr_SetString(                                \
+            PyExc_ValueError,                           \
+            "protocol attribute '" #name "' "           \
+            "is not a callable object"                  \
+        );                                              \
+        return 0;                                       \
+    }                                                   \
+    s->##name = o;                                      \
+} while (0)
+
+#define _PxSocket_RESOLVE_BOOL(name) do {               \
+    int b = 0;                                          \
+    PyObject *o = _PyObject_GetAttrId(p, &PyId_##name); \
+    if (!o)                                             \
+        PyErr_Clear();                                  \
+    else                                                \
+        b = PyObject_IsTrue(o);                         \
+    if (b)                                              \
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_##name;         \
+    else                                                \
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_##name;        \
+} while (0)
+
+#define _PxSocket_RESOLVE_INT(name) do {                \
+    int i = 0;                                          \
+    PyObject *o = _PyObject_GetAttrId(p, &PyId_##name); \
+    if (!o) {                                           \
+        PyErr_Clear();                                  \
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_##name;        \
+    } else {                                            \
+        i = PyLong_AsLong(o);                           \
+        if (PyErr_Occurred())                           \
+            return 0;                                   \
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_##name;         \
+        s->##name = i;                                  \
+    }                                                   \
+} while (0)
+
+    _PxSocket_RESOLVE_OBJECT(lines_mode);
+    _PxSocket_RESOLVE_OBJECT(send_failed);
+    _PxSocket_RESOLVE_OBJECT(recv_failed);
+    _PxSocket_RESOLVE_OBJECT(send_shutdown);
+    _PxSocket_RESOLVE_OBJECT(recv_shutdown);
+    _PxSocket_RESOLVE_OBJECT(send_complete);
+    _PxSocket_RESOLVE_OBJECT(data_received);
+    _PxSocket_RESOLVE_OBJECT(lines_received);
+    _PxSocket_RESOLVE_OBJECT(connection_made);
+    _PxSocket_RESOLVE_OBJECT(connection_closed);
+    _PxSocket_RESOLVE_OBJECT(exception_handler);
+    _PxSocket_RESOLVE_OBJECT(initial_bytes_to_send);
+
+    _PxSocket_RESOLVE_BOOL(throughput);
+    _PxSocket_RESOLVE_BOOL(concurrency);
+    _PxSocket_RESOLVE_BOOL(shutdown_send);
+
+    _PxSocket_RESOLVE_INT(max_sync_send_attempts);
+    _PxSocket_RESOLVE_INT(max_sync_recv_attempts);
+
+    assert(!PyErr_Occurred());
+
+    if (s->data_received || s->lines_received)
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
+    if (s->lines_mode && !s->lines_received) {
+        PyErr_SetString(PyExc_ValueError,
+                        "protocol has 'lines_mode' set to True but no "
+                        "'lines_received' callback");
+        return 0;
     }
 
-    assert(s->protocol);
+    if (s->lines_received && !s->lines_mode) {
+        PyErr_SetString(PyExc_ValueError,
+                        "protocol has 'lines_received' callback but "
+                        "no 'lines_mode' attribute");
+        return 0;
+    }
 
-    if (PxSocket_HasAttr(s, "connection_made"))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_CONNECTION_MADE;
+    assert(!PyErr_Occurred());
 
-    if (PxSocket_HasAttr(s, "data_received"))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_DATA_RECEIVED;
+    if (s->lines_mode && PyObject_IsTrue(s->lines_mode))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LINES_MODE_ACTIVE;
+    else
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_LINES_MODE_ACTIVE;
 
-    if (PxSocket_HasAttr(s, "lines_received"))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_LINES_RECEIVED;
+    if (PyErr_Occurred())
+        return 0;
 
-    if (PxSocket_HasAttr(s, "send_complete"))
-        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HAS_SEND_COMPLETE;
+    if (PxSocket_CONCURRENCY(s) && PxSocket_THROUGHPUT(s)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "protocol has both 'concurrency' and "
+                        "'throughput' set to True; only one or "
+                        "the other is permitted");
+        return 0;
+    }
 
-    if (PxSocket_HasAttr(s, "shutdown_send"))
-        PxSocket_SET_SEND_FAILED(s);
+    if (!PxSocket_THROUGHPUT(s)) {
+        if (PxSocket_MAX_SYNC_SEND_ATTEMPTS(s)) {
+            PyErr_SetString(PyExc_ValueError,
+                            "protocol has 'max_sync_send_attempts' "
+                            "set without 'throughput' set to True");
+            return 0;
+        }
+        if (PxSocket_MAX_SYNC_RECV_ATTEMPTS(s)) {
+            PyErr_SetString(PyExc_ValueError,
+                            "protocol has 'max_sync_recv_attempts' "
+                            "set without 'throughput' set to True");
+            return 0;
+        }
+    } else {
+        if (!PxSocket_MAX_SYNC_SEND_ATTEMPTS(s))
+            s->max_sync_send_attempts = _PxSocket_MaxSyncSendAttempts;
+        else {
+            if (s->max_sync_send_attempts < 0) {
+                PyErr_SetString(PyExc_ValueError,
+                                "protocol has 'max_sync_send_attempts' "
+                                "set to a value less than 0");
+                return 0;
+            } else if (s->max_sync_send_attempts == 0)
+                s->max_sync_send_attempts = INT_MAX;
+        }
 
-    if (PxSocket_HasAttr(s, "send_failed"))
-        PxSocket_SET_SEND_FAILED(s);
-
-    if (PxSocket_HasAttr(s, "connection_closed"))
-        PxSocket_SET_CONNECTION_CLOSED(s);
+        if (!PxSocket_MAX_SYNC_RECV_ATTEMPTS(s))
+            s->max_sync_recv_attempts = _PxSocket_MaxSyncSendAttempts;
+        else {
+            if (s->max_sync_recv_attempts < 0) {
+                PyErr_SetString(PyExc_ValueError,
+                                "protocol has 'max_sync_recv_attempts' "
+                                "set to a value less than 0");
+                return 0;
+            } else if (s->max_sync_recv_attempts == 0)
+                s->max_sync_recv_attempts = INT_MAX;
+        }
+    }
 
     return 1;
-
-end:
-    return 0;
 }
 
 #define INVALID_INITIAL_BYTES                                           \
@@ -8657,23 +8774,10 @@ PxSocket_InitInitialBytes(PxSocket *s)
     assert(t);
     assert(!PyErr_Occurred());
 
-    snapshot = ENABLE_TLS_HEAP();
-    o = PyObject_GetAttrString(t, "initial_bytes_to_send");
-    if (PyErr_ExceptionMatches(PyExc_AttributeError)) {
-        DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
-        PyErr_Clear();
-        return 1;
-    }
+    o = s->initial_bytes_to_send;
 
-    if (PyErr_Occurred()) {
-        DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
-        return 0;
-    }
-
-    if (!o || o == Py_None) {
-        DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
+    if (!o || o == Py_None)
         return 1;
-    }
 
     is_static = (
         PyBytes_Check(o)        ||
@@ -8681,20 +8785,16 @@ PxSocket_InitInitialBytes(PxSocket *s)
         PyUnicode_Check(o)
     );
 
-    if (!is_static) {
-        if (!PyCallable_Check(o)) {
-            DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
-            PyErr_SetString(PyExc_ValueError, INVALID_INITIAL_BYTES);
-            return 0;
-        }
+    if (is_static)
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE;
+    else if (PyCallable_Check(o))
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE;
+    else {
+        PyErr_SetString(PyExc_ValueError, INVALID_INITIAL_BYTES);
+        return 0;
     }
 
-    /* XXX TODO: check that there are no 'expect_*' members, as these imply
-     * the socket will wait for data from the peer after a connection has been
-     * made, which conflicts with an 'initial_bytes_to_send' setting. */
-
-    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES;
+    snapshot = PxContext_HeapSnapshot(c, NULL);
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE) {
         WSABUF w;
@@ -8702,11 +8802,11 @@ PxSocket_InitInitialBytes(PxSocket *s)
         int error = 0;
         r = PyObject_CallObject(o, NULL);
         if (!r) {
-            DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
+            PxContext_RollbackHeap(c, &snapshot);
             return 0;
         }
         if (!PyObject2WSABUF(r, &w)) {
-            DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
+            PxContext_RollbackHeap(c, &snapshot);
             PyErr_SetString(PyExc_ValueError,
                             "initial_bytes_to_send() callable did not return "
                             "a sendable object (bytes, bytearray or unicode)");
@@ -8714,13 +8814,14 @@ PxSocket_InitInitialBytes(PxSocket *s)
         }
         s->initial_bytes_callable = o;
     } else {
+        s->initial_bytes_callable = NULL;
         if (!PxSocket_IS_SERVERCLIENT(s)) {
             WSABUF w;
 
             assert(!s->initial_bytes.buf);
 
             if (!PyObject2WSABUF(o, &s->initial_bytes)) {
-                DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
+                PxContext_RollbackHeap(c, &snapshot);
                 PyErr_SetString(PyExc_ValueError,
                                 "initial_bytes_to_send is not a sendable "
                                 "object (bytes, bytearray or unicode)");
@@ -8735,7 +8836,7 @@ PxSocket_InitInitialBytes(PxSocket *s)
         assert(s->initial_bytes.buf);
     }
 
-    DISABLE_TLS_HEAP_AND_ROLLBACK(snapshot);
+    PxContext_RollbackHeap(c, &snapshot);
 
     return 1;
 }
@@ -8748,7 +8849,7 @@ PxSocket_LoadInitialBytes(PxSocket *s)
     Context *c = s->ctx;
     PyObject *o, *r;
 
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_STATIC)
+    if (!s->initial_bytes_callable)
         return 1;
 
     assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE);
@@ -8814,8 +8915,10 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
 
     ENTERED_CALLBACK();
 
+    /*
     if (!PxSocket_InitProtocol(c))
         goto end;
+    */
 
     assert(s->protocol);
     assert(!PyErr_Occurred());
@@ -8894,18 +8997,16 @@ PxSocketServer_CreateClientSocket(PxSocket *s)
     assert(s->protocol_type);
     assert(o->parent == s);
 
-    o->protocol_type = s->protocol_type;
     x = o->ctx;
     assert(x);
+    assert(Px_PTR(x->io_obj) == Px_PTR(o));
 
     /* Switch out the TLS context with the new client socket's context (we
      * revert it at the end of this function). */
     old_context = ctx;
     ctx = x;
 
-    o->protocol = PyObject_CallObject(o->protocol_type, NULL);
-
-    if (!o->protocol)
+    if (!PxSocket_SetProtocolType(o, s->protocol_type))
         goto error;
 
     if (!PxSocket_InitInitialBytes(o))
@@ -9009,8 +9110,8 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     ENTERED_CALLBACK();
 
-    if (!PxSocket_InitProtocol(c))
-        goto end;
+    assert(s->protocol_type);
+    assert(s->protocol);
 
     PxSocket_InitExceptionHandler(s);
 
@@ -9392,7 +9493,7 @@ PyObject *
 _async_register(PyObject *self, PyObject *args, PyObject *kwds)
 {
     PyObject *transport;
-    PyObject *protocol;
+    PyObject *protocol_type;
 
     static const char *kwlist[] = { "transport", "protocol", NULL };
     static const char *fmt = "OO:register";
@@ -9400,7 +9501,7 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
     Py_GUARD
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, fmt, (char **)kwlist,
-                                     &transport, &protocol))
+                                     &transport, &protocol_type))
         return NULL;
 
     if (PxSocket_Check(transport)) {
@@ -9410,7 +9511,7 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
 
         assert(c);
 
-        if (!PxSocket_SetProtocolType(s, protocol))
+        if (!PxSocket_SetProtocolType(s, protocol_type))
             return NULL;
 
         if (PxSocket_IS_CLIENT(s))
@@ -9424,7 +9525,7 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
         }
 
         Py_INCREF(transport);
-        Py_INCREF(protocol);
+        Py_INCREF(protocol_type);
 
         Py_RETURN_NONE;
 

@@ -231,8 +231,10 @@ PyList_SetItem(register PyObject *op, register Py_ssize_t i,
         return -1;
     }
 
+    /*
     if (Px_PROTECTION_ERROR(op))
         return -1;
+    */
 
     if (i < 0 || i >= Py_SIZE(op)) {
         Py_XDECREF(newitem);
@@ -242,8 +244,10 @@ PyList_SetItem(register PyObject *op, register Py_ssize_t i,
     }
     p = ((PyListObject *)op) -> ob_item + i;
     olditem = *p;
+    /*
     if (Px_ASSIGNMENT_ERROR(op, olditem))
         return -1;
+    */
     *p = newitem;
     Py_XDECREF(olditem);
     return 0;
@@ -715,8 +719,10 @@ list_inplace_repeat(PyListObject *self, Py_ssize_t n)
     PyObject **items;
     Py_ssize_t size, i, j, p;
 
+    /*
     if (Px_PROTECTION_ERROR(self))
         return NULL;
+    */
 
     size = PyList_GET_SIZE(self);
     if (size == 0 || n == 1) {
@@ -763,8 +769,10 @@ list_ass_item(PyListObject *a, Py_ssize_t i, PyObject *v)
         /* Px_CHECK_PROTECTION handled by list_ass_slice() */
         return list_ass_slice(a, i, i+1, v);
     old_value = a->ob_item[i];
+    /*
     if (Px_ASSIGNMENT_ERROR(a, old_value))
         return -1;
+    */
     Py_INCREF(v);
     a->ob_item[i] = v;
     Py_DECREF(old_value);
@@ -787,8 +795,10 @@ listinsert(PyListObject *self, PyObject *args)
 static PyObject *
 listclear(PyListObject *self)
 {
+    /*
     if (Px_PROTECTION_ERROR(self))
         return NULL;
+    */
     list_clear(self);
     Py_RETURN_NONE;
 }
@@ -818,8 +828,10 @@ listextend(PyListObject *self, PyObject *b)
     Py_ssize_t i;
     PyObject *(*iternext)(PyObject *);
 
+    /*
     if (Px_PROTECTION_ERROR(self))
         return NULL;
+    */
 
     /* Special cases:
        1) lists and tuples which can use PySequence_Fast ops
@@ -1963,8 +1975,10 @@ listsort(PyListObject *self, PyObject *args, PyObject *kwds)
     assert(self != NULL);
     assert (PyList_Check(self));
 
+    /*
     if (Px_PROTECTION_ERROR(self))
         return NULL;
+    */
 
     if (args != NULL) {
         if (!PyArg_ParseTupleAndKeywords(args, kwds, "|Oi:sort",
@@ -2129,8 +2143,10 @@ PyList_Sort(PyObject *v)
         PyErr_BadInternalCall();
         return -1;
     }
+    /*
     if (Px_CHECK_PROTECTION(v, NULL, NULL))
         return -1;
+    */
     v = listsort((PyListObject *)v, (PyObject *)NULL, (PyObject *)NULL);
     if (v == NULL)
         return -1;
@@ -2151,8 +2167,10 @@ PyList_Reverse(PyObject *v)
 {
     PyListObject *self = (PyListObject *)v;
 
+    /*
     if (Px_CHECK_PROTECTION(v, NULL, NULL))
         return -1;
+    */
 
     if (v == NULL || !PyList_Check(v)) {
         PyErr_BadInternalCall();
@@ -2240,8 +2258,10 @@ listremove(PyListObject *self, PyObject *v)
 {
     Py_ssize_t i;
 
+    /*
     if (Px_PROTECTION_ERROR(self))
         return NULL;
+    */
 
     for (i = 0; i < Py_SIZE(self); i++) {
         int cmp = PyObject_RichCompareBool(self->ob_item[i], v, Py_EQ);
@@ -2511,7 +2531,8 @@ list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
      */
     if (Py_PXCTX && Px_ISPY(self)) {
         PyErr_SetString(PyExc_AssignmentError,
-                        "parallel thread attempted to assign to main thread list");
+                        "parallel thread attempted to "
+                        "assign to main thread list");
         return -1;
     }
 

@@ -147,8 +147,10 @@ PyObject_SetItem(PyObject *o, PyObject *key, PyObject *value)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(o, key, value))
         return -1;
+    */
 
     m = o->ob_type->tp_as_mapping;
     if (m && m->mp_ass_subscript)
@@ -183,8 +185,10 @@ PyObject_DelItem(PyObject *o, PyObject *key)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(o, NULL, NULL))
         return -1;
+    */
 
     m = o->ob_type->tp_as_mapping;
     if (m && m->mp_ass_subscript)
@@ -1530,8 +1534,10 @@ PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(s, NULL, o))
         return -1;
+    */
 
     m = s->ob_type->tp_as_sequence;
     if (m && m->sq_ass_item) {
@@ -1560,8 +1566,10 @@ PySequence_DelItem(PyObject *s, Py_ssize_t i)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(s, NULL, NULL))
         return -1;
+    */
 
     m = s->ob_type->tp_as_sequence;
     if (m && m->sq_ass_item) {
@@ -1590,8 +1598,10 @@ PySequence_SetSlice(PyObject *s, Py_ssize_t i1, Py_ssize_t i2, PyObject *o)
         return -1;
     }
 
+    /*
     if (Px_CHECK_PROTECTION(s, NULL, o))
         return -1;
+    */
 
     mp = s->ob_type->tp_as_mapping;
     if (mp && mp->mp_ass_subscript) {
@@ -1952,8 +1962,10 @@ PyMapping_SetItemString(PyObject *o, char *key, PyObject *value)
     if (okey == NULL)
         return -1;
 
+    /*
     if (Px_CHECK_PROTECTION(o, okey, value))
         return -1;
+    */
 
     r = PyObject_SetItem(o, okey, value);
     Py_DECREF(okey);

@@ -384,11 +384,10 @@ typedef struct _PxThreadLocalState {
     Heap       *ctx_heap;
     Heap        heap;
     HANDLE      handle;
+    int         heap_depth;
     DWORD       thread_id;
     PxState    *px;
     Stats       stats;
-
-    CRITICAL_SECTION        heap_cs;
 
     CRITICAL_SECTION        sbuf_cs;
     volatile Px_INTPTR      sbuf_bitmap;
@@ -732,7 +731,6 @@ typedef struct _PxObject {
 #define Px_IS_WORK_CTX(c)        (Px_CTXFLAGS(c) & Px_CTXFLAGS_IS_WORK_CTX)
 #define Px_CTX_IS_DISASSOCIATED(c) (Px_CTXFLAGS(c) & Px_CTXFLAGS_DISASSOCIATED)
 #define Px_CTX_HAS_STATS(c)      (Px_CTXFLAGS(c) & Px_CTXFLAGS_HAS_STATS)
-#define Px_TLS_HEAP_ACTIVE(c)    (Px_CTXFLAGS(c) & Px_CTXFLAGS_TLS_HEAP_ACTIVE)
 
 #define STATS(c) \
     (Px_CTX_HAS_STATS(c) ? ((Stats *)(&(((Context *)c)->stats))) : 0)
@@ -746,28 +744,35 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_CONNECTED                  (1UL <<  4)
 #define Px_SOCKFLAGS_CLEAN_DISCONNECT           (1UL <<  5)
 #define Px_SOCKFLAGS_THROUGHPUT                 (1UL <<  6)
+#define Px_SOCKFLAGS_throughput                 (1UL <<  6)
 #define Px_SOCKFLAGS_SERVERCLIENT               (1UL <<  7)
 #define Px_SOCKFLAGS_INITIAL_BYTES              (1UL <<  8)
 #define Px_SOCKFLAGS_INITIAL_BYTES_STATIC       (1UL <<  9)
 #define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1UL << 10)
 #define Px_SOCKFLAGS_CONCURRENCY                (1UL << 11)
+#define Px_SOCKFLAGS_concurrency                (1UL << 11)
 #define Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE     (1UL << 12)
 #define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
-#define Px_SOCKFLAGS_HAS_CONNECTION_MADE        (1UL << 14)
-#define Px_SOCKFLAGS_HAS_DATA_RECEIVED          (1UL << 15)
-#define Px_SOCKFLAGS_HAS_LINES_RECEIVED         (1UL << 16)
+#define Px_SOCKFLAGS_LINES_MODE_ACTIVE          (1UL << 14)
+#define Px_SOCKFLAGS_lines_mode_active          (1UL << 14)
+#define Px_SOCKFLAGS_SHUTDOWN_SEND              (1UL << 15)
+#define Px_SOCKFLAGS_shutdown_send              (1UL << 15)
+#define Px_SOCKFLAGS_CAN_RECV                   (1UL << 16)
+#define Px_SOCKFLAGS_can_recv                   (1UL << 16)
 #define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
 #define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
 #define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
 #define Px_SOCKFLAGS_SEND_SCHEDULED             (1UL << 20)
-#define Px_SOCKFLAGS_HAS_SEND_COMPLETE          (1UL << 21)
+#define Px_SOCKFLAGS_MAX_SYNC_SEND_ATTEMPTS     (1UL << 21)
+#define Px_SOCKFLAGS_max_sync_send_attempts     (1UL << 21)
 #define Px_SOCKFLAGS_CLOSE_SCHEDULED            (1UL << 22)
 #define Px_SOCKFLAGS_CLOSED                     (1UL << 23)
 #define Px_SOCKFLAGS_TIMEDOUT                   (1UL << 24)
 #define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 25)
 #define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
 #define Px_SOCKFLAGS_ACCEPT_CALLBACK_SEEN       (1UL << 27)
-#define Px_SOCKFLAGS_RELOAD_PROTOCOL            (1UL << 29)
+#define Px_SOCKFLAGS_MAX_SYNC_RECV_ATTEMPTS     (1UL << 29)
+#define Px_SOCKFLAGS_max_sync_recv_attempts     (1UL << 29)
 #define Px_SOCKFLAGS_SENDFILE_SCHEDULED         (1UL << 30)
 #define Px_SOCKFLAGS_                           (1UL << 31)
 
@@ -789,23 +794,38 @@ typedef struct _PxObject {
 
 #define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
 
+#define PxSocket_LINES_MODE_ACTIVE(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_LINES_MODE_ACTIVE)
+
+#define PxSocket_THROUGHPUT(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_THROUGHPUT)
+
+#define PxSocket_CONCURRENCY(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
+
+#define PxSocket_CAN_RECV(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CAN_RECV)
+
+#define PxSocket_SHUTDOWN_SEND(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SHUTDOWN_SEND)
+
+#define PxSocket_MAX_SYNC_SEND_ATTEMPTS(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_MAX_SYNC_SEND_ATTEMPTS)
+
+#define PxSocket_MAX_SYNC_RECV_ATTEMPTS(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_MAX_SYNC_RECV_ATTEMPTS)
+
 #define PxSocket_HAS_INITIAL_BYTES(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES)
 
 #define PxSocket_HAS_SEND_COMPLETE(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE)
 
-
 #define PxSocket_HAS_DATA_RECEIVED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED)
 
 #define PxSocket_HAS_LINES_RECEIVED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_LINES_RECEIVED)
-
-#define PxSocket_CAN_RECV(s) (        \
-    PxSocket_HAS_DATA_RECEIVED(s) ||  \
-    PxSocket_HAS_LINES_RECEIVED(s)    \
-)
 
 #define PxSocket_HAS_SEND_FAILED(s) \
     (PxSocket_CBFLAGS(s) & PxSocket_CBFLAGS_SEND_FAILED)
@@ -946,6 +966,9 @@ typedef struct _PxSocket {
     int   error_occurred;
 
     Context *ctx;
+    int last_thread_id;
+    int this_thread_id;
+    int ioloops;
 
     /* endpoint */
     char  ip[16];
@@ -965,9 +988,25 @@ typedef struct _PxSocket {
 
     PyObject *protocol_type;
     PyObject *protocol;
+
+    PyObject *lines_mode;
+    PyObject *send_failed;
+    PyObject *recv_failed;
+    PyObject *send_shutdown;
+    PyObject *recv_shutdown;
+    PyObject *send_complete;
+    PyObject *data_received;
+    PyObject *lines_received;
+    PyObject *connection_made;
+    PyObject *connection_closed;
     PyObject *exception_handler;
+    PyObject *initial_bytes_to_send;
     PyObject *initial_bytes_callable;
     WSABUF    initial_bytes;
+
+    int       max_sync_send_attempts;
+    int       max_sync_recv_attempts;
+    int       lines_mode_active;
 
     /* sendfile stuff */
     DWORD  sendfile_nbytes;
@@ -1014,12 +1053,8 @@ typedef struct _PxSocket {
     PxSocket *prev;
     PxSocket *next;
 
-    PyObject *data_received;
-    PyObject *lines_received;
-
-    char      lines_mode;
-    char     *eol[2];
     /*
+    char     *eol[2];
     PyObject *connection_made;
     PyObject *data_sent;
     PyObject *eof_received;
@@ -1422,44 +1457,6 @@ static PySocketModule_APIObject PySocketModule;
                                   tp_io)
 
 #define ENTERED_CALLBACK() _PyParallel_EnteredCallback(c, instance)
-
-static __inline
-int
-_i_MAYBE_CLOSE_old(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_DATA_RECEIVED))
-    {
-        char error = 0;
-
-        assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSED));
-
-        s->io_op = PxSocket_IO_CLOSE;
-
-        if (closesocket(s->sock_fd) == SOCKET_ERROR) {
-            if (WSAGetLastError() == WSAEWOULDBLOCK)
-                Py_FatalError("closesocket() -> WSAEWOULDBLOCK!");
-            else
-                error = 1;
-        }
-
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
-        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
-        Px_SOCKFLAGS(s) |=  Px_SOCKFLAGS_CLOSED;
-
-        if (error)
-            PxSocket_HandleException(c, "closesocket", 0);
-        else
-            PxSocket_HandleCallback(c, "connection_closed", "(O)", s);
-
-        if (PxSocket_IS_SERVERCLIENT(s))
-            PxServerSocket_ClientClosed(s);
-
-        return 1;
-    }
-    return 0;
-}
 
 static const char *pxsocket_kwlist[] = {
     "host",

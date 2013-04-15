@@ -206,6 +206,12 @@ static _Py_Identifier *static_strings = NULL;
    shared as well. */
 static PyObject *unicode_latin1[256] = {NULL};
 
+#ifdef WITH_PARALLEL
+Py_TLS PyObject *tls_interned;
+Py_TLS _Py_Identifier *tls_static_strings;
+Py_TLS PyObject *tls_unicode_latin1[256];
+#endif
+
 /* Fast detection of the most frequent whitespace characters */
 const unsigned char _Py_ascii_whitespace[] = {
     0, 0, 0, 0, 0, 0, 0, 0,
@@ -475,6 +481,9 @@ unicode_result_ready(PyObject *unicode)
         if (ch < 256) {
             PyObject *latin1_char = unicode_latin1[ch];
             if (latin1_char != NULL) {
+#ifdef WITH_PARALLEL
+                assert(Py_ISPY(latin1_char));
+#endif
                 if (unicode != latin1_char) {
                     Py_INCREF(latin1_char);
                     Py_DECREF(unicode);
@@ -483,8 +492,12 @@ unicode_result_ready(PyObject *unicode)
             }
             else {
                 assert(_PyUnicode_CheckConsistency(unicode, 1));
+#ifdef WITH_PARALLEL
+                tls_unicode_latin1[ch] = unicode;
+#else
                 Py_INCREF(unicode);
                 unicode_latin1[ch] = unicode;
+#endif
                 return unicode;
             }
         }
@@ -1516,6 +1529,8 @@ _PyUnicode_Ready(PyObject *unicode)
 static void
 unicode_dealloc(register PyObject *unicode)
 {
+    Py_GUARD
+
     switch (PyUnicode_CHECK_INTERNED(unicode)) {
     case SSTATE_NOT_INTERNED:
         break;
@@ -1557,6 +1572,11 @@ unicode_is_singleton(PyObject *unicode)
         Py_UCS4 ch = PyUnicode_READ_CHAR(unicode, 0);
         if (ch < 256 && unicode_latin1[ch] == unicode)
             return 1;
+#ifdef WITH_PARALLEL
+        /* xxx: is this necessary? */
+        if (ch < 256 && tls_unicode_latin1[ch] == unicode)
+            return 1;
+#endif
     }
     return 0;
 }
@@ -1737,12 +1757,33 @@ unicode_write_cstr(PyObject *unicode, Py_ssize_t index,
     }
 }
 
+#ifdef WITH_PARALLEL
+PyObject *
+tls_get_latin1_char(unsigned char ch)
+{
+    PyObject *unicode;
+    Px_GUARD
+    unicode = tls_unicode_latin1[ch];
+    if (!unicode) {
+        _PyParallel_EnableTLSHeap();
+        unicode = PyUnicode_New(1, ch);
+        _PyParallel_DisableTLSHeap();
+        if (!unicode)
+            return NULL;
+        PyUnicode_1BYTE_DATA(unicode)[0] = ch;
+        assert(_PyUnicode_CheckConsistency(unicode, 1));
+        tls_unicode_latin1[ch] = unicode;
+    }
+    return unicode;
+}
+#endif
 
 static PyObject*
 get_latin1_char(unsigned char ch)
 {
     PyObject *unicode = unicode_latin1[ch];
     if (!unicode) {
+        Px_RETURN(tls_get_latin1_char(ch));
         unicode = PyUnicode_New(1, ch);
         if (!unicode)
             return NULL;
@@ -1841,27 +1882,63 @@ PyUnicode_FromString(const char *u)
     return PyUnicode_DecodeUTF8Stateful(u, (Py_ssize_t)size, NULL, NULL);
 }
 
+#ifdef WITH_PARALLEL
+void _PyParallelUnicode_InternInPlace(PyObject **);
+
+PyObject *
+_PyParallelUnicode_FromId(_Py_Identifier *id)
+{
+    Px_GUARD
+    assert(!PyErr_Occurred());
+    assert(!id->object);
+    assert(!id->next);
+
+    _PyParallel_EnableTLSHeap();
+    id->object = PyUnicode_DecodeUTF8Stateful(id->string,
+                                              strlen(id->string),
+                                              NULL, NULL);
+    _PyParallel_DisableTLSHeap();
+
+    if (!id->object)
+        return NULL;
+
+    _PyParallelUnicode_InternInPlace(&id->object);
+
+    id->next = tls_static_strings;
+    tls_static_strings = id;
+
+    return id->object;
+}
+#endif
+
 PyObject *
 _PyUnicode_FromId(_Py_Identifier *id)
 {
-    if (!id->object) {
-        id->object = PyUnicode_DecodeUTF8Stateful(id->string,
-                                                  strlen(id->string),
-                                                  NULL, NULL);
-        if (!id->object)
-            return NULL;
-        PyUnicode_InternInPlace(&id->object);
-        assert(!id->next);
-        id->next = static_strings;
-        static_strings = id;
-    }
+    if (id->object)
+        return id->object;
+
+    Px_RETURN(_PyParallelUnicode_FromId(id));
+
+    id->object = PyUnicode_DecodeUTF8Stateful(id->string,
+                                              strlen(id->string),
+                                              NULL, NULL);
+    if (!id->object)
+        return NULL;
+
+    PyUnicode_InternInPlace(&id->object);
+    assert(!id->next);
+    id->next = static_strings;
+    static_strings = id;
+
     return id->object;
 }
 
 void
 _PyUnicode_ClearStaticStrings()
 {
-    _Py_Identifier *tmp, *s = static_strings;
+    _Py_Identifier *tmp, *s;
+    Py_GUARD
+    s = static_strings;
     while (s) {
         Py_CLEAR(s->object);
         tmp = s->next;
@@ -14173,6 +14250,8 @@ int _PyUnicode_Init(void)
         0x2029, /* PARAGRAPH SEPARATOR */
     };
 
+    Py_GUARD
+
     /* Init the implementation */
     _Py_INCREF_UNICODE_EMPTY();
     if (!unicode_empty)
@@ -14211,6 +14290,7 @@ int _PyUnicode_Init(void)
 int
 PyUnicode_ClearFreeList(void)
 {
+    Py_GUARD
     return 0;
 }
 
@@ -14218,6 +14298,7 @@ void
 _PyUnicode_Fini(void)
 {
     int i;
+    Py_GUARD
 
     Py_CLEAR(unicode_empty);
 
@@ -14226,6 +14307,70 @@ _PyUnicode_Fini(void)
     _PyUnicode_ClearStaticStrings();
     (void)PyUnicode_ClearFreeList();
 }
+
+#ifdef WITH_PARALLEL
+void
+_PyParallelUnicode_InternInPlace(PyObject **p)
+{
+    PyObject *s = *p;
+    PyObject *t;
+    PyThreadState *tstate;
+    int failed;
+
+    Px_GUARD
+
+    if (interned) {
+        _PyParallel_EnableTLSHeap();
+        Py_ALLOW_RECURSION
+        t = PyDict_GetItem(interned, s);
+        Py_END_ALLOW_RECURSION
+        _PyParallel_DisableTLSHeap();
+        if (t) {
+            *p = t;
+            return;
+        }
+    }
+
+    if (!tls_interned) {
+        _PyParallel_EnableTLSHeap();
+        tls_interned = PyDict_New();
+        _PyParallel_DisableTLSHeap();
+        if (!tls_interned) {
+            PyErr_Clear(); /* Don't leave an exception */
+            return;
+        }
+    }
+    /* It might be that the GetItem call fails even
+       though the key is present in the dictionary,
+       namely when this happens during a stack overflow. */
+    Py_ALLOW_RECURSION
+    _PyParallel_EnableTLSHeap();
+    t = PyDict_GetItem(tls_interned, s);
+    _PyParallel_DisableTLSHeap();
+    Py_END_ALLOW_RECURSION
+
+    if (t) {
+        *p = t;
+        return;
+    }
+
+    tstate = _PyParallel_GetThreadState();
+    tstate->recursion_critical = 1;
+
+    _PyParallel_EnableTLSHeap();
+    failed = PyDict_SetItem(tls_interned, s, s);
+    _PyParallel_DisableTLSHeap();
+
+    if (failed)
+        PyErr_Clear();
+    else
+        _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
+
+    tstate->recursion_critical = 0;
+}
+#else
+#define _PyParallelUnicode_InternInPlace(p)
+#endif
 
 void
 PyUnicode_InternInPlace(PyObject **p)
@@ -14245,13 +14390,19 @@ PyUnicode_InternInPlace(PyObject **p)
         return;
     if (PyUnicode_CHECK_INTERNED(s))
         return;
-    if (interned == NULL) {
-        interned = PyDict_New();
-        if (interned == NULL) {
-            PyErr_Clear(); /* Don't leave an exception */
-            return;
-        }
-    }
+
+#ifdef WITH_PARALLEL
+    Px_RETURN_VOID(_PyParallelUnicode_InternInPlace(p));
+
+    if (Py_ISPX(s))
+        Py_FatalError("PyUnicode_InternInPlace() attempted to intern "
+                      "a parallel object from the main thread");
+#endif
+
+    if (!interned)
+        /* interned dict hasn't been initialized yet */
+        return;
+
     /* It might be that the GetItem call fails even
        though the key is present in the dictionary,
        namely when this happens during a stack overflow. */
@@ -14293,10 +14444,14 @@ PyUnicode_InternImmortal(PyObject **p)
 PyObject *
 PyUnicode_InternFromString(const char *cp)
 {
-    PyObject *s = PyUnicode_FromString(cp);
+    PyObject *s = NULL;
+    _PyParallel_EnableTLSHeap();
+    s = PyUnicode_FromString(cp);
+    _PyParallel_DisableTLSHeap();
     if (s == NULL)
-        return NULL;
+        goto end;
     PyUnicode_InternInPlace(&s);
+end:
     return s;
 }
 
@@ -14307,6 +14462,7 @@ _Py_ReleaseInternedUnicodeStrings(void)
     PyObject *s;
     Py_ssize_t i, n;
     Py_ssize_t immortal_size = 0, mortal_size = 0;
+    Py_GUARD
 
     if (interned == NULL || !PyDict_Check(interned))
         return;
@@ -14368,6 +14524,7 @@ typedef struct {
 static void
 unicodeiter_dealloc(unicodeiterobject *it)
 {
+    Py_GUARD
     _PyObject_GC_UNTRACK(it);
     Py_XDECREF(it->it_seq);
     PyObject_GC_Del(it);
@@ -14376,6 +14533,7 @@ unicodeiter_dealloc(unicodeiterobject *it)
 static int
 unicodeiter_traverse(unicodeiterobject *it, visitproc visit, void *arg)
 {
+    Py_GUARD
     Py_VISIT(it->it_seq);
     return 0;
 }

@@ -198,7 +198,6 @@ PyAPI_FUNC(PyVarObject *) _PxObject_Resize(PyVarObject *op, Py_ssize_t s);
 
 PyAPI_FUNC(void) _Px_NewReference(PyObject *op);
 PyAPI_FUNC(void) _Px_ForgetReference(PyObject *op);
-PyAPI_FUNC(void) _Px_Dealloc(PyObject *op);
 
 #define PyObject_New(type, typeobj)                                  \
     (Py_PXCTX ? ((type *)_PxObject_New(typeobj)) :                   \

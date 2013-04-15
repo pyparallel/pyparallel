@@ -1,11 +1,11 @@
 import os
+import sys
 import time
+import html
 import async
 import urllib
 import mimetypes
 import posixpath
-
-from email.parser import BytesParser
 
 from async.http import (
     DEFAULT_CONTENT_TYPE,
@@ -13,6 +13,7 @@ from async.http import (
     DEFAULT_ERROR_MESSAGE,
     DEFAULT_RESPONSE,
     DEFAULT_SERVER_RESPONSE,
+    DIRECTORY_LISTING,
     RESPONSES,
 )
 
@@ -27,6 +28,9 @@ extensions_map.update({
     '.h': 'text/plain',
 })
 
+url_unquote = urllib.parse.unquote
+html_escape = html.escape
+normpath = posixpath.normpath
 
 def keep_alive_check(f):
     def decorator(*args):
@@ -51,17 +55,18 @@ def translate_path(path, base=None):
     # abandon query parameters
     path = path.split('?',1)[0]
     path = path.split('#',1)[0]
-    path = posixpath.normpath(urllib.parse.unquote(path))
+    path = normpath(url_unquote(path))
     words = path.split('/')
     words = filter(None, words)
     if not base:
         base = os.getcwd()
+    path = base
     for word in words:
         drive, word = os.path.splitdrive(word)
         head, word = os.path.split(word)
         if word in (os.curdir, os.pardir):
             continue
-        path = os.path.join(base, word)
+        path = os.path.join(path, word)
     return path
 
 def guess_type(path):
@@ -108,6 +113,40 @@ def date_time_string(timestamp=None):
         hh, mm, ss
     )
 
+class Options(dict):
+    def __init__(self, values=dict()):
+        assert isinstance(values, dict)
+        dict.__init__(self, **values)
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return None
+
+class InvalidHeaderText(Exception):
+    pass
+
+class Headers(dict):
+    def __init__(self, text):
+        self._text = text
+        if not text:
+            return
+        for line in text.split(b'\r\n'):
+            ix = line.find(b':')
+            if ix == -1:
+                raise InvalidHeaderText()
+            (key, value) = (line[:ix], line[ix+1:])
+            key = key.lower().decode()
+            value = value.lstrip().decode()
+            self[key] = value
+            self[key.replace('-', '_')] = value
+
+    def __getattr__(self, name):
+        try:
+            return self[name]
+        except KeyError:
+            return None
 
 class Response:
     __slots__ = (
@@ -201,6 +240,11 @@ class Request:
     def __init__(self, transport, data):
         self.transport = transport
         self.data = data
+
+        self.body = None
+        self.version = None
+        self.headers = None
+        self.command = None
         self.keep_alive = False
         self.response = Response(self)
 
@@ -225,7 +269,7 @@ class HttpServer:
         ix = raw.find(b'\r\n')
         if ix == -1:
             return self.error(request, 400, "Line too long")
-        (requestline, rest) = (raw[:ix], raw[ix+1:])
+        (requestline, rest) = (raw[:ix], raw[ix+2:])
         words = requestline.split()
         num_words = len(words)
         if num_words == 3:
@@ -262,6 +306,7 @@ class HttpServer:
 
         elif not words:
             request.response = None
+            request.keep_alive = False
             return
         else:
             msg = "Bad request syntax (%r)" % requestline
@@ -277,6 +322,14 @@ class HttpServer:
         if ix == -1:
             return self.error(request, 400, "Line too long")
 
+        raw_headers = rest[:ix]
+        try:
+            headers = Headers(raw_headers)
+        except Exception as e:
+            return self.error(request, 400, "Malformed headers")
+
+        h = request.headers = headers
+
         path = path.decode()
         version = version.decode()
 
@@ -284,15 +337,10 @@ class HttpServer:
         request.command = command
         request.version = version
 
-        #h = request.headers = BytesParser().parsebytes(rest)
-
-        #conntype = h.get('Connection', '').lower()
-        #if conntype == 'close':
-        #    request.keep_alive = False
-        #elif conntype == 'keep-alive' and version >= 'HTTP/1.1':
-        #    request.keep_alive = True
-
-        #request.keep_alive = False
+        if h.connection == 'close':
+            request.keep_alive = False
+        elif h.connection == 'keep-alive' and version >= 'HTTP/1.1':
+            request.keep_alive = True
 
         func = getattr(self, funcname)
         return func(request)
@@ -300,25 +348,66 @@ class HttpServer:
     def do_GET(self, request):
         response = request.response
         path = translate_path(request.path)
-        f = None
         if os.path.isdir(path):
-            #if not path.endswith('/'):
-            #    return self.redirect(request, path + '/')
-            #    path = path + '/'
+            if not request.path.endswith('/'):
+                return self.redirect(request, request.path + '/')
+            found = False
             for index in ("index.html", "index.htm"):
                 index = os.path.join(path, index)
                 if os.path.exists(index):
                     path = index
+                    found = True
                     break
-            else:
-                msg = 'Directory listing not supported yet.'
-                return self.error(request, 501, msg)
+            if not found:
+                return self.list_directory(request, path)
 
         if not os.path.exists(path):
             msg = 'File not found: %s' % path
             return self.error(request, 404, msg)
 
         return self.sendfile(request, path)
+
+    def list_directory(self, request, path):
+        try:
+            paths = os.listdir(path)
+        except os.error:
+            msg = 'No permission to list directory.'
+            return self.error(request, 404, msg)
+
+        paths.sort(key=lambda a: a.lower())
+
+        displaypath = html_escape(url_unquote(request.path))
+        #charset = sys.getfilesystemencoding()
+        charset = 'utf-8'
+        title = 'Directory listing for %s' % displaypath
+        items = []
+        item_fmt = '<li><a href="%s">%s</a></li>'
+
+        for name in paths:
+            fullname = os.path.join(path, name)
+            displayname = linkname = name
+
+            # Append / for directories or @ for symbolic links
+            if os.path.isdir(fullname):
+                displayname = name + "/"
+                linkname = name + "/"
+
+            if os.path.islink(fullname):
+                # Note: a link to a directory displays with @ and links with /
+                displayname = name + "@"
+
+            item = item_fmt % (url_unquote(linkname), html_escape(displayname))
+            items.append(item)
+
+        items = '\n'.join(items)
+        output = DIRECTORY_LISTING % locals()
+
+        response = request.response
+        response.code = 200
+        response.message = 'OK'
+        response.content_type = "text/html; charset=%s" % charset
+        response.body = output
+        return
 
     def sendfile(self, request, path):
         response = request.response

@@ -27,6 +27,25 @@ DEFAULT_ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
 
 DEFAULT_SERVER_RESPONSE = 'Python Parallel Web Server v0.1'
 
+DIRECTORY_LISTING = """\
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+        "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type"
+              content="text/html; charset=%(charset)s" />
+        <title>%(title)s</title>
+    </head>
+    <body>
+        <h1>%(title)s</h1>
+        <hr/>
+        <ul>
+            %(items)s
+        </ul>
+        <hr/>
+    </body>
+</html>"""
+
 RESPONSES = {
     100: ('Continue', 'Request received, please continue'),
     101: ('Switching Protocols',
