@@ -1980,7 +1980,8 @@ void
 PyMem_Free(void *p)
 {
     Px_RETURN_VOID(_PxMem_Free(p))
-    Py_GUARD_MEM(p);
+    if (p)
+        Py_GUARD_MEM(p);
     PyMem_FREE(p);
 }
 
