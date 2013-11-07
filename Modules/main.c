@@ -479,7 +479,7 @@ Py_Main(int argc, wchar_t **argv)
         return usage(0, argv[0]);
 
     if (version) {
-        fprintf(stderr, "Python %s\n", PY_VERSION);
+        fprintf(stderr, "PyParallel %s\n", PY_VERSION);
         return 0;
     }
 
@@ -654,7 +654,7 @@ Py_Main(int argc, wchar_t **argv)
     if (!Py_QuietFlag && (Py_VerboseFlag ||
                         (command == NULL && filename == NULL &&
                          module == NULL && stdin_is_interactive))) {
-        fprintf(stderr, "Python %s on %s\n",
+        fprintf(stderr, "PyParallel %s on %s\n",
             Py_GetVersion(), Py_GetPlatform());
         if (!Py_NoSiteFlag)
             fprintf(stderr, "%s\n", COPYRIGHT);
