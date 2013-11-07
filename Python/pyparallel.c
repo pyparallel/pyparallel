@@ -198,7 +198,7 @@ get_main_thread_state(void)
     tstate = (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
     if (!tstate)
         tstate = TSTATE;
-    assert(tstate);
+    //assert(tstate);
     return tstate;
 }
 
@@ -2969,7 +2969,7 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     Context *c;
     PxState *px;
 
-    assert(!TSTATE);
+    //assert(!TSTATE);
     TSTATE = tstate;
 
     px = (PxState *)malloc(sizeof(PxState));
@@ -3133,7 +3133,8 @@ _PyParallel_DeletingInterpreterState(PyInterpreterState *interp)
 void
 _PyParallel_InitializedThreadState(PyThreadState *pstate)
 {
-
+    //if (Py_MainThreadId != _Py_get_current_thread_id())
+    //    PyEval_RestoreThread(pstate);
 }
 
 
@@ -3723,24 +3724,25 @@ _PyParallel_ClearMainThreadId(void)
     Py_MainThreadId = 0;
     _Py_lfence();
     _Py_clflush(&Py_MainThreadId);
+    //TSTATE = NULL;
 }
 
 void
 _PyParallel_CreatedGIL(void)
 {
-    _PyParallel_ClearMainThreadId();
+    //_PyParallel_ClearMainThreadId();
 }
 
 void
 _PyParallel_AboutToDropGIL(void)
 {
-    _PyParallel_ClearMainThreadId();
+    //_PyParallel_ClearMainThreadId();
 }
 
 void
 _PyParallel_DestroyedGIL(void)
 {
-    _PyParallel_ClearMainThreadId();
+    //_PyParallel_ClearMainThreadId();
 }
 
 void
@@ -3749,6 +3751,7 @@ _PyParallel_JustAcquiredGIL(void)
     char buf[128], *fmt;
 
     _Py_lfence();
+    /*
     if (Py_MainThreadId != 0) {
         fmt = "_PyParallel_JustAcquiredGIL: invariant failed: "   \
               "expected Py_MainThreadId to have value 0, actual " \
@@ -3756,6 +3759,7 @@ _PyParallel_JustAcquiredGIL(void)
         (void)snprintf(buf, sizeof(buf), fmt, Py_MainThreadId);
         Py_FatalError(buf);
     }
+    */
 
     if (Py_MainProcessId == -1)
         Py_FatalError("_PyParallel_JustAcquiredGIL: Py_MainProcessId == -1");
@@ -3764,6 +3768,8 @@ _PyParallel_JustAcquiredGIL(void)
     Py_MainThreadId = _Py_get_current_thread_id();
     _Py_lfence();
     _Py_clflush(&Py_MainThreadId);
+    //TSTATE = \
+    //    (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
 }
 
 void
