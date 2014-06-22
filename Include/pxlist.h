@@ -1,22 +1,62 @@
 #ifndef PXLIST_H
 #define PXLIST_H
 
+#include "pyport.h"
+#include "pyparallel.h"
+#include "object.h"
+
+#ifdef _WIN32
+
+#include <Windows.h>
+
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+
+#define USE_MACOSX_SLIST
+
+#include <libkern/OSAtomic.h>
+
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #ifdef WITH_PARALLEL
 
+#undef E2I
+
+#define E2I(p) ((PxListItem  *)p)
+#define I2O(i) (_Py_CAST_BACK(i, PyObject *, PyObject, slist_entry))
+#define I2C(i) (_Py_CAST_BACK(i, Context *, Context, slist_entry))
+#define C2E(i) (_Py_CAST_FWD(i, PxListEntry *, Context, slist_entry))
+#define C2I(i) (_Py_CAST_FWD(i, PxListItem *, Context, slist_entry))
+
 #ifdef _WIN32
-	typedef HANDLE			        PxHeapHandle;
-#else
-	typedef struct PxHeapHandle     PxHeapHandle;
+        typedef SLIST_HEADER            PxListHead;
+        typedef SLIST_ENTRY             PxListEntry;
+        typedef HANDLE                  PxHeapHandle;
+#elif defined(USE_MACOSX_SLIST)
+        typedef OSFifoQueueHead         PxListHead;
+        typedef void *                  PxListEntry;
+        typedef struct PxHeapHandle     PxHeapHandle;
 #endif
 
-typedef struct PxListHead       PxListHead;
-typedef struct PxListEntry      PxListEntry;
-typedef struct PxListItem       PxListItem;
-typedef struct PxHeapHandle     PxHeapHandle;
+#define PxListItem_SIZE 64
+
+/* Fill up 64-bytes. */
+typedef struct _PxListItem {
+    __declspec(align(16)) PxListEntry slist_entry;
+    __declspec(align(8))  __int64  when;
+    __declspec(align(8))  void    *from;
+    __declspec(align(8))  void    *p1;
+    __declspec(align(8))  void    *p2;
+    __declspec(align(8))  void    *p3;
+    __declspec(align(8))  void    *p4;
+} _PxListItem;
+
+typedef struct _PxListItem PxListItem;
 
 PxListItem *    PxList_Next(PxListItem *item);
 
@@ -64,9 +104,6 @@ PxListItem *    PxList_Push(PxListHead *head, PxListItem *item);
 
 void            PxList_PushObject(PxListHead *head, PyObject *op);
 
-/*
-#define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2E((o)))))
-*/
 #define PxList_PushContext(h, c) (PxList_Push((PxListHead *)(h), C2I((c))))
 
 PxListItem *    PxList_Transfer(PxListHead *head, PxListItem *item);

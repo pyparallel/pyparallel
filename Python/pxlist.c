@@ -1,56 +1,31 @@
+#include "pxlist.h"
 
-#include <pxlist.h>
+#include "pymacro.h"       /* _Py_SIZE_ROUND_UP */
+#include "unicodeobject.h" /* Py_UNICODE */
+#include "pyerrors.h"      /* PyErr_SetFromWindowsErr */
+
+#include <assert.h>
+
+#undef I2E
 
 #ifdef _WIN32
 
-#include <Windows.h>
 #pragma comment(lib, "ws2_32.lib")
+
+#define I2E(p) ((PxListEntry *)p)
+#define O2E(o) ((PxListEntry *)(&(((PyObject *)(o))->slist_entry)))
 
 #endif /* _WIN32 */
 
-#ifdef WITH_PARALLEL
-
-#undef E2I
-#undef I2E
+#ifdef USE_MACOSX_SLIST
 
 #define E2I(p) ((PxListItem  *)p)
 #define I2E(p) ((PxListEntry *)p)
 #define O2E(o) ((PxListEntry *)(&(((PyObject *)(o))->slist_entry)))
-#define I2O(i) (_Py_CAST_BACK(i, PyObject *, PyObject, slist_entry))
-#define I2C(i) (_Py_CAST_BACK(i, Context *, Context, slist_entry))
-#define C2E(i) (_Py_CAST_FWD(i, PxListEntry *, Context, slist_entry))
-#define C2I(i) (_Py_CAST_FWD(i, PxListItem *, Context, slist_entry))
 
-typedef SLIST_HEADER            PxListHead;
-typedef SLIST_ENTRY             PxListEntry;
+#endif /* USE_MACOSX_SLIST */
 
-#define PxListItem_SIZE 64
-
-/* Fill up 64-bytes. */
-#ifndef _WIN64
-typedef struct _PxListItem32 {
-    __declspec(align(16)) PxListEntry slist_entry;
-    __declspec(align(8))  __int64  when;
-    __declspec(align(8))  void    *from;
-    __declspec(align(8))  void    *p1;
-    __declspec(align(8))  void    *p2;
-    __declspec(align(8))  void    *p3;
-    __declspec(align(8))  void    *p4;
-} PxListItem32;
-typedef struct _PxListItem32 PxListItem;
-
-#else
-typedef struct _PxListItem64 {
-    PxListEntry   slist_entry; /* aligned to 16-bytes */
-    unsigned __int64 when;
-    void         *from;
-    void         *p1;
-    void         *p2;
-    void         *p3;
-    void         *p4;
-} PxListItem64;
-typedef struct _PxListItem64 PxListItem;
-#endif
+#ifdef WITH_PARALLEL
 
 C_ASSERT(sizeof(PxListItem) == PxListItem_SIZE);
 
@@ -150,7 +125,7 @@ PxList_FreeListItemAfterNext(PxListItem *item)
 PxListItem *
 PxList_SeverFromNext(PxListItem *item)
 {
-    register PxListItem *next = E2I(item->slist_entry.Next);
+    PxListItem *next = E2I(item->slist_entry.Next);
     item->slist_entry.Next = NULL;
     return next;
 }
@@ -249,7 +224,7 @@ PxList_PushObject(PxListHead *head, PyObject *op)
 PxListItem *
 PxList_Transfer(PxListHead *head, PxListItem *item)
 {
-    register PxListItem *next = E2I(item->slist_entry.Next);
+    PxListItem *next = E2I(item->slist_entry.Next);
     item->slist_entry.Next = NULL;
     PxList_Push(head, item);
     return next;
