@@ -21,8 +21,8 @@
 #define C2E(i) (_Py_CAST_FWD(i, PxListEntry *, Context, slist_entry))
 #define C2I(i) (_Py_CAST_FWD(i, PxListItem *, Context, slist_entry))
 
-#define PxListHead  SLIST_HEADER
-#define PxListEntry SLIST_ENTRY
+typedef SLIST_HEADER            PxListHead;
+typedef SLIST_ENTRY             PxListEntry;
 
 #define PxListItem_SIZE 64
 
@@ -54,14 +54,12 @@ typedef struct _PxListItem64 PxListItem;
 
 C_ASSERT(sizeof(PxListItem) == PxListItem_SIZE);
 
-static __inline
 PxListItem *
 PxList_Next(PxListItem *item)
 {
     return E2I(item->slist_entry.Next);
 }
 
-static __inline
 void *
 PxList_Malloc(Py_ssize_t size)
 {
@@ -72,7 +70,6 @@ PxList_Malloc(Py_ssize_t size)
     return p;
 }
 
-static __inline
 void *
 PxList_MallocFromHeap(HANDLE heap_handle, Py_ssize_t size)
 {
@@ -84,7 +81,6 @@ PxList_MallocFromHeap(HANDLE heap_handle, Py_ssize_t size)
     return p;
 }
 
-static __inline
 void
 PxList_Free(void *p)
 {
@@ -93,7 +89,6 @@ PxList_Free(void *p)
     _aligned_free(p);
 }
 
-static __inline
 PxListHead *
 PxList_New(void)
 {
@@ -105,7 +100,6 @@ PxList_New(void)
     return l;
 }
 
-static __inline
 PxListHead *
 PxList_NewFromHeap(HANDLE heap_handle)
 {
@@ -118,21 +112,18 @@ PxList_NewFromHeap(HANDLE heap_handle)
     return l;
 }
 
-static __inline
 void
 PxList_TimestampItem(PxListItem *item)
 {
     item->when = _Py_rdtsc();
 }
 
-static __inline
 PxListItem *
 PxList_NewItem(void)
 {
     return E2I(PxList_Malloc(sizeof(PxListItem)));
 }
 
-static __inline
 void
 PxList_FreeListHead(PxListHead *head)
 {
@@ -140,7 +131,6 @@ PxList_FreeListHead(PxListHead *head)
     PxList_Free(head);
 }
 
-static __inline
 void
 PxList_FreeListItem(PxListItem *item)
 {
@@ -149,7 +139,6 @@ PxList_FreeListItem(PxListItem *item)
     PxList_Free(item);
 }
 
-static __inline
 PxListItem *
 PxList_FreeListItemAfterNext(PxListItem *item)
 {
@@ -158,7 +147,6 @@ PxList_FreeListItemAfterNext(PxListItem *item)
     return next;
 }
 
-static __inline
 PxListItem *
 PxList_SeverFromNext(PxListItem *item)
 {
@@ -167,14 +155,12 @@ PxList_SeverFromNext(PxListItem *item)
     return next;
 }
 
-static __inline
 unsigned short
 PxList_QueryDepth(PxListHead *head)
 {
     return QueryDepthSList(head);
 }
 
-static __inline
 PxListItem *
 PxList_FlushWithDepthHint(PxListHead *head,
                           unsigned short *depth_hint)
@@ -184,14 +170,12 @@ PxList_FlushWithDepthHint(PxListHead *head,
     return E2I(InterlockedFlushSList(head));
 }
 
-static __inline
 PxListItem *
 PxList_Flush(PxListHead *head)
 {
     return E2I(InterlockedFlushSList(head));
 }
 
-static __inline
 void
 PxList_Clear(PxListHead *head)
 {
@@ -212,7 +196,6 @@ PxList_Clear(PxListHead *head)
     return;
 }
 
-static __inline
 void
 PxList_FreeAllListItems(PxListItem *start)
 {
@@ -239,40 +222,30 @@ PxList_CountItems(PxListItem *start)
     return i;
 }
 
-static __inline
 void
 PxList_Delete(PxListHead *head)
 {
     PxList_Free(head);
 }
 
-static __inline
 void
 PxList_FreeList(PxListHead *head)
 {
     PxList_Free(head);
 }
 
-static __inline
 PxListItem *
 PxList_Push(PxListHead *head, PxListItem *item)
 {
     return E2I(InterlockedPushEntrySList(head, I2E(&item->slist_entry)));
 }
 
-static __inline
 void
 PxList_PushObject(PxListHead *head, PyObject *op)
 {
     InterlockedPushEntrySList(head, O2E(op));
 }
 
-/*
-#define PxList_PushObject(h, o) (I2O(PxList_Push((PxListHead *)(h), O2E((o)))))
-*/
-#define PxList_PushContext(h, c) (PxList_Push((PxListHead *)(h), C2I((c))))
-
-static __inline
 PxListItem *
 PxList_Transfer(PxListHead *head, PxListItem *item)
 {
@@ -281,10 +254,8 @@ PxList_Transfer(PxListHead *head, PxListItem *item)
     PxList_Push(head, item);
     return next;
 }
-#define PxList_TransferObject(h, o) (I2O(PxList_Transfer(h, O2I(o))))
 
 #if (Py_NTDDI >= 0x06020000)
-static __inline
 PxListItem *
 PxList_PushList(PxListHead *head,
                 PxListItem *start,
@@ -293,9 +264,8 @@ PxList_PushList(PxListHead *head,
 {
     return E2I(InterlockedPushListSList(head, I2E(start), I2E(end), count));
 }
-#endif
+#endif /* Py_NTDDI */
 
-static __inline
 PxListItem *
 PxList_Pop(PxListHead *head)
 {
@@ -303,12 +273,8 @@ PxList_Pop(PxListHead *head)
 }
 #define PxList_PopObject(h) (I2O(PxList_Pop(h)))
 
-#else
+#else  /* WITH_PARALLEL */
 
 #endif /* WITH_PARALLEL */
-#ifdef __cplusplus
-}
-#endif
-#endif
 
 /* vim:set ts=8 sw=4 sts=4 tw=78 et: */
