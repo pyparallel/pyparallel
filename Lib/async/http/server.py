@@ -339,7 +339,7 @@ class HttpServer:
 
         if h.connection == 'close':
             request.keep_alive = False
-        elif h.connection == 'keep-alive' and version >= 'HTTP/1.1':
+        elif h.connection == 'keep-alive' or version >= 'HTTP/1.1':
             request.keep_alive = True
 
         func = getattr(self, funcname)
