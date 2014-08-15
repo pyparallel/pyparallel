@@ -2351,7 +2351,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
     if (Py_PXCTX) {                                                         \
         PyErr_SetString(PyExc_ImportError,                                  \
                         "import not permitted within parallel context");    \
-        goto error;                                                         \
+        break;                                                              \
     }                                                                       \
 } while (0)
 #else
