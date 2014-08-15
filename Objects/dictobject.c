@@ -926,12 +926,14 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
     PyObject **oldvalues;
     Py_ssize_t i, oldsize;
 
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Px_ISPY(mp)) {
         PyErr_SetString(PyExc_RuntimeError,
                         "parallel thread attempted to "
                         "resize a main thread dict");
         return -1;
     }
+#endif
 
 /* Find the smallest table size > minused. */
     for (newsize = PyDict_MINSIZE_COMBINED;
@@ -1297,11 +1299,13 @@ PyDict_Clear(PyObject *op)
     PyObject **oldvalues;
     Py_ssize_t i, n;
 
-    if (!PyDict_Check(op))
-        return;
-
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Px_ISPY(op))
         Py_FatalError("parallel thread attempted to clear a main thread dict");
+#endif
+
+    if (!PyDict_Check(op))
+        return;
 
     mp = ((PyDictObject *)op);
     oldkeys = mp->ma_keys;
@@ -2323,12 +2327,14 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
 static PyObject *
 dict_clear(register PyDictObject *mp)
 {
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Py_ISPY(mp)) {
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to clear "
                         "a main thread dict");
         return NULL;
     }
+#endif
     PyDict_Clear((PyObject *)mp);
     Py_RETURN_NONE;
 }

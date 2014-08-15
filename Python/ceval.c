@@ -1365,7 +1365,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         }
 
         /* Extract opcode and argument */
+#ifdef WITH_PARALLEL
     fast_next_opcode_notracing:
+#endif
         opcode = NEXTOP();
         oparg = 0;   /* allows oparg to be stored in a register because
             it doesn't have to be remembered across a full loop */

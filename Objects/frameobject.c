@@ -638,9 +638,13 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
         assert(builtins != NULL);
         Py_INCREF(builtins);
     }
+#ifndef WITH_PARALLEL
+    if (code->co_zombieframe != NULL) {
+#else
     if (!Py_PXCTX && code->co_zombieframe != NULL &&
         !_PyParallel_ExecutingCallbackFromMainThread()) {
         assert(!_Px_TEST(code->co_zombieframe));
+#endif
         f = code->co_zombieframe;
         code->co_zombieframe = NULL;
         _Py_NewReference((PyObject *)f);

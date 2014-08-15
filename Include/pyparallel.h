@@ -366,24 +366,25 @@ _px_bitpos_uint32(unsigned int f)
 #else /* WITH_PARALLEL */
 #define Py_GUARD
 #define Px_GUARD
-#define Py_GUARD_OBJECT_MUTATION(o)
-#define Px_GUARD_OBJECT_MUTATION(o)
-#define Py_GUARD_OBJECT_ACCESS(o)
-#define Px_GUARD_OBJECT_ACCESS(o)
+#define Py_GUARD_OBJ(o)
+#define Py_GUARD_MEM(o)
+#define PyPx_GUARD_OBJ(o)
+#define PyPx_GUARD_MEM(o)
 #define Px_VOID
 #define Px_RETURN(a)
 #define Px_RETURN_VOID(a)
 #define Px_RETURN_NULL
-#define Py_GUARD_OP(op)
-#define Px_GUARD_OP(op)
 #define Px_VOID_OP(op)
 #define Px_RETURN_OP(op, arg)
 #define Px_RETURN_VOID_OP(op, arg)
 #define Px_RETURN_NULL_OP(op)
 #define Py_PXCTX 0
 #define Py_CTX 0
-#define PyPx_GUARD_OBJECT(o)
-#define PyPx_GUARD_MEM(o)
+#define Py_ISPX(o) 0
+#define Py_ISPY(o) 1
+
+#define _PyParallel_EnableTLSHeap()
+#define _PyParallel_DisableTLSHeap()
 
 #endif
 

@@ -531,7 +531,7 @@ untrack_dicts(PyGC_Head *head)
 {
     PyGC_Head *next, *gc;
     Py_GUARD
-    next, gc = head->gc.gc_next;
+    gc = head->gc.gc_next;
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
         next = gc->gc.gc_next;

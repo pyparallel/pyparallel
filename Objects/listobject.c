@@ -39,10 +39,12 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
         return 0;
     }
 
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Py_ISPY(self)) {
         PyErr_SetString(PyExc_AssignmentError, "list_resize from px thread");
         return -1;
     }
+#endif
 
     /* This over-allocates proportional to the list size, making room
      * for additional growth.  The over-allocation is mild, but is
@@ -617,12 +619,14 @@ list_ass_slice(PyListObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     Py_ssize_t k;
     size_t s;
     int result = -1;            /* guilty until proved innocent */
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Px_ISPY(a)) {
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to assign to a slice "
                         "of a main thread list");
         return result;
     }
+#endif
 #define b ((PyListObject *)v)
     if (v == NULL)
         n = 0;
@@ -2523,18 +2527,14 @@ list_subscript(PyListObject* self, PyObject* item)
 static int
 list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
 {
-    /* Although Px_CHECK_PROTECTION will be called again from various other
-     * methods we might call from this function (e.g. list_ass_slice()), it
-     * simplifies the code greatly if we do the check up-front (even though
-     * it might be checked again a short time later by one of the other
-     * methods).
-     */
+#ifdef WITH_PARALLEL
     if (Py_PXCTX && Px_ISPY(self)) {
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to "
                         "assign to main thread list");
         return -1;
     }
+#endif
 
     if (PyIndex_Check(item)) {
         Py_ssize_t i = PyNumber_AsSsize_t(item, PyExc_IndexError);
