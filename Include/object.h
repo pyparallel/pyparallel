@@ -818,6 +818,10 @@ PyAPI_FUNC(void) dec_count(PyTypeObject *);
 #define _Py_COUNT_ALLOCS_COMMA
 #endif /* COUNT_ALLOCS */
 
+#ifdef WITH_PARALLEL
+PyAPI_FUNC(void) _Px_Dealloc(PyObject *);
+#endif
+
 #ifdef Py_TRACE_REFS
 /* Py_TRACE_REFS is such major surgery that we call external routines. */
 PyAPI_FUNC(void) _Py_NewReference(PyObject *);
@@ -857,9 +861,6 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
 
 #ifdef Py_LIMITED_API
 PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
-#ifdef WITH_PARALLEL
-PyAPI_FUNC(void) _Px_Dealloc(PyObject *);
-#endif
 #else
 #ifndef WITH_PARALLEL
 #define _Py_Dealloc(op) (                           \
