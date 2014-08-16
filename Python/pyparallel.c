@@ -6458,9 +6458,9 @@ do_send:
 try_synchronous_send:
     s->send_id++;
 
-    /*if (s->send_id % 10000 == 0)*/
+    /*if (s->send_id % 10000 == 0)
         printf("\ntrying sync send for client %d/%d\n",
-               s->child_id, s->sock_fd);
+               s->child_id, s->sock_fd);*/
 
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
@@ -6506,9 +6506,11 @@ do_async_send:
     ol = &sbuf->ol;
     assert(s->ol == ol);
 
-    /*if (s->send_id % 10000 == 0)*/
+    /*
+        if (s->send_id % 10000 == 0)
         printf("\ndoing async send for client %d/%d\n",
                s->child_id, s->sock_fd);
+         */
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -6777,9 +6779,9 @@ do_recv:
 try_synchronous_recv:
     s->recv_id++;
 
-    /*if (s->recv_id % 10000 == 0)*/
+    /*if (s->recv_id % 10000 == 0)
         printf("\ntrying sync recv for client %d/%d\n",
-               s->child_id, s->sock_fd);
+               s->child_id, s->sock_fd);*/
 
     /*
      * Again, this next chunk of code reuses the same pattern employed by
@@ -6831,9 +6833,9 @@ do_async_recv:
     assert(rbuf);
     assert(w);
 
-    /*if (s->recv_id % 10000 == 0)*/
+    /*if (s->recv_id % 10000 == 0)
         printf("\ntrying sync recv for client %d/%d\n",
-               s->child_id, s->sock_fd);
+           s->child_id, s->sock_fd);*/
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -7900,6 +7902,7 @@ PxServerSocket_ClientClosed(PxSocket *o)
     }
 
     /* temp stats for chargen */
+    /*
     {
         size_t lines, lps;
         double Bs, KBs, MBs;
@@ -7924,6 +7927,7 @@ PxServerSocket_ClientClosed(PxSocket *o)
                    o->connect_time, Bs, KBs, MBs, lines, lps);
         }
     }
+    */
 
     PxSocket_CallbackComplete(x);
 
@@ -8449,7 +8453,7 @@ PxSocketServer_AcceptCallback(
 start_io_loop:
     InterlockedIncrement(&(s->parent->nchildren));
     s->child_id = InterlockedIncrement(&(s->parent->next_child_id));
-    printf("child %d/%d connected\n", s->child_id, s->sock_fd);
+    /*printf("child %d/%d connected\n", s->child_id, s->sock_fd);*/
     PxSocket_IOLoop(s);
 
 end:
