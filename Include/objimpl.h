@@ -141,6 +141,8 @@ PyAPI_FUNC(void) _PyMem_DebugFree(void *p);
 #define PyObject_DEL            PyObject_FREE
 
 #ifdef WITH_PARALLEL
+PyAPI_FUNC(int) _PyMem_InRange(void *p);
+
 PyAPI_FUNC(void *) _PxMem_Malloc(size_t n);
 PyAPI_FUNC(void *) _PxMem_Realloc(void *p, size_t n);
 PyAPI_FUNC(void)   _PxMem_Free(void *p);
