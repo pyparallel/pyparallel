@@ -29,14 +29,14 @@ __declspec(thread) HANDLE heap_override;
 __declspec(thread) void *last_heap_override_malloc_addr;
 __declspec(thread) void *last_context_heap_malloc_addr;
 
-static __inline
+static
 char
 _PyParallel_IsHeapOverrideActive(void)
 {
     return (heap_override != NULL);
 }
 
-static __inline
+static
 void
 _PyParallel_SetHeapOverride(HANDLE heap_handle)
 {
@@ -44,7 +44,7 @@ _PyParallel_SetHeapOverride(HANDLE heap_handle)
     heap_override = heap_handle;
 }
 
-static __inline
+static
 HANDLE
 _PyParallel_GetHeapOverride(void)
 {
@@ -52,7 +52,7 @@ _PyParallel_GetHeapOverride(void)
 }
 
 
-static __inline
+static
 void
 _PyParallel_RemoveHeapOverride(void)
 {
@@ -251,7 +251,7 @@ get_main_thread_state_old(void)
 }
 
 
-static __inline
+static
 PxState *
 PXSTATE(void)
 {
@@ -396,7 +396,7 @@ rollback:
 #define TLS_BUF_SPINCOUNT 8
 
 /* 0 on failure, 1 on success */
-static __inline
+static
 int
 PyObject2WSABUF(PyObject *o, WSABUF *w)
 {
@@ -5809,7 +5809,7 @@ Px_DecRef(PyObject *o)
 }
 
 /* socket */
-static __inline
+static
 int
 _MAYBE_CLOSE(Context *c)
 {
@@ -5865,7 +5865,7 @@ PxSocket_GetRecvCallback(PxSocket *s)
 }
 
 #undef MAYBE_DO_SEND_FAILED
-static __inline
+static
 int
 _MAYBE_DO_SEND_FAILED(PxSocket *s)
 {
@@ -5893,7 +5893,7 @@ end:
 }
 
 /* 0 = failure, 1 = success */
-static __inline
+static
 int
 PxSocket_UpdateConnectTime(PxSocket *s)
 {
