@@ -8123,8 +8123,6 @@ PxSocket_InitInitialBytes(PxSocket *s)
     } else {
         s->initial_bytes_callable = NULL;
         if (!PxSocket_IS_SERVERCLIENT(s)) {
-            WSABUF w;
-
             assert(!s->initial_bytes.buf);
 
             if (!PyObject2WSABUF(o, &s->initial_bytes)) {
@@ -8469,7 +8467,6 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
         bufsize = (DWORD)(s->recvbuf_size - (size * 2));
 
     for (o = s->first; o; o = o->next) {
-        RBUF *rbuf;
         o->io_op = PxSocket_IO_ACCEPT;
         x = o->ctx;
         assert(o->rbuf->w.len == o->recvbuf_size);
