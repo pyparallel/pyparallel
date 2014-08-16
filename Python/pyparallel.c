@@ -2701,10 +2701,8 @@ done:
 void *
 _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
 {
-    Context *c;
     PxState *px;
 
-    //assert(!TSTATE);
     TSTATE = tstate;
 
     px = (PxState *)malloc(sizeof(PxState));
