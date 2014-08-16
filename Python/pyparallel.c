@@ -2735,7 +2735,7 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->finished_sockets)
         goto free_finished;
 
-    px->io_free  = PxList_New();
+    px->io_free = PxList_New();
     if (!px->io_free)
         goto free_finished_sockets;
 
@@ -2762,9 +2762,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     px->ctx_ttl = 1;
 
     goto done;
-
-free_wakeup:
-    CloseHandle(px->wakeup);
 
 free_io_wakeup:
     CloseHandle(px->io_free_wakeup);
@@ -2815,7 +2812,6 @@ PyObject* _async_run(PyObject *, PyObject *);
 void
 _PyParallel_DeletingThreadState(PyThreadState *tstate)
 {
-    PyObject *result;
     PxState *px = (PxState *)tstate->px;
 
     assert(px);
@@ -3398,22 +3394,13 @@ _PyParallel_Init(void)
 void
 _PyParallel_Finalize(void)
 {
-    PyObject *result;
     PxState *px = PXSTATE();
 
     assert(px);
 
     if (px->contexts_active > 0) {
-        if (Py_VerboseFlag)
-            PySys_FormatStdout("_PyParallel_DeletingThreadState: "
-                               "%d contexts still active, calling "
-                               "_async_run() manually", px->contexts_active);
-        /*
-        result = _async_run(NULL, NULL);
-        if (result != Py_None)
-            PySys_FormatStderr("_PyParallel_DeletingThreadState: "
-                               "_async_run() failed!");
-        */
+        printf("_PyParallel_Finalize(): px->contexts_active: %d\n",
+               px->contexts_active);
     }
 
     _PyParallel_Finalized = 1;
@@ -3453,15 +3440,14 @@ _PyParallel_JustAcquiredGIL(void)
     char buf[128], *fmt;
 
     _Py_lfence();
-    /*
+
     if (Py_MainThreadId != 0) {
         fmt = "_PyParallel_JustAcquiredGIL: invariant failed: "   \
               "expected Py_MainThreadId to have value 0, actual " \
               "value: %d";
         (void)snprintf(buf, sizeof(buf), fmt, Py_MainThreadId);
-        Py_FatalError(buf);
+        /*Py_FatalError(buf);*/
     }
-    */
 
     if (Py_MainProcessId == -1)
         Py_FatalError("_PyParallel_JustAcquiredGIL: Py_MainProcessId == -1");
@@ -5886,12 +5872,11 @@ PxSocket_IOLoop(PxSocket *s)
     PyObject *func, *args, *result;
     PyBytesObject *bytes;
     int next_opcode = 0;
-    int op;
     char *syscall;
     TLS *t = &tls;
     Context *c = ctx;
     char *callback;
-    char *f, *buf = NULL;
+    char *buf = NULL;
     DWORD err, wsa_error, nbytes;
     SOCKET fd;
     HANDLE h;
@@ -5910,7 +5895,7 @@ PxSocket_IOLoop(PxSocket *s)
     fd = s->sock_fd;
 
     assert(s->ctx == c);
-    assert(c->io_obj == s);
+    assert(c->io_obj == (PyObject *)s);
 
     PxSocket_UpdateConnectTime(s);
 
@@ -5992,7 +5977,6 @@ maybe_shutdown_send_or_recv:
         goto maybe_do_connection_made;
 
     /* server entry point */
-maybe_send_initial_bytes:
     assert(PxSocket_IS_SERVERCLIENT(s));
     assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES));
 
@@ -6327,9 +6311,6 @@ send_failed:
 
     goto handle_error;
 
-try_extract_something_sendable_from_object:
-
-
 close_:
     assert(
         (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
@@ -6410,7 +6391,7 @@ try_recv:
         assert(s->recv_nbytes == 0);
         assert(recv_nbytes == 0);
         assert(s->recv_id == 0);
-        recv_nbytes = c->overlapped.InternalHigh;
+        recv_nbytes = (DWORD)c->overlapped.InternalHigh;
         if (recv_nbytes == 0)
             goto connection_closed;
         goto process_data_received;
@@ -6559,7 +6540,7 @@ overlapped_recv_callback:
     rbuf = NULL;
 
     assert(recv_nbytes == 0);
-    recv_nbytes = s->ol->InternalHigh;
+    recv_nbytes = (DWORD)s->ol->InternalHigh;
     if (recv_nbytes == 0)
         goto connection_closed;
 
@@ -6597,7 +6578,7 @@ do_data_received_callback:
     rbuf = s->rbuf;
     assert(!rbuf->snapshot);
 
-    if (recv_nbytes < s->recvbuf_size)
+    if (recv_nbytes < (DWORD)s->recvbuf_size)
         rbuf->ob_sval[recv_nbytes] = 0;
 
     if (PxSocket_LINES_MODE_ACTIVE(s))
