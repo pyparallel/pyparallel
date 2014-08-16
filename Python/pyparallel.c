@@ -2717,12 +2717,6 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->errors)
         goto free_px;
 
-    /*
-    px->socket_errors = PxList_New();
-    if (!px->socket_errors)
-        goto free_errors;
-    */
-
     px->completed_callbacks = PxList_New();
     if (!px->completed_callbacks)
         goto free_errors;
@@ -2769,28 +2763,7 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     tstate->is_parallel_thread = 0;
     px->ctx_ttl = 1;
 
-
-    /*
-    c = (Context *)malloc(sizeof(Context));
-    if (!c)
-        goto free_wakeup;
-    memset((void *)c, 0, sizeof(Context));
-
-    c->tstate = tstate;
-    c->px = px;
-
-    px->iob_ctx = c;
-
-    if (!_PxState_AllocIOBufs(px, c, PyAsync_NUM_BUFS, PyAsync_IO_BUFSIZE))
-        goto free_context;
-     */
-
     goto done;
-
-    /*
-free_context:
-    free(c);
-    */
 
 free_wakeup:
     CloseHandle(px->wakeup);
@@ -2818,11 +2791,6 @@ free_completed_errbacks:
 
 free_completed_callbacks:
     PxList_FreeListHead(px->completed_callbacks);
-
-    /*
-free_socket_errors:
-    PxList_FreeListHead(px->socket_errors);
-    */
 
 free_errors:
     PxList_FreeListHead(px->errors);
@@ -7032,24 +7000,6 @@ new_pxsocketbuf_from_unicode(Context *c, PyUnicodeObject *o)
     return sbuf;
 }
 
-/* 0 = failure, 1 = success */
-int
-PxSocket_SetProtocolType(PxSocket *s, PyObject *protocol_type)
-{
-    if (!protocol_type) {
-        PyErr_SetString(PyExc_ValueError, "missing protocol value");
-        return 0;
-    }
-
-    if (!PyType_CheckExact(protocol_type)) {
-        PyErr_SetString(PyExc_ValueError, "protocol must be a class");
-        return 0;
-    }
-
-    s->protocol_type = protocol_type;
-    return PxSocket_InitProtocol(s);
-}
-
 void
 PxSocket_CallbackComplete(Context *c)
 {
@@ -8115,6 +8065,25 @@ PxSocket_InitProtocol(PxSocket *s)
     }
 
     return 1;
+}
+
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_SetProtocolType(PxSocket *s, PyObject *protocol_type)
+{
+    if (!protocol_type) {
+        PyErr_SetString(PyExc_ValueError, "missing protocol value");
+        return 0;
+    }
+
+    if (!PyType_CheckExact(protocol_type)) {
+        PyErr_SetString(PyExc_ValueError, "protocol must be a class");
+        return 0;
+    }
+
+    s->protocol_type = protocol_type;
+    return PxSocket_InitProtocol(s);
 }
 
 #define INVALID_INITIAL_BYTES                                           \
