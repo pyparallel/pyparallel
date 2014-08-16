@@ -474,7 +474,9 @@ class HttpServer:
         response.explain = r[1]
 
 def main():
-    server = async.server('10.211.55.3', 8888)
+    import socket
+    ipaddr = socket.gethostbyname(socket.gethostname())
+    server = async.server(ipaddr, 8080)
     async.register(transport=server, protocol=HttpServer)
     async.run()
 
