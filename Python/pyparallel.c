@@ -7654,40 +7654,6 @@ PxSocket_ProcessReceivedData(Context *c)
 
 }
 
-void
-PxSocket_RecvCallback(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-    int op = PxSocket_IO_RECV;
-    const char *syscall = "WSARecvCallback";
-
-    CHECK_SEND_RECV_CALLBACK_INVARIANTS();
-
-    if (c->io_result != NO_ERROR) {
-        PxSocket_HandleError(c, op, syscall, c->io_result);
-        goto maybe_close;
-    }
-
-    PxSocket_ProcessReceivedData(c);
-    if (PyErr_Occurred())
-        goto maybe_close;
-
-    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE) {
-        PxSocket_TryRecv(c);
-        goto end;
-    }
-
-    /*DO_DATA_RECEIVED();*/
-
-    MAYBE_SEND();
-
-maybe_close:
-    MAYBE_CLOSE();
-
-end:
-    return;
-}
-
 PxSocketBuf *
 _try_extract_something_sendable_from_object(
     Context *c,
