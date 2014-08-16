@@ -29,6 +29,50 @@ Py_TLS HANDLE heap_override;
 Py_TLS void *last_heap_override_malloc_addr;
 Py_TLS void *last_context_heap_malloc_addr;
 
+
+Py_TLS static int _PxNewThread = 1;
+
+Py_CACHE_ALIGN
+long Py_MainThreadId  = -1;
+long Py_MainProcessId = -1;
+long Py_ParallelContextsEnabled = -1;
+size_t _PxObjectSignature = -1;
+size_t _PxSocketSignature = -1;
+size_t _PxSocketBufSignature = -1;
+int _PxBlockingCallsThreshold = 20;
+
+int _Py_CtrlCPressed = 0;
+int _Py_InstalledCtrlCHandler = 0;
+
+int _PyParallel_Finalized = 0;
+
+int _PxSocketServer_PreallocatedSockets = 1000;
+int _PxSocket_MaxSyncSendAttempts = 3;
+int _PxSocket_MaxSyncRecvAttempts = 3;
+int _PxSocket_MaxRecvBufSize = 65536;
+
+int _PyTLSHeap_DefaultSize = Px_DEFAULT_TLS_HEAP_SIZE;
+
+int _PxSocket_SendListSize = 30;
+
+volatile int _PxSocket_ActiveHogs = 0;
+volatile int _PxSocket_ActiveIOLoops = 0;
+int _PyParallel_NumCPUs = 0;
+
+static PyObject *PyExc_AsyncError;
+static PyObject *PyExc_ProtectionError;
+static PyObject *PyExc_UnprotectedError;
+static PyObject *PyExc_AssignmentError;
+static PyObject *PyExc_NoWaitersError;
+static PyObject *PyExc_WaitError;
+static PyObject *PyExc_WaitTimeoutError;
+static PyObject *PyExc_AsyncIOBuffersExhaustedError;
+static PyObject *PyExc_PersistenceError;
+
+void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
+void *_PyTLSHeap_Malloc(size_t n, size_t align);
+
+
 static
 char
 _PyParallel_IsHeapOverrideActive(void)
@@ -128,49 +172,6 @@ _PyParallel_DisableTLSHeap(void)
     c->h = t->ctx_heap;
     t->ctx_heap = NULL;
 }
-
-Py_TLS static int _PxNewThread = 1;
-
-Py_CACHE_ALIGN
-long Py_MainThreadId  = -1;
-long Py_MainProcessId = -1;
-long Py_ParallelContextsEnabled = -1;
-size_t _PxObjectSignature = -1;
-size_t _PxSocketSignature = -1;
-size_t _PxSocketBufSignature = -1;
-int _PxBlockingCallsThreshold = 20;
-
-int _Py_CtrlCPressed = 0;
-int _Py_InstalledCtrlCHandler = 0;
-
-int _PyParallel_Finalized = 0;
-
-int _PxSocketServer_PreallocatedSockets = 10;
-int _PxSocket_MaxSyncSendAttempts = 3;
-int _PxSocket_MaxSyncRecvAttempts = 3;
-int _PxSocket_MaxRecvBufSize = 65536;
-
-int _PyTLSHeap_DefaultSize = Px_DEFAULT_TLS_HEAP_SIZE;
-
-int _PxSocket_SendListSize = 30;
-
-volatile int _PxSocket_ActiveHogs = 0;
-volatile int _PxSocket_ActiveIOLoops = 0;
-int _PyParallel_NumCPUs = 0;
-
-void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
-void *_PyTLSHeap_Malloc(size_t n, size_t align);
-
-static PyObject *PyExc_AsyncError;
-static PyObject *PyExc_ProtectionError;
-static PyObject *PyExc_UnprotectedError;
-static PyObject *PyExc_AssignmentError;
-static PyObject *PyExc_NoWaitersError;
-static PyObject *PyExc_WaitError;
-static PyObject *PyExc_WaitTimeoutError;
-static PyObject *PyExc_AsyncIOBuffersExhaustedError;
-static PyObject *PyExc_PersistenceError;
-
 
 #define _TMPBUF_SIZE 1024
 
@@ -508,7 +509,7 @@ static OVERLAPPED _NULL_OVERLAPPED;
     }                                                                   \
 } while (0)
 
-__inline
+
 void
 _RESET_OVERLAPPED(WSAOVERLAPPED *ol)
 {
@@ -559,21 +560,21 @@ _PyParallel_BlockingCall(void)
         _PyParallel_DisassociateCurrentThreadFromCallback();
 }
 
-__inline
+
 void *
 _PyHeap_MemAlignedMalloc(Context *c, size_t n)
 {
     return _PyHeap_Malloc(c, n, Px_MEM_ALIGN_SIZE, 0);
 }
 
-__inline
+
 PxListItem *
 _PyHeap_NewListItem(Context *c)
 {
     return (PxListItem *)_PyHeap_MemAlignedMalloc(c, sizeof(PxListItem));
 }
 
-__inline
+
 PxListHead *
 _PyHeap_NewList(Context *c)
 {
@@ -624,7 +625,7 @@ _PyObject_Dealloc(PyObject *o)
     //PyMem_FREE(sm);
 }
 
-__inline
+
 char
 _protected(PyObject *obj)
 {
@@ -641,7 +642,7 @@ _async_protected(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_protected(obj));
 }
 
-__inline
+
 void
 _unprotect(PyObject *obj)
 {
@@ -717,7 +718,7 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_try_write_lock(obj));
 }
 
-__inline
+
 Object *
 _PyHeap_NewObject(Context *c)
 {
@@ -732,7 +733,7 @@ _PyHeap_NewObject(Context *c)
 #define Py_PXCB (_PyParallel_ExecutingCallbackFromMainThread())
 #define Px_XISPX(o) ((o) ? Px_ISPX(o) : 0)
 
-__inline
+
 int
 _Px_TryPersist(PyObject *o)
 {
@@ -771,7 +772,7 @@ _Px_TryPersist(PyObject *o)
     return 1;
 }
 
-__inline
+
 int
 _Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
 {
@@ -1234,7 +1235,7 @@ done:
     return result;
 }
 
-__inline
+
 PyObject *
 _protect(PyObject *obj)
 {
@@ -1925,7 +1926,6 @@ _PyTLSHeap_Init(size_t n, int page_size)
     return 1;
 }
 
-__inline
 void *
 _PyHeap_Init(Context *c, Py_ssize_t n)
 {
@@ -2164,7 +2164,7 @@ begin:
     goto begin;
 }
 
-__inline
+
 void
 _PyHeap_FastFree(Heap *h, Stats *s, void *p)
 {
@@ -2426,7 +2426,7 @@ end:
     return n;
 }
 
-__inline
+
 PyObject *
 Object_Init(PyObject *op, PyTypeObject *tp, Context *c)
 {
@@ -2434,14 +2434,14 @@ Object_Init(PyObject *op, PyTypeObject *tp, Context *c)
     return init_object(c, op, tp, 0);
 }
 
-__inline
+
 PyObject *
 Object_New(PyTypeObject *tp, Context *c)
 {
     return init_object(c, NULL, tp, 0);
 }
 
-__inline
+
 PyVarObject *
 VarObject_Init(PyVarObject *v, PyTypeObject *tp, Py_ssize_t nitems, Context *c)
 {
@@ -2449,7 +2449,7 @@ VarObject_Init(PyVarObject *v, PyTypeObject *tp, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, (PyObject *)v, tp, nitems);
 }
 
-__inline
+
 PyVarObject *
 VarObject_New(PyTypeObject *tp, Py_ssize_t nitems, Context *c)
 {
@@ -2526,7 +2526,7 @@ _PxObject_Free(void *p)
 }
 #endif
 
-__inline
+
 int
 null_with_exc_or_non_none_return_type(PyObject *op, PyThreadState *tstate)
 {
@@ -2543,7 +2543,7 @@ null_with_exc_or_non_none_return_type(PyObject *op, PyThreadState *tstate)
     return 1;
 }
 
-__inline
+
 int
 null_or_non_none_return_type(PyObject *op)
 {
@@ -2559,7 +2559,7 @@ null_or_non_none_return_type(PyObject *op)
 }
 
 
-__inline
+
 void
 Px_INCCTX(Context *c)
 {
@@ -2604,7 +2604,7 @@ _PxState_ReleaseContext(PxState *px, Context *c)
     }
 }
 
-__inline
+
 long
 Px_DECCTX(Context *c)
 {
@@ -3859,7 +3859,7 @@ static PyTypeObject PyXList_Type = {
 
 
 /* mod _async */
-__inline
+
 int
 _is_active_ex(void)
 {
@@ -3893,7 +3893,7 @@ _is_active_ex(void)
     return rv;
 }
 
-__inline
+
 int
 _is_parallel_thread(void)
 {
@@ -3908,7 +3908,7 @@ _async_is_parallel_thread(void)
     return r;
 }
 
-__inline
+
 unsigned long long
 _rdtsc(void)
 {
@@ -3921,7 +3921,7 @@ _async_rdtsc(void)
     return PyLong_FromUnsignedLongLong(_Py_rdtsc());
 }
 
-__inline
+
 long
 _is_active(void)
 {
@@ -3963,7 +3963,7 @@ _async_persisted_contexts(PyObject *self, PyObject *args)
     return PyLong_FromLong(PXSTATE()->contexts_persisted);
 }
 
-__inline
+
 void
 incref_args(Context *c)
 {
@@ -3974,7 +3974,7 @@ incref_args(Context *c)
     Py_XINCREF(c->errback);
 }
 
-__inline
+
 void
 incref_waitobj_args(Context *c)
 {
@@ -3984,7 +3984,7 @@ incref_waitobj_args(Context *c)
 }
 
 
-__inline
+
 void
 decref_args(Context *c)
 {
@@ -3995,7 +3995,7 @@ decref_args(Context *c)
     Py_XDECREF(c->errback);
 }
 
-__inline
+
 void
 decref_waitobj_args(Context *c)
 {
@@ -4494,7 +4494,7 @@ extract_waitobj_args(PyObject *args, Context *c)
     return 1;
 }
 
-__inline
+
 int
 submit_work(Context *c)
 {
@@ -5530,7 +5530,7 @@ _async__dbg_address(PyObject *self, PyObject *addr)
 
 /* Helper inline function that the macros use (allowing breakpoints to be set
  * at object creation time, which is useful when debugging). */
-__inline
+
 PyObject *
 _wrap(PyTypeObject *tp, PyObject *args, PyObject *kwds)
 {
@@ -5830,7 +5830,7 @@ _MAYBE_CLOSE(Context *c)
         goto end;           \
 } while (0)
 
-__inline
+
 const char *
 PxSocket_GetRecvCallback(PxSocket *s)
 {
