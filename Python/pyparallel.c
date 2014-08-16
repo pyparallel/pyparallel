@@ -129,7 +129,6 @@ _PyParallel_DisableTLSHeap(void)
     t->ctx_heap = NULL;
 }
 
-
 Py_TLS static int _PxNewThread = 1;
 
 Py_CACHE_ALIGN
@@ -604,10 +603,10 @@ _PyObject_Dealloc(PyObject *o)
     PyMappingMethods *mm;
     //PySequenceMethods *sm;
     destructor d;
-#ifdef Py_DEBUG
+
     Py_GUARD_OBJ(o);
     Py_GUARD
-#endif
+
     assert(Py_ORIG_TYPE(o));
 
     if (Py_HAS_EVENT(o))
@@ -776,13 +775,11 @@ __inline
 int
 _Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
 {
-#ifdef Py_DEBUG
     if (!Py_PXCTX && !Py_PXCB) {
         assert(!Px_ISPX(o));
         assert(!Px_ISPX(k));
         assert(!Px_XISPX(v));
     }
-#endif
     if (!Px_ISPY(o) || (!Py_PXCTX && !Py_PXCB))
         return 1;
 
@@ -926,7 +923,6 @@ _Px_sq_length(PyObject *o)
     return result;
 }
 
-
 char
 _PyObject_PrepOrigType(PyObject *o, PyObject *kwds)
 {
@@ -1044,7 +1040,6 @@ _PyObject_PrepOrigType(PyObject *o, PyObject *kwds)
     }
 
 check_invariants:
-#ifdef Py_DEBUG
     assert(Py_ORIG_TYPE(o));
     assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc);
     assert(Py_ORIG_TYPE_CAST(o)->tp_dealloc != _PyObject_Dealloc);
@@ -1087,7 +1082,6 @@ check_invariants:
         );
     }
     */
-#endif
     return 1;
 error:
     assert(PyErr_Occurred());
@@ -1308,7 +1302,6 @@ _async__rawfile(PyObject *self, PyObject *obj)
     return (PyObject *)f;
 }
 
-#ifdef Py_DEBUG
 int
 _PxPages_LookupHeapPage(PxPages *pages, Px_UINTPTR *value, void *p)
 {
@@ -1689,7 +1682,6 @@ _PyParallel_GuardObj(const char *function,
     }
 }
 
-__inline
 void
 _PxWarn_PyMemUnknown(void)
 {
@@ -1816,9 +1808,9 @@ _PyParallel_ContextGuardFailure(const char *function,
     else
         Py_FatalError(buf);
 }
-
+/*
 #endif
-
+*/
 #define Px_SIZEOF_HEAP        Px_CACHE_ALIGN(sizeof(Heap))
 #define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
 #define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
@@ -1874,9 +1866,7 @@ Heap_Init(Context *c, size_t n, int page_size)
     h->ctx = c;
     h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), 0, 0);
     assert(h->sle_next);
-#ifdef Py_DEBUG
     _PxState_RegisterHeap(c->px, h, c);
-#endif
     return h;
 }
 
@@ -1931,9 +1921,7 @@ _PyTLSHeap_Init(size_t n, int page_size)
     h->tls = t;
     h->sle_next = (Heap *)_PyTLSHeap_Malloc(sizeof(Heap), 0);
     assert(h->sle_next);
-#ifdef Py_DEBUG
     _PxState_RegisterHeap(t->px, h, 0);
-#endif
     return 1;
 }
 
@@ -2474,7 +2462,6 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, v, NULL, nitems);
 }
 
-#ifdef Py_DEBUG
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
@@ -2497,6 +2484,7 @@ _PxObject_Realloc(void *p, size_t nbytes)
     assert(0);
 }
 
+#ifdef Py_DEBUG
 void
 _PxObject_Free(void *p)
 {
@@ -2519,7 +2507,8 @@ _PxObject_Free(void *p)
             PyObject_Free(p);
     }
 }
-#else /* Py_DEBUG */
+
+#else
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
@@ -2770,9 +2759,7 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->wakeup)
         goto free_io_wakeup;
 
-#ifdef Py_DEBUG
     _PxState_InitPxPages(px);
-#endif
 
     InitializeCriticalSectionAndSpinCount(&(px->cs), 12);
 
@@ -2867,12 +2854,10 @@ _PyParallel_DeletingThreadState(PyThreadState *tstate)
 
     assert(px);
 
-#ifdef Py_DEBUG
     if (px->contexts_active > 0) {
         printf("_PyParallel_DeletingThreadState(): px->contexts_active: %d\n",
                px->contexts_active);
     }
-#endif
 }
 
 void
@@ -4098,9 +4083,7 @@ _PxState_FreeContext(PxState *px, Context *c)
     }
     */
 
-#ifdef Py_DEBUG
     _PxContext_UnregisterHeaps(c);
-#endif
 
     HeapDestroy(c->heap_handle);
     free(c);
@@ -5660,32 +5643,30 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 PyThreadState *
 _PyParallel_GetThreadState(void)
 {
-#ifdef Py_DEBUG
     Px_GUARD
     assert(ctx->pstate);
     assert(ctx->pstate != ctx->tstate);
-#endif
     return ctx->pstate;
 }
 
 void
 _Px_NewReference(PyObject *op)
 {
-#ifdef Py_DEBUG
     Px_GUARD
     Px_GUARD_MEM(op);
 
+#ifdef Py_DEBUG
     if (!_Px_TEST(op))
         printf("\n_Px_NewReference(op) -> failed _Px_TEST!\n");
     if (!Py_ASPX(op))
         printf("\n_Px_NewReference: no px object!\n");
+#endif
 
     assert(op->is_px != _Py_NOT_PARALLEL);
 
     if (op->is_px != _Py_IS_PARALLEL)
         op->is_px = _Py_IS_PARALLEL;
 
-#endif
     assert(Py_TYPE(op));
 
     op->ob_refcnt = 1;
@@ -5695,21 +5676,17 @@ _Px_NewReference(PyObject *op)
 void
 _Px_ForgetReference(PyObject *op)
 {
-#ifdef Py_DEBUG
     Px_GUARD_OBJ(op);
     Px_GUARD
-#endif
     ctx->stats.forgetrefs++;
 }
 
 void
 _Px_Dealloc(PyObject *op)
 {
-#ifdef Py_DEBUG
     Px_GUARD_OBJ(op);
     Px_GUARD
     assert(Py_ASPX(op)->ctx == ctx);
-#endif
     ctx->h->deallocs++;
     ctx->stats.deallocs++;
 }
@@ -6238,12 +6215,6 @@ do_async_send:
     ol = &sbuf->ol;
     assert(s->ol == ol);
 
-    /*
-        if (s->send_id % 10000 == 0)
-        printf("\ndoing async send for client %d/%d\n",
-               s->child_id, s->sock_fd);
-         */
-
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
         assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_INITIAL_BYTES);
@@ -6510,10 +6481,6 @@ do_recv:
 
 try_synchronous_recv:
     s->recv_id++;
-
-    /*if (s->recv_id % 10000 == 0)
-        printf("\ntrying sync recv for client %d/%d\n",
-               s->child_id, s->sock_fd);*/
 
     /*
      * Again, this next chunk of code reuses the same pattern employed by

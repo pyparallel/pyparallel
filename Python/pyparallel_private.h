@@ -409,7 +409,6 @@ typedef struct _PxThreadLocalState {
 
 #define _PX_TMPBUF_SIZE 1024
 
-#ifdef Py_DEBUG
 #define HASH_DEBUG
 #include "uthash.h"
 
@@ -420,7 +419,6 @@ typedef struct _PxPages {
     short       count;
     UT_hash_handle hh;
 } PxPages;
-#endif
 
 #define PyAsync_IO_BUFSIZE (64 * 1024)
 
@@ -470,10 +468,8 @@ typedef struct _PxState {
 
     Context    *iob_ctx;
 
-#ifdef Py_DEBUG
     SRWLOCK     pages_srwlock;
     PxPages    *pages;
-#endif
 
     PyThreadState *tstate;
 
