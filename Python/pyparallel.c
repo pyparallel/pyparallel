@@ -276,48 +276,6 @@ PXSTATE(void)
     return px;
 }
 
-/*
-static __inline
-Heap *
-GET_TLS_HEAP_SNAPSHOT(Heap *prev)
-{
-    Heap *h = NULL;
-    TLS *t = &tls;
-    Context *c = ctx;
-    Px_UINTPTR bitmap = Px_PTR(t->snapshots_bitmap);
-    unsigned long i = 0;
-
-    EnterCriticalSection(&t->heap_cs);
-    EnterCriticalSection(&t->snapshots_cs);
-
-    if (_tls_bitscan_fwd(&i, bitmap))
-        h = t->snapshots[i];
-
-    if (h) {
-        assert(h->bitmap_index == i);
-        _tls_interlocked_and(&t->snapshots_bitmap, ~(Px_UINTPTR_1 << i));
-    }
-
-    LeaveCriticalSection(&t->snapshots_cs);
-
-    if (!h)
-        Py_FatalError("TLS heap snapshots exhausted!");
-
-    memcpy(h, t->h, PxHeap_SNAPSHOT_COPY_SIZE);
-    h->snapshot_id = ++t->snapshot_id;
-    if (prev) {
-        h->sle_prev = prev;
-        h->sle_next = NULL;
-        prev->sle_next = h;
-    }
-    h->sle_next = NULL;
-
-    LeaveCriticalSection(&t->heap_cs);
-
-    return h;
-}
-*/
-
 Heap *
 PxContext_HeapSnapshot(Context *c, Heap *prev)
 {
@@ -435,218 +393,7 @@ rollback:
     return;
 }
 
-/*
-static __inline
-Heap *
-ENABLE_TLS_HEAP(void)
-{
-    Heap *h;
-    TLS *t = &tls;
-    Context *c = ctx;
-
-    h = GET_TLS_HEAP_SNAPSHOT(NULL);
-
-    EnterCriticalSection(&t->heap_cs);
-    assert(h);
-    assert(!h->sle_prev);
-    assert(!h->sle_next);
-
-    assert(!t->ctx_heap);
-    assert(c->h != t->h);
-
-    t->ctx_heap = c->h;
-    c->h = t->h;
-    Px_CTXFLAGS(c) |= Px_CTXFLAGS_TLS_HEAP_ACTIVE;
-    LeaveCriticalSection(&t->heap_cs);
-
-    return h;
-}
-
-static
-void
-DISABLE_TLS_HEAP(Heap *snapshot)
-{
-    Heap *h1, *h2;
-    TLS *t = &tls;
-    Context *c = ctx;
-
-    EnterCriticalSection(&t->heap_cs);
-    assert(t->ctx_heap);
-    assert(c->h == t->h);
-    assert(c->h != t->ctx_heap);
-    assert(t == snapshot->tls);
-
-    h1 = snapshot;
-    h2 = GET_TLS_HEAP_SNAPSHOT(h1);
-    assert(h2);
-    assert(!h2->sle_next);
-    assert(h2->sle_prev == h1);
-    assert(h1->sle_next == h2);
-
-    c->h = t->ctx_heap;
-    t->ctx_heap = NULL;
-    Px_CTXFLAGS(c) &= ~Px_CTXFLAGS_TLS_HEAP_ACTIVE;
-    LeaveCriticalSection(&t->heap_cs);
-}
-
-static
-void
-ROLLBACK_TLS_HEAP(Heap *snapshot)
-{
-    TLS *t = snapshot->tls;
-    Heap *h1, *h2;
-    void *tstart, *hstart = NULL;
-    Px_UINTPTR bitmap = 0;
-    size_t size;
-
-    EnterCriticalSection(&t->heap_cs);
-    EnterCriticalSection(&t->snapshots_cs);
-
-    h1 = snapshot;
-    h2 = h1->sle_next;
-
-    if (t != &tls) {
-        PxState *px = ctx->px;
-        InterlockedIncrement(&(px->tls_heap_rollback_mismatch));
-    }
-
-    assert(h1->tls == h2->tls);
-
-    if (h1->snapshot_id == h2->snapshot_id-1)
-        goto rollback;
-
-    if (_tls_popcnt(t->snapshots_bitmap) == 2)
-        goto rollback;
-
-    if (h1->id == h2->id && h1->id == t->h->id) {
-        if (h2->allocated == t->h->allocated)
-            goto rollback;
-    }
-
-    assert(0);
-    return;
-
-rollback:
-
-    tstart = _Py_CAST_FWD(t->h, void *, Heap, base);
-    hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
-    size = PxHeap_SNAPSHOT_COPY_SIZE - _Py_PTR_SUB(tstart, t->h);
-    memcpy(tstart, hstart, size);
-
-    bitmap |= (Px_UINTPTR_1 << h1->bitmap_index);
-    bitmap |= (Px_UINTPTR_1 << h2->bitmap_index);
-
-    _tls_interlocked_or(&t->snapshots_bitmap, bitmap);
-
-    LeaveCriticalSection(&t->snapshots_cs);
-    LeaveCriticalSection(&t->heap_cs);
-
-    return;
-}
-
-static __inline
-void
-DISABLE_TLS_HEAP_AND_ROLLBACK(Heap *snapshot)
-{
-    TLS *t = snapshot->tls;
-    EnterCriticalSection(&t->heap_cs);
-    EnterCriticalSection(&t->snapshots_cs);
-    DISABLE_TLS_HEAP(snapshot);
-    ROLLBACK_TLS_HEAP(snapshot);
-    LeaveCriticalSection(&t->snapshots_cs);
-    LeaveCriticalSection(&t->heap_cs);
-}
-*/
-
 #define TLS_BUF_SPINCOUNT 8
-
-/*
-static __inline
-WSABUF *
-GET_TLS_SBUF(PxSocket *s)
-{
-    WSABUF *w = NULL;
-    TLS    *t = &tls;
-    Px_UINTPTR c = Px_PTR(t->sbuf_bitmap);
-    unsigned long i = 0;
-
-    EnterCriticalSection(&t->sbuf_cs);
-
-    if (_tls_bitscan_fwd(&i, c))
-        w = t->sbufs[i];
-
-    if (w) {
-        TLSBUF *b = W2T(w);
-        b->s = s;
-        s->tls_buf = b;
-        _tls_interlocked_and(&t->sbuf_bitmap, ~(Px_UINTPTR_1 << i));
-    }
-
-    LeaveCriticalSection(&t->sbuf_cs);
-
-    return w;
-}
-
-static __inline
-void
-RETURN_TLS_SBUF(WSABUF *w)
-{
-    TLSBUF *b = W2T(w);
-    TLS *t = b->tls;
-    PxSocket *s = b->s;
-    Px_UINTPTR c = Px_PTR(t->sbuf_bitmap);
-    unsigned long i = 0;
-    volatile long *m;
-
-    EnterCriticalSection(&t->sbuf_cs);
-
-    _tls_interlocked_or(&t->sbuf_bitmap, (Px_UINTPTR_1 << b->bitmap_index));
-
-    assert(s->tls_buf == b);
-    s->tls_buf = NULL;
-    b->s = NULL;
-
-#ifdef Py_DEBUG
-    if (b->snapshot) {
-        // Make sure snapshots have been rolled back.
-        Heap *h1, *h2;
-        TLS *t2 = b->snapshot->tls;
-        EnterCriticalSection(&t2->heap_cs);
-        EnterCriticalSection(&t2->snapshots_cs);
-        h1 = b->snapshot;
-        h2 = h1->sle_next;
-        assert(h1->tls == t2);
-        assert(h2->tls == t2);
-        if (!(t2->snapshots_bitmap & (Px_UINTPTR_1 << h1->bitmap_index)))
-            OutputDebugString(L"h1 bitmap mismatch (RETURN_TLS_SBUF)");
-        if (!(t2->snapshots_bitmap & (Px_UINTPTR_1 << h2->bitmap_index)))
-            OutputDebugString(L"h2 bitmap mismatch (RETURN_TLS_SBUF)");
-        //assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h1->bitmap_index));
-        //assert(t2->snapshots_bitmap & (Px_UINTPTR_1 << h2->bitmap_index));
-        LeaveCriticalSection(&t2->snapshots_cs);
-        LeaveCriticalSection(&t2->heap_cs);
-        b->snapshot = NULL;
-    }
-#endif
-
-    LeaveCriticalSection(&t->sbuf_cs);
-
-    m = (t != &tls ? &(t->px->tls_buf_mismatch) : &(t->px->tls_buf_match));
-    InterlockedIncrement(m);
-}
-
-static __inline
-char
-IS_TLS_SBUF(WSABUF *w)
-{
-    TLSBUF *b = W2T(w);
-    TLS *t = (b->tls ? b->tls : &tls);
-    return (
-        Px_PTR(w) >= Px_PTR(t->sbufs[0]) &&
-        Px_PTR(w) <= Px_PTR(t->sbufs[Px_NUM_TLS_WSABUFS-1])
-    );
-}
-*/
 
 /* 0 on failure, 1 on success */
 static __inline
@@ -2069,7 +1816,6 @@ _PyParallel_ContextGuardFailure(const char *function,
     else
         Py_FatalError(buf);
 }
-
 
 #endif
 
@@ -4764,25 +4510,6 @@ extract_waitobj_args(PyObject *args, Context *c)
 
     return 1;
 }
-
-/*
-void
-_do_work(Context *c)
-{
-    PTP_SIMPLE_CALLBACK cb = _PyParallel_WorkCallback;
-    if (Py_PXCTX) {
-        assert(c->instance);
-        cb(c->instance, c);
-    } else {
-        if (!TrySubmitThreadpoolCallback(cb, c, NULL)) {
-            PyErr_SetFromWindowsErr(0);
-            PxContext_HandleError(c)
-
-        }
-
-    }
-}
-*/
 
 __inline
 int
@@ -9744,38 +9471,6 @@ _PyAsync_ModInit(void)
 
     return m;
 }
-
-    /*
-    l = (PxSocketBufList *)malloc(sizeof(*l));
-    if (!l) {
-        PyErr_NoMemory();
-        PxSocket_EXCEPTION();
-    }
-    memset(l, 0, sizeof(*l));
-    l->wsabufs = (WSABUF **)malloc(sizeof(l->wsabufs));
-    if (!l->wsabufs) {
-        free(l);
-        PyErr_NoMemory();
-        PxSocket_EXCEPTION();
-    }
-    l->flags = NULL;
-    l->nbufs = 1;
-
-    w = (WSABUF *)malloc(sizeof(WSABUF));
-    if (!w) {
-        PyErr_NoMemory();
-        PxSocket_EXCEPTION();
-    }
-    w->len = s->recvbuf_size;
-    w->buf = (char *)_aligned_malloc(w->len, MEMORY_ALLOCATION_ALIGNMENT);
-    if (!w->buf) {
-        free(l->wsabufs);
-        free(w);
-        PyErr_NoMemory();
-        PxSocket_EXCEPTION();
-    }
-
-    l->wsabufs[0] = w;*/
 
 #ifdef __cpplus
 }
