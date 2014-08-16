@@ -7642,18 +7642,6 @@ PxServerSocket_ClientClosed(PxSocket *o)
     SetEvent(s->more_accepts);
 }
 
-void
-PxSocket_ProcessReceivedData(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-
-    assert(!PyErr_Occurred());
-
-    /* xxx todo: recvbuf chunk checking */
-    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RECV_MORE;
-
-}
-
 PxSocketBuf *
 _try_extract_something_sendable_from_object(
     Context *c,
