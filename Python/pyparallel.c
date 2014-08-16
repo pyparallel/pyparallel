@@ -7431,41 +7431,6 @@ pxsocket_accept(PxSocket *s, PyObject *args)
 }
 
 void
-PxSocket_SendCallback(Context *c)
-{
-    PxSocket *s = (PxSocket *)c->io_obj;
-    PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
-    int op = PxSocket_IO_SEND;
-    const char *syscall = "WSASendCallback";
-
-    assert(0);
-
-    CHECK_SEND_RECV_CALLBACK_INVARIANTS();
-
-    if (c->io_result != NO_ERROR) {
-        PxSocket_HandleError(c, op, syscall, c->io_result);
-        goto maybe_close;
-    }
-
-    /*
-    MAYBE_DO_CONNECTION_MADE();
-
-    MAYBE_DO_SEND_COMPLETE();
-
-    MAYBE_SEND();
-    */
-
-maybe_close:
-    /*
-    MAYBE_CLOSE();
-
-    MAYBE_RECV();
-    */
-end:
-    return;
-}
-
-void
 PxSocket_HandleCallback(
     Context *c,
     const char *name,
