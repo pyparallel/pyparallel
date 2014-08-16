@@ -3121,7 +3121,12 @@ _PyParallel_DeletingThreadState(PyThreadState *tstate)
 
     assert(px);
 
-    assert(px->contexts_active == 0);
+#ifdef Py_DEBUG
+    if (px->contexts_active > 0) {
+        printf("_PyParallel_DeletingThreadState(): px->contexts_active: %d\n",
+               px->contexts_active);
+    }
+#endif
 }
 
 void
