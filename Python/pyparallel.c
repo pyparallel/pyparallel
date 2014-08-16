@@ -7950,48 +7950,6 @@ end:
     */
 }
 
-void
-PxSocket_ConnectCallback(Context *c)
-{
-    int err;
-    int op = PxSocket_IO_CONNECT;
-    const char *syscall = "ConnectEx";
-    PxSocket *s = (PxSocket *)c->io_obj;
-
-    assert(0);
-
-    assert(PxSocket_IS_CONNECTED(s));
-    if (c->io_result != NO_ERROR) {
-        PxSocket_HandleError(c, op, syscall, c->io_result);
-        goto end;
-    }
-
-    err = setsockopt(s->sock_fd, SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, 0, 0);
-    if (err == SOCKET_ERROR)
-        PxSocket_WSAERROR("setsockopt(SO_UPDATE_CONNECT_CONTEXT)");
-
-    /*
-    if (!PxSocket_InitSendList(c))
-        PxSocket_EXCEPTION();
-
-
-    MAYBE_SHUTDOWN_SEND_OR_RECV();
-
-    MAYBE_DO_CONNECTION_MADE();
-
-    MAYBE_DO_SEND_COMPLETE();
-
-    MAYBE_SEND();
-
-    MAYBE_CLOSE();
-
-    MAYBE_RECV();
-
-    */
-end:
-    return;
-}
-
 PxSocketBuf *
 _try_extract_something_sendable_from_object(
     Context *c,
