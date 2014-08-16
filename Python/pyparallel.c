@@ -21,13 +21,13 @@ extern "C" {
 
 #define CS_SOCK_SPINCOUNT 4
 
-__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
-__declspec(thread) Context *ctx = NULL;
-__declspec(thread) TLS tls;
-__declspec(thread) PyThreadState *TSTATE;
-__declspec(thread) HANDLE heap_override;
-__declspec(thread) void *last_heap_override_malloc_addr;
-__declspec(thread) void *last_context_heap_malloc_addr;
+Py_CACHE_ALIGN
+Py_TLS Context *ctx = NULL;
+Py_TLS TLS tls;
+Py_TLS PyThreadState *TSTATE;
+Py_TLS HANDLE heap_override;
+Py_TLS void *last_heap_override_malloc_addr;
+Py_TLS void *last_context_heap_malloc_addr;
 
 static
 char
@@ -132,7 +132,7 @@ _PyParallel_DisableTLSHeap(void)
 
 Py_TLS static int _PxNewThread = 1;
 
-__declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
+Py_CACHE_ALIGN
 long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
@@ -1487,8 +1487,8 @@ _PxContext_UnregisterHeaps(Context *c)
 #define _SIG_PY             (1UL << 3)
 #define _SIG_PX             (1UL << 4)
 
-__declspec(thread) int _Px_ObjectSignature_CallDepth = 0;
-__declspec(thread) int _Px_SafeObjectSignatureTest_CallDepth = 0;
+Py_TLS int _Px_ObjectSignature_CallDepth = 0;
+Py_TLS int _Px_SafeObjectSignatureTest_CallDepth = 0;
 
 unsigned long
 _Px_MemorySignature(void *m)

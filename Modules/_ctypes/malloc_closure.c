@@ -27,8 +27,8 @@ typedef union _tagITEM {
     union _tagITEM *next;
 } ITEM;
 
-__declspec(thread) static ITEM *free_list;
-__declspec(thread) static int _pagesize;
+Py_TLS static ITEM *free_list;
+Py_TLS static int _pagesize;
 
 static void more_core(void)
 {

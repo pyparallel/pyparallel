@@ -903,11 +903,14 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
 #ifdef WITH_PARALLEL
 #ifdef MS_WINDOWS
 #define Py_TLS __declspec(thread)
+#define Py_CACHE_ALIGN __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 #else
 #define Py_TLS __thread
+#define Py_CACHE_ALIGN
 #endif
 #else
 #define Py_TLS
+#define Py_CACHE_ALIGN
 #endif
 
 #endif /* Py_PYPORT_H */
