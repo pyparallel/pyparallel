@@ -238,7 +238,7 @@ static int running_on_valgrind = -1;
 #define SIMPLELOCK_LOCK(lock)   /* acquire released lock */
 #define SIMPLELOCK_UNLOCK(lock) /* release acquired lock */
 
-#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG)
+#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC)
 #define SRWLOCK_DECL(lock)          static SRWLOCK lock = SRWLOCK_INIT;
 #define SRWLOCK_WRITE_LOCK(lock)    AcquireSRWLockExclusive(&lock)
 #define SRWLOCK_WRITE_UNLOCK(lock)  ReleaseSRWLockExclusive(&lock)
@@ -1860,26 +1860,9 @@ _PyDebugAllocatorStats(FILE *out,
  * In Py_DEBUG mode, also perform some expensive internal consistency
  * checks.
  */
-#ifdef WITH_PARALLEL
-/* _PyObject_DebugMallocStats has too many variable declarations
- * with initializers to make Px_VOID worthwhile.  So, do an inline
- * dance instead. */
-void __PyObject_DebugMallocStats(FILE *);
-static __inline
 void
 _PyObject_DebugMallocStats(FILE *out)
 {
-    if (!Py_PXCTX)
-        __PyObject_DebugMallocStats(out);
-}
-void
-__PyObject_DebugMallocStats(FILE *out)
-{
-#else
-void
-_PyObject_DebugMallocStats(FILE *out)
-{
-#endif
     uint i;
     const uint numclasses = SMALL_REQUEST_THRESHOLD >> ALIGNMENT_SHIFT;
     /* # of pools, allocated blocks, and free blocks per class index */
@@ -1906,6 +1889,8 @@ _PyObject_DebugMallocStats(FILE *out)
     /* running total -- should equal narenas * ARENA_SIZE */
     size_t total;
     char buf[128];
+
+    Py_GUARD
 
     fprintf(out, "Small block threshold = %d, in %u size classes.\n",
             SMALL_REQUEST_THRESHOLD, numclasses);
@@ -2033,7 +2018,8 @@ Py_ADDRESS_IN_RANGE(void *P, poolp pool)
 }
 #endif
 
-#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG)
+#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC)
+#ifdef MS_WINDOWS
 #include <Windows.h>
 int
 _PyMem_InRange(void *m)
@@ -2085,5 +2071,6 @@ end:
     READ_UNLOCK();
     return result;
 }
+#endif /* MS_WINDOWS */
 #endif
 
