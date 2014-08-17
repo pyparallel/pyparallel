@@ -46,7 +46,7 @@ int _Py_InstalledCtrlCHandler = 0;
 
 int _PyParallel_Finalized = 0;
 
-int _PxSocketServer_PreallocatedSockets = 1000;
+int _PxSocketServer_PreallocatedSockets = 64;
 int _PxSocket_MaxSyncSendAttempts = 3;
 int _PxSocket_MaxSyncRecvAttempts = 3;
 int _PxSocket_MaxRecvBufSize = 65536;
@@ -1341,9 +1341,11 @@ _PxPages_AddHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
     PxPages *x;
     HASH_FIND_INT(*pages, value, x);
     if (x) {
+        /* Original:
         assert(x->count == 1);
         x->heaps[1] = h;
-        x->count++;
+        x->count++; */
+        x->heaps[x->count++] = h;
     } else {
         x = (PxPages *)malloc(sizeof(PxPages));
         x->heaps[0] = h;
@@ -2462,6 +2464,7 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, v, NULL, nitems);
 }
 
+#ifdef Py_DEBUG
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
@@ -2484,7 +2487,6 @@ _PxObject_Realloc(void *p, size_t nbytes)
     assert(0);
 }
 
-#ifdef Py_DEBUG
 void
 _PxObject_Free(void *p)
 {
@@ -6162,8 +6164,9 @@ do_async_send:
      * change the other. */
     assert(sbuf);
     w = &sbuf->w;
-    ol = &sbuf->ol;
-    assert(s->ol == ol);
+    /* PyGotham NYC */
+    ol = s->ol = c->ol = &sbuf->ol;
+    /*assert(s->ol == ol);*/
 
     if (!s->tp_io) {
         PTP_WIN32_IO_CALLBACK cb = PxSocketClient_Callback;
@@ -6306,7 +6309,8 @@ send_failed:
         assert(0);
     }
 
-    assert(s->io_op == PxSocket_IO_SEND);
+    /* PyGotham 2014 */
+    /*assert(s->io_op == PxSocket_IO_SEND);*/
     syscall = "WSASend";
 
     goto handle_error;
@@ -7764,7 +7768,7 @@ wait:
 
 more_accepts:
     while (s->num_accepts_wanted > 0) {
-        o = PxSocketServer_AllocClientSockets(s, 1);
+        o = PxSocketServer_AllocClientSockets(s, 32);
         if (!o)
             PxSocket_HandleException(c, "", 0);
 
@@ -8408,7 +8412,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     if (listen(s->sock_fd, SOMAXCONN) == SOCKET_ERROR)
         PxSocket_WSAERROR("listen");
 
-    s->first = PxSocketServer_AllocClientSockets(s, 0);
+    s->first = PxSocketServer_AllocClientSockets(s, 1000);
     if (!s->first)
         PxSocket_FATAL();
 
