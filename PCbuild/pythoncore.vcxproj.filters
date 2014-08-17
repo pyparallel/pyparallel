@@ -412,6 +412,9 @@
     <ClInclude Include="..\Include\pyparallel.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\pxlist.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -920,6 +923,9 @@
     </ClCompile>
     <ClCompile Include="..\Objects\namespaceobject.c" />
     <ClCompile Include="..\Python\pyparallel.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\pxlist.c">
       <Filter>Python</Filter>
     </ClCompile>
   </ItemGroup>
