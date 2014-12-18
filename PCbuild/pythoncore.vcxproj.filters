@@ -402,7 +402,6 @@
     <ClInclude Include="..\Python\thread_nt.h">
       <Filter>Python</Filter>
     </ClInclude>
-    <ClInclude Include="..\Include\namespaceobject.h" />
     <ClInclude Include="..\Python\condvar.h">
       <Filter>Python</Filter>
     </ClInclude>
@@ -413,6 +412,9 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\pxlist.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\namespaceobject.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -921,12 +923,14 @@
     <ClCompile Include="..\Modules\_winapi.c">
       <Filter>PC</Filter>
     </ClCompile>
-    <ClCompile Include="..\Objects\namespaceobject.c" />
     <ClCompile Include="..\Python\pyparallel.c">
       <Filter>Python</Filter>
     </ClCompile>
     <ClCompile Include="..\Python\pxlist.c">
       <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Objects\namespaceobject.c">
+      <Filter>Objects</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

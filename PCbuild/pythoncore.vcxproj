@@ -710,7 +710,6 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\PC\getpathp.c" />
     <ClCompile Include="..\PC\msvcrtmodule.c" />
     <ClCompile Include="..\Python\pyparallel.c" />
-    <ClCompile Include="..\Python\pyparallel_private.h" />
     <ClCompile Include="..\Python\pxlist.c" />
     <ClCompile Include="..\Python\random.c" />
     <ClCompile Include="..\Python\_warnings.c" />
