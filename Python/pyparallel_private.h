@@ -630,8 +630,24 @@ typedef struct _PyParallelContext {
     PxIO       *io;
     PyObject   *io_obj;
 
+    /* This is a generic overlapped member that can be used when an OVERLAPPED
+     * struct is needed, but not within the context of an async send/recv (as
+     * the SBUF/RBUF 'ol' member can be used for that).
+     *
+     * This is currently leveraged for calls like ConnectEx, TransmitFile,
+     * etc.
+     */
     OVERLAPPED  overlapped;
-    OVERLAPPED *ol; /* set to whatever `void *overlapped` is in callback */
+
+    /* The `ol` pointer, however, is orthogonal to the overlapped struct
+     * above.  It will be set to whatever overlapped struct is in effect
+     * for a given context.  Depending on what's going on at any time, it
+     * may be:
+     *      a) null
+     *      b) pointing at an sbuf->ol or an rbuf->ol
+     *      c) pointing at the overlapped struct above
+     */
+    OVERLAPPED *ol;
 
     LARGE_INTEGER filesize;
     LARGE_INTEGER next_read_offset;
