@@ -100,6 +100,20 @@ PyAPI_FUNC(void) _PxMem_Free(void *);
 #define PyMem_FREE    _PyMem_FREE
 #endif
 
+/* PyParallel XXX: the new memory API in 3.4 is going to require a lot of work
+   to bring PyParallel in line with it, given how many significant changes we
+   make in this area.  So, that's something on the todo list for later.
+
+   For now, we add in stubs for PyMem_Raw(Malloc|Realloc|Free), because I want
+   to pick up some fixes to myreadline.c, and the fixes involve changing the
+   PyMem_(MALLOC|REALLOC|FREE) calls in that file to the new PyMem_Raw ones.
+
+   I could just replace with the malloc/realloc/free literals, but eh, it'll
+   be one less thing generating merge conflicts down the track. */
+#define PyMem_RawMalloc(n)      malloc(n)
+#define PyMem_RawRealloc(p, n)  realloc(p, n)
+#define PyMem_RawFree(p)        free(p)
+
 
 /*
  * Type-oriented memory interface
