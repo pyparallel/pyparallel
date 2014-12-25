@@ -92,11 +92,17 @@ assert sum((is_linux, is_darwin, is_win32)) == 1
 #===============================================================================
 # Helper Methods
 #===============================================================================
+def bytes_to_tb(b):
+    return '%0.1f TB' % (float(b)/1024.0/1024.0/1024.0/1024.0)
+
+def bytes_to_gb(b):
+    return '%0.1f GB' % (float(b)/1024.0/1024.0/1024.0)
+
 def bytes_to_mb(b):
-    return '%0.3fMB' % (float(b)/1024.0/1024.0)
+    return '%0.1f MB' % (float(b)/1024.0/1024.0)
 
 def bytes_to_kb(b):
-    return '%0.3fKB' % (float(b)/1024.0)
+    return '%0.1f KB' % (float(b)/1024.0)
 
 def lower(l):
     return [ s.lower() for s in l ]
@@ -434,7 +440,7 @@ def render_text_table(rows, **kwds):
     cols = len(rows[0])
     paddings = [
         max([len(str(r[i])) for r in rows]) + 2
-            for i in xrange(cols)
+            for i in range(cols)
     ]
 
     length = sum(paddings) + cols
@@ -492,7 +498,7 @@ def render_unicode_table(rows, **kwds):
     cols = len(rows[0])
     paddings = [
         max([len(unicode(r[i])) for r in rows]) + 2
-            for i in xrange(cols)
+            for i in range(cols)
     ]
 
     length = sum(paddings) + cols

@@ -57,7 +57,7 @@ class ShowConfigFileLoadOrderCommand(PxCommand):
         self._out(os.linesep.join(self.conf.files))
 
 #===============================================================================
-# Main Commands
+# Socket/Networking Commands
 #===============================================================================
 class HttpServer(TCPServerCommand):
     port = None
@@ -110,5 +110,98 @@ class NullSinkServer(TCPServerCommand):
 
 class EchoServer(TCPServerCommand):
     pass
+
+#===============================================================================
+# System Info/Memory Commands
+#===============================================================================
+class SystemStructureSizes(PxCommand):
+    def run(self):
+        out = self._out
+
+        import _async
+
+        from itertools import (
+            chain,
+            repeat
+        )
+
+        from ctk.util import (
+            render_text_table,
+            Dict,
+        )
+
+        k = Dict()
+        k.banner = ('System Structure Sizes', '(%d-bit)' % _async._bits)
+        k.formats = lambda: chain((str.center,), repeat(str.center))
+        k.output = self.ostream
+
+        names = dir(_async)
+
+        rows = [('Name', 'Size (bytes)')]
+
+        def format_mem(n):
+            name = n.replace('_mem_', '').replace('_', ' ').title()
+            return (name, getattr(_async, n))
+
+        def format_sizeof(n):
+            name = 'sizeof(%s)' % n.replace('_sizeof_', '')
+            return (name, getattr(_async, n))
+
+        rows += [ format_mem(n) for n in names if n.startswith('_mem_') ]
+        rows += [ format_sizeof(n) for n in names if n.startswith('_sizeof_') ]
+
+        render_text_table(rows, **k)
+
+class MemoryStats(PxCommand):
+    def run(self):
+        out = self._out
+
+        import _async
+
+        from itertools import (
+            chain,
+            repeat
+        )
+
+        from ctk.util import (
+            bytes_to_tb,
+            bytes_to_gb,
+            bytes_to_mb,
+            bytes_to_kb,
+            render_text_table,
+            Dict,
+        )
+
+        k = Dict()
+        k.banner = (
+            'System Memory Stats',
+            '(Current Load: %d%%)' % _async._memory_load,
+        )
+        k.formats = lambda: chain((str.rjust,), repeat(str.rjust))
+        k.output = self.ostream
+
+        names = [
+            n for n in dir(_async) if (
+                n.startswith('_memory_') and
+                'load' not in n
+            )
+        ]
+
+        rows = [('Name', 'KB', 'MB', 'GB', 'TB')]
+
+        def format_mem(n):
+            name = n.replace('_memory_', '').replace('_', ' ').title()
+            b = getattr(_async, n)
+            return (
+                name,
+                bytes_to_kb(b),
+                bytes_to_mb(b),
+                bytes_to_gb(b),
+                bytes_to_tb(b),
+            )
+
+        rows += [ format_mem(n) for n in names if n.startswith('_memory_') ]
+
+        render_text_table(rows, **k)
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

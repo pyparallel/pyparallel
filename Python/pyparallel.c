@@ -8845,6 +8845,44 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
     }
 }
 
+static PyObject *_asyncmodule_obj;
+
+PyDoc_STRVAR(_async_refresh_memory_stats_doc, "xxx todo\n");
+PyObject *
+_async_refresh_memory_stats(PyObject *obj, PyObject *args)
+{
+    PyObject *m;
+    MEMORYSTATUSEX ms;
+    Py_GUARD
+
+    m = _asyncmodule_obj;
+
+    ms.dwLength = sizeof(ms);
+    GlobalMemoryStatusEx(&ms);
+
+    /* Erm, this is not the way this should be done (from a CPython
+     * perspective).  (I'm sure I should be reflecting the C-struct
+     * somehow.  Something to look into...)
+     */
+
+#define _refresh(n, ull)                        \
+    do {                                        \
+        PyObject *o = PyLong_FromLongLong(ull); \
+        if (PyModule_AddObject(m, n, o))        \
+            return NULL;                        \
+    } while (0)
+
+    _refresh("_memory_load", ms.dwMemoryLoad);
+    _refresh("_memory_total_virtual", ms.ullTotalVirtual);
+    _refresh("_memory_avail_virtual", ms.ullAvailVirtual);
+    _refresh("_memory_total_physical", ms.ullTotalPhys);
+    _refresh("_memory_avail_physical", ms.ullAvailPhys);
+    _refresh("_memory_total_page_file", ms.ullTotalPageFile);
+    _refresh("_memory_avail_page_file", ms.ullAvailPageFile);
+
+    Py_RETURN_NONE;
+}
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -8904,6 +8942,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(active_contexts),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_N(persisted_contexts),
+    _ASYNC_N(refresh_memory_stats),
     _ASYNC_V(call_from_main_thread),
     _ASYNC_V(call_from_main_thread_and_wait),
 
@@ -8938,10 +8977,89 @@ _PyAsync_ModInit(void)
     if (m == NULL)
         return NULL;
 
+    _asyncmodule_obj = m;
+    _async_refresh_memory_stats(NULL, NULL);
+
     socket_api = PySocketModule_ImportModuleAndAPI();
     if (!socket_api)
         return NULL;
     PySocketModule = *socket_api;
+
+    if (PyModule_AddIntConstant(m, "_bits", Px_INTPTR_BITS))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_mem_page_size", Px_PAGE_SIZE))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_mem_cache_line_size",
+                                Px_CACHE_ALIGN_SIZE))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_mem_large_page_size",
+                                Px_LARGE_PAGE_SIZE))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_mem_default_heap_size",
+                                Px_DEFAULT_HEAP_SIZE))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_mem_default_tls_heap_size",
+                                Px_DEFAULT_TLS_HEAP_SIZE))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_Heap", sizeof(Heap)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_Context", sizeof(Context)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_ContextStats", sizeof(Stats)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxSocket", sizeof(PxSocket)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxSocketBuf", sizeof(PxSocketBuf)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_Context", sizeof(Context)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PyObject", sizeof(PyObject)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxObject", sizeof(PxObject)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxState", sizeof(PxState)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxHeap", sizeof(PxHeap)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxPages", sizeof(PxPages)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxListItem", sizeof(PxListItem)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxListHead", sizeof(PxListHead)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_PxIO", sizeof(PxIO)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_TLS", sizeof(TLS)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_TLSBUF", sizeof(TLSBUF)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_SBUF", sizeof(SBUF)))
+        return NULL;
+
+    if (PyModule_AddIntConstant(m, "_sizeof_RBUF", sizeof(RBUF)))
+        return NULL;
 
     if (PyModule_AddObject(m, "socket", (PyObject *)&PxSocket_Type))
         return NULL;
