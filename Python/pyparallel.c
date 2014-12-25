@@ -1808,8 +1808,17 @@ _PyParallel_ContextGuardFailure(const char *function,
     err = snprintf(buf, sizeof(buf), fmt, function, filename, lineno);
     if (err == -1)
         Py_FatalError("_PyParallel_ContextGuardFailure: snprintf failed");
-    else
-        Py_FatalError(buf);
+    else {
+        char *guard_override = getenv("PYPARALLEL_PY_GUARD");
+        if (!guard_override)
+            Py_FatalError(buf);
+        
+        if (!strcmp(guard_override, "warn")) {
+            PyErr_Warn(PyExc_RuntimeWarning, buf);
+        } else if (!strcmp(guard_override, "break")) {
+            __debugbreak();
+        }
+    }
 }
 /*
 #endif
