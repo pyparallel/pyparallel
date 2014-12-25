@@ -114,6 +114,24 @@ PyAPI_FUNC(int)     _Py_PXCTX(void);
             0                            \
         );
 
+/* The following specialization of Py_GUARD is intended to be called from
+   the functions in ceval.c (like PyEval_AcquireThread) that could be called
+   from a thread that doesn't hold the GIL (which will appear as a parallel
+   thread, as Py_PXCTX only tests (main thread id == current thread id)). */
+#define Py_GUARD_AGAINST_PX_ONLY()                      \
+    do {                                                \
+        if (Py_PXCTX && tstate->is_parallel_thread) {   \
+            assert(tstate->px);                         \
+            _PyParallel_ContextGuardFailure(            \
+                __FUNCTION__,                           \
+                __FILE__,                               \
+                __LINE__,                               \
+                0                                       \
+            );                                          \
+        }                                               \
+    } while (0)
+
+
 /* PY tests should be odd, PX tests even. */
 /* Object guards should be less than mem guards. */
 #define _PYOBJ_TEST     (1UL <<  1)
@@ -309,6 +327,7 @@ _px_bitpos_uint32(unsigned int f)
 
 #else /* WITH_PARALLEL */
 #define Py_GUARD
+#define Py_GUARD_AGAINST_PX_ONLY()
 #define Px_GUARD
 #define Py_GUARD_OBJ(o)
 #define Py_GUARD_MEM(o)
