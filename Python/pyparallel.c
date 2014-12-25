@@ -9151,10 +9151,6 @@ _PyAsync_ModInit(void)
     Py_INCREF(PyExc_WaitTimeoutError);
     Py_INCREF(PyExc_AsyncIOBuffersExhaustedError);
 
-    /* Uncomment the following (during development) as needed. */
-    if (Py_VerboseFlag)
-        printf("sizeof(PxSocket): %d\n", sizeof(PxSocket));
-
     return m;
 }
 
