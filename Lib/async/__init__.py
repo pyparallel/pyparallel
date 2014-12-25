@@ -24,8 +24,14 @@ _dict = dict
 _list = list
 _object = object
 
-import _async
-from _async import *
+# Wrap this in a try/except handler such that we can suppress import errors;
+# useful if we're using a normal Python interpreter and we want to import some
+# of the other async.* classes.
+try:
+    import _async
+    from _async import *
+except ImportError:
+    pass
 
 class object:
     def __init__(self, **kwds):
