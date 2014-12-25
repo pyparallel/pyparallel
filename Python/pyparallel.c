@@ -2725,9 +2725,13 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->completed_errbacks)
         goto free_completed_callbacks;
 
+    px->new_threadpool_work = PxList_New();
+    if (!px->new_threadpool_work)
+        goto free_completed_errbacks;
+
     px->incoming = PxList_New();
     if (!px->incoming)
-        goto free_completed_errbacks;
+        goto free_new_threadpool_work;
 
     px->finished = PxList_New();
     if (!px->finished)
@@ -2782,6 +2786,9 @@ free_finished:
 
 free_incoming:
     PxList_FreeListHead(px->incoming);
+
+free_new_threadpool_work:
+    PxList_FreeListHead(px->new_threadpool_work);
 
 free_completed_errbacks:
     PxList_FreeListHead(px->completed_errbacks);
@@ -4208,6 +4215,21 @@ start:
             InterlockedIncrement64(&(px->done));
         }
         return NULL;
+    }
+
+    /* New threadpool work. */
+    while (item = PxList_Pop(px->new_threadpool_work)) {
+        PTP_SIMPLE_CALLBACK cb;
+        c = (Context *)item->from;
+        cb = (PTP_SIMPLE_CALLBACK)item->p1;
+
+        if (!TrySubmitThreadpoolCallback(cb, c, NULL)) {
+            PyErr_SetFromWindowsErr(0);
+            Py_XDECREF(item->p2);
+            Py_XDECREF(item->p3);
+            Py_XDECREF(item->p4);
+            return NULL;
+        }
     }
 
     assert(px->processing_callback == 0);
@@ -8778,8 +8800,10 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
         return NULL;
 
     if (PxSocket_Check(transport)) {
+        PxState *px = PXSTATE();
         PxSocket *s = (PxSocket *)transport;
         Context *c = s->ctx;
+        PxListItem *item;
         PTP_SIMPLE_CALLBACK cb;
 
         assert(c);
@@ -8792,13 +8816,26 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
         else
             cb = PxSocketServer_Start;
 
-        if (!TrySubmitThreadpoolCallback(cb, c, NULL)) {
-            PyErr_SetFromWindowsErr(0);
+        /* We can't call TrySubmitThreadpoolCallback() here; we need to
+         * have it called after our calling Python code invokes async.run().
+         * Otherwise, parallel contexts will start running immediately.
+         */
+
+        item = _PyHeap_NewListItem(c);
+        if (!item)
             return NULL;
-        }
+
+        item->from = c;
+        item->p1 = cb;
 
         Py_INCREF(transport);
         Py_INCREF(protocol_type);
+        /* _async_run_once() will decrement whatever's left in p2->p4 if the
+         * TrySubmitThreadpoolCallback(cb, c, NULL) call fails. */
+        item->p2 = transport;
+        item->p3 = protocol_type;
+
+        PxList_Push(px->new_threadpool_work, item);
 
         Py_RETURN_NONE;
 

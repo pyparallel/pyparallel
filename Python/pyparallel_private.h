@@ -456,6 +456,7 @@ typedef struct _PxState {
     PxListHead *errors;
     PxListHead *completed_callbacks;
     PxListHead *completed_errbacks;
+    PxListHead *new_threadpool_work;
     PxListHead *incoming;
     PxListHead *finished;
     PxListHead *finished_sockets;
