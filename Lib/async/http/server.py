@@ -342,7 +342,15 @@ class HttpServer:
         elif h.connection == 'keep-alive' or version >= 'HTTP/1.1':
             request.keep_alive = True
 
-        func = getattr(self, funcname)
+        overload_suffix = path.replace('/', '_')
+        if overload_suffix[-1] == '_':
+            overload_suffix = overload_suffix[:-1]
+        overload_funcname = ''.join((command.lower(), overload_suffix))
+        try:
+            func = getattr(self, overload_funcname)
+        except AttributeError:
+            func = getattr(self, funcname)
+
         return func(request)
 
     def do_GET(self, request):
