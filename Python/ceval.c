@@ -308,7 +308,6 @@ PyEval_ThreadsInitialized(void)
 void
 PyEval_InitThreads(void)
 {
-    Py_GUARD
     if (gil_created())
         return;
     create_gil();
@@ -332,9 +331,9 @@ void
 PyEval_AcquireLock(void)
 {
     PyThreadState *tstate = PyThreadState_GET();
-    Py_GUARD
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
+    Py_GUARD_AGAINST_PX_ONLY();
     take_gil(tstate);
 }
 
@@ -353,10 +352,10 @@ PyEval_ReleaseLock(void)
 void
 PyEval_AcquireThread(PyThreadState *tstate)
 {
-    Py_GUARD
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireThread: NULL new thread state");
     /* Check someone has called PyEval_InitThreads() to create the lock */
+    Py_GUARD_AGAINST_PX_ONLY();
     assert(gil_created());
     take_gil(tstate);
     if (PyThreadState_Swap(tstate) != NULL)
@@ -367,11 +366,11 @@ PyEval_AcquireThread(PyThreadState *tstate)
 void
 PyEval_ReleaseThread(PyThreadState *tstate)
 {
-    Py_GUARD
     if (tstate == NULL)
         Py_FatalError("PyEval_ReleaseThread: NULL thread state");
     if (PyThreadState_Swap(NULL) != tstate)
         Py_FatalError("PyEval_ReleaseThread: wrong thread state");
+    Py_GUARD_AGAINST_PX_ONLY();
     drop_gil(tstate);
 }
 
@@ -443,6 +442,7 @@ PyEval_SaveThread(void)
     PyThreadState *pstate;
     long cur_thread_id = _Py_get_current_thread_id();
     tstate = _PyParallel_GetCurrentThreadState();
+    Py_GUARD_AGAINST_PX_ONLY();
     /*tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);*/
     if (tstate->thread_id != cur_thread_id) {
         /* Verify we've been called from a parallel thread. */
