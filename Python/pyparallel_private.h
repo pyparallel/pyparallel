@@ -679,17 +679,6 @@ typedef struct _PyParallelContext {
     Objects varobjs;
     Objects events;
 
-    char  tbuf[_PX_TMPBUF_SIZE];
-    void *tbuf_base;
-    void *tbuf_next;
-    size_t tbuf_mallocs;
-    size_t tbuf_allocated;
-    size_t tbuf_remaining;
-    size_t tbuf_bytes_wasted;
-    size_t tbuf_next_alignment;
-    size_t tbuf_alignment_mismatches;
-
-
     size_t leaked_bytes;
     size_t leak_count;
     void *last_leak;

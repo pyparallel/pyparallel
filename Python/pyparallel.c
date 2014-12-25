@@ -1804,7 +1804,7 @@ _PyParallel_ContextGuardFailure(const char *function,
         fmt = "%s called outside of parallel context (%s:%d)";
     else
         fmt = "%s called from within parallel context (%s:%d)";
-
+    
     err = snprintf(buf, sizeof(buf), fmt, function, filename, lineno);
     if (err == -1)
         Py_FatalError("_PyParallel_ContextGuardFailure: snprintf failed");
@@ -1941,69 +1941,6 @@ void *
 _PyHeap_Init(Context *c, Py_ssize_t n)
 {
     return Heap_Init(c, n, 0);
-}
-
-void *
-Heap_LocalMalloc(Context *c, size_t n, size_t align)
-{
-    void *next;
-    wchar_t *fmt;
-    size_t alignment_diff;
-    size_t alignment = align;
-    size_t requested_size = n;
-    size_t aligned_size;
-
-    if (!alignment)
-        alignment = Px_PTR_ALIGN_SIZE;
-
-    if (alignment > c->tbuf_next_alignment)
-        alignment_diff = Px_PTR_ALIGN(alignment - c->tbuf_next_alignment);
-    else
-        alignment_diff = 0;
-
-    aligned_size = Px_ALIGN(n, alignment);
-
-    if (aligned_size < (c->tbuf_remaining-alignment_diff)) {
-        if (alignment_diff) {
-            c->tbuf_remaining -= alignment_diff;
-            c->tbuf_allocated += alignment_diff;
-            c->tbuf_alignment_mismatches++;
-            c->tbuf_bytes_wasted += alignment_diff;
-            c->tbuf_next = Px_PTR_ADD(c->tbuf_next, alignment_diff);
-            assert(Px_PTR_ADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
-        }
-
-        c->tbuf_mallocs++;
-        c->tbuf_allocated += aligned_size;
-        c->tbuf_remaining -= aligned_size;
-
-        c->tbuf_bytes_wasted += (aligned_size - requested_size);
-
-        next = c->tbuf_next;
-        c->tbuf_next = Px_PTR_ADD(c->tbuf_next, aligned_size);
-        c->tbuf_next_alignment = Px_GET_ALIGNMENT(c->tbuf_next);
-        assert(Px_PTR_ADD(c->tbuf_base, c->tbuf_allocated) == c->tbuf_next);
-        assert(_Py_IS_ALIGNED(next, alignment));
-
-    } else {
-        next = (void *)malloc(aligned_size);
-        if (!next)
-            return PyErr_NoMemory();
-
-        memset(next, 0, aligned_size);
-
-        c->leak_count++;
-        c->leaked_bytes += aligned_size;
-        c->last_leak = next;
-
-        fmt = L"Heap_LocalMalloc: local buffer exhausted ("    \
-              L"requested: %lld, available: %lld).  Resorted " \
-              L"to malloc() -- note that memory will not be "  \
-              L"freed!\n";
-        fwprintf_s(stderr, fmt, aligned_size, c->tbuf_remaining);
-    }
-
-    return next;
 }
 
 void *
@@ -2170,7 +2107,7 @@ begin:
 
     /* Force a resize. */
     if (!_PyHeap_Init(c, Px_NEW_HEAP_SIZE(aligned_size)))
-        return Heap_LocalMalloc(c, aligned_size, alignment);
+        return PyErr_NoMemory();
 
     goto begin;
 }
@@ -4549,10 +4486,6 @@ new_context(size_t heapsize, int init_heap_snapshots)
     pstate->px = c;
     pstate->is_parallel_thread = 1;
     pstate->interp = c->tstate->interp;
-
-    c->tbuf_next = c->tbuf_base = (void *)&(c->tbuf[0]);
-    c->tbuf_next_alignment = Px_GET_ALIGNMENT(c->tbuf_next);
-    c->tbuf_remaining = _PX_TMPBUF_SIZE;
 
     c->px->contexts_created++;
     InterlockedIncrement(&(c->px->contexts_active));
