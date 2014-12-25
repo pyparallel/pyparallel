@@ -1,0 +1,3 @@
+# Scratch file that collects timeit snippets I run.
+
+timeit.timeit('fb.json_serialization()', setup='import techempower_frameworks_benchmark as fb', number=100)
