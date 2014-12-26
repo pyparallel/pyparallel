@@ -83,8 +83,8 @@ extern "C" {
 
 #define Px_MAX(a, b) ((a > b) ? a : b)
 
-#define Px_DEFAULT_HEAP_SIZE (Px_LARGE_PAGE_SIZE)
-#define Px_DEFAULT_TLS_HEAP_SIZE (Px_LARGE_PAGE_SIZE) /* 2MB/4MB */
+#define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE)
+#define Px_DEFAULT_TLS_HEAP_SIZE (Px_PAGE_SIZE)
 #define Px_MAX_SEM (32768)
 
 #define Px_PTR_IN_HEAP(p, h) (!h ? 0 : (            \
