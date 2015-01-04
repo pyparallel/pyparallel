@@ -986,8 +986,14 @@ typedef struct _PxSocket {
     size_t send_id;
     size_t recv_id;
 
-    Py_ssize_t  send_nbytes;
-    Py_ssize_t  recv_nbytes;
+    /* Total bytes sent/received */
+    Py_ssize_t  total_bytes_sent;
+    Py_ssize_t  total_bytes_received;
+
+    DWORD num_bytes_just_sent;
+    DWORD num_bytes_just_received;
+
+    DWORD   wsasend_
 
     PyObject *protocol_type;
     PyObject *protocol;
@@ -1422,7 +1428,7 @@ _try_write_lock(PyObject *obj)
 } while (0)
 
 #define PxSocket_OVERLAPPED_ERROR(n) do {                                \
-    PyErr_SetFromWindowsErr(c->io_status);                               \
+    PyErr_SetFromWindowsErr(s->wsa_error);                               \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
@@ -1703,6 +1709,7 @@ typedef struct _PxAddrInfo {
 
 } PxAddrInfo;
 
+#define ASSERT_UNREACHABLE() (assert(0 == "unreachable code"))
 
 #ifndef Py_LIMITED_API
 typedef struct _PyXList {
