@@ -886,7 +886,7 @@ typedef struct _PxObject {
 #define PxSocket_IO_CLIENT_CONNECTED    (10)
 #define PxSocket_IO_SENDMSG             (11)
 #define PxSocket_IO_RECVMSG             (12)
-
+#define PxSocket_IO_LISTEN              (13)
 
 #define PxSocket_SET_NEXT_OP(s, op)     \
     do {                                \
@@ -993,8 +993,6 @@ typedef struct _PxSocket {
     DWORD num_bytes_just_sent;
     DWORD num_bytes_just_received;
 
-    DWORD   wsasend_
-
     PyObject *protocol_type;
     PyObject *protocol;
 
@@ -1044,9 +1042,6 @@ typedef struct _PxSocket {
     OVERLAPPED overlapped_connectex;
     OVERLAPPED overlapped_disconnectex;
     OVERLAPPED overlapped_sendfile;
-
-    int shutdown_immediate;
-    int shutdown_graceful;
 
     int connect_time; /* seconds */
 
