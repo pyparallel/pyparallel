@@ -1124,6 +1124,9 @@ typedef struct _PxSocket {
     HANDLE    high_memory;
     HANDLE    wait_handles[5];
 
+    /* Misc debug/helper stuff. */
+    int break_on_iocp_enter;
+
 } PxSocket;
 
 #define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))

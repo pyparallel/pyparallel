@@ -387,6 +387,7 @@ PxContext_RollbackHeap(Context *c, Heap **snapshot)
     void *tstart, *hstart, *next;
     Px_UINTPTR bitmap = 0;
     size_t size;
+    size_t bitmap_popcount;
 
     h1 = *snapshot;
     assert(h1->ctx == c);
@@ -400,12 +401,23 @@ PxContext_RollbackHeap(Context *c, Heap **snapshot)
     if (!h2) {
         unsigned long i = 0;
         bitmap = Px_PTR(c->snapshots_bitmap);
-        if (_tls_bitscan_fwd(&i, bitmap))
+        if (_tls_bitscan_fwd(&i, bitmap)) {
             if (i == h1->bitmap_index+1)
                 goto rollback;
+            else if (!i) {
+                /* I think this can only happen if a heap snapshot hasn't been
+                 * taken yet. */
+                __debugbreak();
+            } else
+                __debugbreak();
+        } else
+            __debugbreak();
 
-        assert(0);
-        h2 = PxContext_HeapSnapshot(c, h1);
+        /* You know what... I admit it... I have no idea what this code is
+         * meant to be doing on any given debugging session. */
+        __debugbreak();
+        //assert(0);
+        //h2 = PxContext_HeapSnapshot(c, h1);
     }
 
     assert(h2);
@@ -418,8 +430,16 @@ PxContext_RollbackHeap(Context *c, Heap **snapshot)
     if (h1->snapshot_id == h2->snapshot_id-1)
         goto rollback;
 
-    if (_tls_popcnt(c->snapshots_bitmap) == 2)
+    bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap);
+
+    /* Should this be changed to 3 now that we're taking snapshots as soon as
+     * a context is created? */
+    if (bitmap_popcount == 2)
         goto rollback;
+    else
+        /* Do we ever have more than 2 snapshots?  (Or 3 as the case may be if
+         * the above comment holds.) */
+        __debugbreak();
 
     if (h1->id == h2->id && h1->id == c->h->id) {
         if (h2->allocated == c->h->allocated)
@@ -430,15 +450,18 @@ PxContext_RollbackHeap(Context *c, Heap **snapshot)
         __debugbreak();
 
     /* xxx todo */
+    __debugbreak();
     assert(0);
-    return;
 
 rollback:
     /* xxx todo: HeapFree() extra heaps if h1->id != h2->id. */
 
     next = (h2 ? h2->next : c->h->next);
     size = _Py_PTR(next) - _Py_PTR(h1->next);
-    assert(size > 0 && size < Px_LARGE_PAGE_SIZE);
+    if (!size)
+        /* This happens when we're rolling back to the first snapshot. */
+        goto post_rollback;
+    assert(size < Px_LARGE_PAGE_SIZE);
     memset(h1->next, 0, size);
 
     /* skip sle_prev and sle_next */
@@ -447,6 +470,35 @@ rollback:
     size = PxHeap_SNAPSHOT_COPY_SIZE - _Py_PTR_SUB(tstart, c->h);
     memcpy(tstart, hstart, size);
 
+post_rollback:
+
+    bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap);
+
+    /* Don't clear/reset anything if we're the first snapshot. */
+    if (*snapshot == &c->snapshot[0]) {
+        /* First snapshot! */
+        if (bitmap_popcount != 1)
+            /* So the popcount should be one. */
+            __debugbreak();
+
+        goto end;
+    }
+
+    if (bitmap_popcount == 1) {
+        /* If this is 1, what is *snapshot pointing to if not the first
+         * snapshot? */
+        __debugbreak();
+    }
+
+    if (snapshot == &c->snapshots[bitmap_popcount]) {
+        /* Also, er, don't clear the pointer if it's pointing to the context's
+         * actual snapshot pointer array. */
+        __debugbreak();
+        goto end;
+    }
+
+    /* Clear this bit in the bitmap and the corresponding snapshot pointer,
+     * which completes the "rollback". */
     bitmap = (Px_UINTPTR_1 << h1->bitmap_index);
     if (h2)
         bitmap |= (Px_UINTPTR_1 << h2->bitmap_index);
@@ -455,6 +507,7 @@ rollback:
 
     *snapshot = NULL;
 
+end:
     LeaveCriticalSection(&c->snapshots_cs);
     LeaveCriticalSection(&c->heap_cs);
 
@@ -462,16 +515,20 @@ rollback:
 }
 
 void
-PxContext_ResetToFirstSnapshot(Context *c)
+PxContext_ResetHeapToFirstSnapshot(Context *c)
 {
-    __int64 snapshot_id;
-    Heap *snapshot;
-    __debugbreak();
-    while (c->h->sle_prev) {
-        snapshot_id = _tls_popcnt(c->snapshots_bitmap)-1;
-        snapshot = c->snapshots[snapshot_id];
-        PxContext_RollbackHeap(c, &snapshot);
-    }
+    size_t bitmap_popcount;
+
+    while ((bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap)) > 1)
+        PxContext_RollbackHeap(c, &c->snapshots[bitmap_popcount]);
+
+    /* That'll roll us back to the first snapshot, which we have to roll back
+     * outside of the loop as the bitmap won't be affected by the rollback
+     * because it's the first snapshot.
+     */
+
+    /* (I probably could have worded that a bit better.) */
+    PxContext_RollbackHeap(c, &c->snapshots[0]);
 }
 
 PyObject *
@@ -494,7 +551,10 @@ PxSocket_Recycle(PxSocket **sp)
     PxSocket *s = *sp;
     Context *c = s->ctx;
     PxSocket *parent = s->parent;
+    TP_IO *tp_io = s->tp_io;
     int flags;
+
+    OutputDebugString(L"recycling...\n");
 
     if (PxSocket_IS_SERVERCLIENT(s))
         flags = Px_SOCKFLAGS_SERVERCLIENT;
@@ -508,18 +568,20 @@ PxSocket_Recycle(PxSocket **sp)
     if ((PxSocket *)c->io_obj != s)
         __debugbreak();
 
-    if (s->sock_fd != INVALID_SOCKET) {
-        closesocket(s->sock_fd);
-        s->sock_fd = INVALID_SOCKET;
-    }
     if (s->tp_io) {
-        CancelThreadpoolIo(s->tp_io);
+        //CancelThreadpoolIo(s->tp_io);
         CloseThreadpoolIo(s->tp_io);
         s->tp_io = NULL;
     }
+    if (s->sock_fd != INVALID_SOCKET) {
+        int retval = closesocket(s->sock_fd);
+        s->sock_fd = INVALID_SOCKET;
+    }
 
-    PxContext_ResetToFirstSnapshot(c);
-    assert(!c->io_obj);
+    if (s->rbuf && s->rbuf->snapshot)
+        PxContext_RollbackHeap(c, &s->rbuf->snapshot);
+
+    PxContext_ResetHeapToFirstSnapshot(c);
 
     s = (PxSocket *)create_pxsocket(NULL, NULL, flags, parent, c);
     if (!s)
@@ -527,6 +589,8 @@ PxSocket_Recycle(PxSocket **sp)
         __debugbreak();
 
     *sp = s;
+
+    ++c->times_recycled;
 
     return;
 }
@@ -3039,14 +3103,13 @@ void
 _PyParallel_EnteredCallback(Context *c, PTP_CALLBACK_INSTANCE instance)
 {
     Stats *s;
+    ctx = c;
 
     if (_PxNewThread) {
         if (!_PyParallel_InitTLS())
             Py_FatalError("TLS heap initialization failed");
         _PxNewThread = 0;
     }
-
-    ctx = c;
 
     assert(
         c->error                &&
@@ -3065,7 +3128,6 @@ _PyParallel_EnteredCallback(Context *c, PTP_CALLBACK_INSTANCE instance)
     if (instance)
         c->instance = instance;
 
-    assert(c->instance);
     c->pstate->thread_id = _Py_get_current_thread_id();
 }
 
@@ -4547,7 +4609,7 @@ new_context(size_t heapsize, int init_heap_snapshots)
     PxState  *px;
     Stats *s;
     PyThreadState *pstate;
-    Context  *c;
+    Context *c;
 
     if (_PyParallel_HitHardMemoryLimit())
         return (Context *)PyErr_NoMemory();
@@ -5834,28 +5896,10 @@ end:
 
 int PxSocket_InitInitialBytes(PxSocket *s);
 
+#if 1
+#define OutputDebugString(s)
+#endif
 /* Hybrid sync/async IO loop. */
-/* Refactoring checklist:
- *  Tested:
- *
- *  Path implemented but not tested:
- *      - AcceptEx()
- *      - TransmitFile()
- *      - WSASend()
- *
- *  Path not yet implemented:
- *      - WSARecv()
- *      - Close/DisconnectEx()
- *
- *  Notes to check:
- *      - Path when AcceptEx() returns synchronously and a recv buffer was
- *        specified... -> make sure the try_recv stuff picks up the right
- *        total_bytes_received etc.
- *      - Same as above but for async.
- *      - Same as first but for sync with no recv buffer (i.e. protocol
- *        indicates we talk first).
- *      - Same as above but for async.
- */
 void
 PxSocket_IOLoop(PxSocket *s)
 {
@@ -5876,6 +5920,7 @@ PxSocket_IOLoop(PxSocket *s)
     Heap *snapshot = NULL;
     int i, n, success, flags = 0;
     TRANSMIT_FILE_BUFFERS *tf = NULL;
+    int was_overlapped = 0;
 
     /* AcceptEx stuff */
     DWORD sockaddr_len, local_addr_len, remote_addr_len;
@@ -5901,6 +5946,8 @@ PxSocket_IOLoop(PxSocket *s)
 
     s->ioloops++;
 
+    OutputDebugString(L"PxSocket_IOLoop()\n");
+
     if (s->next_io_op) {
         int op = s->next_io_op;
         s->next_io_op = 0;
@@ -5914,6 +5961,7 @@ PxSocket_IOLoop(PxSocket *s)
                 assert(0);
         }
     } else {
+        was_overlapped = 1;
         assert(s->last_io_op);
         switch (s->last_io_op) {
             case PxSocket_IO_ACCEPT:
@@ -5945,9 +5993,12 @@ PxSocket_IOLoop(PxSocket *s)
     ASSERT_UNREACHABLE();
 
 do_connect:
+    OutputDebugString(L"do_connect:\n");
     assert(0);
 
 do_accept:
+    OutputDebugString(L"do_accept:\n");
+    //rbuf = NULL;
     if (!PxSocket_InitInitialBytes(s))
         PxSocket_EXCEPTION();
 
@@ -6015,6 +6066,7 @@ do_accept:
     assert(0);
 
 overlapped_acceptex_callback:
+    OutputDebugString(L"do_acceptex_callback:\n");
     if (c->io_result != NO_ERROR) {
         if (s->overlapped_acceptex.Internal == NO_ERROR)
             __debugbreak();
@@ -6033,8 +6085,7 @@ overlapped_acceptex_callback:
     /* Intentional follow-on to accepted */
 
 accepted:
-
-    s->total_bytes_received = s->num_bytes_just_received;
+    OutputDebugString(L"accepted:\n");
 
     /* Update the socket context, */
     err = setsockopt(s->sock_fd,
@@ -6064,6 +6115,7 @@ accepted:
     goto start;
 
 overlapped_connectex_callback:
+    OutputDebugString(L"overlapped_connectex_callback:\n");
     assert(0);
 
 //connected:
@@ -6071,9 +6123,13 @@ overlapped_connectex_callback:
 //    goto maybe_shutdown_send_or_recv;
 
 overlapped_disconnectex_callback:
-    assert(0);
+    OutputDebugString(L"overlapped_disconnectex_callback:\n");
+    /* Well... this seems like an easy one... just recycle the socket for now
+     * without bothering to check for errors and whatnot. */
+    PxSocket_RECYCLE(s);
 
 start:
+    OutputDebugString(L"start:\n");
 
     assert(s->protocol);
 
@@ -6158,6 +6214,8 @@ start:
 
     /* Intentional follow-on to maybe_do_connection_made. */
 maybe_do_connection_made:
+    OutputDebugString(L"maybe_do_connection_made:\n");
+
     assert(
         s->last_io_op == PxSocket_IO_ACCEPT ||
         s->last_io_op == PxSocket_IO_CONNECT
@@ -6170,6 +6228,7 @@ maybe_do_connection_made:
     goto try_recv;
 
 definitely_do_connection_made:
+    OutputDebugString(L"definitely_do_connection_made:\n");
     assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE));
     func = s->connection_made;
     assert(func);
@@ -6233,10 +6292,14 @@ definitely_do_connection_made:
     /* Intentional follow-on to do_send. */
 
 do_send:
+    OutputDebugString(L"do_send:\n");
     assert(sbuf);
     w = &sbuf->w;
 
     s->last_io_op = PxSocket_IO_SEND;
+
+    if (!was_overlapped)
+        goto do_async_send;
 
     if (PxSocket_THROUGHPUT(s)) {
         n = s->max_sync_send_attempts;
@@ -6252,6 +6315,7 @@ do_send:
         goto do_async_send;
 
 try_synchronous_send:
+    OutputDebugString(L"try_synchronous_send:\n");
     s->send_id++;
     s->this_io_op = PxSocket_IO_SEND;
 
@@ -6260,7 +6324,7 @@ try_synchronous_send:
     for (i = 1; i <= n; i++) {
         err = WSASend(s->sock_fd,
                       &sbuf->w,
-                      1,        /* number of buffers, currently always be 1 */
+                      1,        /* number of buffers, currently always 1 */
                       &s->num_bytes_just_sent,
                       0,        /* flags */
                       NULL,     /* overlapped */
@@ -6286,11 +6350,14 @@ try_synchronous_send:
          * (I would think that... no, this shouldn't happen, but hey, when
          *  in doubt, assert!  Or __debugbreak() as the case may be.)
          */
-        if (s->num_bytes_just_sent != s->sbuf->w.len)
+        if (s->num_bytes_just_sent != sbuf->w.len)
             __debugbreak();
 
         s->total_bytes_sent += s->num_bytes_just_sent;
+        snapshot = sbuf->snapshot;
         PxContext_RollbackHeap(c, &sbuf->snapshot);
+        if (s->rbuf->snapshot == snapshot)
+            s->rbuf->snapshot = NULL;
         w = NULL;
         sbuf = NULL;
         snapshot = NULL;
@@ -6316,6 +6383,7 @@ try_synchronous_send:
     ASSERT_UNREACHABLE();
 
 do_async_send:
+    OutputDebugString(L"do_async_send:\n");
     /* There's some unavoidable code duplication between do_send: above and
      * do_async_send: below.  If you change one, check to see if you need to
      * change the other. */
@@ -6330,7 +6398,7 @@ do_async_send:
 
     err = WSASend(s->sock_fd,
                   &sbuf->w,
-                  1,    /* number of buffers, should always be 1 */
+                  1,    /* number of buffers, currently always 1 */
                   NULL, /* number of bytes sent, must be null because we're
                            specifying an overlapped structure */
                   0,    /* flags (MSG_DONTROUTE, MSG_OOB, MSG_PARTIAL) */
@@ -6339,48 +6407,7 @@ do_async_send:
                           * using threadpool I/O instead */
 
     if (err == NO_ERROR) {
-        /* Send completed synchronously. */
-
-        /* Initially I had "Completion packet will be queued." comment here.
-         * This was probably based off this MSDN commentary regarding the
-         * return value of WSASend():
-         *
-         *      "If no error occurs and the send operation has completed
-         *       immediately, WSASend returns zero.  In this case, the
-         *       completion routine will have already been scheduled to be
-         *       called once the calling thread is in an alertable state."
-         *
-         * However, now I'm not sure.  Having just re-written AcceptEx() and
-         * TransmitFile() processing -- neither of those will enqueue a
-         * completion packet if the call completes synchronously.  Also, that
-         * MSDN comment refers to a completion routine, not an explicit
-         * completion packet... although, I guess the former wouldn't be
-         * called without the latter.
-         *
-         * On the other side... the "completion packet will be queued" logic
-         * matches the general logic used for async file I/O... and then
-         * there's the matter of the FILE_SKIP_COMPLETION_PORT_ON_SUCCESS
-         * stuff in Vista+...
-         *
-         * So... long story short... we need to figure out conclusively
-         * whether a completion packet will be queued.  Easiest way to do this
-         * will be do a little event signal/wait dance between here and the
-         * entry point to the callback -- actually... just sleeping here and
-         * __debugbreak()'ing if s->cs is contended would probably be
-         * sufficient.
-         */
-
-        /* ... */
-
-        /* Fsck it, let's just do that now. */
-
-        int stop_sleeping = 0; /* You'd alter this in the debugger to stop
-                                  sleeping... otherwise we're going to sleep
-                                  forever. */
-        int sleeps = 0;
-        while (!stop_sleeping && ++sleeps)
-            Sleep(1);
-
+        /* Send completed synchronously.  Completion packet will be queued. */
         PxContext_RollbackHeap(c, &sbuf->snapshot);
         goto end;
     } else {
@@ -6407,9 +6434,10 @@ do_async_send:
     assert(0);
 
 overlapped_send_callback:
+    OutputDebugString(L"overlapped_send_callback:\n");
     /* Entry point for an overlapped send. */
 
-    sbuf = s->sbuf;
+    sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
 
     if (c->io_result != NO_ERROR) {
         if (sbuf->ol.Internal == NO_ERROR)
@@ -6433,14 +6461,27 @@ overlapped_send_callback:
     if (s->num_bytes_just_sent != sbuf->w.len)
         __debugbreak();
 
-    if (sbuf->snapshot)
+    snapshot = sbuf->snapshot;
+    if (snapshot)
         PxContext_RollbackHeap(c, &sbuf->snapshot);
+
+    if (s->rbuf->snapshot == snapshot)
+        s->rbuf->snapshot = NULL;
+
+    if (sbuf->snapshot)
+        __debugbreak();
+
+    if (s->rbuf->snapshot)
+        __debugbreak();
+
+    snapshot = NULL;
 
     s->total_bytes_sent += s->num_bytes_just_sent;
 
     /* Intentional follow-on to send_complete... */
 
 send_completed:
+    OutputDebugString(L"send_completed:\n");
     func = s->send_complete;
     if (!func)
         goto try_recv;
@@ -6534,7 +6575,9 @@ send_completed:
 //
 //    goto handle_error;
 
+eof_received:
 do_disconnect:
+    OutputDebugString(L"do_disconnect:\n");
 
     s->this_io_op = PxSocket_IO_DISCONNECT;
 
@@ -6544,8 +6587,8 @@ do_disconnect:
      * against the s->sock_fd handle... or event create a custom WSAEvent, set
      * overlapped_disconnectex.hEvent to it, and wait on that.
      */
-    StartThreadpoolIo(s->tp_io);
     PxOverlapped_Reset(&s->overlapped_disconnectex);
+    StartThreadpoolIo(s->tp_io);
     success = DisconnectEx(s->sock_fd,
                            &s->overlapped_disconnectex,
                            0,   /* flags */
@@ -6556,6 +6599,8 @@ do_disconnect:
                                   sleeping... otherwise we're going to sleep
                                   forever. */
         int sleeps = 0;
+        s->break_on_iocp_enter = 1;
+        __debugbreak();
         while (!stop_sleeping && ++sleeps)
             Sleep(1);
 
@@ -6586,6 +6631,7 @@ do_disconnect:
     ASSERT_UNREACHABLE();
 
 disconnected:
+    OutputDebugString(L"disconnected:\n");
 //connection_closed:
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
@@ -6610,21 +6656,12 @@ disconnected:
     goto end;
 
 try_recv:
-    /*
-    if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_CONNECTION_MADE) &&
-       !(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE))
-    {
-        next_opcode = pxsock_try_recv;
-        goto definitely_do_connection_made;
-    }
-    */
+    OutputDebugString(L"try_recv:\n");
 
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
         (!(PxSocket_CAN_RECV(s))))
         goto do_disconnect;
 
-    //__debugbreak();
-    //assert(s->last_io_op != PxSocket_IO_ACCEPT);
     if (s->last_io_op == PxSocket_IO_ACCEPT) {
         /*
          * This code path will cover a newly connected client that's just sent
@@ -6635,6 +6672,7 @@ try_recv:
     }
 
 do_recv:
+    OutputDebugString(L"do_recv:\n");
     assert(!PxSocket_RECV_MORE(s));
     assert(PxSocket_CAN_RECV(s));
 
@@ -6643,7 +6681,8 @@ do_recv:
     assert(!snapshot);
 
     rbuf = s->rbuf;
-    assert(!rbuf->snapshot);
+    if (rbuf->snapshot)
+        __debugbreak();
     w = &rbuf->w;
     /* Reset our rbuf. */
     w->len = s->recvbuf_size;
@@ -6651,6 +6690,9 @@ do_recv:
 
     s->this_io_op = PxSocket_IO_RECV;
     c->io_result = NO_ERROR;
+
+    if (!was_overlapped)
+        goto do_async_recv;
 
     if (PxSocket_THROUGHPUT(s)) {
         n = s->max_sync_recv_attempts;
@@ -6664,17 +6706,14 @@ do_recv:
         goto do_async_recv;
 
 try_synchronous_recv:
+    OutputDebugString(L"try_synchronous_recv:\n");
     s->recv_id++;
-
-    /*
-     * Again, this next chunk of code reuses the same pattern employed by
-     * try_synchronous_recv:.
-     */
 
     assert(recv_flags == 0);
 
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
+    s->num_bytes_just_received = 0;
 
     for (i = 1; i <= n; i++) {
         err = WSARecv(s->sock_fd,
@@ -6686,28 +6725,39 @@ try_synchronous_recv:
                       0);
         if (err == SOCKET_ERROR) {
             wsa_error = WSAGetLastError();
-            if (wsa_error == WSAEWOULDBLOCK && i < n)
-                Sleep(0);
-            else
+            if (wsa_error == WSAEWOULDBLOCK) {
+                if (s->num_bytes_just_received > 0) {
+                    /* WSAEWOULDBLOCK is returned even when we received
+                     * data if the amount was less than our socket buffer.
+                     * (At least, I've seen it do this.)
+                     */
+                    if (s->num_bytes_just_received >= (DWORD)s->recvbuf_size)
+                        /* Now *this* should never happen. */
+                        __debugbreak();
+                    else {
+                        w = NULL;
+                        rbuf = NULL;
+                        goto process_data_received;
+                    }
+                }
+                if (i < n) {
+                    YieldProcessor();
+                    continue;
+                } else
+                    break;
+            } else if (wsa_error == WSA_IO_PENDING) {
+                __debugbreak();
                 break;
-        } else
+            }
+        }
+        else
             break;
     }
 
     if (err != SOCKET_ERROR) {
         /* Receive completed synchronously. */
-        if (s->num_bytes_just_received == 0) {
-            /* I don't think we should use this as an indicator that the
-             * connection has closed... we should rely on definitive WSA
-             * errors like WSAECONNRESET/ABORT etc for that.  Also, we could
-             * post a 0 byte send to this s->sock_fd from elsewhere, which
-             * could simply be a way to wake up the thread's I/O loop
-             * (possibly for doing some shutdown initiation or something).
-             */
-            __debugbreak();
-            //goto connection_closed;
-            goto do_disconnect;
-        }
+        if (s->num_bytes_just_received == 0)
+            goto eof_received;
         w = NULL;
         rbuf = NULL;
         goto process_data_received;
@@ -6716,8 +6766,6 @@ try_synchronous_recv:
         goto do_async_recv;
     } else {
         s->recv_id--;
-        if (rbuf->snapshot)
-            PxContext_RollbackHeap(c, &rbuf->snapshot);
         switch (wsa_error) {
             case WSAENETRESET:
             case WSAECONNABORTED:
@@ -6730,6 +6778,7 @@ try_synchronous_recv:
     ASSERT_UNREACHABLE();
 
 do_async_recv:
+    OutputDebugString(L"do_async_recv:\n");
     assert(rbuf);
     assert(w);
 
@@ -6740,14 +6789,6 @@ do_async_recv:
     err = WSARecv(fd, w, 1, 0, &recv_flags, &rbuf->ol, NULL);
     if (err == NO_ERROR) {
         /* Recv completed synchronously.  Completion packet will be queued. */
-
-        int stop_sleeping = 0; /* You'd alter this in the debugger to stop
-                                  sleeping... otherwise we're going to sleep
-                                  forever. */
-        int sleeps = 0;
-        while (!stop_sleeping && ++sleeps)
-            Sleep(1);
-
         goto end;
     } else {
         wsa_error = WSAGetLastError();
@@ -6773,6 +6814,7 @@ do_async_recv:
     ASSERT_UNREACHABLE();
 
 overlapped_recv_callback:
+    OutputDebugString(L"overlapped_recv_callback:\n");
     /* Entry point for an overlapped recv. */
     assert(!snapshot);
     rbuf = s->rbuf;
@@ -6800,7 +6842,12 @@ overlapped_recv_callback:
 
     s->num_bytes_just_received = (DWORD)rbuf->ol.InternalHigh;
 
-    /* See earlier comment re: how we treat receiving 0 bytes. */
+    /* do_data_received_callback: expects rbuf to be clear. */
+    rbuf = NULL;
+
+    if (s->num_bytes_just_received == 0)
+        goto eof_received;
+
     /*
     if (recv_nbytes == 0)
         goto connection_closed;
@@ -6809,6 +6856,7 @@ overlapped_recv_callback:
     /* Intentional follow-on to process_data_received... */
 
 process_data_received:
+    OutputDebugString(L"process_data_received:\n");
     /*
      * So, this is the point where we need to check the data we've received
      * for the sole purpose of seeing if we need to a) receive more data, or
@@ -6835,6 +6883,7 @@ process_data_received:
     goto do_data_received_callback;
 
 do_data_received_callback:
+    OutputDebugString(L"do_data_received_callback:\n");
 
     //assert(recv_nbytes > 0);
     s->total_bytes_received += s->num_bytes_just_received;
@@ -6911,20 +6960,12 @@ do_data_received_callback:
         goto do_recv;
     }
 
+    w = &rbuf->w;
+    sbuf = (SBUF *)rbuf;
     if (Px_PTR(result) == Px_PTR(bytes)) {
-        /*
-         * Special case for echo.  We can cast our rbuf back to an sbuf.
-         * The snapshot will be rolled back after the do_send logic completes.
-         */
-        sbuf = (SBUF *)rbuf;
+        /* Special case for echo, we don't need to convert anything. */
         sbuf->w.len = s->num_bytes_just_received;
-
-        w = NULL;
-        rbuf = NULL;
-        snapshot = NULL;
-        goto do_send;
     } else {
-        w = &rbuf->w;
         if (!PyObject2WSABUF(result, w)) {
             PyErr_SetString(PyExc_ValueError,
                             "data_received() did not return a sendable "
@@ -6932,19 +6973,17 @@ do_data_received_callback:
             PxSocket_EXCEPTION();
         }
 
-        sbuf = (SBUF *)rbuf;
         sbuf->w.len = w->len;
         sbuf->w.buf = w->buf;
-
-        w = NULL;
-        rbuf = NULL;
-        snapshot = NULL;
-        goto do_send;
     }
 
-    ASSERT_UNREACHABLE();
+    w = NULL;
+    rbuf = NULL;
+    snapshot = NULL;
+    goto do_send;
 
 do_sendfile:
+    OutputDebugString(L"do_sendfile:\n");
 
     s->send_id++;
     s->this_io_op = PxSocket_IO_SENDFILE;
@@ -6973,6 +7012,8 @@ do_sendfile:
                                   sleeping... otherwise we're going to sleep
                                   forever. */
         int sleeps = 0;
+        s->break_on_iocp_enter = 1;
+        __debugbreak();
         while (!stop_sleeping && ++sleeps)
             Sleep(1);
 
@@ -7033,6 +7074,7 @@ do_sendfile:
     ASSERT_UNREACHABLE();
 
 overlapped_sendfile_callback:
+    OutputDebugString(L"overlapped_sendfile_callback:\n");
     /* Entry point for an overlapped TransmitFile */
     CloseHandle(s->sendfile_handle);
 
@@ -7067,6 +7109,7 @@ overlapped_sendfile_callback:
     goto send_completed;
 
 do_lines_received_callback:
+    OutputDebugString(L"do_lines_received_callback:\n");
     func = s->lines_received;
     assert(func);
 
@@ -7074,6 +7117,7 @@ do_lines_received_callback:
     assert(0);
 
 end:
+    OutputDebugString(L"end:\n");
     InterlockedDecrement(&_PxSocket_ActiveIOLoops);
 
     return;
@@ -7349,6 +7393,9 @@ create_pxsocket(
             return PyErr_NoMemory();
 
         c = new_context(0, 1);
+        /* Take a snapshot straight after creation such that we can roll back
+         * to the original context state if we re-use the socket. */
+        PxContext_HeapSnapshot(c, NULL);
     }
 
     if (!c)
@@ -7422,7 +7469,7 @@ create_pxsocket(
      * specific implementation called PxSocket_Create() or something.
      */
     assert(args);
-    assert(kwds);
+    //assert(kwds);
 
     if (!PyArg_ParseTupleAndKeywords(PxSocket_PARSE_ARGS))
         PxSocket_FATAL();
@@ -7507,10 +7554,15 @@ setnonblock:
 
     assert(s->recvbuf_size >= 0 && s->recvbuf_size <= 65536);
 
-    /* Every socket gets a recv buf assigned to it.  This won't be transient;
+    /* Every socket* gets a recv buf assigned to it.  This won't be transient;
      * i.e. it doesn't participate in the snapshot/rollback dance like the
      * send buffers do.
+     *
+     * [*] except listen sockets.
      */
+    if (PxSocket_IS_SERVER(s))
+        goto set_other_sockopts;
+
     rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
     rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
     if (!rbuf)
@@ -7521,6 +7573,7 @@ setnonblock:
     rbuf->w.len = s->recvbuf_size;
     rbuf->w.buf = (char *)rbuf->ob_sval;
     s->num_rbufs = 1;
+    s->rbuf = rbuf;
 
     /* Send buffers get allocated on demand via PxSocket_NEW_SBUF() during the
      * PxSocket_IOLoop(), so we don't explicitly reserve space for one like we
@@ -7531,7 +7584,8 @@ setnonblock:
 
     assert(s->sendbuf_size >= 0 && s->sendbuf_size <= 65536);
 
-    if (s->sock_proto == SOCK_STREAM) {
+set_other_sockopts:
+    if (s->sock_type == SOCK_STREAM) {
         int i = 1;
         int err;
 
@@ -7760,6 +7814,20 @@ _pxsocket_initial_bytes_to_send(Context *c, PxSocket *s)
     return _try_extract_something_sendable_from_object(c, i, 0);
 }
 
+/* These stubs are useful when debugging as they allow you to quickly see what
+ * overlapped entry point a given thread/breakpoint/callstack is in (rather
+ * than trying to trace back through s->*_io_op).
+ */
+
+void PxSocket_IOLoop_Connect(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_Accept(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_OverlappedConnectEx(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_OverlappedAcceptEx(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_OverlappedWSASend(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_OverlappedWSARecv(PxSocket *s) { PxSocket_IOLoop(s); }
+void PxSocket_IOLoop_OverlappedTransmitFile(PxSocket *s) {PxSocket_IOLoop(s);}
+void PxSocket_IOLoop_OverlappedDisconnectEx(PxSocket *s) {PxSocket_IOLoop(s);}
+
 void
 NTAPI
 PxSocket_IOCallback(
@@ -7775,12 +7843,32 @@ PxSocket_IOCallback(
     PxSocket *s = (PxSocket *)c->io_obj;
     OVERLAPPED *ol = (OVERLAPPED *)overlapped;
 
+    /* AcceptEx() callbacks are a little quirky as the threadpool I/O is
+     * actually submitted against the listen socket, not the accept socket.
+     * Easy fix though; detect if we're a listen socket, then switch over to
+     * the accept socket if so.
+     */
+    if (s->this_io_op == PxSocket_IO_LISTEN) {
+        PxSocket *listen_socket = s;
+        s = _Py_CAST_BACK(ol, PxSocket *, PxSocket, overlapped_acceptex);
+        c = s->ctx;
+
+        if (s->parent != listen_socket)
+            __debugbreak();
+
+        if (s->this_io_op != PxSocket_IO_ACCEPT)
+            __debugbreak();
+    }
+
     ENTERED_IO_CALLBACK();
 
-    if (!TryEnterCriticalSection(&(s->cs))) {
-        /* See comment in PxSocket_IOLoop's do_async_send. */
+    if (s->break_on_iocp_enter)
         __debugbreak();
-    }
+
+    /*
+    if (!TryEnterCriticalSection(&(s->cs)))
+        __debugbreak();
+    */
 
     if (io_result != NO_ERROR) {
         int failed;
@@ -7805,8 +7893,14 @@ PxSocket_IOCallback(
          * io_result, or InternalHigh (bytes transferred) ever differ from
          * nbytes?
          */
-        if (ol->Internal != io_result)
-            __debugbreak();
+        if (ol->Internal != io_result) {
+            /* Hrm, I saw instances of this where io_result was 64 and
+             * ol->Internal was some random big number.  Always during
+             * overlapped DisconnectEx() callbacks I believe.
+             */
+            if (io_result && io_result != 64)
+                __debugbreak();
+        }
         else if (ol->InternalHigh != nbytes)
             __debugbreak();
 
@@ -7826,24 +7920,67 @@ PxSocket_IOCallback(
          * s->parent->tp_io if s is a server socket and s->this_io_op ==
          * PxSocket_IO_ACCEPT.
          */
-        PxSocket *tp_sock = _Py_CAST_BACK(tp_io,
-                                          PxSocket *,
-                                          PxSocket,
-                                          tp_io);
 
-        if (s->this_io_op == PxSocket_IO_ACCEPT) {
-            if (!s->parent)
-                __debugbreak();
-            if (tp_sock != s->parent)
-                __debugbreak();
-        } else {
-            if (s != tp_sock)
-                __debugbreak();
+        switch (s->this_io_op) {
+            case PxSocket_IO_ACCEPT:
+                if (!s->parent)
+                    __debugbreak();
+                break;
+            case PxSocket_IO_LISTEN:
+                if (tp_io != s->tp_io)
+                    __debugbreak();
         }
     }
 
     EnterCriticalSection(&(s->cs));
-    PxSocket_IOLoop(s);
+    LeaveCriticalSectionWhenCallbackReturns(instance, &(s->cs));
+    /* Heh.  All this duplication just for some useful names when viewing
+     * stack traces. */
+    if (s->next_io_op) {
+        switch (s->next_io_op) {
+            case PxSocket_IO_ACCEPT:
+                PxSocket_IOLoop_Accept(s);
+                break;
+
+            case PxSocket_IO_CONNECT:
+                PxSocket_IOLoop_Connect(s);
+                break;
+
+            default:
+                ASSERT_UNREACHABLE();
+        }
+    } else {
+        assert(s->this_io_op);
+        switch (s->this_io_op) {
+            case PxSocket_IO_ACCEPT:
+                PxSocket_IOLoop_OverlappedAcceptEx(s);
+                break;
+
+            case PxSocket_IO_CONNECT:
+                PxSocket_IOLoop_OverlappedConnectEx(s);
+                break;
+
+            case PxSocket_IO_SEND:
+                PxSocket_IOLoop_OverlappedWSASend(s);
+                break;
+
+            case PxSocket_IO_SENDFILE:
+                PxSocket_IOLoop_OverlappedTransmitFile(s);
+                break;
+
+            case PxSocket_IO_RECV:
+                PxSocket_IOLoop_OverlappedWSARecv(s);
+                break;
+
+            case PxSocket_IO_DISCONNECT:
+                PxSocket_IOLoop_OverlappedDisconnectEx(s);
+                break;
+
+            default:
+                ASSERT_UNREACHABLE();
+
+        }
+    }
     LeaveCriticalSection(&(s->cs));
 end:
     return;
@@ -8475,13 +8612,22 @@ select_fd_accept:
 
 post_accepts:
     if (num_accepts_to_post <= 0)
-        num_accepts_to_post = _PyParallel_NumCPUs * 16;
+        num_accepts_to_post = _PyParallel_NumCPUs * 2;
 
+    /*
     while (num_accepts_to_post--) {
         s->total_accepts_attempted++;
         if (!TrySubmitThreadpoolCallback(work_cb, c, NULL))
             PxSocket_SYSERROR("TrySubmitThreadpoolCallback("
                               "PxSocketServer_CreateClientSocket)");
+    }
+    */
+    while (num_accepts_to_post--) {
+        s->total_accepts_attempted++;
+        PxSocketServer_CreateClientSocket(NULL, c);
+        ctx = c;
+        if (PyErr_Occurred())
+            PxSocket_EXCEPTION();
     }
 
 wait:
@@ -8489,7 +8635,8 @@ wait:
         /* Only wait on shutdown and high memory events. */
         result = WaitForMultipleObjects(2, &(s->wait_handles[3]), 0, 5000);
     else
-        result = WaitForMultipleObjects(5, &(s->wait_handles[0]), 0, 5000);
+        /* Wait on everything except high memory. */
+        result = WaitForMultipleObjects(4, &(s->wait_handles[0]), 0, 5000);
 
     switch (result) {
         case WAIT_OBJECT_0:
@@ -8552,7 +8699,6 @@ end:
         closesocket(s->sock_fd);
         s->sock_fd = INVALID_SOCKET;
         if (s->tp_io) {
-            CancelThreadpoolIo(s->tp_io);
             CloseThreadpoolIo(s->tp_io);
             s->tp_io = NULL;
         }
