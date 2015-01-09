@@ -231,7 +231,18 @@ _PyParallel_DisableTLSHeap(void)
 
     assert(t->heap_depth == 0);
     assert(t->ctx_heap);
-    assert(c->h == t->h);
+
+    /* If c->h isn't pointing at t->h, the TLS heap was probably resized,
+     * which means c->h *should* match the t->h->sle_prev corresponding
+     * to the difference in the IDs. */
+    if (c->h != t->h) {
+        Heap *h = t->h;
+        int i = t->h->id - c->h->id;
+        while (i--)
+            h = h->sle_prev;
+        if (c->h != h)
+            __debugbreak();
+    }
     assert(c->h != t->ctx_heap);
 
     c->h = t->ctx_heap;

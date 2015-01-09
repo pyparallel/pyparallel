@@ -392,25 +392,7 @@ typedef struct _PxThreadLocalState {
     PxState    *px;
     Stats       stats;
 
-    CRITICAL_SECTION        sbuf_cs;
-    volatile Px_INTPTR      sbuf_bitmap;
-    WSABUF                 *sbufs[Px_NUM_TLS_WSABUFS];
-    TLSBUF                  sbuf[Px_NUM_TLS_WSABUFS];
-
-    CRITICAL_SECTION        rbuf_cs;
-    volatile Px_INTPTR      rbuf_bitmap;
-    WSABUF                 *rbufs[Px_NUM_TLS_WSABUFS];
-    TLSBUF                  rbuf[Px_NUM_TLS_WSABUFS];
-
-    size_t                  snapshot_id;
-    CRITICAL_SECTION        snapshots_cs;
-    volatile Px_INTPTR      snapshots_bitmap;
-    Heap                   *snapshots[Px_NUM_TLS_WSABUFS];
-    Heap                    snapshot[Px_NUM_TLS_WSABUFS];
-
 } PxThreadLocalState, TLS;
-
-#define _PX_TMPBUF_SIZE 1024
 
 #define HASH_DEBUG
 #include "uthash.h"
