@@ -1501,8 +1501,8 @@ PxPages_Find(PxPages *pages, void *p)
     int found;
     Px_UINTPTR lower, upper;
 
-    lower = Px_PAGESIZE_ALIGN_DOWN(p, Px_LARGE_PAGE_SIZE);
-    upper = Px_PAGESIZE_ALIGN_UP(p, Px_LARGE_PAGE_SIZE);
+    lower = Px_PAGESIZE_ALIGN_DOWN(p, Px_PAGE_SIZE);
+    upper = Px_PAGESIZE_ALIGN_UP(p, Px_PAGE_SIZE);
 
     found = _PxPages_LookupHeapPage(pages, &lower, p);
     if (!found && lower != upper)
@@ -2014,7 +2014,13 @@ Heap_Init(Context *c, size_t n, int page_size)
     assert(!Px_TLS_HEAP_ACTIVE);
 
     if (!page_size)
-        page_size = Px_LARGE_PAGE_SIZE;
+        page_size = Px_PAGE_SIZE;
+
+    assert(
+        page_size == Px_PAGE_SIZE ||
+        page_size == Px_LARGE_PAGE_SIZE
+    );
+
 
     if (n < Px_DEFAULT_HEAP_SIZE)
         size = Px_DEFAULT_HEAP_SIZE;
@@ -2069,7 +2075,12 @@ _PyTLSHeap_Init(size_t n, int page_size)
     int flags;
 
     if (!page_size)
-        page_size = Px_LARGE_PAGE_SIZE;
+        page_size = Px_PAGE_SIZE;
+
+    assert(
+        page_size == Px_PAGE_SIZE ||
+        page_size == Px_LARGE_PAGE_SIZE
+    );
 
     if (n < _PyTLSHeap_DefaultSize)
         size = _PyTLSHeap_DefaultSize;
