@@ -2203,11 +2203,8 @@ begin:
         return next;
     }
 
-    t->h = h->sle_next;
-
-    if (!t->h->size && !_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size), 0)) {
-        return _aligned_malloc(aligned_size, alignment);
-    }
+    if (!_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size), 0))
+        return PyErr_NoMemory();
 
     goto begin;
 }
