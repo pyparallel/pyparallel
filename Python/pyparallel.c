@@ -3065,7 +3065,6 @@ error:
 int
 _PyParallel_InitTLS(void)
 {
-    int   i;
     TLS  *t = &tls;
     assert(_PxNewThread != 0);
     assert(!t->h);
@@ -3078,42 +3077,10 @@ _PyParallel_InitTLS(void)
     t->px = (PxState *)TSTATE->px;
     assert(t->px);
 
-    InitializeCriticalSectionAndSpinCount(&t->sbuf_cs, TLS_BUF_SPINCOUNT);
-    InitializeCriticalSectionAndSpinCount(&t->rbuf_cs, TLS_BUF_SPINCOUNT);
-    InitializeCriticalSectionAndSpinCount(&t->snapshots_cs, TLS_BUF_SPINCOUNT);
-
     if (!_PyTLSHeap_Init(0, 0))
         return 0;
 
-    for (i = 0; i < Px_NUM_TLS_WSABUFS; i++) {
-        Heap   *h  = &t->snapshot[i];
-        TLSBUF *sb = &t->sbuf[i];
-        TLSBUF *rb = &t->sbuf[i];
-        WSABUF *sw = T2W(sb);
-        WSABUF *rw = T2W(rb);
-
-        h->bitmap_index  = i;
-        sb->bitmap_index = i;
-        rb->bitmap_index = i;
-
-        h->tls  = t;
-        sb->tls = t;
-        rb->tls = t;
-
-        assert(&sb->w == sw);
-        assert(&rb->w == rw);
-
-        t->sbufs[i]     = sw;
-        t->rbufs[i]     = rw;
-        t->snapshots[i] = h;
-    }
-
-    t->sbuf_bitmap      = ~0;
-    t->rbuf_bitmap      = ~0;
-    t->snapshots_bitmap = ~0;
-
     t->thread_id = _Py_get_current_thread_id();
-    t->snapshot_id = 0;
 
     return 1;
 }
