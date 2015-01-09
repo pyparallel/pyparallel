@@ -283,6 +283,11 @@ _px_bitpos_uint32(unsigned int f)
         Py_GUARD_MEM(m);           \
 } while (0)
 
+
+#define Px_BREAK()                 \
+    if (Py_PXCTX)                  \
+        break
+
 #define Px_RETURN(arg)             \
     if (Py_PXCTX)                  \
         return (arg);
@@ -333,6 +338,7 @@ _px_bitpos_uint32(unsigned int f)
 #define Py_GUARD_MEM(o)
 #define PyPx_GUARD_OBJ(o)
 #define PyPx_GUARD_MEM(o)
+#define Px_BREAK()
 #define Px_VOID
 #define Px_RETURN(a)
 #define Px_RETURN_VOID(a)
