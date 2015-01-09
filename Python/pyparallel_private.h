@@ -99,8 +99,8 @@ static __inline
 size_t
 Px_GET_ALIGNMENT(void *p)
 {
-    register Px_UINTPTR c = Px_PTR(p);
-    register unsigned int i = 0;
+    Px_UINTPTR c = Px_PTR(p);
+    unsigned int i = 0;
     if (!p)
         return 0;
     while (!((c >> i) & 1))
@@ -181,6 +181,7 @@ typedef struct _SBUF {
     Context        *ctx;
     Heap           *snapshot;
     DWORD           last_thread_id;
+    DWORD           last_core_id;
     OVERLAPPED      ol;
     WSABUF          w;
 } SBUF;
@@ -199,6 +200,7 @@ typedef struct _RBUF {
     Context        *ctx;
     Heap           *snapshot;
     DWORD           last_thread_id;
+    DWORD           last_core_id;
     OVERLAPPED      ol;
     WSABUF          w;
     /* end of sbuf */
@@ -268,7 +270,7 @@ static __inline
 void
 append_object(Objects *list, Object *o)
 {
-    register Object *n;
+    Object *n;
     if (!list->first) {
         list->first = o;
         list->last = o;
@@ -286,8 +288,8 @@ static __inline
 void
 remove_object(Objects *list, Object *o)
 {
-    register Object *prev = o->prev;
-    register Object *next = o->next;
+    Object *prev = o->prev;
+    Object *next = o->next;
 
     if (list->first == o)
         list->first = next;
@@ -386,6 +388,7 @@ typedef struct _PxThreadLocalState {
     HANDLE      handle;
     int         heap_depth;
     DWORD       thread_id;
+    DWORD       thread_seq_id;
     PxState    *px;
     Stats       stats;
 
@@ -473,6 +476,8 @@ typedef struct _PxState {
     PxPages    *pages;
 
     PyThreadState *tstate;
+
+    HANDLE      low_memory_resource_notification;
 
     /*
     PxListHead *free_contexts_4096;
@@ -691,6 +696,7 @@ typedef struct _PyParallelContext {
 
     long done;
 
+    int times_recycled;
     int times_finished;
     char is_persisted;
     char was_persisted;
@@ -867,30 +873,27 @@ typedef struct _PxObject {
 #define PxSocket_CB_EOF_RECEIVED        (1UL <<  3)
 #define PxSocket_CB_CONNECTION_LOST     (1UL <<  4)
 
+/* Types of socket I/O operations, used for the s->*_io_op members. */
 #define PxSocket_IO_CONNECT             (1)
-#define PxSocket_IO_ACCEPT              (1UL << 1)
-#define PxSocket_IO_RECV                (1UL << 2)
-#define PxSocket_IO_SEND                (1UL << 3)
-#define PxSocket_IO_DISCONNECT          (1UL << 4)
-#define PxSocket_IO_CLOSE               (1UL << 5)
-#define PxSocket_IO_SENDFILE            (1UL << 6)
+#define PxSocket_IO_ACCEPT              (2)
+#define PxSocket_IO_RECV                (3)
+#define PxSocket_IO_SEND                (4)
+#define PxSocket_IO_DISCONNECT          (5)
+#define PxSocket_IO_CLOSE               (6)
+#define PxSocket_IO_SENDFILE            (7)
+#define PxSocket_IO_SHUTDOWN            (8)
+#define PxSocket_IO_LOW_MEMORY          (9)
+#define PxSocket_IO_CLIENT_CONNECTED    (10)
+#define PxSocket_IO_SENDMSG             (11)
+#define PxSocket_IO_RECVMSG             (12)
+#define PxSocket_IO_LISTEN              (13)
 
-/* ops for socket IO loop */
-#define pxsock_nop                                                    0
-#define pxsock_reload_protocol                                        1
-#define pxsock_maybe_shutdown_send_or_recv                            2
-#define pxsock_handle_error                                           3
-#define pxsock_connection_made_callback                               4
-#define pxsock_data_received_callback                                 5
-#define pxsock_send_complete_callback                                 6
-#define pxsock_post_callback_that_supports_sending_retval             7
-#define pxsock_post_callback_that_does_not_support_sending_retval     8
-#define pxsock_close_                                                 9
-#define pxsock_try_send                                               10
-#define pxsock_init_line_mode                                         11
-#define pxsock_try_recv                                               12
-#define pxsock_overlapped_recv_callback                               13
-
+#define PxSocket_SET_NEXT_OP(s, op)     \
+    do {                                \
+        s->last_io_op = 0;              \
+        s->this_io_op = 0;              \
+        s->next_io_op = op;             \
+    } while (0)
 
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
@@ -949,11 +952,7 @@ typedef struct _PxSocket {
     int sock_family;            /* Address family, e.g., AF_INET */
     int sock_type;              /* Socket type, e.g., SOCK_STREAM */
     int sock_proto;             /* Protocol type, usually 0 */
-    PyObject *(*errorhandler)(void); /* Error handler; checks
-                                        errno, returns NULL and
-                                        sets a Python exception */
-    double sock_timeout;                 /* Operation timeout in seconds;
-                                        0.0 means non-blocking */
+    double sock_timeout;        /* Operation timeout in seconds; */
 
     struct addrinfo local_addrinfo;
     struct addrinfo remote_addrinfo;
@@ -970,6 +969,8 @@ typedef struct _PxSocket {
     Context *ctx;
     int last_thread_id;
     int this_thread_id;
+    unsigned int last_cpuid;
+    unsigned int this_cpuid;
     int ioloops;
 
     /* endpoint */
@@ -985,8 +986,12 @@ typedef struct _PxSocket {
     size_t send_id;
     size_t recv_id;
 
-    Py_ssize_t  send_nbytes;
-    Py_ssize_t  recv_nbytes;
+    /* Total bytes sent/received */
+    Py_ssize_t  total_bytes_sent;
+    Py_ssize_t  total_bytes_received;
+
+    DWORD num_bytes_just_sent;
+    DWORD num_bytes_just_received;
 
     PyObject *protocol_type;
     PyObject *protocol;
@@ -1008,6 +1013,9 @@ typedef struct _PxSocket {
 
     int       max_sync_send_attempts;
     int       max_sync_recv_attempts;
+    int       max_sync_connectex_attempts;
+    int       max_sync_acceptex_attempts;
+
     int       lines_mode_active;
 
     /* sendfile stuff */
@@ -1016,7 +1024,10 @@ typedef struct _PxSocket {
     Heap  *sendfile_snapshot;
     TRANSMIT_FILE_BUFFERS sendfile_tfbuf;
 
-    int     io_op;
+    int     last_io_op;
+    int     this_io_op;
+    int     next_io_op;
+
     TP_IO  *tp_io;
 
     TLSBUF *tls_buf;
@@ -1025,75 +1036,97 @@ typedef struct _PxSocket {
     RBUF   *rbuf;
     int     num_rbufs;
 
-    OVERLAPPED *ol;
+    DWORD wsa_error;
+
+    OVERLAPPED overlapped_acceptex;
+    OVERLAPPED overlapped_connectex;
+    OVERLAPPED overlapped_disconnectex;
+    OVERLAPPED overlapped_sendfile;
 
     int connect_time; /* seconds */
 
     /* Server-specific stuff. */
-    int preallocate;
-    WSAEVENT  fd_accept;
+
+    /* Used for overlapped AcceptEx() calls. */
+    DWORD acceptex_bufsize;
+    DWORD acceptex_addr_len;
+    DWORD acceptex_recv_bytes;
+
+    /* Number of overlapped AcceptEx() calls initially posted when the server
+     * starts up. */
+    int num_initial_accepts_to_post;
+
+    /* Number of additional AcceptEx() calls to post when we get notified that
+     * our listen backlog is filling up and we don't have enough accepts
+     * posted. */
+    int num_additional_accepts_to_post;
+
+    /* How many times we submitted threadpool work for creating new client
+     * sockets and posting accepts.  Won't necessarily correlate to how many
+     * successful accepts we were able to post -- just that we submitted the
+     * work to attempt posting.
+     */
+    int total_accepts_attempted;
+
+    /* How many clients can we create (i.e. create contexts for and then post
+     * accepts) in the space of a single percent of memory load?  This is
+     * automatically filled in the first time we allocate client sockets and
+     * post accepts. */
+    float clients_per_1pct_mem_load;
+
     Context  *wait_ctx;
+
+    /* parent could be either the listen socket if we're an accept socket,
+     * or whatever the active socket was (if there was one) when we were
+     * created.
+     */
+    PxSocket *parent;
+    /* And child will be a backref in the above case; i.e.
+     *  <child_socket>->parent == <parent_socket>
+     *  <parent_socket>->child == <child_socket>
+     */
+    PxSocket *child;
+
+    /* Following members are only applicable to the listen socket of a server
+     * socket.
+     */
+
+    /* Number of AcceptEx() calls posted that haven't yet been accepted.
+     * (This differs from total_accepts_attempted above in that this value
+     * reflects the number of times we were able to successfully submit an
+     * overlapped AcceptEx() call, whereas the other one is just the number of
+     * times we submitted threadpool work for creation of a new client socket
+     * and subsequent AcceptEx() attempt.
+     */
+    volatile unsigned long accepts_posted;
+
+    /* Number of sockets that have been accepted and are currently assumed to
+     * be connected.  This may not necessarily correlate with the *actual*
+     * state of the socket based on the TCP stack... but it eventually will.
+     */
+    volatile unsigned long clients_connected;
+
+    /* Number of sockets in the DisconnectEx() TF_REUSE limbo. */
+    volatile unsigned long clients_disconnected;
+
+
+    /* Protects the *first and *last child pointers. */
+    CRITICAL_SECTION children_cs;
     PxSocket *first;
     PxSocket *last;
 
-    PxListHead *freelist;
+    int listen_backlog;
 
-    DWORD     rbytes;
-    TP_WORK  *acceptex;
-    CRITICAL_SECTION acceptex_cs;
-    volatile long num_accepts_wanted;
-    HANDLE  more_accepts;
-    HANDLE  shutdown;
-    HANDLE  wait_handles[3];
+    WSAEVENT  fd_accept;
+    HANDLE    client_connected;
+    HANDLE    low_memory;
+    HANDLE    shutdown;
+    HANDLE    high_memory;
+    HANDLE    wait_handles[5];
 
-    volatile int nchildren;
-    volatile int next_child_id;
+    /* Misc debug/helper stuff. */
+    int break_on_iocp_enter;
 
-    /* Server socket clients. */
-    int child_id;
-    PxSocket *parent;
-    PxSocket *prev;
-    PxSocket *next;
-
-    /*
-    char     *eol[2];
-    PyObject *connection_made;
-    PyObject *data_sent;
-    PyObject *eof_received;
-    PyObject *connection_lost;
-    PyObject *connection_error;
-    PyObject *connection_closed;
-    PyObject *connection_timeout;
-
-    PyObject *connection_cleanup;
-
-    PyObject *network_up;
-    PyObject *network_down;
-
-    PyObject *exception_handler;
-    PyObject *initial_connection_error;
-
-    PyObject *initial_bytes_to_send;
-    PyObject *initial_words_to_expect;
-    PyObject *initial_regex_to_expect;
-
-    char      wait_for_eol;
-    char      auto_reconnect;
-    int       max_line_length;
-
-
-    short     bufsize;
-
-    __declspec(align(64))
-
-#ifndef _WIN64
-#define _PxSocket_BUFSIZE (4096-512)
-#else
-#define _PxSocket_BUFSIZE (4096-576)
-#endif
-
-    char buf[_PxSocket_BUFSIZE];
-    */
 } PxSocket;
 
 #define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))
@@ -1356,6 +1389,16 @@ _try_write_lock(PyObject *obj)
 #define CHECK_SEND_RECV_CALLBACK_INVARIANTS() /* no-op */
 #endif
 
+#define PxSocket_RECYCLE(s) do {                                         \
+    PxSocket_Recycle(&s);                                                \
+    if (s) {                                                             \
+        if (PxSocket_IS_SERVERCLIENT(s))                                 \
+            goto do_accept;                                              \
+        else                                                             \
+            __debugbreak();                                              \
+    } else                                                               \
+        goto end;                                                        \
+} while (0)
 
 #define PxSocket_FATAL() do {                                            \
     assert(PyErr_Occurred());                                            \
@@ -1378,6 +1421,12 @@ _try_write_lock(PyObject *obj)
 
 #define PxSocket_WSAERROR(n) do {                                        \
     PyErr_SetFromWindowsErr(WSAGetLastError());                          \
+    PxSocket_HandleException(c, n, 1);                                   \
+    goto end;                                                            \
+} while (0)
+
+#define PxSocket_OVERLAPPED_ERROR(n) do {                                \
+    PyErr_SetFromWindowsErr(s->wsa_error);                               \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
@@ -1469,6 +1518,10 @@ static const char *pxsocket_kwlist[] = {
     "type",
     "proto",
 
+    /* socket opts */
+    "no_tcp_nodelay",
+    "no_exclusive_addr_use",
+
     /*
     "connection_made",
     "data_received",
@@ -1533,6 +1586,10 @@ static const char *pxsocket_kwlist_formatstring = \
     "i"     /* type */
     "i"     /* proto */
 
+    /* socket options */
+    "p"     /* no_tcp_nodelay */
+    "p"     /* no_exclusive_addr_use */
+
     ":socket";
 
     /* extensions */
@@ -1571,7 +1628,9 @@ static const char *pxsocket_kwlist_formatstring = \
     &(s->port),                              \
     &(s->sock_family),                       \
     &(s->sock_type),                         \
-    &(s->sock_proto)
+    &(s->sock_proto),                        \
+    &(no_tcp_nodelay),                       \
+    &(no_exclusive_addr_use)
     /*
     &(s->handler)
     &(s->connection_made),                   \
@@ -1648,6 +1707,7 @@ typedef struct _PxAddrInfo {
 
 } PxAddrInfo;
 
+#define ASSERT_UNREACHABLE() (assert(0 == "unreachable code"))
 
 #ifndef Py_LIMITED_API
 typedef struct _PyXList {
