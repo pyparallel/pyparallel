@@ -170,12 +170,6 @@ _PyParallel_RemoveHeapOverride(void)
 }
 
 /* tls-oriented stuff */
-int
-_PyParallel_DoesContextHaveActiveHeapSnapshot(void)
-{
-    return (!Py_PXCTX ? 0 : (ctx->snapshot_id == 0));
-}
-
 #define Px_TLS_HEAP_ACTIVE (tls.heap_depth > 0)
 
 int
@@ -237,8 +231,9 @@ _PyParallel_DisableTLSHeap(void)
      * to the difference in the IDs. */
     if (c->h != t->h) {
         Heap *h = t->h;
-        int i = t->h->id - c->h->id;
-        while (i--)
+        int distance = t->h->id - c->h->id;
+        assert(distance >= 1);
+        while (distance--)
             h = h->sle_prev;
         if (c->h != h)
             __debugbreak();
@@ -352,194 +347,87 @@ PXSTATE(void)
     return px;
 }
 
-Heap *
-PxContext_HeapSnapshot(Context *c, Heap *prev)
+void
+_PxContext_HeapSnapshot(Context *c, Heap *snapshot)
 {
-    Heap *h = NULL;
-    Px_UINTPTR bitmap = Px_PTR(c->snapshots_bitmap);
-    unsigned long i = 0;
+    memcpy(snapshot, c->h, sizeof(Heap));
+}
 
-    assert(!prev || (prev->ctx == c));
+Heap *
+PxContext_HeapSnapshot(Context *c)
+{
+    assert(!c->s);
+    c->s = &c->snapshot;
+    _PxContext_HeapSnapshot(c, c->s);
+    return c->s;
+}
 
-    EnterCriticalSection(&c->heap_cs);
-    EnterCriticalSection(&c->snapshots_cs);
+void _PyHeap_Reset(Heap *h);
+void _PyHeap_EnsureReset(Heap *h);
 
-    if (_tls_bitscan_fwd(&i, bitmap))
-        h = c->snapshots[i];
+void
+_PxContext_Rewind(Context *c, Heap *snapshot)
+{
+    Heap *h, *s;
+    s = snapshot;
 
-    if (h) {
-        assert(h->bitmap_index == i);
-        _tls_interlocked_and(&c->snapshots_bitmap, ~(Px_UINTPTR_1 << i));
+    assert(s->ctx == c);
+
+    if (c->h != s) {
+        /* The context's current heap has advanced past the heap being used
+         * when the snapshot was taken.  The distance between heaps should be
+         * reflected by the difference in the current heap ID and the snapshot
+         * heap ID. */
+        int distance = c->h->id - s->id;
+        assert(distance >= 1);
+        /* And the bases should definitely differ. */
+        assert(c->h->base != s->base);
+
+        /* Reverse through the heaps N times, where N is the difference in IDs
+         * between the current heap's ID and the snapshot heap's ID.  Then
+         * check that the pointers line up, then repeat the reversal, but
+         * reset each heap as we go along. */
+        h = c->h;
+        while (distance--)
+            h = h->sle_prev;
+
+        if (s->id != h->id) {
+#ifdef Py_DEBUG
+            __debugbreak();
+#else
+            Py_FatalError("_PxContext_Rewind: broken linked list?");
+#endif
+        }
+
+        /* Pointers line up, do the loop again but reset the heaps as we go. */
+        distance = c->h->id - s->id;
+        while (distance--) {
+            _PyHeap_Reset(c->h);
+            _PyHeap_EnsureReset(c->h);
+            c->h = c->h->sle_prev;
+        }
+    } else if (c->h->allocated == s->allocated) {
+        /* Snapshot already matches position of current heap, nothing to
+         * rewind. */
+        return;
     }
 
-    LeaveCriticalSection(&c->snapshots_cs);
+    assert(c->h->base == s->base);
+    assert(c->h->id == s->id);
 
-    if (!h)
-        Py_FatalError("Context heap snapshots exhausted!");
+    /* Heap snapshot lines up with context's current heap, so we can now
+     * memcpy the snapshot back over the active heap. */
+    memcpy(c->h, s, sizeof(Heap));
 
-    memcpy(h, c->h, PxHeap_SNAPSHOT_COPY_SIZE);
-    h->snapshot_id = ++c->snapshot_id;
-    if (prev) {
-        h->sle_prev = prev;
-        h->sle_next = NULL;
-        prev->sle_next = h;
-    }
-    h->sle_next = NULL;
 
-    LeaveCriticalSection(&c->heap_cs);
-
-    return h;
 }
 
 void
 PxContext_RollbackHeap(Context *c, Heap **snapshot)
 {
-    Heap *h1, *h2;
-    void *tstart, *hstart, *next;
-    Px_UINTPTR bitmap = 0;
-    size_t size;
-    size_t bitmap_popcount;
-
-    h1 = *snapshot;
-    assert(h1->ctx == c);
-    assert(ctx == c);
-
-    EnterCriticalSection(&c->heap_cs);
-    EnterCriticalSection(&c->snapshots_cs);
-
-    h2 = h1->sle_next;
-
-    if (!h2) {
-        unsigned long i = 0;
-        bitmap = Px_PTR(c->snapshots_bitmap);
-        if (_tls_bitscan_fwd(&i, bitmap)) {
-            if (i == h1->bitmap_index+1)
-                goto rollback;
-            else if (!i) {
-                /* I think this can only happen if a heap snapshot hasn't been
-                 * taken yet. */
-                __debugbreak();
-            } else
-                __debugbreak();
-        } else
-            __debugbreak();
-
-        /* You know what... I admit it... I have no idea what this code is
-         * meant to be doing on any given debugging session. */
-        __debugbreak();
-        //assert(0);
-        //h2 = PxContext_HeapSnapshot(c, h1);
-    }
-
-    assert(h2);
-    assert(!h2->sle_next);
-    assert(h2->sle_prev == h1);
-    assert(h1->sle_next == h2);
-
-    assert(h1->ctx == h2->ctx);
-
-    if (h1->snapshot_id == h2->snapshot_id-1)
-        goto rollback;
-
-    bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap);
-
-    /* Should this be changed to 3 now that we're taking snapshots as soon as
-     * a context is created? */
-    if (bitmap_popcount == 2)
-        goto rollback;
-    else
-        /* Do we ever have more than 2 snapshots?  (Or 3 as the case may be if
-         * the above comment holds.) */
-        __debugbreak();
-
-    if (h1->id == h2->id && h1->id == c->h->id) {
-        if (h2->allocated == c->h->allocated)
-            goto rollback;
-        else
-            __debugbreak();
-    } else
-        __debugbreak();
-
-    /* xxx todo */
-    __debugbreak();
-    assert(0);
-
-rollback:
-    /* xxx todo: HeapFree() extra heaps if h1->id != h2->id. */
-
-    next = (h2 ? h2->next : c->h->next);
-    size = _Py_PTR(next) - _Py_PTR(h1->next);
-    if (!size)
-        /* This happens when we're rolling back to the first snapshot. */
-        goto post_rollback;
-    assert(size < Px_LARGE_PAGE_SIZE);
-    memset(h1->next, 0, size);
-
-    /* skip sle_prev and sle_next */
-    tstart = _Py_CAST_FWD(c->h, void *, Heap, base);
-    hstart = _Py_CAST_FWD(h1,   void *, Heap, base);
-    size = PxHeap_SNAPSHOT_COPY_SIZE - _Py_PTR_SUB(tstart, c->h);
-    memcpy(tstart, hstart, size);
-
-post_rollback:
-
-    bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap);
-
-    /* Don't clear/reset anything if we're the first snapshot. */
-    if (*snapshot == &c->snapshot[0]) {
-        /* First snapshot! */
-        if (bitmap_popcount != 1)
-            /* So the popcount should be one. */
-            __debugbreak();
-
-        goto end;
-    }
-
-    if (bitmap_popcount == 1) {
-        /* If this is 1, what is *snapshot pointing to if not the first
-         * snapshot? */
-        __debugbreak();
-    }
-
-    if (snapshot == &c->snapshots[bitmap_popcount]) {
-        /* Also, er, don't clear the pointer if it's pointing to the context's
-         * actual snapshot pointer array. */
-        __debugbreak();
-        goto end;
-    }
-
-    /* Clear this bit in the bitmap and the corresponding snapshot pointer,
-     * which completes the "rollback". */
-    bitmap = (Px_UINTPTR_1 << h1->bitmap_index);
-    if (h2)
-        bitmap |= (Px_UINTPTR_1 << h2->bitmap_index);
-
-    _tls_interlocked_or(&c->snapshots_bitmap, bitmap);
-
+    _PxContext_Rewind(c, *snapshot);
     *snapshot = NULL;
-
-end:
-    LeaveCriticalSection(&c->snapshots_cs);
-    LeaveCriticalSection(&c->heap_cs);
-
-    return;
-}
-
-void
-PxContext_ResetHeapToFirstSnapshot(Context *c)
-{
-    size_t bitmap_popcount;
-
-    while ((bitmap_popcount = _tls_popcnt(~c->snapshots_bitmap)) > 1)
-        PxContext_RollbackHeap(c, &c->snapshots[bitmap_popcount]);
-
-    /* That'll roll us back to the first snapshot, which we have to roll back
-     * outside of the loop as the bitmap won't be affected by the rollback
-     * because it's the first snapshot.
-     */
-
-    /* (I probably could have worded that a bit better.) */
-    PxContext_RollbackHeap(c, &c->snapshots[0]);
+    c->s = NULL;
 }
 
 PyObject *
@@ -560,6 +448,7 @@ void
 PxSocket_Recycle(PxSocket **sp)
 {
     PxSocket *s = *sp;
+    PxSocket *new_socket;
     Context *c = s->ctx;
     PxSocket *parent = s->parent;
     TP_IO *tp_io = s->tp_io;
@@ -579,6 +468,8 @@ PxSocket_Recycle(PxSocket **sp)
     if ((PxSocket *)c->io_obj != s)
         __debugbreak();
 
+    /* xxx todo: add s->disconnectex_flags, if set to TF_REUSE here, then add
+     * another code path that supports *actual* socket re-use. */
     if (s->tp_io) {
         //CancelThreadpoolIo(s->tp_io);
         CloseThreadpoolIo(s->tp_io);
@@ -589,17 +480,15 @@ PxSocket_Recycle(PxSocket **sp)
         s->sock_fd = INVALID_SOCKET;
     }
 
-    if (s->rbuf && s->rbuf->snapshot)
-        PxContext_RollbackHeap(c, &s->rbuf->snapshot);
-
-    PxContext_ResetHeapToFirstSnapshot(c);
-
-    s = (PxSocket *)create_pxsocket(NULL, NULL, flags, parent, c);
-    if (!s)
+    new_socket = (PxSocket *)create_pxsocket(NULL, NULL, flags, parent, c);
+    if (!new_socket)
         /* Eh, what should we do here? */
         __debugbreak();
 
-    *sp = s;
+    if (new_socket != s)
+        __debugbreak();
+
+    *sp = new_socket;
 
     ++c->times_recycled;
 
@@ -2014,6 +1903,42 @@ _PyParallel_ContextGuardFailure(const char *function,
 #define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
 #define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
 
+/* Ensure (assert/break) that the given heap is in the initial state. */
+void
+_PyHeap_EnsureReset(Heap *h)
+{
+    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
+    size_t remaining = h->remaining;
+    size_t allocated = h->allocated;
+    size_t size = h->size;
+
+    size_t expected_remaining = size - aligned_sizeof_heap;
+    size_t expected_allocated = aligned_sizeof_heap;
+
+    void *expected_next = Px_PTR_ADD(h->base, h->allocated);
+
+    if (remaining != expected_remaining)
+        __debugbreak();
+
+    if (allocated != expected_allocated)
+        __debugbreak();
+
+    if (h->next != expected_next)
+        __debugbreak();
+}
+
+void
+_PyHeap_Reset(Heap *h)
+{
+    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
+    h->remaining = h->size - aligned_sizeof_heap;
+    h->allocated = aligned_sizeof_heap;
+    h->next = Px_PTR_ADD(h->base, aligned_sizeof_heap);
+    h->next_alignment = Px_GET_ALIGNMENT(h->next);
+
+    ZeroMemory(h->next, h->remaining);
+}
+
 void *
 Heap_Init(Context *c, size_t n, int page_size)
 {
@@ -2229,6 +2154,9 @@ _PyHeapOverride_Malloc(size_t n, size_t align)
     return p;
 }
 
+/* If no_realloc is 1: return PyErr_NoMemory() if the allocation can't be
+ * satisfied by already allocated memory (i.e. don't call HeapAllocate()).
+ */
 void *
 _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 {
@@ -2297,8 +2225,21 @@ begin:
         return next;
     }
 
+    /* If h->sle_next->size is non-zero, it means the next heap in the list
+     * has already been allocated.  This happens when a context heap snapshot
+     * is taken, a heap resize occurs (i.e. the code path below this logic is
+     * hit), and then the context heap snapshot is rolled back, which involves
+     * enumerating over the heaps and resetting them (instead of returning
+     * them immediately back to the operating system via HeapFree()).
+     */
+    if (h->sle_next->size) {
+        _PyHeap_EnsureReset(h->sle_next);
+        c->h = h->sle_next;
+        goto begin;
+    }
+
     if (no_realloc)
-        NULL;
+        return PyErr_NoMemory();
 
     /* Force a resize. */
     if (!_PyHeap_Init(c, Px_NEW_HEAP_SIZE(aligned_size)))
@@ -4589,10 +4530,9 @@ submit_work(Context *c)
 }
 
 Context *
-new_context(size_t heapsize, int init_heap_snapshots)
+new_context(size_t heapsize)
 {
-    int i;
-    PxState  *px;
+    PxState *px;
     Stats *s;
     PyThreadState *pstate;
     Context *c;
@@ -4650,21 +4590,6 @@ new_context(size_t heapsize, int init_heap_snapshots)
     InterlockedIncrement64(&(c->px->contexts_created));
     InterlockedIncrement(&(c->px->contexts_active));
 
-    if (!init_heap_snapshots)
-        goto done;
-
-    InitializeCriticalSectionAndSpinCount(&c->heap_cs, TLS_BUF_SPINCOUNT);
-    InitializeCriticalSectionAndSpinCount(&c->snapshots_cs, TLS_BUF_SPINCOUNT);
-
-    for (i = 0; i < Px_INTPTR_BITS; i++) {
-        Heap *h  = &c->snapshot[i];
-        h->bitmap_index  = i;
-        c->snapshots[i] = h;
-    }
-
-    c->snapshots_bitmap = ~0;
-
-done:
     s = &(c->stats);
     s->startup_size = s->allocated;
 
@@ -4687,7 +4612,7 @@ _async_submit_work(PyObject *self, PyObject *args)
     PxState  *px;
     PxListItem *item;
 
-    c = new_context(0, 0);
+    c = new_context(0);
     if (!c)
         return NULL;
 
@@ -4808,7 +4733,7 @@ _async_submit_wait(PyObject *self, PyObject *args)
     PxState  *px;
     PTP_WAIT_CALLBACK cb;
 
-    c = new_context(0, 0);
+    c = new_context(0);
     if (!c)
         return NULL;
 
@@ -4953,7 +4878,7 @@ _async_submit_write_io(PyObject *self, PyObject *args)
     if (!_PyEvent_TryCreate(o))
         return NULL;
 
-    c = new_context(0, 0);
+    c = new_context(0);
     if (!c)
         return NULL;
 
@@ -5882,7 +5807,7 @@ end:
 
 int PxSocket_InitInitialBytes(PxSocket *s);
 
-#if 1
+#if 0
 #define OutputDebugString(s)
 #endif
 /* Hybrid sync/async IO loop. */
@@ -6175,7 +6100,7 @@ start:
         DWORD *len;
 
         assert(!snapshot);
-        snapshot = PxContext_HeapSnapshot(c, NULL);
+        snapshot = PxContext_HeapSnapshot(c);
         if (!PxSocket_LoadInitialBytes(s)) {
             PxContext_RollbackHeap(c, &snapshot);
             PxSocket_EXCEPTION();
@@ -6219,7 +6144,7 @@ definitely_do_connection_made:
     func = s->connection_made;
     assert(func);
 
-    snapshot = PxContext_HeapSnapshot(c, NULL);
+    snapshot = PxContext_HeapSnapshot(c);
 
     /* xxx todo: add peer argument */
     args = PyTuple_Pack(1, s);
@@ -6472,7 +6397,7 @@ send_completed:
     if (!func)
         goto try_recv;
 
-    snapshot = PxContext_HeapSnapshot(c, NULL);
+    snapshot = PxContext_HeapSnapshot(c);
 
     args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
     if (!args) {
@@ -6562,6 +6487,7 @@ send_completed:
 //    goto handle_error;
 
 eof_received:
+    s->client_disconnected = 1;
 do_disconnect:
     OutputDebugString(L"do_disconnect:\n");
 
@@ -6575,10 +6501,20 @@ do_disconnect:
      */
     PxOverlapped_Reset(&s->overlapped_disconnectex);
     StartThreadpoolIo(s->tp_io);
+    if (s->client_disconnected && s->sock_type == SOCK_STREAM) {
+        /* If the client initiated the disconnect, we pass the TF_REUSE_SOCKET
+         * flag to DisconnectEx() to reuse the socket, as the TCP/IP stack
+         * won't have to delay the completion until the TIME_WAIT interval
+         * passes. */
+        assert(PxSocket_IS_SERVERCLIENT(s));
+        s->reused_socket = 1;
+        flags = TF_REUSE_SOCKET;
+    }
+
     success = DisconnectEx(s->sock_fd,
                            &s->overlapped_disconnectex,
-                           0,   /* flags */
-                           0);  /* reserved */
+                           flags,   /* flags */
+                           0);      /* reserved */
 
     if (success) {
         int stop_sleeping = 0; /* You'd alter this in the debugger to stop
@@ -6884,7 +6820,7 @@ do_data_received_callback:
         goto do_lines_received_callback;
 
     assert(!rbuf->snapshot);
-    rbuf->snapshot = PxContext_HeapSnapshot(c, NULL);
+    rbuf->snapshot = PxContext_HeapSnapshot(c);
 
     func = s->data_received;
     assert(func);
@@ -7347,6 +7283,8 @@ create_pxsocket(
     char *val;
     int len = sizeof(int);
     int nonblock = 1;
+    int recycled = 0;
+    int reuse = 0;
     PxSocket *s;
     SOCKET fd = INVALID_SOCKET;
     char *host;
@@ -7371,25 +7309,32 @@ create_pxsocket(
      * soon as it can in order to pass it to _PyParallel_EnterCallback(),
      * which needs to be done first because it's the point we do per-thread
      * TLS initialization if needed.)
+     *
+     * (Actually, we use `use_this_context` for socket recycling as well.)
      */
     if (use_this_context)
         c = use_this_context;
     else {
         if (_PyParallel_HitHardMemoryLimit())
             return PyErr_NoMemory();
-
-        c = new_context(0, 1);
-        /* Take a snapshot straight after creation such that we can roll back
-         * to the original context state if we re-use the socket. */
-        PxContext_HeapSnapshot(c, NULL);
+        c = new_context(0);
     }
 
     if (!c)
         return NULL;
 
-    c->io_type = Px_IOTYPE_SOCKET;
+    if (c->io_obj) {
+        assert(c->io_type == Px_IOTYPE_SOCKET);
+        s = (PxSocket *)c->io_obj;
+        recycled = 1;
+        if (s->sock_fd != INVALID_SOCKET)
+            reuse = 1;
+        _PxContext_Rewind(c, &s->startup_snapshot);
+    } else {
+        c->io_type = Px_IOTYPE_SOCKET;
+        s = (PxSocket *)_PyHeap_Malloc(c, sizeof(PxSocket), 0, 0);
+    }
 
-    s = (PxSocket *)_PyHeap_Malloc(c, sizeof(PxSocket), 0, 0);
     if (!s)
         return NULL;
 
@@ -7525,6 +7470,7 @@ serverclient:
     if (s->sock_fd != INVALID_SOCKET)
         goto setnonblock;
 
+create_socket:
     s->sock_fd = socket(s->sock_family, s->sock_type, s->sock_proto);
     if (s->sock_fd == INVALID_SOCKET)
         PxSocket_WSAERROR("socket()");
@@ -7534,9 +7480,12 @@ setnonblock:
     if (ioctlsocket(fd, FIONBIO, &nonblock) == SOCKET_ERROR)
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
 
-    val = (char *)&(s->recvbuf_size);
-    if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
-        PxSocket_WSAERROR("getsockopt(SO_RCVBUF)");
+/*socket_reuse_entrypoint:*/
+    if (!s->rbuf) {
+        val = (char *)&(s->recvbuf_size);
+        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
+            PxSocket_WSAERROR("getsockopt(SO_RCVBUF)");
+    }
 
     assert(s->recvbuf_size >= 0 && s->recvbuf_size <= 65536);
 
@@ -7549,24 +7498,26 @@ setnonblock:
     if (PxSocket_IS_SERVER(s))
         goto set_other_sockopts;
 
-    rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
-    rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
-    if (!rbuf)
-        PxSocket_FATAL();
+    if (!s->rbuf) {
+        rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
+        rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
+        if (!rbuf)
+            PxSocket_FATAL();
 
-    rbuf->s = s;
-    rbuf->ctx = s->ctx;
-    rbuf->w.len = s->recvbuf_size;
-    rbuf->w.buf = (char *)rbuf->ob_sval;
-    s->num_rbufs = 1;
-    s->rbuf = rbuf;
+        rbuf->s = s;
+        rbuf->ctx = s->ctx;
+        rbuf->w.len = s->recvbuf_size;
+        rbuf->w.buf = (char *)rbuf->ob_sval;
+        s->num_rbufs = 1;
+        s->rbuf = rbuf;
 
-    /* Send buffers get allocated on demand via PxSocket_NEW_SBUF() during the
-     * PxSocket_IOLoop(), so we don't explicitly reserve space for one like we
-     * do for the receive buffer above. */
-    val = (char *)&(s->sendbuf_size);
-    if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
-        PxSocket_WSAERROR("getsockopt(SO_SNDBUF)");
+        /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
+         * during the PxSocket_IOLoop(), so we don't explicitly reserve
+         * space for one like we do for the receive buffer above. */
+        val = (char *)&(s->sendbuf_size);
+        if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
+            PxSocket_WSAERROR("getsockopt(SO_SNDBUF)");
+    }
 
     assert(s->sendbuf_size >= 0 && s->sendbuf_size <= 65536);
 
@@ -7622,6 +7573,12 @@ set_other_sockopts:
          */
         s->parent->child = s;
 
+done:
+
+    if (!recycled) {
+        assert(!s->startup_snapshot.size);
+        _PxContext_HeapSnapshot(c, &s->startup_snapshot);
+    }
     return (PyObject *)s;
 
 end:
@@ -8253,7 +8210,7 @@ PxSocket_InitInitialBytes(PxSocket *s)
         return 0;
     }
 
-    snapshot = PxContext_HeapSnapshot(c, NULL);
+    snapshot = PxContext_HeapSnapshot(c);
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE) {
         WSABUF w;
@@ -8446,7 +8403,7 @@ PxSocketServer_CreateClientSocket(
     Context  *x; /* client socket's context */
     int flags = Px_SOCKFLAGS_SERVERCLIENT;
 
-    x = new_context(0, 1);
+    x = new_context(0);
     if (!x)
         /* xxx: well... this is going to get silently ignored. */
         return;

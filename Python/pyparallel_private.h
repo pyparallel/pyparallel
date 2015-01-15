@@ -336,13 +336,7 @@ typedef struct _PyParallelHeap {
     size_t  frees;
     size_t  alignment_mismatches;
     size_t  bytes_wasted;
-
-    /* snapshot-only herein (keep snapshot_id first) */
-    size_t  snapshot_id;
-    char    bitmap_index;
 } PyParallelHeap, Heap;
-
-#define PxHeap_SNAPSHOT_COPY_SIZE (offsetof(Heap, snapshot_id))
 
 typedef struct _PyParallelContextStats {
     unsigned __int64 submitted;
@@ -564,6 +558,8 @@ typedef struct _PxState {
     HANDLE  heap_handle;            \
     Heap    heap;                   \
     Heap   *h;                      \
+    Heap    snapshot;               \
+    Heap   *s;                      \
     PxState *px;                    \
     PyThreadState *tstate;          \
     PyThreadState *pstate;          \
@@ -579,23 +575,6 @@ typedef struct _PxContext {
 typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
     Stats     stats;
-
-    CRITICAL_SECTION    heap_cs;
-
-    size_t              snapshot_id;
-    CRITICAL_SECTION    snapshots_cs;
-    volatile Px_INTPTR  snapshots_bitmap;
-    Heap               *snapshots[Px_INTPTR_BITS];
-    Heap                snapshot[Px_INTPTR_BITS];
-
-    /*
-    size_t               rbuf_id;
-    Px_INTPTR * volatile rbuf_bitmaps;
-    int                  rbuf_nbitmaps;
-    WSABUF            ***rbufs;
-    SBUF             **rbuf;
-    */
-
 
     PyObject *waitobj;
     PyObject *waitobj_timeout;
@@ -955,6 +934,9 @@ typedef struct _PxSocket {
     unsigned int this_cpuid;
     int ioloops;
 
+    /* sockets can take snapshots after they've been initialized */
+    Heap startup_snapshot;
+
     /* endpoint */
     char  ip[16];
     char *host;
@@ -999,6 +981,9 @@ typedef struct _PxSocket {
     int       max_sync_acceptex_attempts;
 
     int       lines_mode_active;
+
+    int       client_disconnected;
+    int       reused_socket;
 
     /* sendfile stuff */
     DWORD  sendfile_nbytes;
