@@ -368,19 +368,19 @@ void _PyHeap_EnsureReset(Heap *h);
 void
 _PxContext_Rewind(Context *c, Heap *snapshot)
 {
-    Heap *h, *s;
-    s = snapshot;
+    Heap *s = snapshot;
+
+    /*
+     * The distance between heaps will be reflected by the difference in the
+     * current context's heap ID and the snapshot heap ID.  (Distance in this
+     * case refers to the number of links in the linked list.)
+     */
+    int distance = c->h->id - s->id;
 
     assert(s->ctx == c);
 
-    if (c->h != s) {
-        /* The context's current heap has advanced past the heap being used
-         * when the snapshot was taken.  The distance between heaps should be
-         * reflected by the difference in the current heap ID and the snapshot
-         * heap ID. */
-        int distance = c->h->id - s->id;
-        assert(distance >= 1);
-        /* And the bases should definitely differ. */
+    if (distance >= 1) {
+        Heap *h;
         assert(c->h->base != s->base);
 
         /* Reverse through the heaps N times, where N is the difference in IDs
@@ -402,6 +402,8 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
         /* Pointers line up, do the loop again but reset the heaps as we go. */
         distance = c->h->id - s->id;
         while (distance--) {
+            if (distance > 1)
+                _m_prefetchw(c->h->sle_prev);
             _PyHeap_Reset(c->h);
             _PyHeap_EnsureReset(c->h);
             c->h = c->h->sle_prev;
@@ -409,6 +411,8 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
     } else if (c->h->allocated == s->allocated) {
         /* Snapshot already matches position of current heap, nothing to
          * rewind. */
+        assert(c->h->remaining == s->remaining);
+        assert(c->h->next == s->next);
         return;
     }
 
@@ -439,10 +443,86 @@ create_pxsocket(
     Context *use_this_context
 );
 
-/* Called from PxSocket_IOLoop when a socket has encountered an error and
- * needs to close.  It will close the socket and associated resources,
- * rollback the context to the first snapshot, and create a new socket
- * based off the details of the closed one.
+void PxOverlapped_Reset(void *ol);
+
+void
+PxSocket_Reuse(PxSocket *s)
+{
+    int flags;
+    PxSocket old;
+    memcpy(&old, s, sizeof(PxSocket));
+
+    /* Invariants... */
+    if (!s->reused_socket)
+        __debugbreak();
+
+    if (s->sock_fd == INVALID_SOCKET)
+        __debugbreak();
+
+    if (!s->tp_io)
+        __debugbreak();
+
+    if (!s->startup_heap_snapshot)
+        __debugbreak();
+
+    if (!s->startup_socket_snapshot)
+        __debugbreak();
+
+    if (!s->startup_socket_flags)
+        __debugbreak();
+
+    /* End of invariants. */
+
+    /* Copy the startup socket snapshot over the socket. */
+    memcpy(s, s->startup_socket_snapshot, sizeof(PxSocket));
+
+    /* Copy the state of the critical section back. */
+    memcpy(&old.cs, &s->cs, sizeof(CRITICAL_SECTION));
+
+    /* Reset the startup socket flags. */
+    /* xxx: wait, I don't think we need the startup flag logic here... the
+     * initial snapshot at the end of create_pxsocket() should persist the
+     * flags in a pristine state.
+     */
+    flags = s->startup_socket_flags;
+    if (flags != s->flags)
+        __debugbreak();
+
+    if (old.ctx != s->ctx)
+        __debugbreak();
+
+    if (old.ctx != s->startup_heap_snapshot->ctx)
+        __debugbreak();
+
+    if (old.ctx != s->rbuf->ctx)
+        __debugbreak();
+
+    if (s->rbuf->s != s)
+        __debugbreak();
+
+    /* If we wanted to be really clever, we could track the average number of
+     * heaps (and thus, total memory allocated) in the parent/listen socket
+     * for a given client socket lifetime.  Then, when it comes time to rewind
+     * the context here (which reverses through all the heaps and resets
+     * them), we could see if this particular instance allocated an abnormal
+     * amount of heaps and if so, free the ones above the average amount.
+     * This would be useful if the underlying protocol will consume large
+     * amounts of memory (temporarily) in some (but not all) conditions.
+     */
+    _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
+
+    /* I think we just need to reset the rbuf's WSABUF... */
+    s->rbuf->w.len = s->recvbuf_size;
+    s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
+
+    PxOverlapped_Reset(&s->rbuf->ol);
+
+
+}
+
+/*
+ * "Recycle" a socket; either reset the context and create a new socket(), or
+ * literally re-use the existing s->sock_fd.
  */
 void
 PxSocket_Recycle(PxSocket **sp)
@@ -456,6 +536,16 @@ PxSocket_Recycle(PxSocket **sp)
 
     OutputDebugString(L"recycling...\n");
 
+    if (s->reused_socket) {
+        PxSocket_Reuse(s);
+        new_socket = s;
+        goto done;
+    }
+
+    /* xxx: we haven't updated create_pxsocket() to take a snapshot if we're
+     * not a clean DisconnectEx(TF_REUSE_SOCKET) yet... */
+    __debugbreak();
+
     if (PxSocket_IS_SERVERCLIENT(s))
         flags = Px_SOCKFLAGS_SERVERCLIENT;
     else if (PxSocket_IS_CLIENT(s))
@@ -468,10 +558,7 @@ PxSocket_Recycle(PxSocket **sp)
     if ((PxSocket *)c->io_obj != s)
         __debugbreak();
 
-    /* xxx todo: add s->disconnectex_flags, if set to TF_REUSE here, then add
-     * another code path that supports *actual* socket re-use. */
     if (s->tp_io) {
-        //CancelThreadpoolIo(s->tp_io);
         CloseThreadpoolIo(s->tp_io);
         s->tp_io = NULL;
     }
@@ -488,6 +575,7 @@ PxSocket_Recycle(PxSocket **sp)
     if (new_socket != s)
         __debugbreak();
 
+done:
     *sp = new_socket;
 
     ++c->times_recycled;
@@ -6487,44 +6575,45 @@ send_completed:
 //    goto handle_error;
 
 eof_received:
+    /*
+     * "EOF received" = we called WSARecv() against the socket, and it
+     * returned successfully (i.e. no error was indicated), but the number of
+     * received bytes was 0.
+     *
+     * This indicates a graceful disconnect by the client.
+     *
+     * (I don't particularly like the name "EOF received"; I'd prefer
+     *  something like "graceful disconnect".  But it's what Twisted (and
+     *  Tulip/asyncio) use, so eh.)
+     */
     s->client_disconnected = 1;
 do_disconnect:
     OutputDebugString(L"do_disconnect:\n");
 
     s->this_io_op = PxSocket_IO_DISCONNECT;
 
-    /*
-     * I'm not sure if StartThreadpoolIo(s->sock_fd) is suitable for use with
-     * an overlapped DisconnectEx().  We may need to submit a threadpool wait
-     * against the s->sock_fd handle... or event create a custom WSAEvent, set
-     * overlapped_disconnectex.hEvent to it, and wait on that.
-     */
-    PxOverlapped_Reset(&s->overlapped_disconnectex);
-    StartThreadpoolIo(s->tp_io);
-    if (s->client_disconnected && s->sock_type == SOCK_STREAM) {
-        /* If the client initiated the disconnect, we pass the TF_REUSE_SOCKET
-         * flag to DisconnectEx() to reuse the socket, as the TCP/IP stack
-         * won't have to delay the completion until the TIME_WAIT interval
-         * passes. */
-        assert(PxSocket_IS_SERVERCLIENT(s));
+    /* Determine if we want to use the TF_REUSE_SOCKET flag. */
+    if (s->client_disconnected && s->sock_type == SOCK_STREAM)
         s->reused_socket = 1;
+    else
+        /* Eh, let's try reusing it always. */
+        s->reused_socket = 1;
+
+    if (s->reused_socket) {
+        assert(PxSocket_IS_SERVERCLIENT(s));
         flags = TF_REUSE_SOCKET;
     }
 
+    PxOverlapped_Reset(&s->overlapped_disconnectex);
+    StartThreadpoolIo(s->tp_io);
     success = DisconnectEx(s->sock_fd,
                            &s->overlapped_disconnectex,
                            flags,   /* flags */
                            0);      /* reserved */
 
     if (success) {
-        int stop_sleeping = 0; /* You'd alter this in the debugger to stop
-                                  sleeping... otherwise we're going to sleep
-                                  forever. */
-        int sleeps = 0;
-        s->break_on_iocp_enter = 1;
+        /* We shouldn't ever hit this when doing an overlapped DisconnectEx. */
         __debugbreak();
-        while (!stop_sleeping && ++sleeps)
-            Sleep(1);
 
         /* DisconnectEx() completed synchronously.  Absolutely NFI if a
          * completion packet will be queued... */
@@ -7283,8 +7372,6 @@ create_pxsocket(
     char *val;
     int len = sizeof(int);
     int nonblock = 1;
-    int recycled = 0;
-    int reuse = 0;
     PxSocket *s;
     SOCKET fd = INVALID_SOCKET;
     char *host;
@@ -7323,17 +7410,10 @@ create_pxsocket(
     if (!c)
         return NULL;
 
-    if (c->io_obj) {
-        assert(c->io_type == Px_IOTYPE_SOCKET);
-        s = (PxSocket *)c->io_obj;
-        recycled = 1;
-        if (s->sock_fd != INVALID_SOCKET)
-            reuse = 1;
-        _PxContext_Rewind(c, &s->startup_snapshot);
-    } else {
-        c->io_type = Px_IOTYPE_SOCKET;
-        s = (PxSocket *)_PyHeap_Malloc(c, sizeof(PxSocket), 0, 0);
-    }
+    assert(!c->io_obj);
+
+    c->io_type = Px_IOTYPE_SOCKET;
+    s = (PxSocket *)_PyHeap_Malloc(c, sizeof(PxSocket), 0, 0);
 
     if (!s)
         return NULL;
@@ -7480,12 +7560,9 @@ setnonblock:
     if (ioctlsocket(fd, FIONBIO, &nonblock) == SOCKET_ERROR)
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
 
-/*socket_reuse_entrypoint:*/
-    if (!s->rbuf) {
-        val = (char *)&(s->recvbuf_size);
-        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
-            PxSocket_WSAERROR("getsockopt(SO_RCVBUF)");
-    }
+    val = (char *)&(s->recvbuf_size);
+    if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
+        PxSocket_WSAERROR("getsockopt(SO_RCVBUF)");
 
     assert(s->recvbuf_size >= 0 && s->recvbuf_size <= 65536);
 
@@ -7498,26 +7575,26 @@ setnonblock:
     if (PxSocket_IS_SERVER(s))
         goto set_other_sockopts;
 
-    if (!s->rbuf) {
-        rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
-        rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
-        if (!rbuf)
-            PxSocket_FATAL();
+    assert(!s->rbuf);
 
-        rbuf->s = s;
-        rbuf->ctx = s->ctx;
-        rbuf->w.len = s->recvbuf_size;
-        rbuf->w.buf = (char *)rbuf->ob_sval;
-        s->num_rbufs = 1;
-        s->rbuf = rbuf;
+    rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
+    rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
+    if (!rbuf)
+        PxSocket_FATAL();
 
-        /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
-         * during the PxSocket_IOLoop(), so we don't explicitly reserve
-         * space for one like we do for the receive buffer above. */
-        val = (char *)&(s->sendbuf_size);
-        if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
-            PxSocket_WSAERROR("getsockopt(SO_SNDBUF)");
-    }
+    rbuf->s = s;
+    rbuf->ctx = s->ctx;
+    rbuf->w.len = s->recvbuf_size;
+    rbuf->w.buf = (char *)rbuf->ob_sval;
+    s->num_rbufs = 1;
+    s->rbuf = rbuf;
+
+    /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
+     * during the PxSocket_IOLoop(), so we don't explicitly reserve
+     * space for one like we do for the receive buffer above. */
+    val = (char *)&(s->sendbuf_size);
+    if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
+        PxSocket_WSAERROR("getsockopt(SO_SNDBUF)");
 
     assert(s->sendbuf_size >= 0 && s->sendbuf_size <= 65536);
 
@@ -7573,11 +7650,42 @@ set_other_sockopts:
          */
         s->parent->child = s;
 
-done:
+    if (!PxSocket_IS_SERVER(s)) {
+        PxSocket *socket_snapshot;
+        Heap     *heap_snapshot;
 
-    if (!recycled) {
-        assert(!s->startup_snapshot.size);
-        _PxContext_HeapSnapshot(c, &s->startup_snapshot);
+        /* I haven't thought about (read: implemented any support for) how
+         * client socket (i.e. not accept sockets) re-use would work yet, so
+         * let's just make sure we only hit this path if we're a server client
+         * for now.
+         */
+        if (!PxSocket_IS_SERVERCLIENT(s))
+            __debugbreak();
+
+        assert(!s->startup_socket_snapshot);
+        assert(!s->startup_heap_snapshot);
+
+        s->startup_socket_flags = s->flags;
+
+        socket_snapshot = _PyHeap_Malloc(s->ctx, sizeof(PxSocket), 0, 0);
+        if (!socket_snapshot)
+            __debugbreak();
+
+        heap_snapshot = _PyHeap_Malloc(s->ctx, sizeof(Heap), 0, 0);
+        if (!heap_snapshot)
+            __debugbreak();
+
+        s->startup_socket_snapshot = socket_snapshot;
+        s->startup_heap_snapshot   = heap_snapshot;
+
+        memcpy(s->startup_socket_snapshot, s, sizeof(PxSocket));
+        /* This next line is (at least at the time of writing) identical to
+         * what `_PxContext_HeapSnapshot(c, s->startup_heap_snapshot)` would
+         * perform.  I've used memcpy() directly here instead for two reasons:
+         *      1. It's more obvious what's happening.
+         *      2. It's identical to the above line where we copy the socket.
+         */
+        memcpy(s->startup_heap_snapshot, c->h, sizeof(Heap));
     }
     return (PyObject *)s;
 
@@ -8679,6 +8787,13 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
         /* We can't call TrySubmitThreadpoolCallback() here; we need to
          * have it called after our calling Python code invokes async.run().
          * Otherwise, parallel contexts will start running immediately.
+         *
+         * (Actually, now that I think about it, there's nothing wrong with
+         *  a parallel context running immediately -- the problem is when you
+         *  forget/don't to call async.run()/async.run_once() at all and the
+         *  main thread just ends up terminating because of that.  The proper
+         *  fix should really just be to call async.run_once() as part of
+         *  cleanup/shutdown.)
          */
 
         item = _PyHeap_NewListItem(c);

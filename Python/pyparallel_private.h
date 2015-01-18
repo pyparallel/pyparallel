@@ -934,8 +934,16 @@ typedef struct _PxSocket {
     unsigned int this_cpuid;
     int ioloops;
 
-    /* sockets can take snapshots after they've been initialized */
-    Heap startup_snapshot;
+    /* Start-up snapshots. */
+    Heap     *startup_heap_snapshot;
+    PxSocket *startup_socket_snapshot;
+    /* Ugh, we need to store the "socket flags set at startup" separately
+     * because of our dodgy overloading of 'flags' with both static protocol
+     * information (that will never change) like whether concurrency is set,
+     * versus stateful information like "close scheduled" or "sendfile
+     * scheduled".
+     */
+    int startup_socket_flags;
 
     /* endpoint */
     char  ip[16];
