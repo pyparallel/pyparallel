@@ -1,4 +1,7 @@
 import time
+import socket
+import datetime
+
 import async
 
 class Disconnect:
@@ -8,9 +11,36 @@ class Discard:
     def data_received(self, transport, data):
         pass
 
-class QOTD:
+class Daytime:
+    """
+    Send a string representation of the current time, then disconnect."
+    """
+    def initial_bytes_to_send(self):
+        return time.ctime() + r'\r\n'
+
+class Time:
+    """
+    Send a 32-bit unsigned integer in binary format and network byte order,
+    representing the number of seconds since 00:00 (midnight) January 1st,
+    1900 GMT, then close the connection.
+    """
+    def initial_bytes_to_send(self):
+        delta = datetime.utcnow() - datetime(1900, 1, 1)
+        return socket.htonl(int(delta.total_seconds()))
+
+class StaticQotd:
+    """
+    Send a static value as soon as a client connects, then disconnect.
+    """
     initial_bytes_to_send = b'An apple a day keeps the doctor away.\r\n.'
 
+class DynamicQotd:
+    """
+    Send a dynamic (value is computed just before sending) string to a client,
+    then disconnect.
+    """
+    def initial_bytes_to_send(self):
+        return b'Hello my name is %d' % id(self)
 
 class EchoData:
     def data_received(self, transport, data):

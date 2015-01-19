@@ -94,21 +94,194 @@ class ProductionHttpServer(TCPServerCommand):
     pass
 
 class ChargenServer(TCPServerCommand):
-    pass
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10019
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running chargen on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.Chargen
+        async.register(transport=server, protocol=protocol)
+        async.run()
 
 class DisconnectServer(TCPServerCommand):
-    pass
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10000
 
-class QotdServer(TCPServerCommand):
-    pass
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running disconnect on %s port %d ..." % (ip, port))
+
+        class Disconnect:
+            pass
+        server = async.server(ip, port)
+        protocol = Disconnect
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
+class StaticQotdServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10017
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running static QOTD on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.StaticQotd
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
+class DynamicQotdServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10017
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running dynamic QOTD on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.DynamicQotd
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
+
+class DaytimeServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10013
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running daytime server on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.Daytime
+        async.register(transport=server, protocol=protocol)
+        async.run()
 
 class TimeServer(TCPServerCommand):
-    pass
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10037
 
-class NullSinkServer(TCPServerCommand):
-    pass
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running time server on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.Time
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
+class DiscardServer(TCPServerCommand):
+    # Avoid clashing with ds -> DaytimeServer above.
+    _shortname_ = 'disc'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10009
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running discard server on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = async.services.Discard
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
 
 class EchoServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10007
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running echo server on %s port %d ..." % (ip, port))
+
+        import async.services
+        server = async.server(ip, port)
+        protocol = Disconnect
+        async.register(transport=server, protocol=protocol)
+        async.run()
     pass
 
 #===============================================================================
