@@ -945,6 +945,11 @@ typedef struct _PxSocket {
      */
     int startup_socket_flags;
 
+    int reused;
+    int recycled;
+    int no_tcp_nodelay;
+    int no_exclusive_addr_use;
+
     /* endpoint */
     char  ip[16];
     char *host;
@@ -1604,8 +1609,8 @@ static const char *pxsocket_kwlist_formatstring = \
     &(s->sock_family),                       \
     &(s->sock_type),                         \
     &(s->sock_proto),                        \
-    &(no_tcp_nodelay),                       \
-    &(no_exclusive_addr_use)
+    &(s->no_tcp_nodelay),                    \
+    &(s->no_exclusive_addr_use)
     /*
     &(s->handler)
     &(s->connection_made),                   \

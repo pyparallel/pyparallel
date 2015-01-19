@@ -11,6 +11,13 @@ extern "C" {
 #include "frameobject.h"
 #include "structmember.h"
 
+/* Toggle to 1 to assist with tracing PxSocket_IOLoop(). */
+#if 0
+#define ODS(s) OutputDebugString(s)
+#else
+#define ODS(s)
+#endif
+
 /* XXX TODO:
  *      - Either investigate why DisconnectEx/TF_REUSE seems to suck or just
  *        drop it altogether (currently dropped).
@@ -422,8 +429,6 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
     /* Heap snapshot lines up with context's current heap, so we can now
      * memcpy the snapshot back over the active heap. */
     memcpy(c->h, s, sizeof(Heap));
-
-
 }
 
 void
@@ -511,12 +516,13 @@ PxSocket_Reuse(PxSocket *s)
      */
     _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
 
-    /* I think we just need to reset the rbuf's WSABUF... */
+    /* Clear sbuf, reset rbuf. */
+    s->sbuf = NULL;
     s->rbuf->w.len = s->recvbuf_size;
     s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
-
     PxOverlapped_Reset(&s->rbuf->ol);
 
+    s->reused = 1;
 
 }
 
@@ -532,42 +538,16 @@ PxSocket_Recycle(PxSocket **sp)
     Context *c = s->ctx;
     PxSocket *parent = s->parent;
     TP_IO *tp_io = s->tp_io;
-    int flags;
 
-    OutputDebugString(L"recycling...\n");
+    ODS(L"recycling...\n");
 
     if (s->reused_socket) {
         PxSocket_Reuse(s);
         new_socket = s;
-        goto done;
+    } else {
+        new_socket = (PxSocket *)create_pxsocket(NULL, NULL, 0, NULL, c);
     }
 
-    /* xxx: we haven't updated create_pxsocket() to take a snapshot if we're
-     * not a clean DisconnectEx(TF_REUSE_SOCKET) yet... */
-    __debugbreak();
-
-    if (PxSocket_IS_SERVERCLIENT(s))
-        flags = Px_SOCKFLAGS_SERVERCLIENT;
-    else if (PxSocket_IS_CLIENT(s))
-        flags = Px_SOCKFLAGS_CLIENT;
-    else if (PxSocket_IS_SERVER(s))
-        flags = Px_SOCKFLAGS_SERVER;
-    else
-        assert(0);
-
-    if ((PxSocket *)c->io_obj != s)
-        __debugbreak();
-
-    if (s->tp_io) {
-        CloseThreadpoolIo(s->tp_io);
-        s->tp_io = NULL;
-    }
-    if (s->sock_fd != INVALID_SOCKET) {
-        int retval = closesocket(s->sock_fd);
-        s->sock_fd = INVALID_SOCKET;
-    }
-
-    new_socket = (PxSocket *)create_pxsocket(NULL, NULL, flags, parent, c);
     if (!new_socket)
         /* Eh, what should we do here? */
         __debugbreak();
@@ -575,7 +555,6 @@ PxSocket_Recycle(PxSocket **sp)
     if (new_socket != s)
         __debugbreak();
 
-done:
     *sp = new_socket;
 
     ++c->times_recycled;
@@ -5895,9 +5874,6 @@ end:
 
 int PxSocket_InitInitialBytes(PxSocket *s);
 
-#if 0
-#define OutputDebugString(s)
-#endif
 /* Hybrid sync/async IO loop. */
 void
 PxSocket_IOLoop(PxSocket *s)
@@ -5945,7 +5921,7 @@ PxSocket_IOLoop(PxSocket *s)
 
     s->ioloops++;
 
-    OutputDebugString(L"PxSocket_IOLoop()\n");
+    ODS(L"PxSocket_IOLoop()\n");
 
     if (s->next_io_op) {
         int op = s->next_io_op;
@@ -5992,11 +5968,11 @@ PxSocket_IOLoop(PxSocket *s)
     ASSERT_UNREACHABLE();
 
 do_connect:
-    OutputDebugString(L"do_connect:\n");
+    ODS(L"do_connect:\n");
     assert(0);
 
 do_accept:
-    OutputDebugString(L"do_accept:\n");
+    ODS(L"do_accept:\n");
     //rbuf = NULL;
     if (!PxSocket_InitInitialBytes(s))
         PxSocket_EXCEPTION();
@@ -6065,7 +6041,7 @@ do_accept:
     assert(0);
 
 overlapped_acceptex_callback:
-    OutputDebugString(L"do_acceptex_callback:\n");
+    ODS(L"do_acceptex_callback:\n");
     if (c->io_result != NO_ERROR) {
         if (s->overlapped_acceptex.Internal == NO_ERROR)
             __debugbreak();
@@ -6084,7 +6060,7 @@ overlapped_acceptex_callback:
     /* Intentional follow-on to accepted */
 
 accepted:
-    OutputDebugString(L"accepted:\n");
+    ODS(L"accepted:\n");
 
     /* Update the socket context, */
     err = setsockopt(s->sock_fd,
@@ -6114,7 +6090,7 @@ accepted:
     goto start;
 
 overlapped_connectex_callback:
-    OutputDebugString(L"overlapped_connectex_callback:\n");
+    ODS(L"overlapped_connectex_callback:\n");
     assert(0);
 
 //connected:
@@ -6122,13 +6098,13 @@ overlapped_connectex_callback:
 //    goto maybe_shutdown_send_or_recv;
 
 overlapped_disconnectex_callback:
-    OutputDebugString(L"overlapped_disconnectex_callback:\n");
+    ODS(L"overlapped_disconnectex_callback:\n");
     /* Well... this seems like an easy one... just recycle the socket for now
      * without bothering to check for errors and whatnot. */
     PxSocket_RECYCLE(s);
 
 start:
-    OutputDebugString(L"start:\n");
+    ODS(L"start:\n");
 
     assert(s->protocol);
 
@@ -6213,7 +6189,7 @@ start:
 
     /* Intentional follow-on to maybe_do_connection_made. */
 maybe_do_connection_made:
-    OutputDebugString(L"maybe_do_connection_made:\n");
+    ODS(L"maybe_do_connection_made:\n");
 
     assert(
         s->last_io_op == PxSocket_IO_ACCEPT ||
@@ -6227,7 +6203,7 @@ maybe_do_connection_made:
     goto try_recv;
 
 definitely_do_connection_made:
-    OutputDebugString(L"definitely_do_connection_made:\n");
+    ODS(L"definitely_do_connection_made:\n");
     assert(!(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CONNECTION_MADE));
     func = s->connection_made;
     assert(func);
@@ -6291,7 +6267,7 @@ definitely_do_connection_made:
     /* Intentional follow-on to do_send. */
 
 do_send:
-    OutputDebugString(L"do_send:\n");
+    ODS(L"do_send:\n");
     assert(sbuf);
     w = &sbuf->w;
 
@@ -6314,7 +6290,7 @@ do_send:
         goto do_async_send;
 
 try_synchronous_send:
-    OutputDebugString(L"try_synchronous_send:\n");
+    ODS(L"try_synchronous_send:\n");
     s->send_id++;
     s->this_io_op = PxSocket_IO_SEND;
 
@@ -6382,7 +6358,7 @@ try_synchronous_send:
     ASSERT_UNREACHABLE();
 
 do_async_send:
-    OutputDebugString(L"do_async_send:\n");
+    ODS(L"do_async_send:\n");
     /* There's some unavoidable code duplication between do_send: above and
      * do_async_send: below.  If you change one, check to see if you need to
      * change the other. */
@@ -6433,7 +6409,7 @@ do_async_send:
     assert(0);
 
 overlapped_send_callback:
-    OutputDebugString(L"overlapped_send_callback:\n");
+    ODS(L"overlapped_send_callback:\n");
     /* Entry point for an overlapped send. */
 
     sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
@@ -6480,7 +6456,7 @@ overlapped_send_callback:
     /* Intentional follow-on to send_complete... */
 
 send_completed:
-    OutputDebugString(L"send_completed:\n");
+    ODS(L"send_completed:\n");
     func = s->send_complete;
     if (!func)
         goto try_recv;
@@ -6588,7 +6564,7 @@ eof_received:
      */
     s->client_disconnected = 1;
 do_disconnect:
-    OutputDebugString(L"do_disconnect:\n");
+    ODS(L"do_disconnect:\n");
 
     s->this_io_op = PxSocket_IO_DISCONNECT;
 
@@ -6642,7 +6618,7 @@ do_disconnect:
     ASSERT_UNREACHABLE();
 
 disconnected:
-    OutputDebugString(L"disconnected:\n");
+    ODS(L"disconnected:\n");
 //connection_closed:
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
@@ -6667,7 +6643,7 @@ disconnected:
     goto end;
 
 try_recv:
-    OutputDebugString(L"try_recv:\n");
+    ODS(L"try_recv:\n");
 
     if ((Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED) ||
         (!(PxSocket_CAN_RECV(s))))
@@ -6683,7 +6659,7 @@ try_recv:
     }
 
 do_recv:
-    OutputDebugString(L"do_recv:\n");
+    ODS(L"do_recv:\n");
     assert(!PxSocket_RECV_MORE(s));
     assert(PxSocket_CAN_RECV(s));
 
@@ -6717,7 +6693,7 @@ do_recv:
         goto do_async_recv;
 
 try_synchronous_recv:
-    OutputDebugString(L"try_synchronous_recv:\n");
+    ODS(L"try_synchronous_recv:\n");
     s->recv_id++;
 
     assert(recv_flags == 0);
@@ -6789,7 +6765,7 @@ try_synchronous_recv:
     ASSERT_UNREACHABLE();
 
 do_async_recv:
-    OutputDebugString(L"do_async_recv:\n");
+    ODS(L"do_async_recv:\n");
     assert(rbuf);
     assert(w);
 
@@ -6825,7 +6801,7 @@ do_async_recv:
     ASSERT_UNREACHABLE();
 
 overlapped_recv_callback:
-    OutputDebugString(L"overlapped_recv_callback:\n");
+    ODS(L"overlapped_recv_callback:\n");
     /* Entry point for an overlapped recv. */
     assert(!snapshot);
     rbuf = s->rbuf;
@@ -6867,7 +6843,7 @@ overlapped_recv_callback:
     /* Intentional follow-on to process_data_received... */
 
 process_data_received:
-    OutputDebugString(L"process_data_received:\n");
+    ODS(L"process_data_received:\n");
     /*
      * So, this is the point where we need to check the data we've received
      * for the sole purpose of seeing if we need to a) receive more data, or
@@ -6894,7 +6870,7 @@ process_data_received:
     goto do_data_received_callback;
 
 do_data_received_callback:
-    OutputDebugString(L"do_data_received_callback:\n");
+    ODS(L"do_data_received_callback:\n");
 
     //assert(recv_nbytes > 0);
     s->total_bytes_received += s->num_bytes_just_received;
@@ -6994,7 +6970,7 @@ do_data_received_callback:
     goto do_send;
 
 do_sendfile:
-    OutputDebugString(L"do_sendfile:\n");
+    ODS(L"do_sendfile:\n");
 
     s->send_id++;
     s->this_io_op = PxSocket_IO_SENDFILE;
@@ -7085,7 +7061,7 @@ do_sendfile:
     ASSERT_UNREACHABLE();
 
 overlapped_sendfile_callback:
-    OutputDebugString(L"overlapped_sendfile_callback:\n");
+    ODS(L"overlapped_sendfile_callback:\n");
     /* Entry point for an overlapped TransmitFile */
     CloseHandle(s->sendfile_handle);
 
@@ -7120,7 +7096,7 @@ overlapped_sendfile_callback:
     goto send_completed;
 
 do_lines_received_callback:
-    OutputDebugString(L"do_lines_received_callback:\n");
+    ODS(L"do_lines_received_callback:\n");
     func = s->lines_received;
     assert(func);
 
@@ -7128,7 +7104,7 @@ do_lines_received_callback:
     assert(0);
 
 end:
-    OutputDebugString(L"end:\n");
+    ODS(L"end:\n");
     InterlockedDecrement(&_PxSocket_ActiveIOLoops);
 
     return;
@@ -7380,8 +7356,6 @@ create_pxsocket(
     Py_ssize_t hostlen;
     int rbuf_size;
     RBUF *rbuf;
-    int no_tcp_nodelay = 0;
-    int no_exclusive_addr_use = 0;
 
     PyTypeObject *tp = &PxSocket_Type;
 
@@ -7410,6 +7384,64 @@ create_pxsocket(
     if (!c)
         return NULL;
 
+    if (c->io_obj) {
+        /*
+         * If we hit this code path, the context and socket have already been
+         * created, but the socket was abnormally terminated for whatever
+         * reason, so the underlying sock_fd needs to be discarded and a new
+         * socket created.
+         */
+        PxSocket old;
+        if (c->io_type != Px_IOTYPE_SOCKET)
+            __debugbreak();
+
+        s = (PxSocket *)c->io_obj;
+        memcpy(&old, s, sizeof(PxSocket));
+
+        /* Mimic the applicable invariants in PxSocket_Reuse()... */
+        if (!s->startup_socket_snapshot)
+            __debugbreak();
+
+        if (!s->startup_heap_snapshot)
+            __debugbreak();
+
+        if (old.ctx != s->ctx)
+            __debugbreak();
+
+        if (old.ctx != s->startup_heap_snapshot->ctx)
+            __debugbreak();
+
+        if (old.ctx != s->rbuf->ctx)
+            __debugbreak();
+
+        if (s->rbuf->s != s)
+            __debugbreak();
+
+        if (s->tp_io) {
+            CloseThreadpoolIo(s->tp_io);
+            s->tp_io = NULL;
+        }
+        if (s->sock_fd != INVALID_SOCKET) {
+            int retval = closesocket(s->sock_fd);
+            s->sock_fd = INVALID_SOCKET;
+        }
+
+        /* Copy the startup socket snapshot over the socket. */
+        memcpy(s, s->startup_socket_snapshot, sizeof(PxSocket));
+
+        /* Copy the state of the critical section back. */
+        memcpy(&old.cs, &s->cs, sizeof(CRITICAL_SECTION));
+
+        _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
+
+        /* Clear sbuf.  The rbuf will be reset below. */
+        s->sbuf = NULL;
+
+        s->recycled = 1;
+        goto create_socket;
+
+    }
+
     assert(!c->io_obj);
 
     c->io_type = Px_IOTYPE_SOCKET;
@@ -7422,6 +7454,8 @@ create_pxsocket(
 
     if (!init_object(c, c->io_obj, tp, 0))
         PxSocket_FATAL();
+
+    InitializeCriticalSectionAndSpinCount(&(s->cs), CS_SOCK_SPINCOUNT);
 
     s->ctx = c;
 
@@ -7575,19 +7609,23 @@ setnonblock:
     if (PxSocket_IS_SERVER(s))
         goto set_other_sockopts;
 
-    assert(!s->rbuf);
+    if (!s->rbuf) {
+        rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
+        rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
+        if (!rbuf)
+            PxSocket_FATAL();
 
-    rbuf_size = s->recvbuf_size + Px_PTR_ALIGN(sizeof(RBUF));
-    rbuf = (RBUF *)_PyHeap_Malloc(s->ctx, rbuf_size, 0, 0);
-    if (!rbuf)
-        PxSocket_FATAL();
+        rbuf->s = s;
+        rbuf->ctx = s->ctx;
+        s->num_rbufs = 1;
+        s->rbuf = rbuf;
+    } else {
+        /* xxx: the rbuf buffer (ob_sval?) should be zero here, right? */
+        PxOverlapped_Reset(&s->rbuf->ol);
+    }
 
-    rbuf->s = s;
-    rbuf->ctx = s->ctx;
-    rbuf->w.len = s->recvbuf_size;
-    rbuf->w.buf = (char *)rbuf->ob_sval;
-    s->num_rbufs = 1;
-    s->rbuf = rbuf;
+    s->rbuf->w.len = s->recvbuf_size;
+    s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
 
     /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
      * during the PxSocket_IOLoop(), so we don't explicitly reserve
@@ -7603,7 +7641,7 @@ set_other_sockopts:
         int i = 1;
         int err;
 
-        if (!no_tcp_nodelay) {
+        if (!s->no_tcp_nodelay) {
             err = setsockopt(fd,
                              SOL_SOCKET,
                              TCP_NODELAY,
@@ -7613,7 +7651,7 @@ set_other_sockopts:
                 PxSocket_WSAERROR("setsockopt(TCP_NODELAY)");
         }
 
-        if (PxSocket_IS_SERVER(s) && !no_exclusive_addr_use) {
+        if (PxSocket_IS_SERVER(s) && !s->no_exclusive_addr_use) {
             err = setsockopt(fd,
                              SOL_SOCKET,
                              SO_EXCLUSIVEADDRUSE,
@@ -7631,10 +7669,11 @@ set_other_sockopts:
     if (!s->tp_io)
         PxSocket_SYSERROR("CreateThreadpoolIo(PyParallel_IOCallback)");
 
+    if (s->recycled)
+        goto done;
+
     if (PxSocket_IS_SERVERCLIENT(s))
         s->acceptex_addr_len = sizeof(SOCKADDR) + 16;
-
-    InitializeCriticalSectionAndSpinCount(&(s->cs), CS_SOCK_SPINCOUNT);
 
     s->parent = parent;
     if (!s->parent) {
@@ -7687,9 +7726,11 @@ set_other_sockopts:
          */
         memcpy(s->startup_heap_snapshot, c->h, sizeof(Heap));
     }
+done:
     return (PyObject *)s;
 
 end:
+    /* Ugh, this logic is not even remotely correct. */
     assert(PyErr_Occurred());
     if (PyErr_Occurred()) {
         assert(s->sock_fd == INVALID_SOCKET);
@@ -8032,7 +8073,7 @@ PxSocket_IOCallback(
 
         }
     }
-    LeaveCriticalSection(&(s->cs));
+    //LeaveCriticalSection(&(s->cs));
 end:
     return;
 }
@@ -8747,12 +8788,12 @@ timeout:
 
 end:
     if (s->sock_fd != INVALID_SOCKET) {
-        closesocket(s->sock_fd);
-        s->sock_fd = INVALID_SOCKET;
         if (s->tp_io) {
             CloseThreadpoolIo(s->tp_io);
             s->tp_io = NULL;
         }
+        closesocket(s->sock_fd);
+        s->sock_fd = INVALID_SOCKET;
     }
     PxSocket_CallbackComplete(s->ctx);
 }
