@@ -158,6 +158,7 @@
     <TargetName Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">$(PyDllName)</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">$(PyDllName)</TargetName>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PyDllName)</TargetName>
+    <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</PreBuildEventUseInBuild>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

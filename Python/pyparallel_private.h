@@ -336,13 +336,7 @@ typedef struct _PyParallelHeap {
     size_t  frees;
     size_t  alignment_mismatches;
     size_t  bytes_wasted;
-
-    /* snapshot-only herein (keep snapshot_id first) */
-    size_t  snapshot_id;
-    char    bitmap_index;
 } PyParallelHeap, Heap;
-
-#define PxHeap_SNAPSHOT_COPY_SIZE (offsetof(Heap, snapshot_id))
 
 typedef struct _PyParallelContextStats {
     unsigned __int64 submitted;
@@ -564,6 +558,8 @@ typedef struct _PxState {
     HANDLE  heap_handle;            \
     Heap    heap;                   \
     Heap   *h;                      \
+    Heap    snapshot;               \
+    Heap   *s;                      \
     PxState *px;                    \
     PyThreadState *tstate;          \
     PyThreadState *pstate;          \
@@ -579,23 +575,6 @@ typedef struct _PxContext {
 typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
     Stats     stats;
-
-    CRITICAL_SECTION    heap_cs;
-
-    size_t              snapshot_id;
-    CRITICAL_SECTION    snapshots_cs;
-    volatile Px_INTPTR  snapshots_bitmap;
-    Heap               *snapshots[Px_INTPTR_BITS];
-    Heap                snapshot[Px_INTPTR_BITS];
-
-    /*
-    size_t               rbuf_id;
-    Px_INTPTR * volatile rbuf_bitmaps;
-    int                  rbuf_nbitmaps;
-    WSABUF            ***rbufs;
-    SBUF             **rbuf;
-    */
-
 
     PyObject *waitobj;
     PyObject *waitobj_timeout;
@@ -955,6 +934,22 @@ typedef struct _PxSocket {
     unsigned int this_cpuid;
     int ioloops;
 
+    /* Start-up snapshots. */
+    Heap     *startup_heap_snapshot;
+    PxSocket *startup_socket_snapshot;
+    /* Ugh, we need to store the "socket flags set at startup" separately
+     * because of our dodgy overloading of 'flags' with both static protocol
+     * information (that will never change) like whether concurrency is set,
+     * versus stateful information like "close scheduled" or "sendfile
+     * scheduled".
+     */
+    int startup_socket_flags;
+
+    int reused;
+    int recycled;
+    int no_tcp_nodelay;
+    int no_exclusive_addr_use;
+
     /* endpoint */
     char  ip[16];
     char *host;
@@ -999,6 +994,9 @@ typedef struct _PxSocket {
     int       max_sync_acceptex_attempts;
 
     int       lines_mode_active;
+
+    int       client_disconnected;
+    int       reused_socket;
 
     /* sendfile stuff */
     DWORD  sendfile_nbytes;
@@ -1611,8 +1609,8 @@ static const char *pxsocket_kwlist_formatstring = \
     &(s->sock_family),                       \
     &(s->sock_type),                         \
     &(s->sock_proto),                        \
-    &(no_tcp_nodelay),                       \
-    &(no_exclusive_addr_use)
+    &(s->no_tcp_nodelay),                    \
+    &(s->no_exclusive_addr_use)
     /*
     &(s->handler)
     &(s->connection_made),                   \
