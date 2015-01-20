@@ -133,10 +133,9 @@ class DisconnectServer(TCPServerCommand):
 
         self._out("Running disconnect on %s port %d ..." % (ip, port))
 
-        class Disconnect:
-            pass
+        import async.services
         server = async.server(ip, port)
-        protocol = Disconnect
+        protocol = async.services.Disconnect
         async.register(transport=server, protocol=protocol)
         async.run()
 
@@ -188,6 +187,8 @@ class DynamicQotdServer(TCPServerCommand):
 
 
 class DaytimeServer(TCPServerCommand):
+    _shortname_ = 'day'
+
     port = None
     class PortArg(NonEphemeralPortInvariant):
         _help = 'port to listen on [default: %default]'
@@ -234,7 +235,6 @@ class TimeServer(TCPServerCommand):
         async.run()
 
 class DiscardServer(TCPServerCommand):
-    # Avoid clashing with ds -> DaytimeServer above.
     _shortname_ = 'disc'
 
     port = None
