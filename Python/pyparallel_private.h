@@ -399,6 +399,11 @@ typedef struct _PxPages {
     UT_hash_handle hh;
 } PxPages;
 
+typedef struct _PxParents {
+    PyObject *ob;
+    UT_hash_handle hh;
+} PxParents;
+
 #define PyAsync_IO_BUFSIZE (64 * 1024)
 
 #define PyAsync_NUM_BUFS (32)
@@ -450,6 +455,9 @@ typedef struct _PxState {
 
     SRWLOCK     pages_srwlock;
     PxPages    *pages;
+
+    SRWLOCK     parents_srwlock;
+    PxParents  *parents;
 
     PyThreadState *tstate;
 
@@ -997,8 +1005,11 @@ typedef struct _PxSocket {
 
     int       client_disconnected;
     int       reused_socket;
+    int       in_overlapped_callback;
 
     /* sendfile stuff */
+    int    sendfile_flags;
+    DWORD  sendfile_wsa_error;
     DWORD  sendfile_nbytes;
     HANDLE sendfile_handle;
     Heap  *sendfile_snapshot;
@@ -1017,11 +1028,18 @@ typedef struct _PxSocket {
     int     num_rbufs;
 
     DWORD wsa_error;
+    DWORD recv_wsa_error;
+    DWORD send_wsa_error;
+    DWORD connectex_wsa_error;
+    DWORD acceptex_wsa_error;
+    DWORD disconnectex_wsa_error;
 
     OVERLAPPED overlapped_acceptex;
     OVERLAPPED overlapped_connectex;
     OVERLAPPED overlapped_disconnectex;
     OVERLAPPED overlapped_sendfile;
+
+    int   disconnectex_flags;
 
     int connect_time; /* seconds */
 
@@ -1067,6 +1085,13 @@ typedef struct _PxSocket {
      */
     PxSocket *child;
 
+    int child_id;
+
+    /* Linked-list pointers for child sockets. */
+    CRITICAL_SECTION links_cs;
+    PxSocket *prev;
+    PxSocket *next;
+
     /* Following members are only applicable to the listen socket of a server
      * socket.
      */
@@ -1086,14 +1111,14 @@ typedef struct _PxSocket {
      */
     volatile unsigned long clients_connected;
 
-    /* Number of sockets in the DisconnectEx() TF_REUSE limbo. */
-    volatile unsigned long clients_disconnected;
+    /* Number of sockets in an overlapped DisconnectEx() state. */
+    volatile unsigned long clients_disconnecting;
 
-
-    /* Protects the *first and *last child pointers. */
+    /* Protects the *first and *last child pointers, and next_child_id. */
     CRITICAL_SECTION children_cs;
     PxSocket *first;
     PxSocket *last;
+    int num_children;
 
     int listen_backlog;
 
@@ -1103,6 +1128,14 @@ typedef struct _PxSocket {
     HANDLE    shutdown;
     HANDLE    high_memory;
     HANDLE    wait_handles[5];
+
+    /* Counters for above events. */
+    int fd_accept_count;
+    int client_connected_count;
+    int low_memory_count;
+    int shutdown_count;
+    int high_memory_count;
+    int wait_timeout_count;
 
     /* Misc debug/helper stuff. */
     int break_on_iocp_enter;

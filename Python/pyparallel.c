@@ -18,14 +18,6 @@ extern "C" {
 #define ODS(s)
 #endif
 
-/* XXX TODO:
- *      - Either investigate why DisconnectEx/TF_REUSE seems to suck or just
- *        drop it altogether (currently dropped).
- *      - Finish inlining exception/error handlers in IOLoop.
- *      - Implement cleanup routines and bind to thread destroy.
- *      - Finish IOLoop logic.
- */
-
 #define CS_SOCK_SPINCOUNT 4
 
 Py_CACHE_ALIGN
@@ -369,8 +361,42 @@ PxContext_HeapSnapshot(Context *c)
     return c->s;
 }
 
-void _PyHeap_Reset(Heap *h);
-void _PyHeap_EnsureReset(Heap *h);
+/* Ensure (assert/break) that the given heap is in the initial state. */
+void
+_PyHeap_EnsureReset(Heap *h)
+{
+    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
+    size_t remaining = h->remaining;
+    size_t allocated = h->allocated;
+    size_t size = h->size;
+
+    size_t expected_remaining = size - aligned_sizeof_heap;
+    size_t expected_allocated = aligned_sizeof_heap;
+
+    void *expected_next = Px_PTR_ADD(h->base, h->allocated);
+
+    if (remaining != expected_remaining)
+        __debugbreak();
+
+    if (allocated != expected_allocated)
+        __debugbreak();
+
+    if (h->next != expected_next)
+        __debugbreak();
+}
+
+void
+_PyHeap_Reset(Heap *h)
+{
+    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
+    h->remaining = h->size - aligned_sizeof_heap;
+    h->allocated = aligned_sizeof_heap;
+    h->next = Px_PTR_ADD(h->base, aligned_sizeof_heap);
+    h->next_alignment = Px_GET_ALIGNMENT(h->next);
+
+    ZeroMemory(h->next, h->remaining);
+}
+
 
 void
 _PxContext_Rewind(Context *c, Heap *snapshot)
@@ -412,7 +438,7 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
             _PyHeap_Reset(c->h);
-            _PyHeap_EnsureReset(c->h);
+            //_PyHeap_EnsureReset(c->h);
             c->h = c->h->sle_prev;
         }
     } else if (c->h->allocated == s->allocated) {
@@ -542,9 +568,56 @@ PxSocket_Recycle(PxSocket **sp)
     ODS(L"recycling...\n");
 
     if (s->reused_socket) {
+        int failed;
+        int errval;
+        int errlen = sizeof(int);
+        failed = getsockopt(s->sock_fd,
+                            SOL_SOCKET,
+                            SO_ERROR,
+                            (char *)&errval,
+                            &errlen);
+        if (failed)
+            __debugbreak();
+
+        /* Make sure the socket didn't have an error. */
+        if (errval != NO_ERROR)
+            __debugbreak();
+
+        /* Make sure wsa_error aligns with errval... */
+        if (s->wsa_error != NO_ERROR)
+            __debugbreak();
+
+        /* Make sure the last operation was either a DisconnectEx() with
+         * TF_REUSE_SOCKET flags, or TransmitFile() with TF_DISCONNECT and
+         * TF_REUSE_SOCKET. */
+        assert(s->last_io_op);
+        if (s->last_io_op == PxSocket_IO_DISCONNECT) {
+            if (s->disconnectex_flags != TF_REUSE_SOCKET)
+                __debugbreak();
+        } else if (s->last_io_op == PxSocket_IO_SENDFILE) {
+            DWORD expected = TF_REUSE_SOCKET | TF_DISCONNECT;
+            if (s->sendfile_flags != expected)
+                __debugbreak();
+        } else
+            __debugbreak();
+
         PxSocket_Reuse(s);
         new_socket = s;
     } else {
+
+        /* Do an inverted test of the logic above if the socket isn't
+         * indicating an error. */
+        if (s->wsa_error == NO_ERROR) {
+            if (s->last_io_op == PxSocket_IO_DISCONNECT) {
+                if (s->disconnectex_flags == TF_REUSE_SOCKET)
+                    __debugbreak();
+            } else if (s->last_io_op == PxSocket_IO_SENDFILE) {
+                DWORD expected = TF_REUSE_SOCKET | TF_DISCONNECT;
+                if (s->sendfile_flags == expected)
+                    __debugbreak();
+            }
+        }
+
         new_socket = (PxSocket *)create_pxsocket(NULL, NULL, 0, NULL, c);
     }
 
@@ -1969,42 +2042,6 @@ _PyParallel_ContextGuardFailure(const char *function,
 #define Px_SIZEOF_HEAP        Px_CACHE_ALIGN(sizeof(Heap))
 #define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
 #define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
-
-/* Ensure (assert/break) that the given heap is in the initial state. */
-void
-_PyHeap_EnsureReset(Heap *h)
-{
-    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
-    size_t remaining = h->remaining;
-    size_t allocated = h->allocated;
-    size_t size = h->size;
-
-    size_t expected_remaining = size - aligned_sizeof_heap;
-    size_t expected_allocated = aligned_sizeof_heap;
-
-    void *expected_next = Px_PTR_ADD(h->base, h->allocated);
-
-    if (remaining != expected_remaining)
-        __debugbreak();
-
-    if (allocated != expected_allocated)
-        __debugbreak();
-
-    if (h->next != expected_next)
-        __debugbreak();
-}
-
-void
-_PyHeap_Reset(Heap *h)
-{
-    size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
-    h->remaining = h->size - aligned_sizeof_heap;
-    h->allocated = aligned_sizeof_heap;
-    h->next = Px_PTR_ADD(h->base, aligned_sizeof_heap);
-    h->next_alignment = Px_GET_ALIGNMENT(h->next);
-
-    ZeroMemory(h->next, h->remaining);
-}
 
 void *
 Heap_Init(Context *c, size_t n, int page_size)
@@ -5895,7 +5932,6 @@ PxSocket_IOLoop(PxSocket *s)
     Heap *snapshot = NULL;
     int i, n, success, flags = 0;
     TRANSMIT_FILE_BUFFERS *tf = NULL;
-    int was_overlapped = 0;
 
     /* AcceptEx stuff */
     DWORD sockaddr_len, local_addr_len, remote_addr_len;
@@ -5926,6 +5962,7 @@ PxSocket_IOLoop(PxSocket *s)
     if (s->next_io_op) {
         int op = s->next_io_op;
         s->next_io_op = 0;
+        s->in_overlapped_callback = 0;
         switch (op) {
             case PxSocket_IO_CONNECT:
                 s->this_io_op = PxSocket_IO_CONNECT;
@@ -5936,7 +5973,7 @@ PxSocket_IOLoop(PxSocket *s)
                 assert(0);
         }
     } else {
-        was_overlapped = 1;
+        s->in_overlapped_callback = 1;
         assert(s->last_io_op);
         switch (s->last_io_op) {
             case PxSocket_IO_ACCEPT:
@@ -6019,16 +6056,21 @@ do_accept:
          * queued.  The number of received bytes will live in
          * s->acceptex_recv_bytes.
          */
+
+        /* xxx: do accepts ever complete synchronously when we specify an
+         * overlapped struct? */
+        __debugbreak();
         s->last_io_op = PxSocket_IO_ACCEPT;
         s->num_bytes_just_received = s->acceptex_recv_bytes;
         goto accepted;
     } else {
         wsa_error = WSAGetLastError();
-        if (wsa_error == WSA_IO_PENDING)
+        if (wsa_error == WSA_IO_PENDING) {
             /* Overlapped accept initiated successfully, a completion packet
              * will be posted when a new client connects. */
+            InterlockedIncrement(&s->parent->accepts_posted);
             goto end;
-        else if (wsa_error == WSAECONNRESET) {
+        } else if (wsa_error == WSAECONNRESET) {
             /* MSDN: "If the error is WSAECONNRESET, an incoming connection
              * was indicated, but was subsequently terminated by the remote
              * peer prior to accepting the call."
@@ -6042,6 +6084,7 @@ do_accept:
 
 overlapped_acceptex_callback:
     ODS(L"do_acceptex_callback:\n");
+    InterlockedDecrement(&s->parent->accepts_posted);
     if (c->io_result != NO_ERROR) {
         if (s->overlapped_acceptex.Internal == NO_ERROR)
             __debugbreak();
@@ -6085,7 +6128,9 @@ accepted:
     memcpy(&(s->local_addr), local_addr, local_addr_len);
     memcpy(&(s->remote_addr), remote_addr, remote_addr_len);
 
-    //InterlockedIncrement(&(s->parent->clients_connected));
+    InterlockedIncrement(&(s->parent->clients_connected));
+    //InterlockedIncrement(&(s->parent->num_accepts_wanted));
+    SetEvent(s->client_connected);
 
     goto start;
 
@@ -6101,6 +6146,7 @@ overlapped_disconnectex_callback:
     ODS(L"overlapped_disconnectex_callback:\n");
     /* Well... this seems like an easy one... just recycle the socket for now
      * without bothering to check for errors and whatnot. */
+    InterlockedDecrement(&s->parent->clients_disconnecting);
     PxSocket_RECYCLE(s);
 
 start:
@@ -6273,7 +6319,7 @@ do_send:
 
     s->last_io_op = PxSocket_IO_SEND;
 
-    if (!was_overlapped)
+    if (!s->in_overlapped_callback)
         goto do_async_send;
 
     if (PxSocket_THROUGHPUT(s)) {
@@ -6370,6 +6416,9 @@ do_async_send:
 
     PxOverlapped_Reset(&sbuf->ol);
     StartThreadpoolIo(s->tp_io);
+
+    if (s->sbuf != sbuf)
+        __debugbreak();
 
     err = WSASend(s->sock_fd,
                   &sbuf->w,
@@ -6577,14 +6626,15 @@ do_disconnect:
 
     if (s->reused_socket) {
         assert(PxSocket_IS_SERVERCLIENT(s));
-        flags = TF_REUSE_SOCKET;
+        s->disconnectex_flags = TF_REUSE_SOCKET;
     }
 
     PxOverlapped_Reset(&s->overlapped_disconnectex);
     StartThreadpoolIo(s->tp_io);
+    InterlockedDecrement(&s->parent->clients_connected);
     success = DisconnectEx(s->sock_fd,
                            &s->overlapped_disconnectex,
-                           flags,   /* flags */
+                           s->disconnectex_flags,
                            0);      /* reserved */
 
     if (success) {
@@ -6599,13 +6649,17 @@ do_disconnect:
         goto disconnected;
     } else {
         wsa_error = WSAGetLastError();
-        if (wsa_error == WSA_IO_PENDING)
+        if (wsa_error == WSA_IO_PENDING) {
             /* Overlapped IO successfully initiated; completion packet will
              * eventually get queued (when the IO completes or an error
              * occurs). */
+            InterlockedIncrement(&s->parent->clients_disconnecting);
             goto end;
+        }
 
-        switch (s->wsa_error) {
+        s->reused_socket = 0;
+
+        switch (s->disconnectex_wsa_error) {
             case WSAENETRESET:
             case WSAECONNABORTED:
             case WSAECONNRESET:
@@ -6678,7 +6732,7 @@ do_recv:
     s->this_io_op = PxSocket_IO_RECV;
     c->io_result = NO_ERROR;
 
-    if (!was_overlapped)
+    if (!s->in_overlapped_callback)
         goto do_async_recv;
 
     if (PxSocket_THROUGHPUT(s)) {
@@ -6975,9 +7029,9 @@ do_sendfile:
     s->send_id++;
     s->this_io_op = PxSocket_IO_SENDFILE;
 
-    flags = 0;
+    s->sendfile_flags = 0;
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED)
-        flags = TF_DISCONNECT;
+        s->sendfile_flags = TF_DISCONNECT | TF_REUSE_SOCKET;
 
     StartThreadpoolIo(s->tp_io);
     PxOverlapped_Reset(&s->overlapped_sendfile);
@@ -6987,52 +7041,14 @@ do_sendfile:
                            0, /* bytes per send (0 = default) */
                            &(s->overlapped_sendfile),
                            &(s->sendfile_tfbuf),
-                           flags);
+                           s->sendfile_flags);
 
     if (success) {
-        /* TransmitFile completed synchronously.  No completion packet will
-         * be queued.  If a close was requested, we can clean everything up
-         * now and then kick-off a socket/context recycle.
-         */
-
-        int stop_sleeping = 0; /* You'd alter this in the debugger to stop
-                                  sleeping... otherwise we're going to sleep
-                                  forever. */
-        int sleeps = 0;
-        s->break_on_iocp_enter = 1;
+        /* We shouldn't ever hit this as we're doing an overlapped
+         * TransmitFile. */
         __debugbreak();
-        while (!stop_sleeping && ++sleeps)
-            Sleep(1);
-
-
-        if (flags == TF_DISCONNECT) {
-            /* Setting this to INVALID_SOCKET now ensures PxSocket_Recycle()
-             * doesn't attempt to re-closesocket() the handle.
-             */
-            s->sock_fd = INVALID_SOCKET;
-
-            CloseHandle(s->sendfile_handle);
-
-            /* Not sure if rolling back the sendfile snapshot is necessary
-             * anymore, given that we're about to rollback everything to the
-             * first snapshot during PxSocket_Recycle().
-             */
-            if (s->sendfile_snapshot)
-                PxContext_RollbackHeap(c, &s->sendfile_snapshot);
-
-            PxSocket_RECYCLE(s);
-
-        } else {
-            /* Otherwise, if no close was requested, go straight to sendfile
-             * completion processing.
-             */
-            goto send_completed;
-        }
-
-        ASSERT_UNREACHABLE();
 
     } else {
-
         wsa_error = WSAGetLastError();
         if (wsa_error == WSA_IO_PENDING)
             /* Overlapped transmit file request successfully initiated;
@@ -7063,7 +7079,33 @@ do_sendfile:
 overlapped_sendfile_callback:
     ODS(L"overlapped_sendfile_callback:\n");
     /* Entry point for an overlapped TransmitFile */
+
     CloseHandle(s->sendfile_handle);
+
+    if (c->io_result != NO_ERROR) {
+        if (s->overlapped_sendfile.Internal == NO_ERROR)
+            __debugbreak();
+
+        if (s->sendfile_wsa_error == NO_ERROR)
+            __debugbreak();
+
+        s->send_id--;
+
+        if (s->sendfile_snapshot)
+            PxContext_RollbackHeap(c, &s->sendfile_snapshot);
+
+        /* xxx todo: call send(file?)_failed() if applicable */
+        switch (s->sendfile_wsa_error) {
+            case WSAENETRESET:
+            case WSAECONNABORTED:
+            case WSAECONNRESET:
+                __debugbreak();
+                PxSocket_RECYCLE(s);
+                ASSERT_UNREACHABLE();
+        }
+
+        PxSocket_OVERLAPPED_ERROR("TransmitFile");
+    }
 
     if (s->sendfile_snapshot)
         PxContext_RollbackHeap(c, &s->sendfile_snapshot);
@@ -7104,6 +7146,7 @@ do_lines_received_callback:
     assert(0);
 
 end:
+    s->wsa_error = NO_ERROR;
     ODS(L"end:\n");
     InterlockedDecrement(&_PxSocket_ActiveIOLoops);
 
@@ -7455,7 +7498,9 @@ create_pxsocket(
     if (!init_object(c, c->io_obj, tp, 0))
         PxSocket_FATAL();
 
-    InitializeCriticalSectionAndSpinCount(&(s->cs), CS_SOCK_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&s->cs, CS_SOCK_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&s->links_cs, CS_SOCK_SPINCOUNT);
+    InitializeCriticalSectionAndSpinCount(&s->children_cs, CS_SOCK_SPINCOUNT);
 
     s->ctx = c;
 
@@ -7682,12 +7727,30 @@ set_other_sockopts:
             s->parent = (PxSocket *)ctx->io_obj;
     }
 
-    if (s->parent && !PxSocket_IS_SERVER(s->parent))
-        /* If our parent is not the listen socket, add a backref.  (xxx: I'm
-         * not sure if this is right... can we have non 1:1 relationships
-         * here?)
-         */
-        s->parent->child = s;
+    if (s->parent) {
+        assert(s->parent != s);
+
+        EnterCriticalSection(&s->parent->children_cs);
+        if (!s->parent->first) {
+            s->parent->first = s;
+            s->parent->last = s;
+            s->prev = NULL;
+            /* Only set child when there's a 1:1 relationship. */
+            s->parent->child = s;
+        } else {
+            PxSocket *last = s->parent->last;
+            EnterCriticalSection(&last->links_cs);
+            last->next = s;
+            s->prev = last;
+            LeaveCriticalSection(&last->links_cs);
+            s->parent->last = s;
+            /* Not a 1:1; clear child. */
+            s->parent->child = NULL;
+        }
+        s->child_id = s->parent->num_children++;
+        LeaveCriticalSection(&s->parent->children_cs);
+    }
+
 
     if (!PxSocket_IS_SERVER(s)) {
         PxSocket *socket_snapshot;
@@ -7975,7 +8038,8 @@ PxSocket_IOCallback(
             PxSocket_WSAERROR("getsockopt(SO_ERROR)");
 
         s->wsa_error = errval;
-    }
+    } else
+        s->wsa_error = NO_ERROR;
 
     /* Would overlapped ever be null? */
     if (!ol)
@@ -8031,10 +8095,12 @@ PxSocket_IOCallback(
     if (s->next_io_op) {
         switch (s->next_io_op) {
             case PxSocket_IO_ACCEPT:
+                s->acceptex_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_Accept(s);
                 break;
 
             case PxSocket_IO_CONNECT:
+                s->connectex_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_Connect(s);
                 break;
 
@@ -8045,26 +8111,32 @@ PxSocket_IOCallback(
         assert(s->this_io_op);
         switch (s->this_io_op) {
             case PxSocket_IO_ACCEPT:
+                s->acceptex_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedAcceptEx(s);
                 break;
 
             case PxSocket_IO_CONNECT:
+                s->connectex_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedConnectEx(s);
                 break;
 
             case PxSocket_IO_SEND:
+                s->send_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedWSASend(s);
                 break;
 
             case PxSocket_IO_SENDFILE:
+                s->sendfile_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedTransmitFile(s);
                 break;
 
             case PxSocket_IO_RECV:
+                s->recv_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedWSARecv(s);
                 break;
 
             case PxSocket_IO_DISCONNECT:
+                s->disconnectex_wsa_error = s->wsa_error;
                 PxSocket_IOLoop_OverlappedDisconnectEx(s);
                 break;
 
@@ -8698,9 +8770,10 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     if (listen(s->sock_fd, SOMAXCONN) == SOCKET_ERROR)
         PxSocket_WSAERROR("listen");
 
-select_fd_accept:
+    /*
     if (WSAEventSelect(s->sock_fd, s->fd_accept, FD_ACCEPT) == SOCKET_ERROR)
         PxSocket_WSAERROR("WSAEventSelect(FD_ACCEPT)");
+     */
 
 post_accepts:
     if (num_accepts_to_post <= 0)
@@ -8714,13 +8787,13 @@ post_accepts:
                               "PxSocketServer_CreateClientSocket)");
     }
     */
-    while (num_accepts_to_post--) {
+    do {
         s->total_accepts_attempted++;
         PxSocketServer_CreateClientSocket(NULL, c);
         ctx = c;
         if (PyErr_Occurred())
             PxSocket_EXCEPTION();
-    }
+    } while (--num_accepts_to_post);
 
 wait:
     if (low_memory_wait)
@@ -8733,29 +8806,34 @@ wait:
     switch (result) {
         case WAIT_OBJECT_0:
             /* fd_accept */
-            num_accepts_to_post = s->num_additional_accepts_to_post;
-            goto select_fd_accept;
+            ++s->fd_accept_count;
+            goto wait;
 
         case WAIT_OBJECT_0 + 1:
             /* client_connected */
+            ++s->client_connected_count;
             num_accepts_to_post = 1;
             goto post_accepts;
 
         case WAIT_OBJECT_0 + 2:
             /* low memory */
+            ++s->low_memory_count;
             low_memory_wait = 1;
             goto low_memory;
 
         case WAIT_OBJECT_0 + 3:
             /* shutdown event */
+            ++s->shutdown_count;
             goto shutdown;
 
         case WAIT_OBJECT_0 + 4:
             /* high memory */
+            ++s->high_memory_count;
             low_memory_wait = 0;
             goto wait;
 
         case WAIT_TIMEOUT:
+            ++s->wait_timeout_count;
             goto timeout;
 
         case WAIT_ABANDONED_0:
