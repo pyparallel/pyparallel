@@ -7051,18 +7051,19 @@ do_data_received_callback:
         /* Special case for echo, we don't need to convert anything. */
         sbuf->w.len = s->num_bytes_just_received;
     } else {
-        if (!PyObject2WSABUF(result, w)) {
+        if (!PyObject2WSABUF(result, &sbuf->w)) {
             PyErr_SetString(PyExc_ValueError,
                             "data_received() did not return a sendable "
                             "object (bytes, bytearray or unicode)");
             PxSocket_EXCEPTION();
         }
-
+		/*
         sbuf->w.len = w->len;
         sbuf->w.buf = w->buf;
+		*/
     }
 
-    w = NULL;
+    //w = NULL;
     rbuf = NULL;
     snapshot = NULL;
     goto do_send;

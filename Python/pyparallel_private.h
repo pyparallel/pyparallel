@@ -221,9 +221,9 @@ typedef struct _RBUF {
 #define W2R(p)      (_Py_CAST_BACK(p, RBUF *, RBUF, w))
 #define OL2R(p)     (_Py_CAST_BACK(p, RBUF *, RBUF, ol))
 #define R2OL(p)     (_Py_CAST_FWD(p, OVERLAPPED *, RBUF, ol))
-#define R2B(p)      (_Py_CAST_FWD(p, PyBytesObject *, RBUF, ob_base))
 #define B2S(p)      (_Py_CAST_BACK(p, size_t, RBUF, signature))
 */
+#define R2B(p)      (_Py_CAST_FWD(p, PyBytesObject *, RBUF, ob_base))
 /*
 #define B2R(p)                              \
     (B2S(p) == _PxSocket_RBUF_Signature ?   \
