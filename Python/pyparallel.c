@@ -447,6 +447,9 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
         /* Pointers line up, do the loop again but reset the heaps as we go. */
         distance = c->h->id - s->id;
+        /* Grab a copy of c->h before we start messing with it; useful during
+         * debugging. */
+        h = c->h;
         while (distance--) {
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
