@@ -447,7 +447,6 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
         /* Pointers line up, do the loop again but reset the heaps as we go. */
         distance = c->h->id - s->id;
-        h = c->h;
         while (distance--) {
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
@@ -558,10 +557,8 @@ PxSocket_Reuse(PxSocket *s)
 
     /* Clear sbuf, reset rbuf. */
     s->sbuf = NULL;
-    /*
     s->rbuf->w.len = s->recvbuf_size;
     s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
-    */
     PxOverlapped_Reset(&s->rbuf->ol);
 
     s->reused = 1;
@@ -5937,6 +5934,8 @@ PxSocket_IOLoop(PxSocket *s)
     Context *c = ctx;
     char *buf = NULL;
     DWORD err, wsa_error;
+    SOCKET fd;
+    WSABUF *w = NULL, *old_wsabuf = NULL;
     SBUF *sbuf = NULL;
     RBUF *rbuf = NULL;
     ULONG recv_avail = 0;
@@ -5944,7 +5943,6 @@ PxSocket_IOLoop(PxSocket *s)
     DWORD recv_flags = 0;
     DWORD recv_nbytes = 0;
     Heap *snapshot = NULL;
-    WSABUF *wsabuf = NULL;
     int i, n, success, flags = 0;
     TRANSMIT_FILE_BUFFERS *tf = NULL;
 
@@ -5955,6 +5953,8 @@ PxSocket_IOLoop(PxSocket *s)
 
     sockaddr_len = sizeof(SOCKADDR);
     s->acceptex_addr_len = sockaddr_len + 16;
+
+    fd = s->sock_fd;
 
     assert(s->ctx == c);
     assert(c->io_obj == (PyObject *)s);
@@ -6065,6 +6065,11 @@ do_accept:
                        &(s->acceptex_recv_bytes),
                        &(s->overlapped_acceptex));
     if (success) {
+        /* AcceptEx() completed synchronously.  No completion packet will be
+         * queued.  The number of received bytes will live in
+         * s->acceptex_recv_bytes.
+         */
+
         /* xxx: do accepts ever complete synchronously when we specify an
          * overlapped struct?  I don't think so. */
         __debugbreak();
@@ -6212,7 +6217,6 @@ start:
 
     /* This will have been initialized at the do_accept: stage above. */
     if (s->initial_bytes_to_send) {
-        WSABUF *w;
         DWORD *len;
 
         assert(!snapshot);
@@ -6399,6 +6403,7 @@ try_synchronous_send:
         PxContext_RollbackHeap(c, &sbuf->snapshot);
         if (s->rbuf->snapshot == snapshot)
             s->rbuf->snapshot = NULL;
+        w = NULL;
         sbuf = NULL;
         snapshot = NULL;
         goto send_completed;
@@ -6408,6 +6413,7 @@ try_synchronous_send:
     } else {
         s->send_id--;
         PxContext_RollbackHeap(c, &sbuf->snapshot);
+        w = NULL;
         sbuf = NULL;
         snapshot = NULL;
         switch (wsa_error) {
@@ -6427,6 +6433,7 @@ do_async_send:
      * do_async_send: below.  If you change one, check to see if you need to
      * change the other. */
     assert(sbuf);
+    w = &sbuf->w;
 
     s->send_id++;
 
@@ -6750,17 +6757,16 @@ do_recv:
     assert(PxSocket_CAN_RECV(s));
 
     assert(!rbuf);
+    assert(!w);
     assert(!snapshot);
 
     rbuf = s->rbuf;
     if (rbuf->snapshot)
         __debugbreak();
+    w = &rbuf->w;
     /* Reset our rbuf. */
-    rbuf->w.len = s->recvbuf_size;
-    rbuf->w.buf = (char *)rbuf->ob_sval;
-    /* Make sure the buffer memory is zero'd out. */
-    if (rbuf->w.buf[0] != 0)
-        __debugbreak();
+    w->len = s->recvbuf_size;
+    w->buf = (char *)rbuf->ob_sval;
 
     s->this_io_op = PxSocket_IO_RECV;
     c->io_result = NO_ERROR;
@@ -6791,7 +6797,7 @@ try_synchronous_recv:
 
     for (i = 1; i <= n; i++) {
         err = WSARecv(s->sock_fd,
-                      &rbuf->w,
+                      w,
                       1,
                       &s->num_bytes_just_received,
                       &recv_flags,
@@ -6809,6 +6815,7 @@ try_synchronous_recv:
                         /* Now *this* should never happen. */
                         __debugbreak();
                     else {
+                        w = NULL;
                         rbuf = NULL;
                         goto process_data_received;
                     }
@@ -6831,6 +6838,7 @@ try_synchronous_recv:
         /* Receive completed synchronously. */
         if (s->num_bytes_just_received == 0)
             goto eof_received;
+        w = NULL;
         rbuf = NULL;
         goto process_data_received;
     } else if (wsa_error == WSAEWOULDBLOCK) {
@@ -6852,23 +6860,13 @@ try_synchronous_recv:
 do_async_recv:
     ODS(L"do_async_recv:\n");
     assert(rbuf);
+    assert(w);
 
     s->recv_id++;
     StartThreadpoolIo(s->tp_io);
     PxOverlapped_Reset(&rbuf->ol);
 
-    /* Make sure the rbuf's WSABUF matches the offsets in the startup
-     * snapshot? */
-
-    err = WSARecv(s->sock_fd,
-                  &rbuf->w,
-                  1,    /* number of buffers, currently always 1 */
-                  NULL, /* address of DWORD for recv bytes
-                           (must be NULL as we're using overlapped) */
-                  &recv_flags,
-                  &rbuf->ol,
-                  0);
-
+    err = WSARecv(fd, w, 1, 0, &recv_flags, &rbuf->ol, NULL);
     if (err == NO_ERROR) {
         /* Recv completed synchronously.  Completion packet will be queued. */
         goto end;
@@ -7041,29 +7039,30 @@ do_data_received_callback:
         if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED)
             goto do_disconnect;
         /* Nothing to send, no close requested, so try recv again. */
+        w = NULL;
         rbuf = NULL;
         snapshot = NULL;
         goto do_recv;
     }
 
+    w = &rbuf->w;
     sbuf = (SBUF *)rbuf;
     if (Px_PTR(result) == Px_PTR(bytes)) {
         /* Special case for echo, we don't need to convert anything. */
         sbuf->w.len = s->num_bytes_just_received;
     } else {
-        if (!PyObject2WSABUF(result, &sbuf->w)) {
+        if (!PyObject2WSABUF(result, w)) {
             PyErr_SetString(PyExc_ValueError,
                             "data_received() did not return a sendable "
                             "object (bytes, bytearray or unicode)");
             PxSocket_EXCEPTION();
         }
-		/*
+
         sbuf->w.len = w->len;
         sbuf->w.buf = w->buf;
-		*/
     }
 
-    //w = NULL;
+    w = NULL;
     rbuf = NULL;
     snapshot = NULL;
     goto do_send;
@@ -7714,10 +7713,8 @@ setnonblock:
         PxOverlapped_Reset(&s->rbuf->ol);
     }
 
-    /*
     s->rbuf->w.len = s->recvbuf_size;
     s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
-    */
 
     /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
      * during the PxSocket_IOLoop(), so we don't explicitly reserve

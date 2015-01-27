@@ -168,6 +168,7 @@ typedef struct _TLSBUF {
     Heap           *snapshot;
     PxSocket       *s;
     OVERLAPPED      ol;
+    WSABUF          w;
 } TLSBUF;
 
 #define T2W(b)      (_Py_CAST_FWD(b, WSABUF *, TLSBUF, w))
@@ -187,12 +188,10 @@ typedef struct _SBUF {
 
 #define SBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(SBUF)))
 
-/*
 #define S2W(b)      (_Py_CAST_FWD(b, WSABUF *, SBUF, w))
 #define W2S(b)      (_Py_CAST_BACK(b, SBUF *, SBUF, w))
 #define OL2S(b)     (_Py_CAST_BACK(b, SBUF *, SBUF, ol))
 #define S2OL(b)     (_Py_CAST_FWD(b, OVERLAPPED *, SBUF, ol))
-*/
 
 typedef struct _RBUF RBUF;
 typedef struct _RBUF {
@@ -216,14 +215,12 @@ typedef struct _RBUF {
 
 #define RBUF_ALIGNED_SIZE (Px_PTR_ALIGN(sizeof(RBUF)))
 
-/*
 #define R2W(p)      (_Py_CAST_FWD(p, WSABUF *, RBUF, w))
 #define W2R(p)      (_Py_CAST_BACK(p, RBUF *, RBUF, w))
 #define OL2R(p)     (_Py_CAST_BACK(p, RBUF *, RBUF, ol))
 #define R2OL(p)     (_Py_CAST_FWD(p, OVERLAPPED *, RBUF, ol))
-#define B2S(p)      (_Py_CAST_BACK(p, size_t, RBUF, signature))
-*/
 #define R2B(p)      (_Py_CAST_FWD(p, PyBytesObject *, RBUF, ob_base))
+#define B2S(p)      (_Py_CAST_BACK(p, size_t, RBUF, signature))
 /*
 #define B2R(p)                              \
     (B2S(p) == _PxSocket_RBUF_Signature ?   \
