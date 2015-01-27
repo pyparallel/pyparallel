@@ -6112,6 +6112,14 @@ overlapped_acceptex_callback:
     }
 
     s->num_bytes_just_received = (DWORD)s->overlapped_acceptex.InternalHigh;
+    if (s->num_bytes_just_received == 0) {
+        /* Treat receipt of zero bytes as an EOF if our protocol expects the
+         * client to send something first.  (At the time of writing, I've run
+         * into this pretty consistently when doing short `wrk` calls, i.e.
+         * `wrk --latency -c 1 -t 1 -d 1 http://...) */
+        if (!s->initial_bytes.len)
+            goto eof_received;
+    }
 
     /* Intentional follow-on to accepted */
 
