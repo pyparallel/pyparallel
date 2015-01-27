@@ -493,12 +493,41 @@ create_pxsocket(
 void PxOverlapped_Reset(void *ol);
 
 void
+PxSocket_ResetBuffers(PxSocket *s)
+{
+    PyBytesObject *bytes;
+    size_t size;
+
+    /* Clear sbuf. */
+    s->sbuf = NULL;
+
+    /* Reset rbuf. */
+    bytes = R2B(s->rbuf);
+    size = Py_SIZE(bytes);
+
+    /* This should always be zero; if it's not, our zeroing/reset logic
+     * isn't working properly. */
+    if (bytes->ob_sval[size] != 0)
+        __debugbreak();
+
+    /* Clear the previous received bytes. */
+    SecureZeroMemory(&bytes->ob_sval[0], size);
+
+    /* Set ob_size back to 0. */
+    Py_SIZE(bytes) = 0;
+
+    /* The WSABUF's len gets set to the recvbuf_size. */
+    s->rbuf->w.len = s->recvbuf_size;
+    s->rbuf->w.buf = (char *)&s->rbuf->ob_sval[0];
+
+
+}
+
+void
 PxSocket_Reuse(PxSocket *s)
 {
     int flags;
     PxSocket old;
-    PyBytesObject *bytes;
-    size_t size;
     memcpy(&old, s, sizeof(PxSocket));
 
     /* Invariants... */
@@ -560,28 +589,12 @@ PxSocket_Reuse(PxSocket *s)
      */
     _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
 
-    /* Clear sbuf. */
-    s->sbuf = NULL;
-
-    /* Reset rbuf. */
-    bytes = R2B(s->rbuf);
-    size = Py_SIZE(bytes);
-
-    /* This should always be zero; if it's not, our zeroing/reset logic
-     * isn't working properly. */
-    if (bytes->ob_sval[size] != 0)
-        __debugbreak();
-
-    /* Clear the previous received bytes. */
-    SecureZeroMemory(&bytes->ob_sval[0], size);
-
-    /* The WSABUF's len gets set to the recvbuf_size. */
-    s->rbuf->w.len = s->recvbuf_size;
-    s->rbuf->w.buf = (char *)&s->rbuf->ob_sval[0];
+    PxSocket_ResetBuffers(s);
 
     PxOverlapped_Reset(&s->rbuf->ol);
 
     s->reused = 1;
+    s->recycled = 0;
 
 }
 
@@ -636,6 +649,7 @@ PxSocket_Recycle(PxSocket **sp)
 
         PxSocket_Reuse(s);
         new_socket = s;
+        ++c->times_reused;
     } else {
 
         /* Do an inverted test of the logic above if the socket isn't
@@ -652,6 +666,15 @@ PxSocket_Recycle(PxSocket **sp)
         }
 
         new_socket = (PxSocket *)create_pxsocket(NULL, NULL, 0, NULL, c);
+        if (new_socket) {
+            if (new_socket->reused)
+                __debugbreak();
+            if (new_socket->reused_socket)
+                __debugbreak();
+            if (!new_socket->recycled)
+                __debugbreak();
+        }
+        ++c->times_recycled;
     }
 
     if (!new_socket)
@@ -662,8 +685,6 @@ PxSocket_Recycle(PxSocket **sp)
         __debugbreak();
 
     *sp = new_socket;
-
-    ++c->times_recycled;
 
     return;
 }
@@ -7367,7 +7388,7 @@ error:
             closesocket(s->sock_fd);
             s->sock_fd = INVALID_SOCKET;
             if (s->tp_io) {
-                CancelThreadpoolIo(s->tp_io);
+                //CancelThreadpoolIo(s->tp_io);
                 CloseThreadpoolIo(s->tp_io);
                 s->tp_io = NULL;
             }
@@ -7544,9 +7565,22 @@ create_pxsocket(
 
         _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
 
+        s->sock_fd = INVALID_SOCKET;
+        s->tp_io = NULL;
+
         /* Clear sbuf.  The rbuf will be reset below. */
         s->sbuf = NULL;
 
+        if (s->reused_socket)
+            __debugbreak();
+
+        if (s->reused)
+            __debugbreak();
+
+        /*
+        s->reused = 0;
+        s->reused_socket = 0;
+        */
         s->recycled = 1;
         goto create_socket;
 
@@ -7729,15 +7763,29 @@ setnonblock:
 
         rbuf->s = s;
         rbuf->ctx = s->ctx;
+        rbuf->w.len = s->recvbuf_size;
+        rbuf->w.buf = (char *)&rbuf->ob_sval[0];
         s->num_rbufs = 1;
         s->rbuf = rbuf;
     } else {
-        /* xxx: the rbuf buffer (ob_sval?) should be zero here, right? */
-        PxOverlapped_Reset(&s->rbuf->ol);
+        //PxOverlapped_Reset(&s->rbuf->ol);
+
+        if (s->sbuf)
+            __debugbreak();
+
+        assert(!s->sbuf);
+
+        PxSocket_ResetBuffers(s);
     }
 
-    s->rbuf->w.len = s->recvbuf_size;
-    s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
+    if (s->sbuf)
+        __debugbreak();
+
+    if (s->rbuf->w.len != s->recvbuf_size)
+        __debugbreak();
+
+    if (s->rbuf->w.buf != &s->rbuf->ob_sval[0])
+        __debugbreak();
 
     /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
      * during the PxSocket_IOLoop(), so we don't explicitly reserve
@@ -7861,6 +7909,7 @@ done:
 
 end:
     /* Ugh, this logic is not even remotely correct. */
+    __debugbreak();
     assert(PyErr_Occurred());
     if (PyErr_Occurred()) {
         assert(s->sock_fd == INVALID_SOCKET);

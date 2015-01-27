@@ -665,6 +665,7 @@ typedef struct _PyParallelContext {
 
     long done;
 
+    int times_reused;
     int times_recycled;
     int times_finished;
     char is_persisted;
