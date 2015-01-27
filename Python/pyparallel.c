@@ -497,6 +497,8 @@ PxSocket_Reuse(PxSocket *s)
 {
     int flags;
     PxSocket old;
+    PyBytesObject *bytes;
+    size_t size;
     memcpy(&old, s, sizeof(PxSocket));
 
     /* Invariants... */
@@ -558,10 +560,25 @@ PxSocket_Reuse(PxSocket *s)
      */
     _PxContext_Rewind(s->ctx, s->startup_heap_snapshot);
 
-    /* Clear sbuf, reset rbuf. */
+    /* Clear sbuf. */
     s->sbuf = NULL;
+
+    /* Reset rbuf. */
+    bytes = R2B(s->rbuf);
+    size = Py_SIZE(bytes);
+
+    /* This should always be zero; if it's not, our zeroing/reset logic
+     * isn't working properly. */
+    if (bytes->ob_sval[size] != 0)
+        __debugbreak();
+
+    /* Clear the previous received bytes. */
+    SecureZeroMemory(&bytes->ob_sval[0], size);
+
+    /* The WSABUF's len gets set to the recvbuf_size. */
     s->rbuf->w.len = s->recvbuf_size;
-    s->rbuf->w.buf = (char *)s->rbuf->ob_sval;
+    s->rbuf->w.buf = (char *)&s->rbuf->ob_sval[0];
+
     PxOverlapped_Reset(&s->rbuf->ol);
 
     s->reused = 1;
@@ -6939,11 +6956,6 @@ overlapped_recv_callback:
     if (s->num_bytes_just_received == 0)
         goto eof_received;
 
-    /*
-    if (recv_nbytes == 0)
-        goto connection_closed;
-     */
-
     /* Intentional follow-on to process_data_received... */
 
 process_data_received:
@@ -6976,7 +6988,7 @@ process_data_received:
 do_data_received_callback:
     ODS(L"do_data_received_callback:\n");
 
-    //assert(recv_nbytes > 0);
+    assert(s->num_bytes_just_received > 0);
     s->total_bytes_received += s->num_bytes_just_received;
 
     assert(!rbuf);
