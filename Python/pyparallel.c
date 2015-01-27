@@ -497,6 +497,7 @@ PxSocket_ResetBuffers(PxSocket *s)
 {
     PyBytesObject *bytes;
     size_t size;
+    size_t clear_size;
 
     /* Clear sbuf. */
     s->sbuf = NULL;
@@ -507,11 +508,13 @@ PxSocket_ResetBuffers(PxSocket *s)
 
     /* This should always be zero; if it's not, our zeroing/reset logic
      * isn't working properly. */
-    if (bytes->ob_sval[size] != 0)
+    if (!size)
+        clear_size = s->recvbuf_size;
+    else if (size > 0 && bytes->ob_sval[size] != 0)
         __debugbreak();
 
     /* Clear the previous received bytes. */
-    SecureZeroMemory(&bytes->ob_sval[0], size);
+    SecureZeroMemory(&bytes->ob_sval[0], clear_size);
 
     /* Set ob_size back to 0. */
     Py_SIZE(bytes) = 0;
@@ -591,11 +594,10 @@ PxSocket_Reuse(PxSocket *s)
 
     PxSocket_ResetBuffers(s);
 
-    PxOverlapped_Reset(&s->rbuf->ol);
+    //PxOverlapped_Reset(&s->rbuf->ol);
 
     s->reused = 1;
     s->recycled = 0;
-
 }
 
 /*
@@ -5940,7 +5942,6 @@ PxSocket_GetRecvCallback(PxSocket *s)
 }
 
 /* 0 = failure, 1 = success */
-static
 int
 PxSocket_UpdateConnectTime(PxSocket *s)
 {
@@ -5954,8 +5955,7 @@ PxSocket_UpdateConnectTime(PxSocket *s)
     if (getsockopt(fd, SOL_SOCKET, SO_CONNECT_TIME, b, n) != NO_ERROR)
         goto end;
 
-    if (seconds != -1)
-        s->connect_time = seconds;
+    s->connect_time = seconds;
 
     result = 1;
 
@@ -6116,22 +6116,33 @@ do_accept:
         __debugbreak();
     } else {
         wsa_error = WSAGetLastError();
-        if (wsa_error == WSA_IO_PENDING) {
-            /* Overlapped accept initiated successfully, a completion packet
-             * will be posted when a new client connects. */
-            InterlockedIncrement(&s->parent->accepts_posted);
-            goto end;
-        } else if (wsa_error == WSAECONNRESET) {
-            /* MSDN: "If the error is WSAECONNRESET, an incoming connection
-             * was indicated, but was subsequently terminated by the remote
-             * peer prior to accepting the call."
-             */
-            PxSocket_RECYCLE(s);
-        } else
-            PxSocket_WSAERROR("AcceptEx");
+        switch (wsa_error) {
+            case WSAEINVAL:
+                if (s->overlapped_acceptex.Internal != STATUS_PENDING)
+                    __debugbreak();
+                s->was_status_pending = 1;
+                /* Intentional follow-on to WSA_IO_PENDING. */
+            case WSA_IO_PENDING:
+                /* Overlapped accept initiated successfully, a completion
+                 * packet will be posted when a new client connects. */
+                InterlockedIncrement(&s->parent->accepts_posted);
+                goto end;
+
+            case WSAENOTSOCK:
+                /*
+                __debugbreak();
+                PxSocket_UpdateConnectTime(s);
+                */
+            case WSAENETRESET:
+            case WSAECONNABORTED:
+            case WSAECONNRESET:
+                PxSocket_RECYCLE(s);
+        }
+
+        PxSocket_WSAERROR("AcceptEx");
     }
 
-    assert(0);
+    ASSERT_UNREACHABLE();
 
 overlapped_acceptex_callback:
     ODS(L"do_acceptex_callback:\n");
@@ -6493,7 +6504,14 @@ do_async_send:
         __debugbreak();
 
 
-    PxOverlapped_Reset(&sbuf->ol);
+    //PxOverlapped_Reset(&sbuf->ol);
+    PxOverlapped_Reset(&s->overlapped_wsasend);
+    if (!PxSocket_UpdateConnectTime(s)) {
+        err = WSAGetLastError();
+        __debugbreak();
+    }
+    if (s->connect_time == -1)
+        __debugbreak();
     StartThreadpoolIo(s->tp_io);
 
     if (sbuf != s->sbuf) {
@@ -6513,7 +6531,7 @@ do_async_send:
                   NULL, /* number of bytes sent, must be null because we're
                            specifying an overlapped structure */
                   0,    /* flags (MSG_DONTROUTE, MSG_OOB, MSG_PARTIAL) */
-                  &sbuf->ol,
+                  &s->overlapped_wsasend,
                   NULL); /* completion routine; presumably null as we're
                           * using threadpool I/O instead */
 
@@ -6550,7 +6568,7 @@ overlapped_send_callback:
     sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
 
     if (c->io_result != NO_ERROR) {
-        if (sbuf->ol.Internal == NO_ERROR)
+        if (s->overlapped_wsasend.Internal == NO_ERROR)
             __debugbreak();
 
         if (s->wsa_error == NO_ERROR)
@@ -6567,7 +6585,7 @@ overlapped_send_callback:
         PxSocket_OVERLAPPED_ERROR("WSASend");
     }
 
-    s->num_bytes_just_sent = (DWORD)sbuf->ol.InternalHigh;
+    s->num_bytes_just_sent = (DWORD)s->overlapped_wsasend.InternalHigh;
 
     if (s->num_bytes_just_sent > 0) {
         if (s->num_bytes_just_sent != sbuf->w.len)
@@ -6913,9 +6931,10 @@ do_async_recv:
 
     s->recv_id++;
     StartThreadpoolIo(s->tp_io);
-    PxOverlapped_Reset(&rbuf->ol);
+    //PxOverlapped_Reset(&rbuf->ol);
+    PxOverlapped_Reset(&s->overlapped_wsarecv);
 
-    err = WSARecv(fd, w, 1, 0, &recv_flags, &rbuf->ol, NULL);
+    err = WSARecv(fd, w, 1, 0, &recv_flags, &s->overlapped_wsarecv, NULL);
     if (err == NO_ERROR) {
         /* Recv completed synchronously.  Completion packet will be queued. */
         goto end;
@@ -6949,7 +6968,7 @@ overlapped_recv_callback:
     rbuf = s->rbuf;
 
     if (c->io_result != NO_ERROR) {
-        if (rbuf->ol.Internal == NO_ERROR)
+        if (s->overlapped_wsarecv.Internal == NO_ERROR)
             __debugbreak();
 
         if (s->wsa_error == NO_ERROR)
@@ -6969,7 +6988,7 @@ overlapped_recv_callback:
         PxSocket_OVERLAPPED_ERROR("WSARecv");
     }
 
-    s->num_bytes_just_received = (DWORD)rbuf->ol.InternalHigh;
+    s->num_bytes_just_received = (DWORD)s->overlapped_wsarecv.InternalHigh;
 
     /* do_data_received_callback: expects rbuf to be clear. */
     rbuf = NULL;
@@ -7016,13 +7035,23 @@ do_data_received_callback:
     rbuf = s->rbuf;
 
     if (s->num_bytes_just_received < (DWORD)s->recvbuf_size) {
-        if (rbuf->ob_sval[s->num_bytes_just_received] != 0)
-            /* Will this be hit?  If so... we're not zero'ing out rbuf memory
-             * properly. */
-            __debugbreak();
-        rbuf->ob_sval[s->num_bytes_just_received] = 0;
-
+        if (rbuf->ob_sval[s->num_bytes_just_received] != 0) {
+            PyBytesObject *bytes;
+            size_t size;
+            size_t trailing;
+            bytes = R2B(s->rbuf);
+            size = Py_SIZE(bytes);
+            trailing = size - s->num_bytes_just_received;
+            if (size > s->num_bytes_just_received)
+                SecureZeroMemory(&bytes->ob_sval[s->num_bytes_just_received],
+                                 trailing);
+            else
+                __debugbreak();
+        }
     }
+
+    if (rbuf->ob_sval[s->num_bytes_just_received] != 0)
+        __debugbreak();
 
     if (PxSocket_LINES_MODE_ACTIVE(s))
         goto do_lines_received_callback;
@@ -7548,10 +7577,13 @@ create_pxsocket(
         if (s->rbuf->s != s)
             __debugbreak();
 
+        /* Disable this for now... it's causing TppIopValidateIo() to fail. */
+        /*
         if (s->tp_io) {
             CloseThreadpoolIo(s->tp_io);
             s->tp_io = NULL;
         }
+        */
         if (s->sock_fd != INVALID_SOCKET) {
             int retval = closesocket(s->sock_fd);
             s->sock_fd = INVALID_SOCKET;
@@ -8141,22 +8173,6 @@ PxSocket_IOCallback(
         __debugbreak();
     */
 
-    if (io_result != NO_ERROR) {
-        int failed;
-        int errval;
-        int errlen = sizeof(int);
-        failed = getsockopt(s->sock_fd,
-                            SOL_SOCKET,
-                            SO_ERROR,
-                            (char *)&errval,
-                            &errlen);
-        if (failed)
-            PxSocket_WSAERROR("getsockopt(SO_ERROR)");
-
-        s->wsa_error = errval;
-    } else
-        s->wsa_error = NO_ERROR;
-
     /* Would overlapped ever be null? */
     if (!ol)
         __debugbreak();
@@ -8204,8 +8220,28 @@ PxSocket_IOCallback(
         }
     }
 
+    if (s->was_status_pending)
+        __debugbreak();
+
     EnterCriticalSection(&(s->cs));
     LeaveCriticalSectionWhenCallbackReturns(instance, &(s->cs));
+
+    if (io_result != NO_ERROR) {
+        int failed;
+        int errval;
+        int errlen = sizeof(int);
+        failed = getsockopt(s->sock_fd,
+                            SOL_SOCKET,
+                            SO_ERROR,
+                            (char *)&errval,
+                            &errlen);
+        if (failed)
+            PxSocket_WSAERROR("getsockopt(SO_ERROR)");
+
+        s->wsa_error = errval;
+    } else
+        s->wsa_error = NO_ERROR;
+
     /* Heh.  All this duplication just for some useful names when viewing
      * stack traces. */
     if (s->next_io_op) {

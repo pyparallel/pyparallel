@@ -1039,6 +1039,8 @@ typedef struct _PxSocket {
     OVERLAPPED overlapped_connectex;
     OVERLAPPED overlapped_disconnectex;
     OVERLAPPED overlapped_sendfile;
+    OVERLAPPED overlapped_wsasend;
+    OVERLAPPED overlapped_wsarecv;
 
     int   disconnectex_flags;
 
@@ -1140,6 +1142,7 @@ typedef struct _PxSocket {
 
     /* Misc debug/helper stuff. */
     int break_on_iocp_enter;
+    int was_status_pending;
 
 } PxSocket;
 
