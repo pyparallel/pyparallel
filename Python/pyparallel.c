@@ -386,7 +386,7 @@ _PyHeap_EnsureReset(Heap *h)
 }
 
 void
-_PyHeap_Reset(Heap *h)
+_PyHeap_Reset(volatile Heap *h)
 {
     size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
     h->remaining = h->size - aligned_sizeof_heap;
