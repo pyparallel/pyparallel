@@ -1414,6 +1414,7 @@ _try_write_lock(PyObject *obj)
 } while (0)
 
 #define PxSocket_FATAL() do {                                            \
+    __debugbreak();                                                      \
     assert(PyErr_Occurred());                                            \
     PxSocket_HandleException(c, "", 1);                                  \
     goto end;                                                            \
@@ -1421,24 +1422,28 @@ _try_write_lock(PyObject *obj)
 
 
 #define PxSocket_EXCEPTION() do {                                        \
+    __debugbreak();                                                      \
     assert(PyErr_Occurred());                                            \
     PxSocket_HandleException(c, "", 0);                                  \
     goto end;                                                            \
 } while (0)
 
 #define PxSocket_SYSERROR(n) do {                                        \
+    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(0);                                          \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
 
 #define PxSocket_WSAERROR(n) do {                                        \
+    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(WSAGetLastError());                          \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
 
 #define PxSocket_OVERLAPPED_ERROR(n) do {                                \
+    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(s->wsa_error);                               \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
