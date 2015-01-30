@@ -959,6 +959,10 @@ typedef struct _PxSocket {
     int no_tcp_nodelay;
     int no_exclusive_addr_use;
 
+    int was_accepting;
+    int was_connected;
+    int was_disconnecting;
+
     /* endpoint */
     char  ip[16];
     char *host;
@@ -1053,14 +1057,11 @@ typedef struct _PxSocket {
     DWORD acceptex_addr_len;
     DWORD acceptex_recv_bytes;
 
-    /* Number of overlapped AcceptEx() calls initially posted when the server
-     * starts up. */
-    int num_initial_accepts_to_post;
+    int num_accepts_to_post;
 
-    /* Number of additional AcceptEx() calls to post when we get notified that
-     * our listen backlog is filling up and we don't have enough accepts
-     * posted. */
-    int num_additional_accepts_to_post;
+    /* Target number of posted AcceptEx() calls the server will try and
+     * maintain.  Defaults to 2 * NCPU. */
+    int target_accepts_posted;
 
     /* How many times we submitted threadpool work for creating new client
      * sockets and posting accepts.  Won't necessarily correlate to how many
@@ -1089,6 +1090,7 @@ typedef struct _PxSocket {
     PxSocket *child;
 
     int child_id;
+    int next_child_id;
 
     /* Linked-list pointers for child sockets. */
     CRITICAL_SECTION links_cs;
@@ -1117,11 +1119,17 @@ typedef struct _PxSocket {
     /* Number of sockets in an overlapped DisconnectEx() state. */
     volatile unsigned long clients_disconnecting;
 
+    /* Number of sockets that were active at then one point, and then free'd
+     * up after completion because the server didn't have any outstanding
+     * accepts needed. */
+    volatile unsigned long retired_clients;
+
     /* Protects the *first and *last child pointers, and next_child_id. */
     CRITICAL_SECTION children_cs;
     PxSocket *first;
     PxSocket *last;
-    int num_children;
+    
+    volatile long num_children;
 
     int listen_backlog;
 
@@ -1140,11 +1148,20 @@ typedef struct _PxSocket {
     int high_memory_count;
     int wait_timeout_count;
 
+    int negative_accepts_to_post_count;
+
     /* Misc debug/helper stuff. */
     int break_on_iocp_enter;
     int was_status_pending;
 
 } PxSocket;
+
+void PxContext_CallbackComplete(Context *);
+void PxContext_ErrbackComplete(Context *);
+void PxSocket_CallbackComplete(PxSocket *);
+void PxSocket_ErrbackComplete(PxSocket *);
+void PxSocketServer_LinkChild(PxSocket *child);
+void PxSocketServer_UnlinkChild(PxSocket *child);
 
 #define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))
 
@@ -1440,8 +1457,9 @@ _try_write_lock(PyObject *obj)
 } while (0)
 
 #define PxSocket_WSAERROR(n) do {                                        \
+    DWORD wsa_error = WSAGetLastError();                                 \
     __debugbreak();                                                      \
-    PyErr_SetFromWindowsErr(WSAGetLastError());                          \
+    PyErr_SetFromWindowsErr(wsa_error);                                  \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
