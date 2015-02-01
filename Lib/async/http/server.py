@@ -193,7 +193,8 @@ class Response:
         content_type = self.content_type
 
         if not self.content_length:
-            self.content_length = len(body)
+            # 2 = account for the \r\n
+            self.content_length = len(body) + 2
 
         content_length = ''
         if self.content_length:
