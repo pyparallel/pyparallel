@@ -806,9 +806,27 @@ PyAPI_FUNC(void) dec_count(PyTypeObject *);
 #define _Py_DEC_TPFREES(OP)     Py_TYPE(OP)->tp_frees--
 #define _Py_COUNT_ALLOCS_COMMA  ,
 #else  /* !WITH_PARALLEL */
+#ifdef Py_DEBUG
 #define _Py_INC_TPALLOCS(OP) (Py_ISPX(OP) ? (void)0 : inc_count(Py_TYPE(OP)))
 #define _Py_INC_TPFREES(OP)  (Py_ISPX(OP) ? (void)0 : dec_count(Py_TYPE(OP)))
 #define _Py_DEC_TPFREES(OP)  (Py_ISPX(OP) ? (void)0 : Py_TYPE(OP)->tp_frees--)
+#else
+#define _Py_INC_TPALLOCS(OP) (                          \
+    Py_PXCTX ? (void)0 : (                              \
+        Py_ISPX(OP) ? (void)0 : inc_count(Py_TYPE(OP))  \
+    )                                                   \
+)
+#define _Py_INC_TPFREES(OP) (                           \
+    Py_PXCTX ? (void)0 : (                              \
+        Py_ISPX(OP) ? (void)0 : dec_count(Py_TYPE(OP))  \
+    )                                                   \
+)
+#define _Py_DEC_TPFREES(OP) (                           \
+    Py_PXCTX ? (void)0 : (                              \
+        Py_ISPX(OP) ? (void)0 : Py_TYPE(OP)->tp_frees-- \
+    )                                                   \
+)
+#endif
 #define _Py_COUNT_ALLOCS_COMMA  ,
 #endif /* !WITH_PARALLEL */
 #else  /* COUNT_ALLOCS */
@@ -842,11 +860,23 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
     Py_REFCNT(op) = 1)
 #define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
 #else
+#ifdef Py_DEBUG
 #define _Py_NewReference(op)                        \
     (Py_ISPX(op) ? (_Px_NewReference(op)) : (       \
         _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
         _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
         Py_REFCNT(op) = 1))
+#else
+#define _Py_NewReference(op) (                          \
+    (Py_PXCTX ? (_Px_NewReference(op))) : (             \
+        (Py_ISPX(op) ? (_Px_NewReference(op))) : (      \
+            _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
+            _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
+            Py_REFCNT(op) = 1                           \
+        )                                               \
+    )                                                   \
+)
+#endif
 
 #define _Py_ForgetReference(op)                     \
     do {                                            \
@@ -868,10 +898,21 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
     (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op)))
 #else
 
+#ifdef Py_DEBUG
 #define _Py_Dealloc(op)                             \
     (Py_ISPX(op) ? _Px_Dealloc(op) : (              \
         _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA  \
         (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
+#else
+#define _Py_Dealloc(op) (                                   \
+    (Py_PXCTX ? (_Px_Dealloc(op))) : (                      \
+        (Py_ISPX(op) ? (_Px_Dealloc(op))) : (               \
+            _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
+            (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))    \
+        )                                                   \
+    )                                                       \
+)
+#endif
 
 #endif /* WITH_PARALLEL */
 #endif /* Py_LIMITED_API */

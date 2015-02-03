@@ -885,8 +885,8 @@ _PyHeap_NewList(Context *c)
 }
 
 
-int
-_Py_PXCTX(void)
+static int
+_PyParallel_IsParallelContext(void)
 {
     int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
     assert(Py_MainThreadId > 0);
@@ -1798,10 +1798,12 @@ _Px_MemorySignature(void *m)
 
     signature = _MEMSIG_UNKNOWN;
 
+#ifdef Py_DEBUG
     AcquireSRWLockShared(&px->pages_srwlock);
     if (PxPages_Find(px->pages, m))
         signature = _MEMSIG_PX;
     ReleaseSRWLockShared(&px->pages_srwlock);
+#endif
 
     if (signature == _MEMSIG_UNKNOWN && _PyMem_InRange(m))
         signature = _MEMSIG_PY;
@@ -2181,7 +2183,9 @@ Heap_Init(Context *c, size_t n, int page_size)
     h->ctx = c;
     h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), 0, 0);
     assert(h->sle_next);
+#ifdef Py_DEBUG
     _PxState_RegisterHeap(c->px, h, c);
+#endif
     return h;
 }
 
@@ -2241,7 +2245,9 @@ _PyTLSHeap_Init(size_t n, int page_size)
     h->tls = t;
     h->sle_next = (Heap *)_PyTLSHeap_Malloc(sizeof(Heap), 0);
     assert(h->sle_next);
+#ifdef Py_DEBUG
     _PxState_RegisterHeap(t->px, h, 0);
+#endif
     return 1;
 }
 
@@ -4268,7 +4274,9 @@ _PxState_FreeContext(PxState *px, Context *c)
     }
     */
 
+#ifdef Py_DEBUG
     _PxContext_UnregisterHeaps(c);
+#endif
 
     HeapDestroy(c->heap_handle);
     free(c);

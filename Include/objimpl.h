@@ -444,6 +444,7 @@ extern PyGC_Head *_PyGC_generation0;
 
 #define __PyObject_GC_TRACK(o) do {                 \
     PyGC_Head *g;                                   \
+    Px_BREAK();                                     \
     g = _Py_AS_GC(o);                               \
     if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED)      \
         Py_FatalError("GC object already tracked"); \
@@ -456,6 +457,7 @@ extern PyGC_Head *_PyGC_generation0;
 
 #define __PyObject_GC_UNTRACK(o) do {               \
     PyGC_Head *g;                                   \
+    Px_BREAK();                                     \
     g = _Py_AS_GC(o);                               \
     assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED);  \
     g->gc.gc_refs = _PyGC_REFS_UNTRACKED;           \
