@@ -6179,8 +6179,13 @@ overlapped_acceptex_callback:
         if (s->overlapped_acceptex.Internal == NO_ERROR)
             __debugbreak();
 
-        if (s->wsa_error == NO_ERROR)
-            __debugbreak();
+        if (s->wsa_error == NO_ERROR) {
+            if (c->io_result != 64)
+                __debugbreak();
+        }
+
+        if (c->io_result == 64)
+            PxSocket_RECYCLE(s);
 
         if (c->io_result == WSA_OPERATION_ABORTED)
             PxSocket_RECYCLE(s);
@@ -7242,13 +7247,18 @@ overlapped_sendfile_callback:
             __debugbreak();
 
         /* xxx todo: hitting this where io_result == 64 */
-        if (s->sendfile_wsa_error == NO_ERROR)
-            __debugbreak();
+        if (s->sendfile_wsa_error == NO_ERROR) {
+            if (c->io_result != 64)
+                __debugbreak();
+        }
 
         s->send_id--;
 
         if (s->sendfile_snapshot)
             PxContext_RollbackHeap(c, &s->sendfile_snapshot);
+
+        if (c->io_result == 64)
+            PxSocket_RECYCLE(s);
 
         /* xxx todo: call send(file?)_failed() if applicable */
         switch (s->sendfile_wsa_error) {
