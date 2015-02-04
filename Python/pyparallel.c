@@ -2043,6 +2043,7 @@ _PyParallel_GuardMem(const char *function,
             }
             assert(s & _MEMSIG_PY);
         } else {
+#ifdef Py_DEBUG
             if (!(s & _MEMSIG_PX)) {
                 PxState *px = PXSTATE();
                 AcquireSRWLockShared(&px->pages_srwlock);
