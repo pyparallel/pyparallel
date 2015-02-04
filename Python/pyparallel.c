@@ -2054,8 +2054,8 @@ _PyParallel_GuardMem(const char *function,
                 //printf("found ptr 0x%llx\n", m);
             }
             assert(s & _MEMSIG_PX);
+#endif
         }
-
         return 0;
     }
 }
