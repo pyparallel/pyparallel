@@ -885,7 +885,7 @@ _PyHeap_NewList(Context *c)
 }
 
 
-static int
+int
 _PyParallel_IsParallelContext(void)
 {
     int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
