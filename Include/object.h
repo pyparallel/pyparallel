@@ -868,13 +868,13 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
         Py_REFCNT(op) = 1))
 #else
 #define _Py_NewReference(op) (                          \
-    (Py_PXCTX ? (_Px_NewReference(op))) : (             \
-        (Py_ISPX(op) ? (_Px_NewReference(op))) : (      \
+    (Py_PXCTX ? (_Px_NewReference(op)) : (              \
+        (Py_ISPX(op) ? (_Px_NewReference(op)) : (       \
             _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
             _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
             Py_REFCNT(op) = 1                           \
-        )                                               \
-    )                                                   \
+        ))                                              \
+    ))                                                  \
 )
 #endif
 
@@ -905,12 +905,12 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
         (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
 #else
 #define _Py_Dealloc(op) (                                   \
-    (Py_PXCTX ? (_Px_Dealloc(op))) : (                      \
-        (Py_ISPX(op) ? (_Px_Dealloc(op))) : (               \
+    (Py_PXCTX ? (_Px_Dealloc(op)) : (                       \
+        (Py_ISPX(op) ? (_Px_Dealloc(op)) : (                \
             _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
             (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))    \
-        )                                                   \
-    )                                                       \
+        ))                                                  \
+    ))                                                       \
 )
 #endif
 
