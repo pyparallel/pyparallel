@@ -93,10 +93,17 @@ PyAPI_FUNC(int)     _Py_ISPY(void *ob);
 
 PyAPI_FUNC(int)     _PyParallel_IsParallelContext(void);
 
+static __inline
+int
+__PyParallel_IsParallelContext(void)
+{
+    return (Py_MainThreadId != _Py_get_current_thread_id());
+}
+
 #ifdef Py_DEBUG
 #define Py_PXCTX (_PyParallel_IsParallelContext())
 #else
-#define Py_PXCTX ((int)(Py_MainThreadId != _Py_get_current_thread_id()))
+#define Py_PXCTX (__PyParallel_IsParallelContext())
 #endif
 
 #define Py_PX(ob)   ((((PyObject*)(ob))->px))
@@ -199,13 +206,13 @@ _px_bitpos_uint32(unsigned int f)
         _PY_ISPX_TEST              \
     )
 #else
-#define Py_ISPY(op) (                       \
-    (((void *)((PyObject *)(op)->is_px)) != \
-     ((void *)(_Py_IS_PARALLEL)))           \
+#define Py_ISPY(op) (                         \
+    (((void *)(((PyObject *)(op))->is_px)) != \
+     ((void *)(_Py_IS_PARALLEL)))             \
 )
-#define Py_ISPX(op) (                       \
-    (((void *)((PyObject *)(op)->is_px)) == \
-     ((void *)(_Py_IS_PARALLEL)))           \
+#define Py_ISPX(op) (                         \
+    (((void *)(((PyObject *)(op))->is_px)) == \
+     ((void *)(_Py_IS_PARALLEL)))             \
 )
 #endif
 
