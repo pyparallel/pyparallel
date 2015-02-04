@@ -4457,7 +4457,7 @@ start:
         c = (Context *)item->from;
         cb = (PTP_SIMPLE_CALLBACK)item->p1;
 
-        if (!TrySubmitThreadpoolCallback(cb, c, NULL)) {
+        if (!TrySubmitThreadpoolCallback(cb, c, c->ptp_cbe)) {
             PyErr_SetFromWindowsErr(0);
             Py_XDECREF(item->p2);
             Py_XDECREF(item->p3);
@@ -4715,12 +4715,17 @@ submit_work(Context *c)
         cb(c->instance, c);
         return 1;
     } else {
-        retval = TrySubmitThreadpoolCallback(cb, c, NULL);
+        retval = TrySubmitThreadpoolCallback(cb, c, c->ptp_cbe);
         if (!retval)
             PyErr_SetFromWindowsErr(0);
         return retval;
     }
 }
+
+int
+create_threadpool_for_context(Context *c,
+                              DWORD min_threads,
+                              DWORD max_threads);
 
 Context *
 new_context(size_t heapsize)
@@ -4786,6 +4791,20 @@ new_context(size_t heapsize)
     s = &(c->stats);
     s->startup_size = s->allocated;
 
+    if (ctx) {
+        Context *x = ctx;
+        if (x && x->tp_ctx) {
+            if (x->tp_ctx != x)
+                __debugbreak();
+
+            if (x->ptp_cbe != &x->tp_cbe)
+                __debugbreak();
+
+            c->tp_ctx = x;
+            c->ptp_cbe = x->ptp_cbe;
+        }
+    }
+
     return c;
 
 free_heap:
@@ -4795,6 +4814,73 @@ free_context:
     free(c);
 
     return NULL;
+}
+
+/* 0 = failure, 1 = success */
+int
+create_threadpool_for_context(Context *c,
+                              DWORD min_threads,
+                              DWORD max_threads)
+{
+    DWORD err = NO_ERROR;
+
+    assert(!c->ptp);
+    assert(!c->ptp_cg);
+    assert(!c->ptp_cbe);
+    assert(!c->tp_ctx);
+
+    c->ptp = CreateThreadpool(NULL);
+    if (!c->ptp) {
+        err = GetLastError();
+        __debugbreak();
+    }
+
+    c->ptp_cbe = &c->tp_cbe;
+    InitializeThreadpoolEnvironment(c->ptp_cbe);
+
+    c->ptp_cg = CreateThreadpoolCleanupGroup();
+    if (!c->ptp_cg) {
+        err = GetLastError();
+        __debugbreak();
+    }
+
+    SetThreadpoolThreadMaximum(c->ptp, max_threads);
+    if (!SetThreadpoolThreadMinimum(c->ptp, min_threads)) {
+        err = GetLastError();
+        __debugbreak();
+    }
+
+    SetThreadpoolCallbackPool(c->ptp_cbe, c->ptp);
+
+    c->tp_ctx = c;
+
+    return 1;
+}
+
+Context *
+new_context_for_socket(size_t heapsize)
+{
+    Context *c = NULL;
+    Context *x = ctx;
+    int copy_tp_info = 0;
+    c = new_context(heapsize);
+
+    if (!c)
+        return NULL;
+
+    if (c->tp_ctx) {
+        if (x->tp_ctx != x)
+            __debugbreak();
+        if (c->ptp_cbe != x->ptp_cbe)
+            __debugbreak();
+    } else {
+        DWORD min_threads = _PyParallel_NumCPUs;
+        DWORD max_threads = _PyParallel_NumCPUs * 2;
+        if (!create_threadpool_for_context(c, min_threads, max_threads))
+            __debugbreak();
+    }
+
+    return c;
 }
 
 PyObject *
@@ -4936,7 +5022,7 @@ _async_submit_wait(PyObject *self, PyObject *args)
         goto free_context;
 
     cb = _PyParallel_WaitCallback;
-    c->tp_wait = CreateThreadpoolWait(cb, c, NULL);
+    c->tp_wait = CreateThreadpoolWait(cb, c, c->ptp_cbe);
     if (!c->tp_wait) {
         PyErr_SetFromWindowsErr(0);
         goto free_context;
@@ -5087,7 +5173,7 @@ _async_submit_write_io(PyObject *self, PyObject *args)
     Py_XINCREF(c->errback);
 
     callback = _PyParallel_IOCallback;
-    c->tp_io = CreateThreadpoolIo(f->h, callback, c, NULL);
+    c->tp_io = CreateThreadpoolIo(f->h, callback, c, c->ptp_cbe);
     if (!c->tp_io) {
         PyErr_SetFromWindowsErr(0);
         goto free_context;
@@ -7651,7 +7737,7 @@ create_pxsocket(
     else {
         if (_PyParallel_HitHardMemoryLimit())
             return PyErr_NoMemory();
-        c = new_context(0);
+        c = new_context_for_socket(0);
         /* Ugh, really need to put all these PxState counters in one place.
          * (Or at the very least, document which ones you're meant to alter
          * when.) */
@@ -7974,7 +8060,7 @@ set_other_sockopts:
     s->tp_io = CreateThreadpoolIo((HANDLE)s->sock_fd,
                                   PxSocket_IOCallback,
                                   s->ctx,
-                                  NULL);
+                                  c->ptp_cbe);
     if (!s->tp_io)
         PxSocket_SYSERROR("CreateThreadpoolIo(PyParallel_IOCallback)");
 
@@ -9271,7 +9357,7 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
         /* If we're a parallel thread, we can just palm off the work to
          * TrySubmitThreadpoolCallback directly.
          */
-        if (!TrySubmitThreadpoolCallback(cb, c, NULL))
+        if (!TrySubmitThreadpoolCallback(cb, c, c->ptp_cbe))
             PxSocket_SYSERROR("TrySubmitThreadpoolCallback");
 
     } else {

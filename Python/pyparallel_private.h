@@ -593,6 +593,13 @@ typedef struct _PyParallelContext {
     PyObject *errback;
     PyObject *result;
 
+    Context  *tp_ctx;
+
+    PTP_POOL ptp;
+    PTP_CLEANUP_GROUP ptp_cg;
+    TP_CALLBACK_ENVIRON tp_cbe;
+    PTP_CALLBACK_ENVIRON ptp_cbe;
+
     TP_WAIT        *tp_wait;
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
@@ -1128,7 +1135,7 @@ typedef struct _PxSocket {
     CRITICAL_SECTION children_cs;
     PxSocket *first;
     PxSocket *last;
-    
+
     volatile long num_children;
 
     int listen_backlog;
