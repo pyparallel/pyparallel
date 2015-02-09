@@ -643,7 +643,9 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
 #else
     if (!Py_PXCTX && code->co_zombieframe != NULL &&
         !_PyParallel_ExecutingCallbackFromMainThread()) {
+#ifdef Py_DEBUG
         assert(!_Px_TEST(code->co_zombieframe));
+#endif
 #endif
         f = code->co_zombieframe;
         code->co_zombieframe = NULL;
