@@ -889,8 +889,11 @@ int
 _PyParallel_IsParallelContext(void)
 {
     int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
+    int alternate = (int)(ctx && ctx->h ? 1 : 0);
     assert(Py_MainThreadId > 0);
     assert(Py_MainProcessId != -1);
+    if (active != alternate)
+        __debugbreak();
     return active;
 }
 

@@ -284,6 +284,39 @@ class EchoServer(TCPServerCommand):
         async.run()
     pass
 
+
+#===============================================================================
+# Testing
+#===============================================================================
+class TestGenerator(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 10008
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Running test server on %s port %d ..." % (ip, port))
+
+        class GeneratorTest:
+            def data_received(self, transport, data):
+                return b', '.join([chr(i) for i in (1, 2, 3)])
+
+        import async
+        server = async.server(ip, port)
+        protocol = GeneratorTest
+        async.register(transport=server, protocol=protocol)
+        async.run()
+
+
 #===============================================================================
 # System Info/Memory Commands
 #===============================================================================

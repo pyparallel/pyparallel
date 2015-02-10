@@ -92,3 +92,13 @@ Modules/_testembed
 coverage/
 htmlcov/
 Lib/distutils/command/wininst-*
+website/
+Lib/site-packages/
+contrib/
+Scripts\cygdb-script.py
+Scripts\cython-script.py
+Scripts\cythonize-script.py
+easy_install-3.3-script.py
+*.ipch
+*.psess
+*.vsp
