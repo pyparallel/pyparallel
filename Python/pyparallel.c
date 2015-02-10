@@ -4357,6 +4357,12 @@ _Py_CheckCtrlC(void)
     return 0;
 }
 
+#ifndef _WIN64
+#ifndef InterlockedAdd
+#define InterlockedAdd InterlockedExchangeAdd
+#endif
+#endif
+
 void
 _PyParallel_SchedulePyNoneDecref(long refs)
 {
