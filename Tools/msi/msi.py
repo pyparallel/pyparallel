@@ -232,13 +232,13 @@ def build_database():
     # schema represents the installer 2.0 database schema.
     # sequence is the set of standard sequences
     # (ui/execute, admin/advt/install)
-    msiname = "python-%s%s.msi" % (full_current_version, msilib.arch_ext)
+    msiname = "pyparallel-%s%s.msi" % (full_current_version, msilib.arch_ext)
     db = msilib.init_database(msiname,
-                  schema, ProductName="Python "+full_current_version+productsuffix,
+                  schema, ProductName="PyParallel "+full_current_version+productsuffix,
                   ProductCode=product_code,
                   ProductVersion=current_version,
-                  Manufacturer=u"Python Software Foundation",
-                  request_uac = True)
+                  Manufacturer=u"Trent Nelson",
+                  request_uac = False)
     # The default sequencing of the RemoveExistingProducts action causes
     # removal of files that got just installed. Place it after
     # InstallInitialize, so we first uninstall everything, but still roll
@@ -253,7 +253,7 @@ def build_database():
     # accordingly.
     add_data(db, "Property", [("UpgradeCode", uc),
                               ("WhichUsers", "ALL"),
-                              ("ProductLine", "Python%s%s" % (major, minor)),
+                              ("ProductLine", "PyParallel%s%s" % (major, minor)),
                              ])
     db.Commit()
     return db, msiname
@@ -286,7 +286,7 @@ def remove_old_versions(db):
               None, migrate_features, None, "REMOVEOLDSNAPSHOT")])
         props = "REMOVEOLDSNAPSHOT;REMOVEOLDVERSION"
 
-    props += ";TARGETDIR;DLLDIR;LAUNCHERDIR"
+    props += ";TARGETDIR;DLLDIR;LAUNCHERDIR;CONFDIR"
     # Installer collects the product codes of the earlier releases in
     # these properties. In order to allow modification of the properties,
     # they must be declared as secure. See "SecureCustomProperties Property"
@@ -409,10 +409,10 @@ def add_ui(db):
 
     # Fonts, see "TextStyle Table"
     add_data(db, "TextStyle",
-             [("DlgFont8", "Tahoma", 9, None, 0),
-              ("DlgFontBold8", "Tahoma", 8, None, 1), #bold
-              ("VerdanaBold10", "Verdana", 10, None, 1),
-              ("VerdanaRed9", "Verdana", 9, 255, 0),
+             [("DlgFont8", "Segoe UI", 9, None, 0),
+              ("DlgFontBold8", "Segoe UI", 8, None, 1), #bold
+              ("VerdanaBold10", "Segoe UI", 10, None, 1),
+              ("VerdanaRed9", "Segoe UI", 9, 255, 0),
              ])
 
     compileargs = r'-Wi "[TARGETDIR]Lib\compileall.py" -f -x "bad_coding|badsyntax|site-packages|py2_|lib2to3\\tests|venv\\scripts" "[TARGETDIR]Lib"'
@@ -423,7 +423,7 @@ def add_ui(db):
         # See "Custom Action Type 51",
         # "Custom Action Execution Scheduling Options"
         ("InitialTargetDir", 307, "TARGETDIR",
-         "[WindowsVolume]Python%s%s" % (major, minor)),
+         "[WindowsVolume]PyParallel%s%s" % (major, minor)),
         ("SetDLLDirToTarget", 307, "DLLDIR", "[TARGETDIR]"),
         ("SetDLLDirToSystem32", 307, "DLLDIR", SystemFolderName),
         ("SetLauncherDirToTarget", 307, "LAUNCHERDIR", "[TARGETDIR]"),
@@ -905,9 +905,10 @@ def generate_license():
     shutil.copyfileobj(open("crtlicense.txt"), out)
     for name, pat, file in (("bzip2","bzip2-*", "LICENSE"),
                       ("openssl", "openssl-*", "LICENSE"),
-                      ("Tcl", "tcl8*", "license.terms"),
-                      ("Tk", "tk8*", "license.terms"),
-                      ("Tix", "tix-*", "license.terms")):
+                      ("Tcl", "tcl-8*", "license.terms"),
+                      ("Tk", "tk-8*", "license.terms"),
+                      #("Tix", "tix-*", "license.terms")
+                      ):
         out.write("\nThis copy of Python includes a copy of %s, which is licensed under the following terms:\n\n" % name)
         dirs = glob.glob(srcdir+"/../"+pat)
         if not dirs:
@@ -949,7 +950,7 @@ def hgmanifest():
 def add_files(db):
     installer = msilib.MakeInstaller()
     hgfiles = hgmanifest()
-    cab = CAB("python")
+    cab = CAB("pyparallel")
     tmpfiles = []
     # Add all executables, icons, text files into the TARGETDIR component
     root = PyDirectory(db, cab, None, srcdir, "TARGETDIR", "SourceDir")
@@ -958,6 +959,10 @@ def add_files(db):
         root.add_file("%s/w9xpopen.exe" % PCBUILD)
     root.add_file("README.txt", src="README")
     root.add_file("NEWS.txt", src="Misc/NEWS")
+    root.add_file("px.bat", src="Tools/pyparallel/px.bat")
+    root.add_file("tefb.bat", src="Tools/pyparallel/tefb.bat")
+    root.add_file("px-http-server.bat", src="Tools/pyparallel/px-http-server.bat")
+    root.add_file("python33-http-server.bat", src="Tools/pyparallel/python33-http-server.bat")
     generate_license()
     root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
     root.start_component("python.exe", keyfile="python.exe")
@@ -1027,6 +1032,12 @@ def add_files(db):
     if not have_ctypes:
         print("WARNING: _ctypes.pyd not found, ctypes will not be included")
         extensions.remove("_ctypes.pyd")
+
+    # Add PyParallel conf\*.conf files.
+    trail = '%s|%s' % (root.make_short('conf'), 'conf')
+    conf = PyDirectory(db, cab, root, 'conf', 'conf', trail)
+    conf.add_file('px.conf')
+    conf.add_file('techempower_frameworks_benchmark.conf')
 
     # Add all .py files in Lib, except tkinter, test
     dirs = []
@@ -1322,7 +1333,7 @@ def add_registry(db):
 def build_pdbzip():
     pdbexclude = ['kill_python.pdb', 'make_buildinfo.pdb',
                   'make_versioninfo.pdb']
-    path = "python-%s%s-pdb.zip" % (full_current_version, msilib.arch_ext)
+    path = "pyparallel-%s%s-pdb.zip" % (full_current_version, msilib.arch_ext)
     pdbzip = zipfile.ZipFile(path, 'w')
     for f in glob.glob1(os.path.join(srcdir, PCBUILD), "*.pdb"):
         if f not in pdbexclude and not f.endswith('_d.pdb'):
