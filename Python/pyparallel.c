@@ -2370,6 +2370,23 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
     if (!alignment)
         alignment = Px_PTR_ALIGN_SIZE;
 
+    if (!c->h) {
+        /* I've seen this breakpoint hit in two circumstances so far (YMMV):
+         *  1. A 3rd-party lib/DLL/C code is calling one of the Python malloc
+         *     routines without holding the GIL.
+         *  2. I didn't trace down the exact cause, but if you look at the
+         *     stack trace, the frame before us was ffi_call_AMD64 from
+         *     _cytpes.pyd.  Easy to reproduce: start a debug version of the
+         *     interpreter, then `import IPython` -- it'll hit this
+         *     immediately.  Presumably that's being caused by mixing and
+         *     matching debug/release builds, I guess.
+         * Either way, this isn't a recoverable error by the time it gets
+         * here.
+         */
+        __debugbreak();
+        ASSERT_UNREACHABLE();
+    }
+
 begin:
     h = c->h;
 
