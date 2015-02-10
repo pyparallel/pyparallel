@@ -7388,25 +7388,6 @@ overlapped_sendfile_callback:
     if (s->sendfile_snapshot)
         PxContext_RollbackHeap(c, &s->sendfile_snapshot);
 
-    if (c->io_result != NO_ERROR) {
-        s->send_id--;
-        if (s->overlapped_sendfile.Internal == NO_ERROR)
-            __debugbreak();
-
-        if (s->wsa_error == NO_ERROR)
-            __debugbreak();
-
-        /* xxx todo: call send(file?)_failed() if applicable */
-        switch (s->wsa_error) {
-            case WSAENETRESET:
-            case WSAECONNABORTED:
-            case WSAECONNRESET:
-                PxSocket_RECYCLE(s);
-        }
-
-        PxSocket_OVERLAPPED_ERROR("TransmitFile");
-    }
-
     s->total_bytes_sent += s->sendfile_nbytes;
     s->sendfile_nbytes = 0;
     s->sendfile_handle = 0;
