@@ -6730,6 +6730,12 @@ overlapped_send_callback:
 
         s->send_id--;
 
+        if (c->io_result == 64)
+            PxSocket_RECYCLE(s);
+
+        if (c->io_result == WSA_OPERATION_ABORTED)
+            PxSocket_RECYCLE(s);
+
         switch (s->wsa_error) {
             case WSAENETRESET:
             case WSAECONNABORTED:
@@ -6926,7 +6932,7 @@ do_disconnect:
             case WSAECONNRESET:
                 PxSocket_RECYCLE(s);
         }
-
+        __debugbreak();
         PxSocket_WSAERROR("DisconnectEx");
     }
 
@@ -7134,12 +7140,19 @@ overlapped_recv_callback:
         if (rbuf->snapshot)
             PxContext_RollbackHeap(c, &rbuf->snapshot);
 
+        if (c->io_result == 64)
+            PxSocket_RECYCLE(s);
+
+        if (c->io_result == WSA_OPERATION_ABORTED)
+            PxSocket_RECYCLE(s);
+
         switch (s->wsa_error) {
             case WSAENETRESET:
             case WSAECONNABORTED:
             case WSAECONNRESET:
                 PxSocket_RECYCLE(s);
         }
+        __debugbreak();
         PxSocket_OVERLAPPED_ERROR("WSARecv");
     }
 
@@ -7372,16 +7385,18 @@ overlapped_sendfile_callback:
         if (c->io_result == 64)
             PxSocket_RECYCLE(s);
 
+        if (c->io_result == WSA_OPERATION_ABORTED)
+            PxSocket_RECYCLE(s);
+
         /* xxx todo: call send(file?)_failed() if applicable */
         switch (s->sendfile_wsa_error) {
             case WSAENETRESET:
             case WSAECONNABORTED:
             case WSAECONNRESET:
-                __debugbreak();
                 PxSocket_RECYCLE(s);
                 ASSERT_UNREACHABLE();
         }
-
+        __debugbreak();
         PxSocket_OVERLAPPED_ERROR("TransmitFile");
     }
 
