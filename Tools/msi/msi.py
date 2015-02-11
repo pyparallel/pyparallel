@@ -931,6 +931,24 @@ class PyDirectory(Directory):
             kw['componentflags'] = 2 #msidbComponentAttributesOptional
         Directory.__init__(self, *args, **kw)
 
+    def add_file(self, *args, **kw):
+        # We always include .pdb files for PyParallel, 'cause it's gonna'
+        # crash sooner or later.
+        Directory.add_file(self, *args, **kw)
+        filename = args[0]
+        ix = filename.rfind('.')
+        if ix == -1:
+            return
+
+        pdbname = '.'.join((filename[:ix], 'pdb'))
+        pdbpath = os.path.join(srcdir, kw.get('src', ''), pdbname)
+        if not os.path.exists(pdbpath):
+            return
+
+        print "%s -> %s" % (filename, pdbname)
+        Directory.add_file(self, pdbname, **kw)
+
+
 def hgmanifest():
     # Fetch file list from Mercurial
     process = subprocess.Popen(['hg', 'manifest'], stdout=subprocess.PIPE)
