@@ -130,6 +130,17 @@ if level < 0xf:
         docfile += '%x%s' % (level, serial)
 docfile = 'python%s%s%s.chm' % (major, minor, docfile)
 
+from os.path import (
+    join,
+    exists,
+    dirname,
+    abspath,
+    normpath,
+)
+
+def join_path(*args):
+    return abspath(normpath(join(*args)))
+
 # Build the mingw import library, libpythonXY.a
 # This requires 'nm' and 'dlltool' executables on your PATH
 def build_mingw_lib(lib_file, def_file, dll_file, mingw_lib):
@@ -939,11 +950,33 @@ class PyDirectory(Directory):
         ix = filename.rfind('.')
         if ix == -1:
             return
+        ext = filename[ix+1:]
+
+        if ext not in ('pyd', 'dll', 'exe'):
+            return
+
+        if 'Visual Studio' in kw.get('src', ''):
+            return
+
+        if filename.startswith('wininst'):
+            return
+
+        if filename == 'python3.dll':
+            return
+
+        if filename.startswith(('tcl', 'tk')):
+            return
 
         pdbname = '.'.join((filename[:ix], 'pdb'))
-        pdbpath = os.path.join(srcdir, kw.get('src', ''), pdbname)
-        if not os.path.exists(pdbpath):
-            return
+        pdbpath = os.path.join(srcdir, pdbname)
+
+        if not exists(pdbpath):
+            pdbpath = join_path(self.absolute, pdbname)
+
+        if not exists(pdbpath):
+            import pdb
+            dbg = pdb.Pdb()
+            dbg.set_trace()
 
         print "%s -> %s" % (filename, pdbname)
         Directory.add_file(self, pdbname, **kw)
