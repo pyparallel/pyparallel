@@ -186,6 +186,9 @@ if msilib.pe_type(dll_path) != msilib.pe_type("msisupport.dll"):
 
 if msilib.Win64:
     upgrade_code = upgrade_code_64
+    bits = 64
+else:
+    bits = 32
 
 if snapshot:
     product_code = msilib.gen_uuid()
@@ -1300,7 +1303,7 @@ def add_registry(db):
     # Shortcuts, see "Shortcut Table"
     add_data(db, "Directory",
              [("ProgramMenuFolder", "TARGETDIR", "."),
-              ("MenuDir", "ProgramMenuFolder", "PY%s%s|%sPython %s.%s" % (major,minor,testprefix,major,minor))])
+              ("MenuDir", "ProgramMenuFolder", "PY%s%s|%sPyParallel %s.%s (%d-bit)" % (major,minor,testprefix,major,minor,bits))])
     add_data(db, "RemoveFile",
              [("MenuDir", "TARGETDIR", None, "MenuDir", 2)])
     tcltkshortcuts = []
