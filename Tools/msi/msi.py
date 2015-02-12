@@ -33,6 +33,8 @@ certname = None
 # Make a zip file containing the PDB files for this build?
 # (PyParallel: we set this to false as we inline all our pdbs in the .msi.)
 pdbzip = False
+# Run zip -0 <msiname>.zip <msiname> after msi is built.
+zipmsi = True
 
 try:
     from config import *
@@ -1483,5 +1485,10 @@ if certname:
 
 if pdbzip:
     build_pdbzip()
+
+if zipmsi:
+    cmd = 'zip -0 %s.zip %s' % (msiname, msiname)
+    print 'Running: %s' % cmd
+    os.system(cmd)
 
 # vim:set tw=0:
