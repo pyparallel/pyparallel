@@ -10038,4 +10038,4 @@ _PyAsync_ModInit(void)
 }
 #endif
 
-/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell: */
+/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell:                                  */
