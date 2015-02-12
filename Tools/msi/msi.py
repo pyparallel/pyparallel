@@ -31,7 +31,8 @@ MSVCR = "100"
 # Name of certificate in default store to sign MSI with
 certname = None
 # Make a zip file containing the PDB files for this build?
-pdbzip = True
+# (PyParallel: we set this to false as we inline all our pdbs in the .msi.)
+pdbzip = False
 
 try:
     from config import *
