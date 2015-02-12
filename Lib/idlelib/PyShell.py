@@ -828,7 +828,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
 
 class PyShell(OutputWindow):
 
-    shell_title = "Python " + python_version() + " Shell"
+    shell_title = "PyParallel " + python_version() + " Shell"
 
     # Override classes
     ColorDelegator = ModifiedColorDelegator
