@@ -9446,6 +9446,17 @@ pxsocket_close(PxSocket *s, PyObject *args)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(pxsocket_shutdown_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_shutdown(PxSocket *s, PyObject *args)
+{
+    if (s->shutdown)
+        SetEvent(s->shutdown);
+    Py_RETURN_NONE;
+}
+
+
 PyDoc_STRVAR(pxsocket_next_send_id_doc, "xxx todo\n");
 
 PyObject *
@@ -9550,6 +9561,7 @@ done:
 
 static PyMethodDef PxSocketMethods[] = {
     _PXSOCKET_N(close),
+    _PXSOCKET_N(shutdown),
     _PXSOCKET_V(sendfile),
     _PXSOCKET_N(next_send_id),
     { NULL, NULL }
