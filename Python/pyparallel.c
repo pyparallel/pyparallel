@@ -3600,6 +3600,22 @@ _async_cpu_count(PyObject *self)
     return PyLong_FromLong(_cpu_count());
 }
 
+PyDoc_STRVAR(_async_active_io_loops_doc, "xxx todo\n");
+
+PyObject *
+_async_active_io_loops(PyObject *self)
+{
+    return PyLong_FromLong(_PxSocket_ActiveIOLoops);
+}
+
+PyDoc_STRVAR(_async_active_hogs_doc, "xxx todo\n");
+
+PyObject *
+_async_active_hogs(PyObject *self)
+{
+    return PyLong_FromLong(_PxSocket_ActiveHogs);
+}
+
 void
 _PyParallel_Init(void)
 {
@@ -9821,6 +9837,8 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(submit_write_io),
     _ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
+    _ASYNC_N(active_io_loops),
+    _ASYNC_N(active_hogs),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_N(persisted_contexts),
     _ASYNC_N(refresh_memory_stats),
