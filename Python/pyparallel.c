@@ -9281,6 +9281,7 @@ post_accepts:
 wait:
     if (low_memory_wait)
         /* Only wait on shutdown and high memory events. */
+        /* (Note the differences in first arg (2/4) and handles (3/0)). */
         result = WaitForMultipleObjects(2, &(s->wait_handles[3]), 0, 5000);
     else
         /* Wait on everything except high memory. */
