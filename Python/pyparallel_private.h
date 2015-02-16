@@ -470,6 +470,10 @@ typedef struct _PxState {
     short max_free_contexts;
     */
 
+    /* List head */
+    LIST_ENTRY contexts;
+    CRITICAL_SECTION contexts_cs;
+
     Context *ctx_first;
     Context *ctx_last;
     unsigned short ctx_minfree;
@@ -604,6 +608,9 @@ typedef struct _PyParallelContext {
     TP_WAIT        *tp_wait;
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
+
+    /* Link to PxState contexts list head. */
+    LIST_ENTRY px_link;
 
     int         io_type;
     TP_IO      *tp_io;
@@ -1083,10 +1090,7 @@ typedef struct _PxSocket {
     DWORD acceptex_recv_bytes;
 
     __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
-    PxListHead link_child_list1;
-
-    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
-    PxListHead link_child_list2;
+    PxListHead link_child;
 
     int num_accepts_to_post;
 
@@ -1161,8 +1165,6 @@ typedef struct _PxSocket {
     volatile long num_children;
 
     volatile long recycled_unlinked_child;
-
-    volatile PxListHead *link_child;
 
     int listen_backlog;
 

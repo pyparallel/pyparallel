@@ -426,6 +426,12 @@ frame_dealloc(PyFrameObject *f)
     PyCodeObject *co;
     Py_GUARD
 
+#ifdef WITH_PARALLEL
+    /* We crash during shutdown if this isn't in place. */
+    if (_PyParallel_IsFinalized())
+        return;
+#endif
+
     PyObject_GC_UnTrack(f);
     Py_TRASHCAN_SAFE_BEGIN(f)
     /* Kill all local variables */
