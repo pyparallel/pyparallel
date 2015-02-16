@@ -470,6 +470,10 @@ typedef struct _PxState {
     short max_free_contexts;
     */
 
+    /* List head */
+    LIST_ENTRY contexts;
+    CRITICAL_SECTION contexts_cs;
+
     Context *ctx_first;
     Context *ctx_last;
     unsigned short ctx_minfree;
@@ -597,12 +601,16 @@ typedef struct _PyParallelContext {
 
     PTP_POOL ptp;
     PTP_CLEANUP_GROUP ptp_cg;
+    PTP_CLEANUP_GROUP_CANCEL_CALLBACK ptp_cgcb;
     TP_CALLBACK_ENVIRON tp_cbe;
     PTP_CALLBACK_ENVIRON ptp_cbe;
 
     TP_WAIT        *tp_wait;
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
+
+    /* Link to PxState contexts list head. */
+    LIST_ENTRY px_link;
 
     int         io_type;
     TP_IO      *tp_io;
@@ -950,6 +958,13 @@ typedef struct _PxSocket {
     unsigned int this_cpuid;
     int ioloops;
 
+    PTP_WORK preallocate_children_tp_work;
+    PTP_TIMER slowloris_protection_tp_timer;
+
+    /* Link from child -> parent via link_child/unlink_child. */
+    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    PxListItem link;
+
     /* Start-up snapshots. */
     Heap     *startup_heap_snapshot;
     PxSocket *startup_socket_snapshot;
@@ -987,8 +1002,12 @@ typedef struct _PxSocket {
     Py_ssize_t  total_bytes_sent;
     Py_ssize_t  total_bytes_received;
 
+    /* Used by the parent's "children" list. */
+    LIST_ENTRY child_link;
+
     DWORD num_bytes_just_sent;
     DWORD num_bytes_just_received;
+
 
     PyObject *protocol_type;
     PyObject *protocol;
@@ -1018,6 +1037,12 @@ typedef struct _PxSocket {
     int       client_disconnected;
     int       reused_socket;
     int       in_overlapped_callback;
+
+    BOOL is_low_memory;
+
+    int slowloris_protection_seconds;
+    volatile long negative_child_connect_time_count;
+    volatile long num_times_sloworis_protection_triggered;
 
     /* sendfile stuff */
     int    sendfile_flags;
@@ -1064,6 +1089,9 @@ typedef struct _PxSocket {
     DWORD acceptex_addr_len;
     DWORD acceptex_recv_bytes;
 
+    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    PxListHead link_child;
+
     int num_accepts_to_post;
 
     /* Target number of posted AcceptEx() calls the server will try and
@@ -1096,17 +1124,20 @@ typedef struct _PxSocket {
      */
     PxSocket *child;
 
+    /* Keep at least a cache line away from link_child. */
+    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    PxListHead unlink_child;
+
     int child_id;
-    int next_child_id;
+    volatile int next_child_id;
 
-    /* Linked-list pointers for child sockets. */
-    CRITICAL_SECTION links_cs;
-    PxSocket *prev;
-    PxSocket *next;
+    /* Doubly-linked list of all children, private to the server. */
+    LIST_ENTRY children;
+    CRITICAL_SECTION children_cs;
 
-    /* Following members are only applicable to the listen socket of a server
-     * socket.
-     */
+    /* List entry to the above list for children, also private/owned by
+     * server. */
+    LIST_ENTRY child_entry;
 
     /* Number of AcceptEx() calls posted that haven't yet been accepted.
      * (This differs from total_accepts_attempted above in that this value
@@ -1131,12 +1162,9 @@ typedef struct _PxSocket {
      * accepts needed. */
     volatile unsigned long retired_clients;
 
-    /* Protects the *first and *last child pointers, and next_child_id. */
-    CRITICAL_SECTION children_cs;
-    PxSocket *first;
-    PxSocket *last;
-
     volatile long num_children;
+
+    volatile long recycled_unlinked_child;
 
     int listen_backlog;
 
@@ -1151,11 +1179,13 @@ typedef struct _PxSocket {
     int fd_accept_count;
     int client_connected_count;
     int low_memory_count;
-    int shutdown_count;
+    volatile int shutdown_count;
     int high_memory_count;
     int wait_timeout_count;
 
     int negative_accepts_to_post_count;
+
+    BOOL shutting_down;
 
     /* Misc debug/helper stuff. */
     int break_on_iocp_enter;
@@ -1431,7 +1461,7 @@ _try_write_lock(PyObject *obj)
 #endif
 
 #define PxSocket_RECYCLE(s) do {                                         \
-    PxSocket_Recycle(&s);                                                \
+    PxSocket_Recycle(&s, FALSE);                                         \
     if (s) {                                                             \
         if (PxSocket_IS_SERVERCLIENT(s))                                 \
             goto do_accept;                                              \

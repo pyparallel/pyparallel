@@ -43,7 +43,7 @@ int _PxBlockingCallsThreshold = 20;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
-int _PyParallel_Finalized = 0;
+volatile int _PyParallel_Finalized = 0;
 
 int _PxSocketServer_PreallocatedSockets = 64;
 int _PxSocket_MaxSyncSendAttempts = 3;
@@ -84,6 +84,114 @@ static short _PyParallel_CurrentMemoryLoad;
 static BOOL _PyParallel_LowMemory = FALSE;
 
 static MEMORYSTATUSEX _memory_status;
+
+int
+_PyParallel_IsFinalized(void)
+{
+    return _PyParallel_Finalized;
+}
+
+static __inline
+void
+CheckListEntry(PLIST_ENTRY entry)
+{
+    if (((entry->Flink)->Blink) != entry)
+        __debugbreak();
+
+    if (((entry->Blink)->Flink) != entry)
+        __debugbreak();
+
+}
+
+static __inline
+BOOL
+IsListEmpty(PLIST_ENTRY head)
+{
+    CheckListEntry(head);
+    return (BOOL)(head->Flink == head);
+}
+
+static __inline
+void
+InitializeListHead(PLIST_ENTRY head)
+{
+    head->Flink = head->Blink = head;
+}
+
+static __inline
+BOOLEAN
+RemoveListEntry(PLIST_ENTRY entry)
+{
+    PLIST_ENTRY flink = entry->Flink;
+    PLIST_ENTRY blink = entry->Blink;
+    CheckListEntry(entry);
+    if (flink->Blink != entry)
+        __debugbreak();
+    if (blink->Flink != entry)
+        __debugbreak();
+    blink->Flink = flink;
+    flink->Blink = blink;
+    return (flink == blink);
+}
+
+static __inline
+void
+InsertHeadList(PLIST_ENTRY head, PLIST_ENTRY entry)
+{
+    PLIST_ENTRY flink = head->Flink;
+    PLIST_ENTRY blink = head->Blink;
+    if (flink->Blink != head)
+        __debugbreak();
+    if (blink->Flink != head)
+        __debugbreak();
+    entry->Flink = flink;
+    entry->Blink = head;
+    flink->Flink = entry;
+    head->Flink = entry;
+    return;
+}
+
+static __inline
+PLIST_ENTRY
+RemoveHeadList(PLIST_ENTRY head)
+{
+    PLIST_ENTRY entry, next;
+    CheckListEntry(head);
+    entry = head->Flink;
+    next = entry->Flink;
+    head->Flink = next;
+    next->Blink = head;
+    return entry;
+}
+
+static __inline
+void
+InsertTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
+{
+    PLIST_ENTRY blink = head->Blink;
+    CheckListEntry(head);
+    entry->Flink = head;
+    entry->Blink = blink;
+    blink->Flink = entry;
+    head->Blink = entry;
+    CheckListEntry(entry);
+    return;
+}
+
+static __inline
+void
+AppendTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
+{
+    PLIST_ENTRY end;
+    CheckListEntry(head);
+    end = head->Blink;
+    head->Blink->Flink = entry;
+    head->Blink = entry->Blink;
+    entry->Blink->Flink = head;
+    entry->Blink = end;
+    CheckListEntry(entry);
+}
+
 
 /* 0 on error */
 static
@@ -593,7 +701,7 @@ PxSocket_Reuse(PxSocket *s)
  * literally re-use the existing s->sock_fd.
  */
 void
-PxSocket_Recycle(PxSocket **sp)
+PxSocket_Recycle(PxSocket **sp, BOOL force)
 {
     PxSocket *s = *sp;
     PxSocket *new_socket;
@@ -602,37 +710,43 @@ PxSocket_Recycle(PxSocket **sp)
     TP_IO *tp_io = s->tp_io;
     int num_accepts_to_post;
 
-    ODS(L"recycling...\n");
-
-    if (s->was_accepting) {
-        if (s->was_connected)
-            __debugbreak();
-        else if (s->was_disconnecting)
-            __debugbreak();
-        InterlockedDecrement(&s->parent->accepts_posted);
-    } else if (s->was_connected) {
-        if (s->was_accepting)
-            __debugbreak();
-        else if (s->was_disconnecting)
-            __debugbreak();
-        InterlockedDecrement(&s->parent->clients_connected);
-    } else if (s->was_disconnecting) {
-        if (s->was_accepting)
-            __debugbreak();
-        else if (s->was_connected)
-            __debugbreak();
-        InterlockedDecrement(&s->parent->clients_disconnecting);
-    }
-
-    num_accepts_to_post = (
-        s->parent->target_accepts_posted -
-        s->parent->accepts_posted
-    );
-    if (num_accepts_to_post < 0) {
-        PxSocketServer_UnlinkChild(s);
-        PxSocket_CallbackComplete(s);
+    if (s->parent->shutting_down) {
         *sp = NULL;
         return;
+    }
+
+    ODS(L"recycling...\n");
+
+    if (!force) {
+        if (s->was_accepting) {
+            if (s->was_connected)
+                __debugbreak();
+            else if (s->was_disconnecting)
+                __debugbreak();
+            InterlockedDecrement(&s->parent->accepts_posted);
+        } else if (s->was_connected) {
+            if (s->was_accepting)
+                __debugbreak();
+            else if (s->was_disconnecting)
+                __debugbreak();
+            InterlockedDecrement(&s->parent->clients_connected);
+        } else if (s->was_disconnecting) {
+            if (s->was_accepting)
+                __debugbreak();
+            else if (s->was_connected)
+                __debugbreak();
+            InterlockedDecrement(&s->parent->clients_disconnecting);
+        }
+
+        num_accepts_to_post = (
+            s->parent->target_accepts_posted -
+            s->parent->accepts_posted
+        );
+        if (num_accepts_to_post < 0) {
+            PxSocketServer_UnlinkChild(s);
+            *sp = NULL;
+            return;
+        }
     }
 
     if (s->reused_socket) {
@@ -888,7 +1002,8 @@ _PyHeap_NewList(Context *c)
 int
 _PyParallel_IsParallelContext(void)
 {
-    int active = (int)(Py_MainThreadId != _Py_get_current_thread_id());
+    long cur_thread_id = (long)_Py_get_current_thread_id();
+    int active = (int)(Py_MainThreadId != cur_thread_id);
     int alternate = (int)(ctx && ctx->h ? 1 : 0);
     assert(Py_MainThreadId > 0);
     assert(Py_MainProcessId != -1);
@@ -2363,6 +2478,11 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
     size_t requested_size = n;
     size_t aligned_size;
 
+    if (!c) {
+        Context *tls_ctx = ctx;
+        __debugbreak();
+    }
+
     if (Px_TLS_HEAP_ACTIVE)
         return _PyTLSHeap_Malloc(n, align);
 
@@ -3063,6 +3183,9 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     tstate->is_parallel_thread = 0;
     px->ctx_ttl = 1;
 
+    InitializeCriticalSectionAndSpinCount(&px->contexts_cs, 24);
+    InitializeListHead(&px->contexts);
+
     goto done;
 
 free_io_wakeup:
@@ -3667,6 +3790,9 @@ _PyParallel_Init(void)
 
 }
 
+PyObject *
+_async_run_once(PyObject *self, PyObject *args);
+
 void
 _PyParallel_Finalize(void)
 {
@@ -3674,12 +3800,46 @@ _PyParallel_Finalize(void)
 
     assert(px);
 
+    _PyParallel_Finalized = 1;
+
+    if (px->contexts_active == 0)
+        return;
+
+    if (px->contexts_active < 0)
+        __debugbreak();
+
+    if (px->contexts_active) {
+        int i = 0;
+        long active_contexts = 0;
+        long persisted_contexts = 0;
+
+        PySys_FormatStdout("_PyParallel: waiting for %d contexts...\n",
+                           px->contexts_active);
+
+        do {
+            i++;
+            active_contexts = px->contexts_active;
+            persisted_contexts = px->contexts_persisted;
+            /*
+            PySys_FormatStdout("_async.run(%d) [%d/%d] "
+                               "(hogs: %d, ioloops: %d)\n",
+                               i, active_contexts, persisted_contexts,
+                               _PxSocket_ActiveHogs, _PxSocket_ActiveIOLoops);
+            */
+            if (active_contexts < 0)
+                __debugbreak();
+            assert(active_contexts >= 0);
+            if (active_contexts == 0)
+                break;
+            if (!_async_run_once(NULL, NULL))
+                break;
+        } while (1);
+    }
+
     if (px->contexts_active > 0) {
         printf("_PyParallel_Finalize(): px->contexts_active: %d\n",
                px->contexts_active);
     }
-
-    _PyParallel_Finalized = 1;
 }
 
 void
@@ -4438,6 +4598,8 @@ _async_run_once(PyObject *self, PyObject *args)
         return NULL;
     }
 
+    /* .oO(Heh.  What on earth was I exploring when I thought this would be
+     * necesssary....) */
     if (px->incoming_pynone_decrefs) {
         long r = InterlockedExchange(&(px->incoming_pynone_decrefs), 0);
         assert(r >= 0);
@@ -4635,8 +4797,8 @@ start:
         processed_callbacks)
             Py_RETURN_NONE;
 
-    /* ...and wait for a second if we haven't. */
-    err = WaitForSingleObject(px->wakeup, 1000);
+    /* ...and wait for a bit if we haven't. */
+    err = WaitForSingleObject(px->wakeup, 10);
     switch (err) {
         case WAIT_OBJECT_0:
             goto start;
@@ -4858,16 +5020,38 @@ free_context:
     return NULL;
 }
 
+/* I have no idea what we'd use this for at the moment... and I'm kinda'
+ * curious to see what object context would be... especially given this
+ * seemingly cryptic explanation on MSDN re: SetThreadpoolCallbackCleanupGroup
+ *
+ *      The cleanup callback to be called if the cleanup group is canceled
+ *      before the associated object is released. The function is called when
+ *      you call CloseThreadpoolCleanupGroupMembers.
+ *
+ */
+
+void
+CALLBACK
+PxContext_ThreadpoolCleanupGroupCancelCallback(
+    _Inout_opt_ PVOID object_context,
+    _Inout_opt_ PVOID cleanup_context
+)
+{
+    //__debugbreak();
+}
+
 /* 0 = failure, 1 = success */
 int
 create_threadpool_for_context(Context *c,
                               DWORD min_threads,
                               DWORD max_threads)
 {
+    PxState *px = c->px;
     DWORD err = NO_ERROR;
 
     assert(!c->ptp);
     assert(!c->ptp_cg);
+    assert(!c->ptp_cgcb);
     assert(!c->ptp_cbe);
     assert(!c->tp_ctx);
 
@@ -4894,7 +5078,16 @@ create_threadpool_for_context(Context *c,
 
     SetThreadpoolCallbackPool(c->ptp_cbe, c->ptp);
 
+    c->ptp_cgcb = PxContext_ThreadpoolCleanupGroupCancelCallback;
+    SetThreadpoolCallbackCleanupGroup(c->ptp_cbe, c->ptp_cg, c->ptp_cgcb);
+
     c->tp_ctx = c;
+
+    /* Only top-level contexts (i.e. those with threadpool contexts) get added
+     * to the PxState list of contexts. */
+    EnterCriticalSection(&px->contexts_cs);
+    InsertTailList(&px->contexts, &c->px_link);
+    LeaveCriticalSection(&px->contexts_cs);
 
     return 1;
 }
@@ -7526,8 +7719,31 @@ new_pxsocketbuf_from_unicode(Context *c, PyUnicodeObject *o)
 }
 
 void
+PxContext_CleanupThreadpool(Context *c)
+{
+    Context *x = ctx;
+
+    if (!c->tp_ctx)
+        return;
+
+    if (c->tp_ctx != c)
+        return;
+
+    CloseThreadpoolCleanupGroup(c->ptp_cg);
+    DestroyThreadpoolEnvironment(c->ptp_cbe);
+    CloseThreadpool(c->ptp);
+
+    c->tp_ctx = NULL;
+    c->ptp = NULL;
+    c->ptp_cg = NULL;
+    c->ptp_cgcb = NULL;
+    c->ptp_cbe = NULL;
+}
+
+void
 PxContext_CallbackComplete(Context *c)
 {
+    PxContext_CleanupThreadpool(c);
     if (c->io_obj)
         __debugbreak();
     if (PyErr_Occurred())
@@ -7542,6 +7758,7 @@ PxContext_CallbackComplete(Context *c)
 void
 PxContext_ErrbackComplete(Context *c)
 {
+    PxContext_CleanupThreadpool(c);
     if (c->io_obj)
         __debugbreak();
     if (PyErr_Occurred())
@@ -7557,6 +7774,7 @@ void
 PxSocket_CallbackComplete(PxSocket *s)
 {
     Context *c = s->ctx;
+    PxState *px = c->px;
     if (PyErr_Occurred())
         __debugbreak();
     if (Px_PTR(s) != Px_PTR(c->io_obj))
@@ -7564,7 +7782,16 @@ PxSocket_CallbackComplete(PxSocket *s)
     if (s->sock_fd != INVALID_SOCKET)
         closesocket(s->sock_fd);
     c->io_obj = NULL;
-    PxContext_CallbackComplete(c);
+    //PxContext_CallbackComplete(c);
+    PxContext_CleanupThreadpool(c);
+    if (c->px_link.Flink) {
+        EnterCriticalSection(&px->contexts_cs);
+        RemoveListEntry(&c->px_link);
+        LeaveCriticalSection(&px->contexts_cs);
+    }
+    InterlockedDecrement(&px->contexts_active);
+    HeapDestroy(c->heap_handle);
+    free(c);
 }
 
 void
@@ -7698,9 +7925,59 @@ end:
     return;
 }
 
+static __inline
+void
+PxSocketServer_LinkChildren(PxSocket *s)
+{
+    PxListItem *item, *next;
+    PxSocket *child;
+
+    EnterCriticalSection(&s->children_cs);
+    item = PxList_Flush(&s->link_child);
+    while (item) {
+        next = PxList_Next(item);
+        child = CONTAINING_RECORD(item, PxSocket, link);
+        InsertTailList(&s->children, &child->child_entry);
+        item = next;
+    }
+    LeaveCriticalSection(&s->children_cs);
+}
+
+static __inline
+void
+PxSocketServer_UnlinkChildren(PxSocket *s)
+{
+    PxListItem *item, *next;
+    PxSocket *child;
+
+    EnterCriticalSection(&s->children_cs);
+    item = PxList_Flush(&s->unlink_child);
+    while (item) {
+        next = PxList_Next(item);
+        child = CONTAINING_RECORD(item, PxSocket, link);
+        RemoveListEntry(&child->child_entry);
+        PxSocket_CallbackComplete(child);
+        item = next;
+    }
+    LeaveCriticalSection(&s->children_cs);
+}
+
+static __inline
+void
+PxSocketServer_UpdateChildLinks(PxSocket *s)
+{
+    PxSocketServer_UnlinkChildren(s);
+    PxSocketServer_LinkChildren(s);
+}
+
 void
 pxsocket_dealloc(PxSocket *s)
 {
+    /* I think all of this needs to be ripped out... it was taken verbatim
+     * from the socketmodule.c from memory.  I'm not even sure if it's being
+     * hit currently. */
+    __debugbreak();
+
     if (s->sock_fd != -1) {
         PyObject *exc, *val, *tb;
         Py_ssize_t old_refcount = Py_REFCNT(s);
@@ -7873,8 +8150,9 @@ create_pxsocket(
         PxSocket_FATAL();
 
     InitializeCriticalSectionAndSpinCount(&s->cs, CS_SOCK_SPINCOUNT);
-    InitializeCriticalSectionAndSpinCount(&s->links_cs, CS_SOCK_SPINCOUNT);
-    InitializeCriticalSectionAndSpinCount(&s->children_cs, CS_SOCK_SPINCOUNT);
+
+    InitializeListHead(&s->children);
+    assert(IsListEmpty(&s->children));
 
     s->ctx = c;
 
@@ -8366,6 +8644,9 @@ PxSocket_IOCallback(
     PxSocket *s = (PxSocket *)c->io_obj;
     OVERLAPPED *ol = (OVERLAPPED *)overlapped;
 
+    if (_PyParallel_Finalized)
+        return;
+
     /* AcceptEx() callbacks are a little quirky as the threadpool I/O is
      * actually submitted against the listen socket, not the accept socket.
      * Easy fix though; detect if we're a listen socket, then switch over to
@@ -8383,7 +8664,15 @@ PxSocket_IOCallback(
             __debugbreak();
     }
 
+    /* If we're shutting down, ignore everything and return immediately. */
+    if (s->shutdown_count || (s->parent && s->parent->shutdown_count))
+        return;
+
+    if (s->parent->shutting_down)
+        return;
+
     ENTERED_IO_CALLBACK();
+
 
     if (s->break_on_iocp_enter)
         __debugbreak();
@@ -8923,99 +9212,52 @@ PxSocket_InitExceptionHandler(PxSocket *s)
     assert(!PyErr_Occurred());
 }
 
-/* Ugh, this should all really be done by pushing to an interlocked list
- * monitored by the PxSocketServer_Start() thread.  And all these critical
- * sections are just the worst.  TL;DR this hack should be ripped out and
- * reimplemented. */
-/* xxx: yup, it's all broken, disable for now. */
 void
 PxSocketServer_LinkChild(PxSocket *child)
 {
     PxSocket *parent = child->parent;
+
     assert(child->parent);
     assert(child->parent != child);
 
     InterlockedIncrement(&parent->num_children);
+    PxList_Push(&parent->link_child, &child->link);
+    /*
+    if (!TryEnterCriticalSection(&parent->children_cs)) {
+        PxList_Push(&parent->link_child, &child->link);
+    } else {
+        PxSocket *x;
+        PLIST_ENTRY entry = &child->child_entry;
+        x = CONTAINING_RECORD(entry, PxSocket, child_entry);
+        if (x != child)
+            __debugbreak();
+        InsertTailList(&parent->children, &child->child_entry);
+        LeaveCriticalSection(&parent->children_cs);
+    }
+    */
     return;
-
-    //EnterCriticalSection(&parent->children_cs);
-    //if (!parent->first) {
-    //    parent->first = child;
-    //    parent->last = child;
-    //    child->prev = NULL;
-    //    /* Only set child when there's a 1:1 relationship. */
-    //    parent->child = child;
-    //} else {
-    //    PxSocket *last = parent->last;
-    //    EnterCriticalSection(&last->links_cs);
-    //    last->next = child;
-    //    child->prev = last;
-    //    LeaveCriticalSection(&last->links_cs);
-    //    parent->last = child;
-    //    /* Not a 1:1; clear child. */
-    //    parent->child = NULL;
-    //}
-    //child->child_id = ++parent->next_child_id;
-    //++parent->num_children;
-    //LeaveCriticalSection(&parent->children_cs);
 }
 
 void
 PxSocketServer_UnlinkChild(PxSocket *child)
 {
-    /*
-    PxSocket *prev;
-    PxSocket *next;
-    */
     PxSocket *parent = child->parent;
 
-    /* This seems like logic just begging to deadlock... */
+    assert(child->parent);
+    assert(child->parent != child);
 
-    /* (Yup, and generally broken, just disable... we're not using
-     * prev/next for anything at the moment.) */
-    //EnterCriticalSection(&child->links_cs);
     InterlockedDecrement(&parent->num_children);
     InterlockedIncrement(&parent->retired_clients);
-    return;
-
-    //prev = child->prev;
-    //next = child->next;
-    //parent = child->parent;
-
-    //assert(child->parent);
-    //assert(child->parent != child);
-
-    //EnterCriticalSection(&parent->children_cs);
-    //if (parent->first == child)
-    //    parent->first = next;
-
-    //if (parent->last == child)
-    //    parent->last = prev;
-
-    //if (parent->first == parent->last)
-    //    parent->child = parent->first;
-    //else
-    //    parent->child = NULL;
-
-    /* Eh, disable for now, it's definitely broken... */
+    PxList_Push(&parent->unlink_child, &child->link);
     /*
-    if (prev) {
-        EnterCriticalSection(&prev->links_cs);
-        prev->next = next;
-        LeaveCriticalSection(&prev->links_cs);
-    }
-
-    if (next) {
-        EnterCriticalSection(&next->links_cs);
-        next->prev = prev;
-        LeaveCriticalSection(&next->links_cs);
+    if (!TryEnterCriticalSection(&parent->children_cs)) {
+        PxList_Push(&parent->unlink_child, &child->link);
+    } else {
+        RemoveListEntry(&child->child_entry);
+        LeaveCriticalSection(&parent->children_cs);
     }
     */
-    //--parent->num_children;
-    //LeaveCriticalSection(&parent->children_cs);
-
-    //LeaveCriticalSection(&child->links_cs);
-
+    return;
 }
 
 void
@@ -9102,10 +9344,11 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
 }
 
 void
-NTAPI
+CALLBACK
 PxSocketServer_CreateClientSocket(
     PTP_CALLBACK_INSTANCE instance,
-    void *context
+    PVOID context,
+    PTP_WORK work
 )
 {
     Context  *c = (Context *)context;
@@ -9116,9 +9359,12 @@ PxSocketServer_CreateClientSocket(
     int flags = Px_SOCKFLAGS_SERVERCLIENT;
 
     x = new_context(0);
-    if (!x)
-        /* xxx: well... this is going to get silently ignored. */
+    if (!x) {
+        /* xxx todo */
+        __debugbreak();
+        XXX_IMPLEMENT_ME();
         return;
+    }
 
     _PyParallel_EnteredCallback(x, instance);
 
@@ -9126,7 +9372,7 @@ PxSocketServer_CreateClientSocket(
 
     if (!o) {
         __debugbreak();
-        XXX_IMPLEMENT_ME(); 
+        XXX_IMPLEMENT_ME();
         return;
     }
 
@@ -9144,34 +9390,121 @@ PxSocketServer_CreateClientSocket(
     return;
 }
 
-/* This is the entry point for a socket server.  It is called in a parallel
- * thread after an async.register(transport, protocol) call has been made.
- * It is responsible for:
- *      - Initializing the socket exception handlers.
- *      - Initializing the initial bytes.
- *      - Calling bind() against the socket.
- *      - Calling listen() against the socket.
- *      - Creating client sockets.
- *      - Submitting threadpool waits for the following:
- *          - Shutdown event.
- *          - Low system memory.
- *          - FD_ACCEPT.
- *          - Client connected event.
- * Once that is done, the method returns.  If an error occurs at any point,
- * one of the PxSocket_*ERROR() macros is used, which means an attempt will be
- * made to call the socket's registered exception handler, then the socket
- * will be closed if applicable, and the context pushed to the main thread's
- * callback complete list for subsequent cleanup.
- *
- * xxx: meh, for now, just keep using the WaitForMultipleObjects approach.
- */
+int
+PxSocketServer_SlowlorisProtection(PxSocket *s, BOOL is_low_memory)
+{
+    int seconds;
+    int bytes = sizeof(seconds);
+    int result = 0;
+    char *b = (char *)&seconds;
+    int  *n = &bytes;
+    int closed = 0;
+    PLIST_ENTRY head;
+    PLIST_ENTRY entry;
+    DWORD err = NO_ERROR;
+    SOCKET fd = INVALID_SOCKET;
+    PxSocket *child;
+    BOOL remove = FALSE;
+    BOOL first_pass = TRUE;
+    BOOL second_pass = FALSE;
+
+    assert(s);
+    assert(PxSocket_IS_SERVER(s));
+
+    EnterCriticalSection(&s->children_cs);
+    if (IsListEmpty(&s->children))
+        goto end;
+    head = &s->children;
+    entry = head->Flink;
+    do {
+        child = CONTAINING_RECORD(entry, PxSocket, child_entry);
+        assert(child);
+        if (!TryEnterCriticalSection(&child->cs)) {
+            entry = entry->Flink;
+            continue;
+        }
+        if (child->total_bytes_received > 0) {
+            if (child->recv_id <= 0)
+                /* Broken invariant somewhere. */
+                __debugbreak();
+            entry = entry->Flink;
+            LeaveCriticalSection(&child->cs);
+            continue;
+        }
+
+        fd = child->sock_fd;
+        err = getsockopt(fd, SOL_SOCKET, SO_CONNECT_TIME, b, n);
+        if (err != NO_ERROR) {
+            BOOL unexpected_wsa_error = TRUE;
+            DWORD wsa_error = WSAGetLastError();
+            switch (wsa_error) {
+                case WSAENOTSOCK:
+                case WSAENOTCONN:
+                case WSAENETRESET:
+                case WSAECONNRESET:
+                case WSAECONNABORTED:
+                case WSA_IO_PENDING:
+                case WSA_OPERATION_ABORTED:
+                    unexpected_wsa_error = FALSE;
+            }
+            if (unexpected_wsa_error)
+                __debugbreak();
+            else
+                remove = TRUE;
+        } else {
+            child->connect_time = seconds;
+
+            if (child->connect_time == -1) {
+                ++s->negative_child_connect_time_count;
+                remove = TRUE;
+            } else if (child->connect_time >= s->slowloris_protection_seconds) {
+                ++s->num_times_sloworis_protection_triggered;
+                remove = TRUE;
+            }
+
+            if (!remove) {
+                entry = entry->Flink;
+                continue;
+            }
+
+            ++closed;
+            RemoveListEntry(entry);
+            entry = entry->Flink;
+            PxSocket_CallbackComplete(child);
+        }
+    } while (entry != head);
+end:
+    LeaveCriticalSection(&s->children_cs);
+    return closed;
+}
+
+void
+CALLBACK
+PxSocketServer_SlowlorisProtectionTimerCallback(
+    _Inout_ PTP_CALLBACK_INSTANCE instance,
+    _Inout_opt_ PVOID context,
+    _Inout_ PTP_TIMER timer
+)
+{
+    Context *c = (Context *)context;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    PxSocketServer_SlowlorisProtection(s, FALSE);
+}
+
+
+void
+PxSocketServer_LowMemory(PxSocket *s)
+{
+    assert(s);
+    assert(PxSocket_IS_SERVER(s));
+}
+
 void
 NTAPI
 PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 {
     Context *c = (Context *)context;
     PxState *px;
-    PTP_SIMPLE_CALLBACK work_cb = PxSocketServer_CreateClientSocket;
     char failed = 0;
     struct sockaddr *sa;
     int len;
@@ -9180,8 +9513,9 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     PxSocket *s = (PxSocket *)c->io_obj;
     PyTypeObject *tp = &PxSocket_Type;
     int low_memory_wait = 0;
-
-    Px_GUARD
+    PxListItem *item;
+    PxSocket *child;
+    PLIST_ENTRY entry;
 
     ENTERED_CALLBACK();
 
@@ -9209,6 +9543,26 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     s->client_connected = CreateEvent(0, 0, 0, 0);
     if (!s->client_connected)
         PxSocket_SYSERROR("CreateEvent(s->client_connected)");
+
+    s->preallocate_children_tp_work = (
+        CreateThreadpoolWork(PxSocketServer_CreateClientSocket,
+                             context,
+                             c->ptp_cbe)
+    );
+
+    if (!s->preallocate_children_tp_work)
+        PxSocket_SYSERROR("CreateThreadpoolWork(preallocate_children_tp_work)");
+
+    s->slowloris_protection_tp_timer = (
+        CreateThreadpoolTimer(PxSocketServer_SlowlorisProtectionTimerCallback,
+                              context,
+                              c->ptp_cbe)
+    );
+
+    if (!s->slowloris_protection_tp_timer)
+        PxSocket_SYSERROR("CreateThreadpoolTimer(slowloris_protection)");
+
+    InitializeCriticalSectionAndSpinCount(&s->children_cs, 12);
 
     /*
     s->client_connected_tp_wait = CreateThreadpoolWait(
@@ -9244,12 +9598,13 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     s->wait_handles[0] = s->fd_accept;
     s->wait_handles[1] = s->client_connected;
-    s->wait_handles[2] = s->shutdown;
-    s->wait_handles[3] = s->low_memory;
+    s->wait_handles[2] = s->low_memory;
+    s->wait_handles[3] = s->shutdown;
     s->wait_handles[4] = s->high_memory;
 
     if (s->target_accepts_posted <= 0)
-        s->target_accepts_posted = _PyParallel_NumCPUs * 2;
+        //s->target_accepts_posted = _PyParallel_NumCPUs * 2;
+        s->target_accepts_posted = 2;
 
 //do_bind:
     /* xxx todo: handle ADDRINUSE etc. */
@@ -9272,10 +9627,15 @@ post_accepts:
     );
     if (s->num_accepts_to_post < 0) {
         ++s->negative_accepts_to_post_count;
-        goto wait;
+        goto update_children;
     } else if (!s->num_accepts_to_post)
-        goto wait;
+        goto update_children;
 
+    /* Now that we're using explicit threadpool groups per parent/server,
+     * which we set min/max threads on, we could review the whole "dispatch
+     * accept posting to thread pool" (commented out below) versus the inline
+     * creation version we ended up with.  There will be a threshold where
+     * posting the accepts in parallel will be more efficient... */
     /*
     while (num_accepts_to_post--) {
         s->total_accepts_attempted++;
@@ -9285,23 +9645,38 @@ post_accepts:
     }
     */
     do {
-        ++s->total_accepts_attempted;
-        PxSocketServer_CreateClientSocket(NULL, c);
-        /* The call above will alter ctx (the TLS variable), so make sure we
-         * reset it straight after it returns. */
-        ctx = c;
-        if (PyErr_Occurred())
-            PxSocket_EXCEPTION();
+        item = PxList_Pop(&s->unlink_child);
+        if (item) {
+            ++s->recycled_unlinked_child;
+            child = CONTAINING_RECORD(item, PxSocket, link);
+            if (!child)
+                __debugbreak();
+            PxSocket_Recycle(&child, /* force recycle */ TRUE);
+        } else {
+            /* No free sockets/contexts available, create a new one. */
+            ++s->total_accepts_attempted;
+            SubmitThreadpoolWork(s->preallocate_children_tp_work);
+
+            //PxSocketServer_CreateClientSocket(NULL, c);
+            /* The call above will alter ctx (the TLS variable), so make
+             * sure we reset it straight after it returns. */
+            //ctx = c;
+            //if (PyErr_Occurred())
+            //    PxSocket_EXCEPTION();
+        }
     } while (--s->num_accepts_to_post);
+
+update_children:
+    PxSocketServer_UpdateChildLinks(s);
 
 wait:
     if (low_memory_wait)
         /* Only wait on shutdown and high memory events. */
-        /* (Note the differences in first arg (2/4) and handles (3/0)). */
-        result = WaitForMultipleObjects(2, &(s->wait_handles[3]), 0, 5000);
+        /* (Note the differences in first arg (2/4) and handles (3/0).) */
+        result = WaitForMultipleObjects(2, &(s->wait_handles[3]), 0, 0);
     else
         /* Wait on everything except high memory. */
-        result = WaitForMultipleObjects(4, &(s->wait_handles[0]), 0, 5000);
+        result = WaitForMultipleObjects(4, &(s->wait_handles[0]), 0, 1000);
 
     switch (result) {
         case WAIT_OBJECT_0:
@@ -9319,22 +9694,32 @@ wait:
         case WAIT_OBJECT_0 + 2:
             /* low memory */
             ++s->low_memory_count;
+            s->is_low_memory = TRUE;
             low_memory_wait = 1;
+
             goto low_memory;
 
         case WAIT_OBJECT_0 + 3:
             /* shutdown event */
-            ++s->shutdown_count;
+            InterlockedIncrement(&s->shutdown_count);
+            s->shutting_down = TRUE;
             goto shutdown;
 
         case WAIT_OBJECT_0 + 4:
             /* high memory */
             ++s->high_memory_count;
+            s->is_low_memory = FALSE;
             low_memory_wait = 0;
             goto wait;
 
         case WAIT_TIMEOUT:
             ++s->wait_timeout_count;
+            PxSocketServer_UpdateChildLinks(s);
+            if (_PyParallel_Finalized) {
+                s->shutting_down = TRUE;
+                goto shutdown;
+            }
+            //PxSocketServer_SlowlorisProtection(s, FALSE);
             goto timeout;
 
         case WAIT_ABANDONED_0:
@@ -9342,9 +9727,10 @@ wait:
         case WAIT_ABANDONED_0 + 2:
         case WAIT_ABANDONED_0 + 3:
         case WAIT_ABANDONED_0 + 4:
-            goto end;
+            goto shutdown;
 
         case WAIT_FAILED:
+            __debugbreak();
             PyErr_SetFromWindowsErr(0);
             PxSocket_HandleException(c, "WaitForMultipleObjects", 1);
             goto end;
@@ -9354,11 +9740,51 @@ wait:
     }
 
 shutdown:
-    assert(0);
+    /* Close our listen socket so we stop accepting new connections. */
+    CancelThreadpoolIo(s->tp_io);
+    closesocket(s->sock_fd);
+    s->sock_fd = INVALID_SOCKET;
+
+    PxSocketServer_UpdateChildLinks(s);
+
+    /* Walk all our sockets and close them... */
+    if (!TryEnterCriticalSection(&s->children_cs))
+        /* Hmmm... there shouldn't be any contention here. */
+        __debugbreak();
+
+    if (IsListEmpty(&s->children))
+        goto cleaned_up_children;
+
+    do {
+        if (IsListEmpty(&s->children))
+            __debugbreak();
+        entry = RemoveHeadList(&s->children);
+        child = CONTAINING_RECORD(entry, PxSocket, child_entry);
+        EnterCriticalSection(&child->cs);
+        PxSocket_CallbackComplete(child);
+        InterlockedDecrement(&s->num_children);
+    } while (!IsListEmpty(&s->children));
+
+cleaned_up_children:
+    LeaveCriticalSection(&s->children_cs);
+
+    if (s->num_children != 0)
+        __debugbreak();
+
+    CloseThreadpoolWork(s->preallocate_children_tp_work);
+    CloseThreadpoolTimer(s->slowloris_protection_tp_timer);
+
+    //CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
+    //                                   TRUE, /* cancel pending callbacks */
+    //                                   s);   /* I'm not sure if we need to
+    //                                            pass 's' here... */
+
+    /* (Do we need to check for anything else here?) */
+    goto end;
+
 
 low_memory:
-    /* xxx todo... close idle connections... potentially shut down the listen
-     * socket? */
+    PxSocketServer_LowMemory(s);
     goto wait;
 
 timeout:

@@ -551,7 +551,11 @@ Py_Finalize(void)
      * XXX but I'm unclear on exactly how that one happens.  In any case,
      * XXX I haven't seen a real-life report of either of these.
      */
+
+#ifndef WITH_PARALLEL
     PyGC_Collect();
+#endif
+
 #ifdef COUNT_ALLOCS
     /* With COUNT_ALLOCS, it helps to run GC multiple times:
        each collection might release some types from the type
@@ -584,7 +588,7 @@ Py_Finalize(void)
      * XXX seen segfaults then, after adding print statements to the
      * XXX Python code getting called.
      */
-#if 0
+#ifndef WITH_PARALLEL
     PyGC_Collect();
 #endif
 

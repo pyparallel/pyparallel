@@ -47,6 +47,7 @@ PyAPI_DATA(long) Py_ParallelContextsEnabled;
 PyAPI_FUNC(void) _PyParallel_Init(void);
 PyAPI_FUNC(void) _PyParallel_Finalize(void);
 PyAPI_FUNC(void) _PyParallel_BlockingCall(void);
+PyAPI_FUNC(int)  _PyParallel_IsFinalized(void);
 
 PyAPI_FUNC(void) _PyParallel_CreatedGIL(void);
 PyAPI_FUNC(void) _PyParallel_DestroyedGIL(void);

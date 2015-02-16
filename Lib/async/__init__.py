@@ -1,3 +1,7 @@
+import socket
+HOSTNAME = socket.gethostname()
+IPADDR = socket.gethostbyname(HOSTNAME)
+
 class Constant(dict):
     def __init__(self):
         items = self.__class__.__dict__.items()
@@ -257,5 +261,16 @@ class EchoLine:
     line_mode = True
     def line_received(self, line):
         return line
+
+#===============================================================================
+# Helpers during interactive testing/debugging
+#===============================================================================
+def _tefb_json():
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server(IPADDR, 8080)
+    _async.register(transport=server, protocol=tefb.JSONSerializationHttpServer)
+    _async.run_once()
+    return server
+
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:
