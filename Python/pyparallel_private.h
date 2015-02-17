@@ -1131,9 +1131,10 @@ typedef struct _PxSocket {
     int child_id;
     volatile int next_child_id;
 
-    /* Doubly-linked list of all children, private to the server. */
+    /* Doubly-linked list of all children. */
     LIST_ENTRY children;
     CRITICAL_SECTION children_cs;
+    int num_children_entries; /* compare to num_children, which is interlocked */
 
     /* List entry to the above list for children, also private/owned by
      * server. */

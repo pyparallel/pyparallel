@@ -95,16 +95,13 @@ static __inline
 void
 CheckListEntry(PLIST_ENTRY entry)
 {
-    if (((entry->Flink)->Blink) != entry)
+    if ((((entry->Flink)->Blink) != entry) ||
+        (((entry->Blink)->Flink) != entry))
         __debugbreak();
-
-    if (((entry->Blink)->Flink) != entry)
-        __debugbreak();
-
 }
 
 static __inline
-BOOL
+BOOLEAN
 IsListEmpty(PLIST_ENTRY head)
 {
     CheckListEntry(head);
@@ -120,35 +117,42 @@ InitializeListHead(PLIST_ENTRY head)
 
 static __inline
 BOOLEAN
-RemoveListEntry(PLIST_ENTRY entry)
+RemoveEntryList(PLIST_ENTRY entry)
 {
-    PLIST_ENTRY flink = entry->Flink;
-    PLIST_ENTRY blink = entry->Blink;
-    CheckListEntry(entry);
-    if (flink->Blink != entry)
+    PLIST_ENTRY prev;
+    PLIST_ENTRY next;
+
+    next = entry->Flink;
+    prev = entry->Blink;
+
+#ifdef Py_DEBUG
+    if ((next->Blink != entry) || (prev->Flink != entry))
         __debugbreak();
-    if (blink->Flink != entry)
-        __debugbreak();
-    blink->Flink = flink;
-    flink->Blink = blink;
-    return (flink == blink);
+#endif
+
+    entry->Flink = NULL;
+    entry->Blink = NULL;
+
+    prev->Flink = next;
+    next->Blink = prev;
+    return (BOOLEAN)(prev == next);
 }
 
 static __inline
 void
 InsertHeadList(PLIST_ENTRY head, PLIST_ENTRY entry)
 {
-    PLIST_ENTRY flink = head->Flink;
-    PLIST_ENTRY blink = head->Blink;
-    if (flink->Blink != head)
-        __debugbreak();
-    if (blink->Flink != head)
-        __debugbreak();
-    entry->Flink = flink;
+    PLIST_ENTRY next;
+    CheckListEntry(head);
+    next = head->Flink;
+    entry->Flink = next;
     entry->Blink = head;
-    flink->Flink = entry;
+    if (next->Blink != head)
+        __debugbreak();
+    next->Blink = entry;
     head->Flink = entry;
-    return;
+    CheckListEntry(entry);
+    CheckListEntry(next);
 }
 
 static __inline
@@ -161,6 +165,10 @@ RemoveHeadList(PLIST_ENTRY head)
     next = entry->Flink;
     head->Flink = next;
     next->Blink = head;
+    CheckListEntry(next);
+
+    entry->Flink = NULL;
+    entry->Blink = NULL;
     return entry;
 }
 
@@ -168,13 +176,17 @@ static __inline
 void
 InsertTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
 {
-    PLIST_ENTRY blink = head->Blink;
+    PLIST_ENTRY prev;
     CheckListEntry(head);
+    prev = head->Blink;
+    if (prev->Flink != head)
+        __debugbreak();
     entry->Flink = head;
-    entry->Blink = blink;
-    blink->Flink = entry;
+    entry->Blink = prev;
+    prev->Flink = entry;
     head->Blink = entry;
     CheckListEntry(entry);
+    CheckListEntry(head);
     return;
 }
 
@@ -189,9 +201,7 @@ AppendTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
     head->Blink = entry->Blink;
     entry->Blink->Flink = head;
     entry->Blink = end;
-    CheckListEntry(entry);
 }
-
 
 /* 0 on error */
 static
@@ -742,7 +752,7 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
             s->parent->target_accepts_posted -
             s->parent->accepts_posted
         );
-        if (num_accepts_to_post < 0) {
+        if (num_accepts_to_post <= 0) {
             PxSocketServer_UnlinkChild(s);
             *sp = NULL;
             return;
@@ -7786,7 +7796,7 @@ PxSocket_CallbackComplete(PxSocket *s)
     PxContext_CleanupThreadpool(c);
     if (c->px_link.Flink) {
         EnterCriticalSection(&px->contexts_cs);
-        RemoveListEntry(&c->px_link);
+        RemoveEntryList(&c->px_link);
         LeaveCriticalSection(&px->contexts_cs);
     }
     InterlockedDecrement(&px->contexts_active);
@@ -7931,13 +7941,24 @@ PxSocketServer_LinkChildren(PxSocket *s)
 {
     PxListItem *item, *next;
     PxSocket *child;
+    PLIST_ENTRY entry;
 
     EnterCriticalSection(&s->children_cs);
+    CheckListEntry(&s->children);
     item = PxList_Flush(&s->link_child);
     while (item) {
         next = PxList_Next(item);
         child = CONTAINING_RECORD(item, PxSocket, link);
-        InsertTailList(&s->children, &child->child_entry);
+        entry = &child->child_entry;
+        if (entry->Flink == NULL) {
+            if (entry->Blink != NULL)
+                __debugbreak();
+            //__debugbreak();
+            PxList_Push(&s->link_child, &child->link);
+        } else {
+            InsertTailList(&s->children, entry);
+            ++s->num_children_entries;
+        }
         item = next;
     }
     LeaveCriticalSection(&s->children_cs);
@@ -7949,14 +7970,24 @@ PxSocketServer_UnlinkChildren(PxSocket *s)
 {
     PxListItem *item, *next;
     PxSocket *child;
+    PLIST_ENTRY entry;
 
     EnterCriticalSection(&s->children_cs);
     item = PxList_Flush(&s->unlink_child);
     while (item) {
         next = PxList_Next(item);
         child = CONTAINING_RECORD(item, PxSocket, link);
-        RemoveListEntry(&child->child_entry);
-        PxSocket_CallbackComplete(child);
+        entry = &child->child_entry;
+        if (entry->Flink != NULL) {
+            if (entry->Blink == NULL)
+                __debugbreak();
+            //__debugbreak();
+            PxList_Push(&s->unlink_child, &child->link);
+        } else {
+            RemoveEntryList(entry);
+            --s->num_children_entries;
+            PxSocket_CallbackComplete(child);
+        }
         item = next;
     }
     LeaveCriticalSection(&s->children_cs);
@@ -8393,8 +8424,13 @@ set_other_sockopts:
             s->parent = (PxSocket *)ctx->io_obj;
     }
 
-    if (s->parent)
+    if (s->parent) {
+        if (s->child_entry.Flink != NULL)
+            __debugbreak();
+        if (s->child_entry.Blink != NULL)
+            __debugbreak();
         PxSocketServer_LinkChild(s);
+    }
 
 
     if (!PxSocket_IS_SERVER(s)) {
@@ -8751,7 +8787,6 @@ PxSocket_IOCallback(
         __debugbreak();
 
     EnterCriticalSection(&(s->cs));
-    LeaveCriticalSectionWhenCallbackReturns(instance, &(s->cs));
 
     if (io_result != NO_ERROR) {
         int failed;
@@ -8830,7 +8865,8 @@ PxSocket_IOCallback(
 
         }
     }
-    //LeaveCriticalSection(&(s->cs));
+    if (!_PyParallel_Finalized)
+        LeaveCriticalSection(&s->cs);
 end:
     return;
 }
@@ -9221,7 +9257,14 @@ PxSocketServer_LinkChild(PxSocket *child)
     assert(child->parent != child);
 
     InterlockedIncrement(&parent->num_children);
+    EnterCriticalSection(&parent->children_cs);
+    InsertTailList(&parent->children, &child->child_entry);
+    ++parent->num_children_entries;
+    LeaveCriticalSection(&parent->children_cs);
+    /*
+    InterlockedIncrement(&parent->num_children);
     PxList_Push(&parent->link_child, &child->link);
+    */
     /*
     if (!TryEnterCriticalSection(&parent->children_cs)) {
         PxList_Push(&parent->link_child, &child->link);
@@ -9248,12 +9291,19 @@ PxSocketServer_UnlinkChild(PxSocket *child)
 
     InterlockedDecrement(&parent->num_children);
     InterlockedIncrement(&parent->retired_clients);
+    EnterCriticalSection(&parent->children_cs);
+    RemoveEntryList(&child->child_entry);
+    --parent->num_children_entries;
+    LeaveCriticalSection(&parent->children_cs);
+    //PxSocket_CallbackComplete(child);
+    
     PxList_Push(&parent->unlink_child, &child->link);
+    
     /*
     if (!TryEnterCriticalSection(&parent->children_cs)) {
         PxList_Push(&parent->unlink_child, &child->link);
     } else {
-        RemoveListEntry(&child->child_entry);
+        RemoveEntryList(&child->child_entry);
         LeaveCriticalSection(&parent->children_cs);
     }
     */
@@ -9358,6 +9408,9 @@ PxSocketServer_CreateClientSocket(
     Context  *x; /* client socket's context */
     int flags = Px_SOCKFLAGS_SERVERCLIENT;
 
+    if (_PyParallel_Finalized)
+        return;
+
     x = new_context(0);
     if (!x) {
         /* xxx todo */
@@ -9369,6 +9422,9 @@ PxSocketServer_CreateClientSocket(
     _PyParallel_EnteredCallback(x, instance);
 
     o = (PxSocket *)create_pxsocket(NULL, NULL, flags, s, x);
+
+    if (_PyParallel_Finalized)
+        return;
 
     if (!o) {
         __debugbreak();
@@ -9386,6 +9442,8 @@ PxSocketServer_CreateClientSocket(
 
     EnterCriticalSection(&(o->cs));
     PxSocket_IOLoop(o);
+    if (_PyParallel_Finalized)
+        return;
     LeaveCriticalSection(&(o->cs));
     return;
 }
@@ -9468,7 +9526,7 @@ PxSocketServer_SlowlorisProtection(PxSocket *s, BOOL is_low_memory)
             }
 
             ++closed;
-            RemoveListEntry(entry);
+            RemoveEntryList(entry);
             entry = entry->Flink;
             PxSocket_CallbackComplete(child);
         }
@@ -9553,6 +9611,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     if (!s->preallocate_children_tp_work)
         PxSocket_SYSERROR("CreateThreadpoolWork(preallocate_children_tp_work)");
 
+    /*
     s->slowloris_protection_tp_timer = (
         CreateThreadpoolTimer(PxSocketServer_SlowlorisProtectionTimerCallback,
                               context,
@@ -9561,6 +9620,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     if (!s->slowloris_protection_tp_timer)
         PxSocket_SYSERROR("CreateThreadpoolTimer(slowloris_protection)");
+    */
 
     InitializeCriticalSectionAndSpinCount(&s->children_cs, 12);
 
@@ -9603,8 +9663,8 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     s->wait_handles[4] = s->high_memory;
 
     if (s->target_accepts_posted <= 0)
-        //s->target_accepts_posted = _PyParallel_NumCPUs * 2;
-        s->target_accepts_posted = 2;
+        s->target_accepts_posted = _PyParallel_NumCPUs * 4;
+        //s->target_accepts_posted = 2;
 
 //do_bind:
     /* xxx todo: handle ADDRINUSE etc. */
@@ -9644,9 +9704,12 @@ post_accepts:
                               "PxSocketServer_CreateClientSocket)");
     }
     */
+    item = NULL;
     do {
-        item = PxList_Pop(&s->unlink_child);
+        //item = PxList_Pop(&s->unlink_child);
+        //item = NULL;
         if (item) {
+            __debugbreak();
             ++s->recycled_unlinked_child;
             child = CONTAINING_RECORD(item, PxSocket, link);
             if (!child)
@@ -9667,7 +9730,8 @@ post_accepts:
     } while (--s->num_accepts_to_post);
 
 update_children:
-    PxSocketServer_UpdateChildLinks(s);
+    //PxSocketServer_LinkChildren(s);
+    //PxSocketServer_UnlinkChildren(s);
 
 wait:
     if (low_memory_wait)
@@ -9714,7 +9778,8 @@ wait:
 
         case WAIT_TIMEOUT:
             ++s->wait_timeout_count;
-            PxSocketServer_UpdateChildLinks(s);
+            //PxSocketServer_LinkChildren(s);
+            //PxSocketServer_UnlinkChildren(s);
             if (_PyParallel_Finalized) {
                 s->shutting_down = TRUE;
                 goto shutdown;
@@ -9745,7 +9810,8 @@ shutdown:
     closesocket(s->sock_fd);
     s->sock_fd = INVALID_SOCKET;
 
-    PxSocketServer_UpdateChildLinks(s);
+    //PxSocketServer_LinkChildren(s);
+    //PxSocketServer_UnlinkChildren(s);
 
     /* Walk all our sockets and close them... */
     if (!TryEnterCriticalSection(&s->children_cs))
@@ -9757,7 +9823,7 @@ shutdown:
 
     do {
         if (IsListEmpty(&s->children))
-            __debugbreak();
+            break;
         entry = RemoveHeadList(&s->children);
         child = CONTAINING_RECORD(entry, PxSocket, child_entry);
         EnterCriticalSection(&child->cs);
@@ -9771,8 +9837,26 @@ cleaned_up_children:
     if (s->num_children != 0)
         __debugbreak();
 
-    CloseThreadpoolWork(s->preallocate_children_tp_work);
-    CloseThreadpoolTimer(s->slowloris_protection_tp_timer);
+    if (s->preallocate_children_tp_work)
+        CloseThreadpoolWork(s->preallocate_children_tp_work);
+
+    if (s->slowloris_protection_tp_timer)
+        CloseThreadpoolTimer(s->slowloris_protection_tp_timer);
+
+    if (s->fd_accept)
+        CloseHandle(s->fd_accept);
+
+    if (s->client_connected)
+        CloseHandle(s->client_connected);
+
+    if (s->low_memory)
+        CloseHandle(s->low_memory);
+
+    if (s->shutdown)
+        CloseHandle(s->shutdown);
+
+    if (s->high_memory)
+        CloseHandle(s->high_memory);
 
     //CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
     //                                   TRUE, /* cancel pending callbacks */
