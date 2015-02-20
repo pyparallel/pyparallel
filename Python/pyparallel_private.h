@@ -470,6 +470,12 @@ typedef struct _PxState {
     short max_free_contexts;
     */
 
+    PTP_POOL ptp;
+    PTP_CLEANUP_GROUP ptp_cg;
+    PTP_CLEANUP_GROUP_CANCEL_CALLBACK ptp_cgcb;
+    TP_CALLBACK_ENVIRON tp_cbe;
+    PTP_CALLBACK_ENVIRON ptp_cbe;
+
     /* List head */
     LIST_ENTRY contexts;
     CRITICAL_SECTION contexts_cs;
@@ -998,6 +1004,15 @@ typedef struct _PxSocket {
     size_t send_id;
     size_t recv_id;
 
+    LARGE_INTEGER stopwatch_frequency;
+
+    LARGE_INTEGER stopwatch_start;
+    LARGE_INTEGER stopwatch_stop;
+    LARGE_INTEGER stopwatch_elapsed;
+
+    FILETIME utc_start;
+    FILETIME utc_stop;
+
     /* Total bytes sent/received */
     Py_ssize_t  total_bytes_sent;
     Py_ssize_t  total_bytes_received;
@@ -1167,14 +1182,20 @@ typedef struct _PxSocket {
 
     volatile long recycled_unlinked_child;
 
+    volatile long total_clients_reused;
+    volatile long total_clients_recycled;
+
+    int child_seh_eav_count;
+
     int listen_backlog;
 
     WSAEVENT  fd_accept;
     HANDLE    client_connected;
+    HANDLE    free_children;
     HANDLE    low_memory;
     HANDLE    shutdown;
     HANDLE    high_memory;
-    HANDLE    wait_handles[5];
+    HANDLE    wait_handles[6];
 
     /* Counters for above events. */
     int fd_accept_count;
@@ -1208,6 +1229,29 @@ void PxSocketServer_UnlinkChild(PxSocket *child);
         PyObject_GetAttrString(s->protocol, n) : \
         Py_None)
 
+static __inline
+void
+PxSocket_StopwatchStart(PxSocket *s)
+{
+    QueryPerformanceFrequency(&s->stopwatch_frequency);
+    QueryPerformanceCounter(&s->stopwatch_start);
+    //GetSystemTimePreciseAsFileTime(&s->utc_start);
+}
+
+static __inline
+ULONGLONG
+PxSocket_StopwatchStop(PxSocket *s)
+{
+    QueryPerformanceCounter(&s->stopwatch_stop);
+    s->stopwatch_elapsed.QuadPart = (
+        s->stopwatch_stop.QuadPart -
+        s->stopwatch_start.QuadPart
+    );
+    s->stopwatch_elapsed.QuadPart *= 1000000;
+    s->stopwatch_elapsed.QuadPart /= s->stopwatch_frequency.QuadPart;
+    //GetSystemTimePreciseAsFileTime(&s->utc_stop);
+    return s->stopwatch_elapsed.QuadPart;
+}
 
 static __inline
 void
@@ -1473,7 +1517,6 @@ _try_write_lock(PyObject *obj)
 } while (0)
 
 #define PxSocket_FATAL() do {                                            \
-    __debugbreak();                                                      \
     assert(PyErr_Occurred());                                            \
     PxSocket_HandleException(c, "", 1);                                  \
     goto end;                                                            \
@@ -1481,14 +1524,12 @@ _try_write_lock(PyObject *obj)
 
 
 #define PxSocket_EXCEPTION() do {                                        \
-    __debugbreak();                                                      \
     assert(PyErr_Occurred());                                            \
     PxSocket_HandleException(c, "", 0);                                  \
     goto end;                                                            \
 } while (0)
 
 #define PxSocket_SYSERROR(n) do {                                        \
-    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(0);                                          \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
@@ -1496,14 +1537,12 @@ _try_write_lock(PyObject *obj)
 
 #define PxSocket_WSAERROR(n) do {                                        \
     DWORD wsa_error = WSAGetLastError();                                 \
-    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(wsa_error);                                  \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \
 } while (0)
 
 #define PxSocket_OVERLAPPED_ERROR(n) do {                                \
-    __debugbreak();                                                      \
     PyErr_SetFromWindowsErr(s->wsa_error);                               \
     PxSocket_HandleException(c, n, 1);                                   \
     goto end;                                                            \

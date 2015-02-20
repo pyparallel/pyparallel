@@ -727,38 +727,54 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
 
     ODS(L"recycling...\n");
 
-    if (!force) {
-        if (s->was_accepting) {
-            if (s->was_connected)
-                __debugbreak();
-            else if (s->was_disconnecting)
-                __debugbreak();
-            InterlockedDecrement(&s->parent->accepts_posted);
-        } else if (s->was_connected) {
-            if (s->was_accepting)
-                __debugbreak();
-            else if (s->was_disconnecting)
-                __debugbreak();
-            InterlockedDecrement(&s->parent->clients_connected);
-        } else if (s->was_disconnecting) {
-            if (s->was_accepting)
-                __debugbreak();
-            else if (s->was_connected)
-                __debugbreak();
-            InterlockedDecrement(&s->parent->clients_disconnecting);
-        }
+    if (force)
+        goto do_recycle;
 
-        num_accepts_to_post = (
-            s->parent->target_accepts_posted -
-            s->parent->accepts_posted
-        );
-        if (num_accepts_to_post <= 0) {
-            PxSocketServer_UnlinkChild(s);
-            *sp = NULL;
-            return;
-        }
+    if (s->was_accepting) {
+        if (s->was_connected)
+            __debugbreak();
+        else if (s->was_disconnecting)
+            __debugbreak();
+        InterlockedDecrement(&s->parent->accepts_posted);
+    } else if (s->was_connected) {
+        if (s->was_accepting)
+            __debugbreak();
+        else if (s->was_disconnecting)
+            __debugbreak();
+        InterlockedDecrement(&s->parent->clients_connected);
+    } else if (s->was_disconnecting) {
+        if (s->was_accepting)
+            __debugbreak();
+        else if (s->was_connected)
+            __debugbreak();
+        InterlockedDecrement(&s->parent->clients_disconnecting);
     }
 
+    if (WaitForSingleObject(s->parent->fd_accept, 0) == WAIT_TIMEOUT) {
+        PxSocketServer_UnlinkChild(s);
+        *sp = NULL;
+        return;
+    }
+
+    ResetEvent(s->parent->fd_accept);
+
+    goto do_recycle;
+
+    /* Old approach below. */
+
+    _Py_lfence();
+    //_Py_clflush(&s->parent->accepts_posted);
+    num_accepts_to_post = (
+        s->parent->target_accepts_posted -
+        s->parent->accepts_posted
+    );
+    if (num_accepts_to_post <= 0) {
+        PxSocketServer_UnlinkChild(s);
+        *sp = NULL;
+        return;
+    }
+
+do_recycle:
     if (s->reused_socket) {
         int failed;
         int errval = NO_ERROR;
@@ -801,6 +817,7 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
         PxSocket_Reuse(s);
         new_socket = s;
         ++c->times_reused;
+        InterlockedIncrement(&s->parent->total_clients_reused);
     } else {
 
         /* Do an inverted test of the logic above if the socket isn't
@@ -826,6 +843,7 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
                 __debugbreak();
         }
         ++c->times_recycled;
+        InterlockedIncrement(&s->parent->total_clients_recycled);
     }
 
     if (!new_socket)
@@ -3183,6 +3201,20 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     if (!px->wakeup)
         goto free_io_wakeup;
 
+    goto skip_threadpool_stuff_for_now;
+
+    px->ptp = CreateThreadpool(NULL);
+    if (!px->ptp)
+        goto free_wakeup;
+
+    px->ptp_cbe = &px->tp_cbe;
+    InitializeThreadpoolEnvironment(px->ptp_cbe);
+
+    px->ptp_cg = CreateThreadpoolCleanupGroup();
+    if (!px->ptp_cg)
+        goto free_threadpool;
+
+skip_threadpool_stuff_for_now:
     _PxState_InitPxPages(px);
 
     InitializeCriticalSectionAndSpinCount(&(px->cs), 12);
@@ -3197,6 +3229,15 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
     InitializeListHead(&px->contexts);
 
     goto done;
+
+free_cleanup_group:
+    CloseThreadpoolCleanupGroup(px->ptp_cg);
+
+free_threadpool:
+    CloseThreadpool(px->ptp);
+
+free_wakeup:
+    CloseHandle(px->wakeup);
 
 free_io_wakeup:
     CloseHandle(px->io_free_wakeup);
@@ -4648,21 +4689,30 @@ _async_run_once(PyObject *self, PyObject *args)
 start:
     if (PyErr_CheckSignals())
         return NULL;
-    /* First error wins. */
-    item = PxList_Pop(px->errors);
+
+    /* Print uncaught parallel errors to stderr. */
+    item = PxList_Flush(px->errors);
     if (item) {
-        c = item->from;
-        assert(PyExceptionClass_Check((PyObject *)item->p1));
-        PyErr_Restore((PyObject *)item->p1,
-                      (PyObject *)item->p2,
-                      (PyObject *)item->p3);
+        do {
+            c = (Context *)item->from;
+            assert(PyExceptionClass_Check((PyObject *)item->p1));
+            PyErr_Restore((PyObject *)item->p1,
+                          (PyObject *)item->p2,
+                          (PyObject *)item->p3);
 
-        if (c->io_obj)
-            __debugbreak();
+            item = PxList_Transfer(px->finished, item);
+            InterlockedIncrement64(&(px->done));
 
-        PxList_Transfer(px->finished, item);
-        InterlockedIncrement64(&(px->done));
-        return NULL;
+            if (c->io_obj) {
+                PxSocket *s = (PxSocket *)c->io_obj;
+                PyErr_PrintEx(0);
+                if (s->sock_fd != INVALID_SOCKET) {
+                    closesocket(s->sock_fd);
+                    s->sock_fd = INVALID_SOCKET;
+                }
+                c->io_obj = NULL;
+            }
+        } while (item);
     }
 
     /* New threadpool work. */
@@ -5030,24 +5080,46 @@ free_context:
     return NULL;
 }
 
-/* I have no idea what we'd use this for at the moment... and I'm kinda'
- * curious to see what object context would be... especially given this
- * seemingly cryptic explanation on MSDN re: SetThreadpoolCallbackCleanupGroup
- *
- *      The cleanup callback to be called if the cleanup group is canceled
- *      before the associated object is released. The function is called when
- *      you call CloseThreadpoolCleanupGroupMembers.
- *
- */
+
+void PxSocketServer_Shutdown(PxSocket *s);
+
 
 void
 CALLBACK
-PxContext_ThreadpoolCleanupGroupCancelCallback(
+PxSocket_ThreadpoolCleanupGroupCancelCallback(
     _Inout_opt_ PVOID object_context,
     _Inout_opt_ PVOID cleanup_context
 )
 {
-    //__debugbreak();
+    Context *c = (Context *)object_context;
+    PxSocket *parent = (PxSocket *)cleanup_context;
+    PxSocket *child = NULL;
+
+
+    if (!c)
+        __debugbreak();
+
+    if (Px_PTR(parent) == Px_PTR(c->io_obj)) {
+        closesocket(parent->sock_fd);
+        parent->sock_fd = INVALID_SOCKET;
+        return;
+    }
+
+    child = (PxSocket *)c->io_obj;
+    __debugbreak();
+
+    __try {
+        //closesocket(child->sock_fd);
+        //child->sock_fd = INVALID_SOCKET;
+        PxSocket_CallbackComplete(child);
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_EXECUTE_HANDLER :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        __debugbreak();
+        ++parent->child_seh_eav_count;
+    }
 }
 
 /* 0 = failure, 1 = success */
@@ -5088,7 +5160,7 @@ create_threadpool_for_context(Context *c,
 
     SetThreadpoolCallbackPool(c->ptp_cbe, c->ptp);
 
-    c->ptp_cgcb = PxContext_ThreadpoolCleanupGroupCancelCallback;
+    c->ptp_cgcb = PxSocket_ThreadpoolCleanupGroupCancelCallback;
     SetThreadpoolCallbackCleanupGroup(c->ptp_cbe, c->ptp_cg, c->ptp_cgcb);
 
     c->tp_ctx = c;
@@ -7732,6 +7804,8 @@ void
 PxContext_CleanupThreadpool(Context *c)
 {
     Context *x = ctx;
+    return;
+    __debugbreak();
 
     if (!c->tp_ctx)
         return;
@@ -7792,14 +7866,17 @@ PxSocket_CallbackComplete(PxSocket *s)
     if (s->sock_fd != INVALID_SOCKET)
         closesocket(s->sock_fd);
     c->io_obj = NULL;
-    //PxContext_CallbackComplete(c);
+    InterlockedDecrement(&px->contexts_active);
+    PxContext_CallbackComplete(c);
+    return;
     PxContext_CleanupThreadpool(c);
+    /*
     if (c->px_link.Flink) {
         EnterCriticalSection(&px->contexts_cs);
         RemoveEntryList(&c->px_link);
         LeaveCriticalSection(&px->contexts_cs);
     }
-    InterlockedDecrement(&px->contexts_active);
+    */
     HeapDestroy(c->heap_handle);
     free(c);
 }
@@ -7943,6 +8020,9 @@ PxSocketServer_LinkChildren(PxSocket *s)
     PxSocket *child;
     PLIST_ENTRY entry;
 
+    /* Disable for now... */
+    ASSERT_UNREACHABLE();
+
     EnterCriticalSection(&s->children_cs);
     CheckListEntry(&s->children);
     item = PxList_Flush(&s->link_child);
@@ -7967,6 +8047,22 @@ PxSocketServer_LinkChildren(PxSocket *s)
 static __inline
 void
 PxSocketServer_UnlinkChildren(PxSocket *s)
+{
+    PxListItem *item, *next;
+    PxSocket *child;
+
+    item = PxList_Flush(&s->unlink_child);
+    while (item) {
+        next = PxList_Next(item);
+        child = CONTAINING_RECORD(item, PxSocket, link);
+        PxSocket_CallbackComplete(child);
+        item = next;
+    }
+}
+
+static __inline
+void
+PxSocketServer_UnlinkChildrenOld(PxSocket *s)
 {
     PxListItem *item, *next;
     PxSocket *child;
@@ -8425,10 +8521,12 @@ set_other_sockopts:
     }
 
     if (s->parent) {
+        /*
         if (s->child_entry.Flink != NULL)
             __debugbreak();
         if (s->child_entry.Blink != NULL)
             __debugbreak();
+         */
         PxSocketServer_LinkChild(s);
     }
 
@@ -8709,6 +8807,7 @@ PxSocket_IOCallback(
 
     ENTERED_IO_CALLBACK();
 
+    PxSocket_StopwatchStart(s);
 
     if (s->break_on_iocp_enter)
         __debugbreak();
@@ -8748,6 +8847,8 @@ PxSocket_IOCallback(
             } else {
                 /* Eh, this keeps getting tripped by 0xC0000xxxx values...
                  * let's stop __debugbreak()'ing. */
+                /* (Note from future self: 0xC00nnnnn-type error codes are
+                 *  system errors.) */
                 //__debugbreak();
                 ;
             }
@@ -9257,6 +9358,8 @@ PxSocketServer_LinkChild(PxSocket *child)
     assert(child->parent != child);
 
     InterlockedIncrement(&parent->num_children);
+    return;
+
     EnterCriticalSection(&parent->children_cs);
     InsertTailList(&parent->children, &child->child_entry);
     ++parent->num_children_entries;
@@ -9291,14 +9394,24 @@ PxSocketServer_UnlinkChild(PxSocket *child)
 
     InterlockedDecrement(&parent->num_children);
     InterlockedIncrement(&parent->retired_clients);
+    PxSocket_CallbackComplete(child);
+    return;
+
+
+
+    PxList_Push(&parent->unlink_child, &child->link);
+    SetEvent(parent->free_children);
+    return;
+
+
     EnterCriticalSection(&parent->children_cs);
     RemoveEntryList(&child->child_entry);
     --parent->num_children_entries;
     LeaveCriticalSection(&parent->children_cs);
     //PxSocket_CallbackComplete(child);
-    
+
     PxList_Push(&parent->unlink_child, &child->link);
-    
+
     /*
     if (!TryEnterCriticalSection(&parent->children_cs)) {
         PxList_Push(&parent->unlink_child, &child->link);
@@ -9573,7 +9686,6 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     int low_memory_wait = 0;
     PxListItem *item;
     PxSocket *child;
-    PLIST_ENTRY entry;
 
     ENTERED_CALLBACK();
 
@@ -9601,6 +9713,10 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     s->client_connected = CreateEvent(0, 0, 0, 0);
     if (!s->client_connected)
         PxSocket_SYSERROR("CreateEvent(s->client_connected)");
+
+    s->free_children = CreateEvent(0, 0, 0, 0);
+    if (!s->free_children)
+        PxSocket_SYSERROR("CreateEvent(s->free_children)");
 
     s->preallocate_children_tp_work = (
         CreateThreadpoolWork(PxSocketServer_CreateClientSocket,
@@ -9658,13 +9774,14 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     s->wait_handles[0] = s->fd_accept;
     s->wait_handles[1] = s->client_connected;
-    s->wait_handles[2] = s->low_memory;
-    s->wait_handles[3] = s->shutdown;
-    s->wait_handles[4] = s->high_memory;
+    s->wait_handles[2] = s->free_children;
+    s->wait_handles[3] = s->low_memory;
+    s->wait_handles[4] = s->shutdown;
+    s->wait_handles[5] = s->high_memory;
 
     if (s->target_accepts_posted <= 0)
-        s->target_accepts_posted = _PyParallel_NumCPUs * 4;
-        //s->target_accepts_posted = 2;
+        s->target_accepts_posted = _PyParallel_NumCPUs;
+        //s->target_accepts_posted = 1;
 
 //do_bind:
     /* xxx todo: handle ADDRINUSE etc. */
@@ -9681,6 +9798,15 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
         PxSocket_WSAERROR("WSAEventSelect(FD_ACCEPT)");
 
 post_accepts:
+    s->num_accepts_to_post = s->target_accepts_posted;
+    while (--s->num_accepts_to_post) {
+        ++s->total_accepts_attempted;
+        SubmitThreadpoolWork(s->preallocate_children_tp_work);
+    }
+    goto wait;
+
+    /* Old approach. */
+
     s->num_accepts_to_post = (
         s->target_accepts_posted -
         s->accepts_posted
@@ -9704,12 +9830,9 @@ post_accepts:
                               "PxSocketServer_CreateClientSocket)");
     }
     */
-    item = NULL;
     do {
-        //item = PxList_Pop(&s->unlink_child);
-        //item = NULL;
+        item = PxList_Pop(&s->unlink_child);
         if (item) {
-            __debugbreak();
             ++s->recycled_unlinked_child;
             child = CONTAINING_RECORD(item, PxSocket, link);
             if (!child)
@@ -9734,42 +9857,59 @@ update_children:
     //PxSocketServer_UnlinkChildren(s);
 
 wait:
+    if (_PyParallel_Finalized) {
+        s->shutting_down = TRUE;
+        goto shutdown;
+    }
+
     if (low_memory_wait)
         /* Only wait on shutdown and high memory events. */
-        /* (Note the differences in first arg (2/4) and handles (3/0).) */
-        result = WaitForMultipleObjects(2, &(s->wait_handles[3]), 0, 0);
+        /* (Note the differences in first arg (2/4) and handles (4/0).) */
+        result = WaitForMultipleObjects(3, &(s->wait_handles[4]), 0, 0);
     else
         /* Wait on everything except high memory. */
-        result = WaitForMultipleObjects(4, &(s->wait_handles[0]), 0, 1000);
+        result = WaitForMultipleObjects(5, &(s->wait_handles[0]), 0, 1000);
+
+    if (_PyParallel_Finalized) {
+        s->shutting_down = TRUE;
+        goto shutdown;
+    }
 
     switch (result) {
         case WAIT_OBJECT_0:
             /* fd_accept */
-            if (++s->fd_accept_count <= 3)
-                s->target_accepts_posted += s->target_accepts_posted;
+            ++s->fd_accept_count;
+            ++s->total_accepts_attempted;
+            SubmitThreadpoolWork(s->preallocate_children_tp_work);
             ResetEvent(s->fd_accept);
-            goto post_accepts;
+            goto wait;
 
         case WAIT_OBJECT_0 + 1:
             /* client_connected */
             ++s->client_connected_count;
-            goto post_accepts;
+            ++s->total_accepts_attempted;
+            SubmitThreadpoolWork(s->preallocate_children_tp_work);
+            goto wait;
 
         case WAIT_OBJECT_0 + 2:
+            /* free_children */
+            PxSocketServer_UnlinkChildren(s);
+            goto wait;
+
+        case WAIT_OBJECT_0 + 3:
             /* low memory */
             ++s->low_memory_count;
             s->is_low_memory = TRUE;
             low_memory_wait = 1;
-
             goto low_memory;
 
-        case WAIT_OBJECT_0 + 3:
+        case WAIT_OBJECT_0 + 4:
             /* shutdown event */
             InterlockedIncrement(&s->shutdown_count);
             s->shutting_down = TRUE;
             goto shutdown;
 
-        case WAIT_OBJECT_0 + 4:
+        case WAIT_OBJECT_0 + 5:
             /* high memory */
             ++s->high_memory_count;
             s->is_low_memory = FALSE;
@@ -9806,13 +9946,12 @@ wait:
 
 shutdown:
     /* Close our listen socket so we stop accepting new connections. */
-    CancelThreadpoolIo(s->tp_io);
-    closesocket(s->sock_fd);
-    s->sock_fd = INVALID_SOCKET;
+    //goto cleanup_threadpool;
 
     //PxSocketServer_LinkChildren(s);
     //PxSocketServer_UnlinkChildren(s);
 
+#if 0
     /* Walk all our sockets and close them... */
     if (!TryEnterCriticalSection(&s->children_cs))
         /* Hmmm... there shouldn't be any contention here. */
@@ -9833,9 +9972,10 @@ shutdown:
 
 cleaned_up_children:
     LeaveCriticalSection(&s->children_cs);
-
     if (s->num_children != 0)
         __debugbreak();
+#endif
+
 
     if (s->preallocate_children_tp_work)
         CloseThreadpoolWork(s->preallocate_children_tp_work);
@@ -9849,6 +9989,9 @@ cleaned_up_children:
     if (s->client_connected)
         CloseHandle(s->client_connected);
 
+    if (s->free_children)
+        CloseHandle(s->free_children);
+
     if (s->low_memory)
         CloseHandle(s->low_memory);
 
@@ -9858,10 +10001,23 @@ cleaned_up_children:
     if (s->high_memory)
         CloseHandle(s->high_memory);
 
-    //CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
-    //                                   TRUE, /* cancel pending callbacks */
-    //                                   s);   /* I'm not sure if we need to
-    //                                            pass 's' here... */
+cleanup_threadpool:
+    CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
+                                       FALSE, /* cancel pending callbacks */
+                                       s);   /* I'm not sure if we need to
+                                                pass 's' here... */
+
+    InterlockedDecrement(&px->contexts_active);
+    HeapDestroy(c->heap_handle);
+    free(c);
+    return;
+
+    PxSocket_CallbackComplete(s);
+
+
+    CancelThreadpoolIo(s->tp_io);
+    closesocket(s->sock_fd);
+    s->sock_fd = INVALID_SOCKET;
 
     /* (Do we need to check for anything else here?) */
     goto end;
@@ -9963,8 +10119,25 @@ pxsocket_shutdown(PxSocket *s, PyObject *args)
 {
     if (s->shutdown)
         SetEvent(s->shutdown);
+    else if (s->parent)
+        /* Should definitely put some sort of key protection
+           in here. */
+        SetEvent(s->parent->shutdown);
+
     Py_RETURN_NONE;
 }
+
+PyDoc_STRVAR(pxsocket_shutdown_server_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_shutdown_server(PxSocket *s, PyObject *args)
+{
+    if (s->parent && s->parent->shutdown)
+        SetEvent(s->parent->shutdown);
+
+    Py_RETURN_NONE;
+}
+
 
 
 PyDoc_STRVAR(pxsocket_next_send_id_doc, "xxx todo\n");
@@ -10064,6 +10237,14 @@ done:
     return result;
 }
 
+PyDoc_STRVAR(pxsocket_elapsed_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_elapsed(PxSocket *s, PyObject *args)
+{
+    return PyLong_FromUnsignedLongLong(PxSocket_StopwatchStop(s));
+}
+
 #define _PXSOCKET(n, a) _METHOD(pxsocket, n, a)
 #define _PXSOCKET_N(n) _PXSOCKET(n, METH_NOARGS)
 #define _PXSOCKET_O(n) _PXSOCKET(n, METH_O)
@@ -10071,7 +10252,9 @@ done:
 
 static PyMethodDef PxSocketMethods[] = {
     _PXSOCKET_N(close),
+    _PXSOCKET_N(elapsed),
     _PXSOCKET_N(shutdown),
+    _PXSOCKET_N(shutdown_server),
     _PXSOCKET_V(sendfile),
     _PXSOCKET_N(next_send_id),
     { NULL, NULL }
@@ -10084,6 +10267,10 @@ static PyMethodDef PxSocketMethods[] = {
 #define _PXSOCKET_ATTR_OR(n)   _PXSOCKETMEM(n, T_OBJECT_EX, 1, #n " callback")
 #define _PXSOCKET_ATTR_I(n)    _PXSOCKETMEM(n, T_INT,       0, #n " attribute")
 #define _PXSOCKET_ATTR_IR(n)   _PXSOCKETMEM(n, T_INT,       1, #n " attribute")
+#define _PXSOCKET_ATTR_LL(n)   _PXSOCKETMEM(n, T_LONGLONG,  0, #n " attribute")
+#define _PXSOCKET_ATTR_LLR(n)  _PXSOCKETMEM(n, T_LONGLONG,  1, #n " attribute")
+#define _PXSOCKET_ATTR_ULL(n)  _PXSOCKETMEM(n, T_ULONGLONG, 0, #n " attribute")
+#define _PXSOCKET_ATTR_ULLR(n) _PXSOCKETMEM(n, T_ULONGLONG, 1, #n " attribute")
 #define _PXSOCKET_ATTR_B(n)    _PXSOCKETMEM(n, T_BOOL,      0, #n " attribute")
 #define _PXSOCKET_ATTR_BR(n)   _PXSOCKETMEM(n, T_BOOL,      1, #n " attribute")
 #define _PXSOCKET_ATTR_D(n)    _PXSOCKETMEM(n, T_DOUBLE,    0, #n " attribute")
@@ -10101,6 +10288,35 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_IR(sock_proto),
     _PXSOCKET_ATTR_DR(sock_timeout),
     /*_PXSOCKET_ATTR_IR(sock_backlog),*/
+
+    _PXSOCKET_ATTR_OR(parent),
+
+    _PXSOCKET_ATTR_IR(num_children),
+    _PXSOCKET_ATTR_IR(accepts_posted),
+    _PXSOCKET_ATTR_IR(retired_clients),
+    _PXSOCKET_ATTR_IR(fd_accept_count),
+    _PXSOCKET_ATTR_IR(clients_connected),
+    _PXSOCKET_ATTR_IR(clients_disconnecting),
+    _PXSOCKET_ATTR_IR(num_accepts_to_post),
+    _PXSOCKET_ATTR_IR(total_clients_reused),
+    _PXSOCKET_ATTR_IR(total_clients_recycled),
+    _PXSOCKET_ATTR_IR(target_accepts_posted),
+    _PXSOCKET_ATTR_IR(client_connected_count),
+    _PXSOCKET_ATTR_IR(total_accepts_attempted),
+    _PXSOCKET_ATTR_IR(negative_accepts_to_post_count),
+
+    _PXSOCKET_ATTR_ULL(stopwatch_frequency),
+
+    _PXSOCKET_ATTR_ULL(stopwatch_start),
+    _PXSOCKET_ATTR_ULL(stopwatch_stop),
+    _PXSOCKET_ATTR_ULL(stopwatch_elapsed),
+
+    /*
+    _PXSOCKET_ATTR_ULL(stopwatch_utc_start),
+    _PXSOCKET_ATTR_ULL(stopwatch_utc_stop),
+    _PXSOCKET_ATTR_ULL(stopwatch_utc_elapsed),
+    */
+
 
     ///* handler */
     //_PXSOCKET_ATTR_O(handler),

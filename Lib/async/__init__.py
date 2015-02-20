@@ -263,6 +263,44 @@ class EchoLine:
         return line
 
 #===============================================================================
+# Misc
+#===============================================================================
+def socket_stats(s):
+    return (
+        ('num_children', s.num_children),
+        ('accepts_posted', s.accepts_posted),
+        ('retired_clients', s.retired_clients),
+        ('fd_accept_count', s.fd_accept_count),
+        ('clients_connected', s.clients_connected),
+        ('clients_disconnecting', s.clients_disconnecting),
+        ('num_accepts_to_post', s.num_accepts_to_post),
+        ('total_clients_reused', s.total_clients_reused),
+        ('total_clients_recycled', s.total_clients_recycled),
+        ('target_accepts_posted', s.target_accepts_posted),
+        ('client_connected_count', s.client_connected_count),
+        ('total_accepts_attempted', s.total_accepts_attempted),
+        ('negative_accepts_to_post_count', s.negative_accepts_to_post_count),
+    )
+
+def context_stats():
+    return (
+        ('active_hogs', active_hogs()),
+        ('active_contexts', active_contexts()),
+        ('active_io_loops', active_io_loops()),
+    )
+
+def memory_stats():
+    return (
+        ('load', _async._memory_load),
+        ('total_virtual', _async._memory_total_virtual),
+        ('avail_virtual', _async._memory_avail_virtual),
+        ('total_physical', _async._memory_total_physical),
+        ('avail_physical', _async._memory_avail_physical),
+        ('total_page_file', _async._memory_total_page_file),
+        ('avail_page_file', _async._memory_avail_page_file),
+    )
+
+#===============================================================================
 # Helpers during interactive testing/debugging
 #===============================================================================
 def _tefb_json():
