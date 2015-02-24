@@ -267,6 +267,12 @@ class EchoLine:
 #===============================================================================
 def socket_stats(s):
     return (
+        ('sem_acquired', s.sem_acquired),
+        ('sem_released', s.sem_released),
+        ('sem_timeout', s.sem_timeout),
+        ('sem_count', s.sem_count),
+        ('sem_release_err', s.sem_release_err),
+
         ('num_children', s.num_children),
         ('accepts_posted', s.accepts_posted),
         ('retired_clients', s.retired_clients),
