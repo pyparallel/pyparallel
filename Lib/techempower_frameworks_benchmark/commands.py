@@ -71,7 +71,10 @@ class JsonSerialization(TCPServerCommand):
             server = async.server(ip, port)
             protocol = JSONSerializationHttpServer
             async.register(transport=server, protocol=protocol)
-            async.run()
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
 
 class PlainText(TCPServerCommand):
     port = None

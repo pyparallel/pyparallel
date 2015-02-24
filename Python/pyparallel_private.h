@@ -1185,6 +1185,16 @@ typedef struct _PxSocket {
     volatile long total_clients_reused;
     volatile long total_clients_recycled;
 
+    volatile long accepts_wanted;
+
+    volatile long sem_acquired;
+    volatile long sem_released;
+    volatile long sem_timeout;
+    volatile long sem_count;
+    volatile long sem_release_err;
+
+    HANDLE accepts_sem;
+
     int child_seh_eav_count;
 
     int listen_backlog;

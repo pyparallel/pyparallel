@@ -750,18 +750,17 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
         InterlockedDecrement(&s->parent->clients_disconnecting);
     }
 
-    if (WaitForSingleObject(s->parent->fd_accept, 0) == WAIT_TIMEOUT) {
+    if (WaitForSingleObject(s->parent->accepts_sem, 0) == WAIT_TIMEOUT) {
         PxSocketServer_UnlinkChild(s);
         *sp = NULL;
         return;
     }
 
-    ResetEvent(s->parent->fd_accept);
+    //ResetEvent(s->parent->fd_accept);
 
     goto do_recycle;
 
     /* Old approach below. */
-
     _Py_lfence();
     //_Py_clflush(&s->parent->accepts_posted);
     num_accepts_to_post = (
@@ -773,6 +772,7 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
         *sp = NULL;
         return;
     }
+
 
 do_recycle:
     if (s->reused_socket) {
@@ -6588,6 +6588,7 @@ overlapped_acceptex_callback:
     InterlockedDecrement(&s->parent->accepts_posted);
     s->was_accepting = 0;
     if (c->io_result != NO_ERROR) {
+#ifdef Py_DEBUG
         if (s->overlapped_acceptex.Internal == NO_ERROR)
             __debugbreak();
 
@@ -6595,6 +6596,7 @@ overlapped_acceptex_callback:
             if (c->io_result != 64)
                 __debugbreak();
         }
+#endif
 
         if (c->io_result == 64)
             PxSocket_RECYCLE(s);
@@ -6608,8 +6610,11 @@ overlapped_acceptex_callback:
             case WSAECONNRESET:
                 PxSocket_RECYCLE(s);
         }
-
+#ifdef Py_DEBUG
         PxSocket_OVERLAPPED_ERROR("AcceptEx");
+#else
+        PxSocket_RECYCLE(s);
+#endif
     }
 
     s->num_bytes_just_received = (DWORD)s->overlapped_acceptex.InternalHigh;
@@ -7022,11 +7027,13 @@ overlapped_send_callback:
     sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
 
     if (c->io_result != NO_ERROR) {
+#ifdef Py_DEBUG
         if (s->overlapped_wsasend.Internal == NO_ERROR)
             __debugbreak();
 
         if (s->wsa_error == NO_ERROR)
             __debugbreak();
+#endif
 
         s->send_id--;
 
@@ -7042,7 +7049,11 @@ overlapped_send_callback:
             case WSAECONNRESET:
                 PxSocket_RECYCLE(s);
         }
+#ifdef Py_DEBUG
         PxSocket_OVERLAPPED_ERROR("WSASend");
+#else
+        PxSocket_RECYCLE(s);
+#endif
     }
 
     s->num_bytes_just_sent = (DWORD)s->overlapped_wsasend.InternalHigh;
@@ -7429,11 +7440,13 @@ overlapped_recv_callback:
     rbuf = s->rbuf;
 
     if (c->io_result != NO_ERROR) {
+#ifdef Py_DEBUG
         if (s->overlapped_wsarecv.Internal == NO_ERROR)
             __debugbreak();
 
-        if (s->wsa_error == NO_ERROR)
+        if (s->wsa_error == NO_ERROR && c->io_result != 64)
             __debugbreak();
+#endif
 
         s->recv_id--;
 
@@ -7452,8 +7465,12 @@ overlapped_recv_callback:
             case WSAECONNRESET:
                 PxSocket_RECYCLE(s);
         }
+#ifdef Py_DEBUG
         __debugbreak();
         PxSocket_OVERLAPPED_ERROR("WSARecv");
+#else
+        PxSocket_RECYCLE(s);
+#endif
     }
 
     s->num_bytes_just_received = (DWORD)s->overlapped_wsarecv.InternalHigh;
@@ -7866,10 +7883,10 @@ PxSocket_CallbackComplete(PxSocket *s)
     if (s->sock_fd != INVALID_SOCKET)
         closesocket(s->sock_fd);
     c->io_obj = NULL;
-    InterlockedDecrement(&px->contexts_active);
+    //InterlockedDecrement(&px->contexts_active);
+    //PxContext_CleanupThreadpool(c);
     PxContext_CallbackComplete(c);
     return;
-    PxContext_CleanupThreadpool(c);
     /*
     if (c->px_link.Flink) {
         EnterCriticalSection(&px->contexts_cs);
@@ -9394,6 +9411,12 @@ PxSocketServer_UnlinkChild(PxSocket *child)
 
     InterlockedDecrement(&parent->num_children);
     InterlockedIncrement(&parent->retired_clients);
+    if (ReleaseSemaphore(&parent->accepts_sem, 1, NULL)) {
+        InterlockedIncrement(&parent->sem_released);
+        InterlockedIncrement(&parent->sem_count);
+    } else {
+        InterlockedIncrement(&parent->sem_release_err);
+    }
     PxSocket_CallbackComplete(child);
     return;
 
@@ -9686,6 +9709,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     int low_memory_wait = 0;
     PxListItem *item;
     PxSocket *child;
+    int batched_accepts = 0;
 
     ENTERED_CALLBACK();
 
@@ -9780,8 +9804,18 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     s->wait_handles[5] = s->high_memory;
 
     if (s->target_accepts_posted <= 0)
-        s->target_accepts_posted = _PyParallel_NumCPUs;
+        s->target_accepts_posted = _PyParallel_NumCPUs * 4;
         //s->target_accepts_posted = 1;
+
+    s->accepts_sem = CreateSemaphore(
+        NULL,                           /* semaphore attributes */
+        s->target_accepts_posted,       /* initial count        */
+        s->target_accepts_posted * 2,   /* maximum count        */
+        NULL                            /* name (opt)           */
+    );
+    if (!s->accepts_sem)
+        PxSocket_SYSERROR("CreateSemaphore");
+
 
 //do_bind:
     /* xxx todo: handle ADDRINUSE etc. */
@@ -9879,16 +9913,28 @@ wait:
         case WAIT_OBJECT_0:
             /* fd_accept */
             ++s->fd_accept_count;
-            ++s->total_accepts_attempted;
-            SubmitThreadpoolWork(s->preallocate_children_tp_work);
+            batched_accepts = 0;
+            while (s->accepts_posted < s->target_accepts_posted) {
+                ++s->total_accepts_attempted;
+                SubmitThreadpoolWork(s->preallocate_children_tp_work);
+                if (++batched_accepts == s->target_accepts_posted)
+                    break;
+            }
             ResetEvent(s->fd_accept);
             goto wait;
 
         case WAIT_OBJECT_0 + 1:
             /* client_connected */
             ++s->client_connected_count;
-            ++s->total_accepts_attempted;
-            SubmitThreadpoolWork(s->preallocate_children_tp_work);
+            if (WaitForSingleObject(s->accepts_sem, 0) == WAIT_OBJECT_0) {
+                ++s->total_accepts_attempted;
+                InterlockedIncrement(&s->sem_acquired);
+                InterlockedDecrement(&s->sem_count);
+                SubmitThreadpoolWork(s->preallocate_children_tp_work);
+            } else {
+                InterlockedIncrement(&s->sem_timeout);
+            }
+
             goto wait;
 
         case WAIT_OBJECT_0 + 2:
@@ -9924,6 +9970,15 @@ wait:
                 s->shutting_down = TRUE;
                 goto shutdown;
             }
+            if (s->wait_timeout_count > 5) {
+                batched_accepts = 0;
+                while (s->accepts_posted < s->target_accepts_posted) {
+                    ++s->total_accepts_attempted;
+                    SubmitThreadpoolWork(s->preallocate_children_tp_work);
+                    if (++batched_accepts == s->target_accepts_posted)
+                        break;
+                }
+            }
             //PxSocketServer_SlowlorisProtection(s, FALSE);
             goto timeout;
 
@@ -9932,6 +9987,7 @@ wait:
         case WAIT_ABANDONED_0 + 2:
         case WAIT_ABANDONED_0 + 3:
         case WAIT_ABANDONED_0 + 4:
+        case WAIT_ABANDONED_0 + 5:
             goto shutdown;
 
         case WAIT_FAILED:
@@ -10001,11 +10057,17 @@ cleaned_up_children:
     if (s->high_memory)
         CloseHandle(s->high_memory);
 
+    if (s->accepts_sem)
+        CloseHandle(s->accepts_sem);
+
 cleanup_threadpool:
     CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
                                        FALSE, /* cancel pending callbacks */
                                        s);   /* I'm not sure if we need to
                                                 pass 's' here... */
+
+    PxSocket_CallbackComplete(s);
+    return;
 
     InterlockedDecrement(&px->contexts_active);
     HeapDestroy(c->heap_handle);
@@ -10304,6 +10366,12 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_IR(client_connected_count),
     _PXSOCKET_ATTR_IR(total_accepts_attempted),
     _PXSOCKET_ATTR_IR(negative_accepts_to_post_count),
+
+    _PXSOCKET_ATTR_IR(sem_acquired),
+    _PXSOCKET_ATTR_IR(sem_released),
+    _PXSOCKET_ATTR_IR(sem_timeout),
+    _PXSOCKET_ATTR_IR(sem_count),
+    _PXSOCKET_ATTR_IR(sem_release_err),
 
     _PXSOCKET_ATTR_ULL(stopwatch_frequency),
 
