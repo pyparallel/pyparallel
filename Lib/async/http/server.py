@@ -216,8 +216,22 @@ class Response:
             bytes_body = body
             body = None
 
-        other_headers = '\r\n'.join(self.other_headers)
-        response = (DEFAULT_RESPONSE % locals()).encode('UTF-8', 'replace')
+        if self.other_headers:
+            other_headers = '\r\n'.join(self.other_headers)
+        else:
+            other_headers = ''
+
+        kwds = {
+            'code': code,
+            'message': message,
+            'server': server,
+            'date': date,
+            'content_type': content_type,
+            'content_length': content_length,
+            'other_headers': other_headers,
+            'body': body if body else ''
+        }
+        response = (DEFAULT_RESPONSE % kwds).encode('UTF-8', 'replace')
 
         if bytes_body:
             response += bytes_body
