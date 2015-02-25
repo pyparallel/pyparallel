@@ -58,7 +58,7 @@ class JSONSerializationHttpServer(HttpServer):
         response.code = 200
         response.message = 'OK'
         response.body = b'Hello, World!'
-        response.content_length = len(response.body) + 2
+        #response.content_length = len(response.body) + 2
 
     def get_stats(self, request):
         #request.keep_alive = True
