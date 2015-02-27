@@ -30,10 +30,6 @@ def json_serialization(request=None, obj=None):
     response.content_type = 'application/json; charset=UTF-8'
     response.body = json.dumps(obj)
 
-    #if transport:
-    #    response.other_headers.append(
-    #        'X-Elapsed-Microseconds: %d' % transport.elapsed()
-    #    )
     return request
 
 plain_text = b'''HTTP/1.1 200 OK\r
@@ -53,7 +49,7 @@ class JSONSerializationHttpServer(HttpServer):
     def get_json(self, request):
         json_serialization(request)
 
-    def get_pt(self, request):
+    def get_plaintext(self, request):
         response = request.response
         response.code = 200
         response.message = 'OK'
