@@ -981,6 +981,10 @@ _PyParallel_DisassociateCurrentThreadFromCallback(void)
     Context *c = ctx;
     if (Px_CTX_IS_DISASSOCIATED(c))
         return;
+
+    /* Disable this logic for now... */
+    return;
+
     DisassociateCurrentThreadFromCallback((PTP_CALLBACK_INSTANCE)c->instance);
     Px_CTXFLAGS(c) |= Px_CTXFLAGS_DISASSOCIATED;
 }
