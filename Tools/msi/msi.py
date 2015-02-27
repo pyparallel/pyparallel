@@ -64,6 +64,18 @@ for l in lines:
     if name == 'PY_RELEASE_SERIAL': serial = value
 
 short_version = major+"."+minor
+
+# PyParallel: we're making installers far more frequently now (after every few
+# commits), so use the hg repo serial revision as our serial number (ensures
+# the installer .msi gets a unique version).
+from subprocess import check_output
+hgsum = check_output('hg sum')
+# First line of output will look something like this:
+#   'parent: 94329:2ce4e90fd470 tip'
+#            ^^^^^
+#            We want that bit.
+serial = hgsum.splitlines()[0].split(' ')[1].split(':')[0]
+
 # See PC/make_versioninfo.c
 FIELD3 = 1000*int(micro) + 10*level + int(serial)
 current_version = "%s.%d" % (short_version, FIELD3)
@@ -77,8 +89,8 @@ upgrade_code_snapshot='{92A24481-3ECB-40FC-8836-04B7966EC0D5}'
 upgrade_code='{65E6DE48-A358-434D-AA4F-4AF72DB4718F}'
 upgrade_code_64='{6A965A0C-6EE6-4E3A-9983-3263F56311EC}'
 
-if snapshot:
-    current_version = "%s.%s.%s" % (major, minor, int(time.time()/3600/24))
+#if snapshot:
+#    current_version = "%s.%s.%s" % (major, minor, int(time.time()/3600/24))
 
 if full_current_version is None:
     full_current_version = current_version
