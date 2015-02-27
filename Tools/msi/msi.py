@@ -875,7 +875,9 @@ def add_features(db):
     # We don't support advertisement of extensions
     ext_feature = Feature(db, "Extensions", "Register Extensions",
                           "Make this Python installation the default Python installation", 3,
-                         parent = default_feature, attributes=2|8)
+                         parent = default_feature, attributes=2|8,
+                         # PyParallel: don't register as default Python.
+                         level=2)
     if have_tcl:
         tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 5,
                     parent = default_feature, attributes=2)
