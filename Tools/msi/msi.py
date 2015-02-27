@@ -440,7 +440,7 @@ def add_ui(db):
         # See "Custom Action Type 51",
         # "Custom Action Execution Scheduling Options"
         ("InitialTargetDir", 307, "TARGETDIR",
-         "[DesktopFolder]PyParallel%s%s" % (major, minor)),
+         "[WindowsVolume]PyParallel%s%s" % (major, minor)),
         ("SetDLLDirToTarget", 307, "DLLDIR", "[TARGETDIR]"),
         ("SetDLLDirToSystem32", 307, "DLLDIR", SystemFolderName),
         ("SetLauncherDirToTarget", 307, "LAUNCHERDIR", "[TARGETDIR]"),
