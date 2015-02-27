@@ -9007,8 +9007,17 @@ PxSocket_IOCallback(
 
         }
     }
-    if (!_PyParallel_Finalized)
+
+    __try {
         LeaveCriticalSection(&s->cs);
+    } __except(
+        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+            EXCEPTION_CONTINUE_EXECUTION :
+            EXCEPTION_CONTINUE_SEARCH
+    ) {
+        ;
+    }
+
 end:
     return;
 }
