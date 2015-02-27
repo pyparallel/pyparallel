@@ -8439,11 +8439,29 @@ setnonblock:
     if (ioctlsocket(fd, FIONBIO, &nonblock) == SOCKET_ERROR)
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
 
-    val = (char *)&(s->recvbuf_size);
-    if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
-        PxSocket_WSAERROR("getsockopt(SO_RCVBUF)");
+    if (PxSocket_THROUGHPUT(s)) {
+        s->recvbuf_size = 65536 - Px_PTR_ALIGN(sizeof(RBUF));
+    } else if (PxSocket_IS_SERVERCLIENT(s) || PxSocket_CONCURRENCY(s)) {
+        /* This is about 1635 bytes at the time of writing. */
+        s->recvbuf_size = s->ctx->h->remaining - Px_PTR_ALIGN(sizeof(RBUF));
+        /* If it gets below 1024, break.  We want to keep the entire buffer
+         * within the same page used by the heap. */
+        if (s->recvbuf_size < 1024)
+            __debugbreak();
 
-    assert(s->recvbuf_size >= 0 && s->recvbuf_size <= 65536);
+        s->recvbuf_size = 1024;
+        s->sendbuf_size = 0;
+    }
+
+    if (!s->recvbuf_size) {
+        val = (char *)&(s->recvbuf_size);
+        if (getsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
+            PxSocket_WSAERROR("setsockopt(SO_RCVBUF)");
+    } else {
+        val = (char *)&(s->recvbuf_size);
+        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
+            PxSocket_WSAERROR("setsockopt(SO_RCVBUF)");
+    }
 
     /* Every socket* gets a recv buf assigned to it.  This won't be transient;
      * i.e. it doesn't participate in the snapshot/rollback dance like the
@@ -8489,11 +8507,13 @@ setnonblock:
     /* Send buffers get allocated on demand via PxSocket_NEW_SBUF()
      * during the PxSocket_IOLoop(), so we don't explicitly reserve
      * space for one like we do for the receive buffer above. */
-    val = (char *)&(s->sendbuf_size);
-    if (getsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
-        PxSocket_WSAERROR("getsockopt(SO_SNDBUF)");
 
-    assert(s->sendbuf_size >= 0 && s->sendbuf_size <= 65536);
+    /* xxx: temp experiment using 0-byte send buffers (now that we're doing
+     * overlapped sends for everything). */
+    s->sendbuf_size = 0;
+    val = (char *)&(s->sendbuf_size);
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
+        PxSocket_WSAERROR("setsockopt(SO_SNDBUF)");
 
 set_other_sockopts:
     if (s->sock_type == SOCK_STREAM) {
