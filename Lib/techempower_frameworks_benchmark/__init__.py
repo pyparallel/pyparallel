@@ -32,20 +32,9 @@ def json_serialization(request=None, obj=None):
 
     return request
 
-plain_text = b'''HTTP/1.1 200 OK\r
-Content-Length: 15\r
-Content-Type: text/plain; charset=UTF-8\r
-Server: Example\r
-Date: Wed, 17 Apr 2013 12:00:00 GMT\r
-\r
-\r
-Hello, World!'''
-
-class PlainTextDummyServer:
-    def data_received(self, transport, data):
-        return plain_text
-
 class JSONSerializationHttpServer(HttpServer):
+    concurrency = True
+
     def get_json(self, request):
         json_serialization(request)
 
