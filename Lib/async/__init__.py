@@ -293,6 +293,7 @@ def context_stats():
         ('active_hogs', active_hogs()),
         ('active_contexts', active_contexts()),
         ('active_io_loops', active_io_loops()),
+        ('seh_eav_in_io_callback', seh_eav_in_io_callback()),
     )
 
 def memory_stats():

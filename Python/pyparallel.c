@@ -43,6 +43,7 @@ int _PxBlockingCallsThreshold = 20;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
+volatile long _PyParallel_SEH_EAV_InIoCallback = 0;
 volatile int _PyParallel_Finalized = 0;
 
 int _PxSocketServer_PreallocatedSockets = 64;
@@ -3793,6 +3794,15 @@ _async_active_hogs(PyObject *self)
 {
     return PyLong_FromLong(_PxSocket_ActiveHogs);
 }
+
+PyDoc_STRVAR(_async_seh_eav_in_io_callback_doc, "xxx todo\n");
+
+PyObject *
+_async_seh_eav_in_io_callback(PyObject *self)
+{
+    return PyLong_FromLong(_PyParallel_SEH_EAV_InIoCallback);
+}
+
 
 void
 _PyParallel_Init(void)
@@ -9009,13 +9019,10 @@ PxSocket_IOCallback(
     }
 
     __try {
-        LeaveCriticalSection(&s->cs);
-    } __except(
-        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
-            EXCEPTION_CONTINUE_EXECUTION :
-            EXCEPTION_CONTINUE_SEARCH
-    ) {
-        ;
+        if (s->ctx->io_obj == s)
+            LeaveCriticalSection(&s->cs);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        InterlockedIncrement(&_PyParallel_SEH_EAV_InIoCallback);
     }
 
 end:
@@ -10682,6 +10689,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(persisted_contexts),
     _ASYNC_N(refresh_memory_stats),
     _ASYNC_V(call_from_main_thread),
+    _ASYNC_N(seh_eav_in_io_callback),
     _ASYNC_V(call_from_main_thread_and_wait),
 
     { NULL, NULL } /* sentinel */
