@@ -6455,7 +6455,10 @@ PxSocket_IOLoop(PxSocket *s)
     s->last_thread_id = s->this_thread_id;
     s->this_thread_id = _Py_get_current_thread_id();
     s->last_cpuid = s->this_cpuid;
-    __rdtscp(&(s->this_cpuid));
+    /* __rdtscp() crashes with a "privileged instruction" exception on Azure
+     * (and presumably any other CPU that doesn't support RDTSCP).  So, like,
+     * let's not do it for now. */
+    //__rdtscp(&(s->this_cpuid));
     s->last_io_op = s->this_io_op;
     s->this_io_op = 0;
 
