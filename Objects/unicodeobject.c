@@ -1933,12 +1933,20 @@ _PyUnicode_FromId(_Py_Identifier *id)
     return id->object;
 }
 
+/* Getting bizarre crashes when trying to install things like ipython/numpy,
+   so try band-aid with SEH. */
+#ifdef WITH_PARALLEL
+volatile long _PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings = 0;
+#endif
 void
 _PyUnicode_ClearStaticStrings()
 {
     _Py_Identifier *tmp, *s;
     Py_GUARD
     s = static_strings;
+#ifdef WITH_PARALLEL
+    __try {
+#endif
     while (s && s->object) {
         Py_CLEAR(s->object);
         tmp = s->next;
@@ -1946,6 +1954,11 @@ _PyUnicode_ClearStaticStrings()
         s = tmp;
     }
     static_strings = NULL;
+#ifdef WITH_PARALLEL
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        InterlockedIncrement(&_PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings);
+    }
+#endif
 }
 
 /* Internal function, doesn't check maximum character */
