@@ -1939,7 +1939,7 @@ _PyUnicode_ClearStaticStrings()
     _Py_Identifier *tmp, *s;
     Py_GUARD
     s = static_strings;
-    while (s) {
+    while (s && s->object) {
         Py_CLEAR(s->object);
         tmp = s->next;
         s->next = NULL;
