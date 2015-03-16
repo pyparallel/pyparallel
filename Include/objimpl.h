@@ -225,8 +225,8 @@ _PyObject_InitHead(PyObject *op)
     op->_ob_next = NULL;
     op->_ob_prev = NULL;
 #else
-    op->_ob_next = _Py_NOT_PARALLEL;
-    op->_ob_prev = _Py_NOT_PARALLEL;
+    op->_ob_next = (PyObject *)_Py_NOT_PARALLEL;
+    op->_ob_prev = (PyObject *)_Py_NOT_PARALLEL;
 #endif
 }
 
