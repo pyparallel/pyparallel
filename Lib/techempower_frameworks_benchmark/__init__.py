@@ -4,9 +4,12 @@
 import json
 
 from async import (
+    rdtsc,
     socket_stats,
     memory_stats,
     context_stats,
+    call_from_main_thread,
+    call_from_main_thread_and_wait,
 )
 
 from async.http.server import (
@@ -62,5 +65,12 @@ class JSONSerializationHttpServer(HttpServer):
 
     def get_elapsed(self, request):
         obj = { 'elapsed': request.transport.elapsed() }
+        json_serialization(request, obj)
+
+    def get_rdtsc(self, request):
+        @call_from_main_thread_and_wait
+        def _timestamp():
+            return rdtsc()
+        obj = { 'rdtsc': _timestamp() }
         json_serialization(request, obj)
 
