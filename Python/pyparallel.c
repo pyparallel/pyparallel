@@ -10034,10 +10034,12 @@ wait:
             goto shutdown;
 
         case WAIT_FAILED:
-            __debugbreak();
-            PyErr_SetFromWindowsErr(0);
-            PxSocket_HandleException(c, "WaitForMultipleObjects", 1);
-            goto end;
+            /* Saw this happen as soon as low memory condition hit. */
+            if (WaitForSingleObject(&s->wait_handles[3], 0) == WAIT_OBJECT_0) {
+                low_memory_wait = 1;
+                goto wait;
+            }
+            goto shutdown;
 
         default:
             assert(0);
