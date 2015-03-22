@@ -918,8 +918,6 @@ PxSocket_NEW_SBUF(
     SBUF *b;
     assert(!*sbuf);
     assert(snapshot);
-    assert(!snapshot->sle_prev);
-    assert(!snapshot->sle_next);
     assert(c == ctx);
     assert(s->ctx == c);
     assert(c->io_obj == (PyObject *)s);
@@ -6558,7 +6556,7 @@ do_accept:
      * (Or at least we will when I implement that.  It's currently an xxx
      * todo.)
      */
-    if (s->initial_bytes.len)
+    if (s->initial_bytes.len || s->initial_bytes_callable)
         s->acceptex_bufsize = 0;
     else
         s->acceptex_bufsize = (s->recvbuf_size - (s->acceptex_addr_len * 2));
@@ -6658,7 +6656,7 @@ overlapped_acceptex_callback:
          * client to send something first.  (At the time of writing, I've run
          * into this pretty consistently when doing short `wrk` calls, i.e.
          * `wrk --latency -c 1 -t 1 -d 1 http://...) */
-        if (!s->initial_bytes.len)
+        if (!s->initial_bytes.len && !s->initial_bytes_callable)
             goto eof_received;
     }
 
@@ -8360,6 +8358,11 @@ create_pxsocket(
         s->exception_handler = parent->exception_handler;
         s->max_sync_send_attempts = parent->max_sync_send_attempts;
         s->max_sync_recv_attempts = parent->max_sync_recv_attempts;
+        s->initial_bytes_to_send = parent->initial_bytes_to_send;
+        s->initial_bytes_callable = parent->initial_bytes_callable;
+        s->send_complete = parent->send_complete;
+        s->connection_made = parent->connection_made;
+        s->connection_closed = parent->connection_closed;
 
         /* xxx: eh, we should be able to just copy the exact value for flags.
          * (We can't, because it's being overloaded with different
@@ -8374,6 +8377,9 @@ create_pxsocket(
 
         if (s->data_received || s->lines_received)
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
+        if (Px_SOCKFLAGS(parent) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE)
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE;
 
     } else {
         assert(
@@ -9184,6 +9190,14 @@ PxSocket_InitProtocol(PxSocket *s)
     }                                                   \
 } while (0)
 
+#define _PxSocket_RESOLVE(name) do {                    \
+    PyObject *o = _PyObject_GetAttrId(p, &PyId_##name); \
+    if (!o)                                             \
+        PyErr_Clear();                                  \
+    s->##name = o;                                      \
+} while (0)
+
+
     _PxSocket_RESOLVE_OBJECT(lines_mode);
     _PxSocket_RESOLVE_OBJECT(send_failed);
     _PxSocket_RESOLVE_OBJECT(recv_failed);
@@ -9195,7 +9209,9 @@ PxSocket_InitProtocol(PxSocket *s)
     _PxSocket_RESOLVE_OBJECT(connection_made);
     _PxSocket_RESOLVE_OBJECT(connection_closed);
     _PxSocket_RESOLVE_OBJECT(exception_handler);
-    _PxSocket_RESOLVE_OBJECT(initial_bytes_to_send);
+
+    /* This is initialized in more detail during PxSocket_InitInitialBytes. */
+    _PxSocket_RESOLVE(initial_bytes_to_send);
 
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
@@ -9346,6 +9362,7 @@ PxSocket_InitInitialBytes(PxSocket *s)
         int error = 0;
         r = PyObject_CallObject(o, NULL);
         if (!r) {
+            PyErr_PrintEx(0);
             PxContext_RollbackHeap(c, &snapshot);
             return 0;
         }
@@ -10759,6 +10776,22 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
     }
 }
 
+PyDoc_STRVAR(_async_transport_doc, "transport() -> active socket transport\n");
+
+PyObject *
+_async_transport(PyObject *self, PyObject *args)
+{
+    Context *c = ctx;
+    if (!_PyParallel_IsParallelContext() ||
+        (!c || (!c->io_obj)))
+        Py_RETURN_NONE;
+
+    if (c->io_type == Px_IOTYPE_SOCKET)
+        return (PyObject *)c->io_obj;
+
+    Py_RETURN_NONE;
+}
+
 static PyObject *_asyncmodule_obj;
 
 PyDoc_STRVAR(_async_refresh_memory_stats_doc, "xxx todo\n");
@@ -10831,6 +10864,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(cpu_count),
     _ASYNC_O(unprotect),
     _ASYNC_O(protected),
+    _ASYNC_O(transport),
     _ASYNC_N(is_active),
     _ASYNC_V(submit_io),
     _ASYNC_O(read_lock),
