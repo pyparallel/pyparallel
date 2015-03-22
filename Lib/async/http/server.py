@@ -483,7 +483,10 @@ class HttpServer:
         try:
             func = getattr(self, overload_funcname)
         except AttributeError:
-            func = getattr(self, funcname)
+            try:
+                func = getattr(self, funcname)
+            except AttributeError:
+                return self.error(request, 400, 'Unsupported Method')
 
         return func(request)
 
