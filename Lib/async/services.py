@@ -3,6 +3,7 @@ import socket
 import datetime
 
 import async
+from _async import transport
 
 class Disconnect:
     pass
@@ -26,13 +27,13 @@ class Time:
     """
     def initial_bytes_to_send(self):
         delta = datetime.utcnow() - datetime(1900, 1, 1)
-        return socket.htonl(int(delta.total_seconds()))
+        return bytes(socket.htonl(int(delta.total_seconds())))
 
 class StaticQotd:
     """
     Send a static value as soon as a client connects, then disconnect.
     """
-    initial_bytes_to_send = b'An apple a day keeps the doctor away.\r\n.'
+    initial_bytes_to_send = b'An apple a day keeps the doctor away.\r\n'
 
 class DynamicQotd:
     """
@@ -40,7 +41,7 @@ class DynamicQotd:
     then disconnect.
     """
     def initial_bytes_to_send(self):
-        return b'Hello my name is %d' % id(self)
+        return b'An apple a day keeps the doctor away.\r\n'
 
 class EchoData:
     def data_received(self, transport, data):
