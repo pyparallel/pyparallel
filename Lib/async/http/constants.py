@@ -1,8 +1,6 @@
 #===============================================================================
 # Imports
 #===============================================================================
-import textwrap
-
 
 #===============================================================================
 # Globals
@@ -29,13 +27,14 @@ DEFAULT_RESPONSE = """\
 HTTP/1.1 %(code)d %(message)s\r
 Server: %(server)s\r
 Date: %(date)s\r
+Accept-Ranges: bytes\r
 Content-Type: %(content_type)s\r\n%(content_length)s\r
 %(other_headers)s\r\n\r\n%(body)s"""
 
 DEFAULT_CONTENT_TYPE = "text/html;charset=utf-8"
 DEFAULT_ERROR_CONTENT_TYPE = "text/html;charset=utf-8"
 
-DEFAULT_SERVER_RESPONSE = 'Python Parallel Web Server v0.1'
+DEFAULT_SERVER_RESPONSE = 'PyParallel Web Server v0.1'
 
 DIRECTORY_LISTING = """\
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
@@ -129,33 +128,5 @@ RESPONSES = {
     511: ('Network Authentication Required',
           'The client needs to authenticate to gain network access.'),
 }
-
-_DEFAULT_ERROR_MESSAGE = textwrap.dedent("""\
-    <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
-            "http://www.w3.org/TR/html4/strict.dtd">
-    <html>
-        <head>
-            <meta http-equiv="Content-Type"
-                  content="text/html;charset=utf-8">
-            <title>Error response</title>
-        </head>
-        <body>
-            <h1>Error response</h1>
-            <p>Error code: %(code)d</p>
-            <p>Message: %(message)s.</p>
-            <p>Error code explanation: %(code)s - %(explain)s.</p>
-        </body>
-    </html>""")
-
-_DEFAULT_RESPONSE = textwrap.dedent("""\
-    HTTP/1.1 %(code)d %(message)s\r
-    Server: Python Parallel Web Server v0.1\r
-    Date: %(date)d\r
-    Content-Type: %(content_type)s\r
-    Content-Length: %(content_length)d\r
-    Connection: %(connection)s\r
-    \r\n%(body)s""")
-
-
 
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

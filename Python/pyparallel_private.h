@@ -737,43 +737,45 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS(s)     (((PxSocket *)s)->flags)
 
 #define Px_SOCKFLAGS_CLIENT                     (1)
-#define Px_SOCKFLAGS_SERVER                     (1UL <<  1)
-#define Px_SOCKFLAGS_HOG                        (1UL <<  2)
-#define Px_SOCKFLAGS_RECV_MORE                  (1UL <<  3)
-#define Px_SOCKFLAGS_CONNECTED                  (1UL <<  4)
-#define Px_SOCKFLAGS_CLEAN_DISCONNECT           (1UL <<  5)
-#define Px_SOCKFLAGS_THROUGHPUT                 (1UL <<  6)
-#define Px_SOCKFLAGS_throughput                 (1UL <<  6)
-#define Px_SOCKFLAGS_SERVERCLIENT               (1UL <<  7)
-#define Px_SOCKFLAGS_INITIAL_BYTES              (1UL <<  8)
-#define Px_SOCKFLAGS_INITIAL_BYTES_STATIC       (1UL <<  9)
-#define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1UL << 10)
-#define Px_SOCKFLAGS_CONCURRENCY                (1UL << 11)
-#define Px_SOCKFLAGS_concurrency                (1UL << 11)
-#define Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE     (1UL << 12)
-#define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1UL << 13)
-#define Px_SOCKFLAGS_LINES_MODE_ACTIVE          (1UL << 14)
-#define Px_SOCKFLAGS_lines_mode_active          (1UL << 14)
-#define Px_SOCKFLAGS_SHUTDOWN_SEND              (1UL << 15)
-#define Px_SOCKFLAGS_shutdown_send              (1UL << 15)
-#define Px_SOCKFLAGS_CAN_RECV                   (1UL << 16)
-#define Px_SOCKFLAGS_can_recv                   (1UL << 16)
-#define Px_SOCKFLAGS_SEND_SHUTDOWN              (1UL << 17)
-#define Px_SOCKFLAGS_RECV_SHUTDOWN              (1UL << 18)
-#define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1UL << 19)
-#define Px_SOCKFLAGS_SEND_SCHEDULED             (1UL << 20)
-#define Px_SOCKFLAGS_MAX_SYNC_SEND_ATTEMPTS     (1UL << 21)
-#define Px_SOCKFLAGS_max_sync_send_attempts     (1UL << 21)
-#define Px_SOCKFLAGS_CLOSE_SCHEDULED            (1UL << 22)
-#define Px_SOCKFLAGS_CLOSED                     (1UL << 23)
-#define Px_SOCKFLAGS_TIMEDOUT                   (1UL << 24)
-#define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1UL << 25)
-#define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1UL << 26)
-#define Px_SOCKFLAGS_ACCEPT_CALLBACK_SEEN       (1UL << 27)
-#define Px_SOCKFLAGS_MAX_SYNC_RECV_ATTEMPTS     (1UL << 29)
-#define Px_SOCKFLAGS_max_sync_recv_attempts     (1UL << 29)
-#define Px_SOCKFLAGS_SENDFILE_SCHEDULED         (1UL << 30)
-#define Px_SOCKFLAGS_                           (1UL << 31)
+#define Px_SOCKFLAGS_SERVER                     (1ULL <<  1)
+#define Px_SOCKFLAGS_HOG                        (1ULL <<  2)
+#define Px_SOCKFLAGS_RECV_MORE                  (1ULL <<  3)
+#define Px_SOCKFLAGS_CONNECTED                  (1ULL <<  4)
+#define Px_SOCKFLAGS_CLEAN_DISCONNECT           (1ULL <<  5)
+#define Px_SOCKFLAGS_THROUGHPUT                 (1ULL <<  6)
+#define Px_SOCKFLAGS_throughput                 (1ULL <<  6)
+#define Px_SOCKFLAGS_SERVERCLIENT               (1ULL <<  7)
+#define Px_SOCKFLAGS_INITIAL_BYTES              (1ULL <<  8)
+#define Px_SOCKFLAGS_INITIAL_BYTES_STATIC       (1ULL <<  9)
+#define Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE     (1ULL << 10)
+#define Px_SOCKFLAGS_CONCURRENCY                (1ULL << 11)
+#define Px_SOCKFLAGS_concurrency                (1ULL << 11)
+#define Px_SOCKFLAGS_CHECKED_DR_UNREACHABLE     (1ULL << 12)
+#define Px_SOCKFLAGS_SENDING_INITIAL_BYTES      (1ULL << 13)
+#define Px_SOCKFLAGS_LINES_MODE_ACTIVE          (1ULL << 14)
+#define Px_SOCKFLAGS_lines_mode_active          (1ULL << 14)
+#define Px_SOCKFLAGS_SHUTDOWN_SEND              (1ULL << 15)
+#define Px_SOCKFLAGS_shutdown_send              (1ULL << 15)
+#define Px_SOCKFLAGS_CAN_RECV                   (1ULL << 16)
+#define Px_SOCKFLAGS_can_recv                   (1ULL << 16)
+#define Px_SOCKFLAGS_SEND_SHUTDOWN              (1ULL << 17)
+#define Px_SOCKFLAGS_RECV_SHUTDOWN              (1ULL << 18)
+#define Px_SOCKFLAGS_BOTH_SHUTDOWN              (1ULL << 19)
+#define Px_SOCKFLAGS_SEND_SCHEDULED             (1ULL << 20)
+#define Px_SOCKFLAGS_MAX_SYNC_SEND_ATTEMPTS     (1ULL << 21)
+#define Px_SOCKFLAGS_max_sync_send_attempts     (1ULL << 21)
+#define Px_SOCKFLAGS_CLOSE_SCHEDULED            (1ULL << 22)
+#define Px_SOCKFLAGS_CLOSED                     (1ULL << 23)
+#define Px_SOCKFLAGS_TIMEDOUT                   (1ULL << 24)
+#define Px_SOCKFLAGS_CALLED_CONNECTION_MADE     (1ULL << 25)
+#define Px_SOCKFLAGS_IS_WAITING_ON_FD_ACCEPT    (1ULL << 26)
+#define Px_SOCKFLAGS_ACCEPT_CALLBACK_SEEN       (1ULL << 27)
+#define Px_SOCKFLAGS_MAX_SYNC_RECV_ATTEMPTS     (1ULL << 29)
+#define Px_SOCKFLAGS_max_sync_recv_attempts     (1ULL << 29)
+#define Px_SOCKFLAGS_SENDFILE_SCHEDULED         (1ULL << 30)
+#define Px_SOCKFLAGS_WRITEFILE_SCHEDULED        (1ULL << 31)
+#define Px_SOCKFLAGS_READFILE_SCHEDULED         (1ULL << 32)
+#define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
 
@@ -953,7 +955,8 @@ typedef struct _PxSocket {
     sock_addr_t  remote_addr;
     int          remote_addr_len;
 
-    int   flags;
+    ULONGLONG    flags;
+
     int   cb_flags;
     int   error_occurred;
 
@@ -1066,6 +1069,9 @@ typedef struct _PxSocket {
     HANDLE sendfile_handle;
     Heap  *sendfile_snapshot;
     TRANSMIT_FILE_BUFFERS sendfile_tfbuf;
+    DWORD     sendfile_bytes_per_send;
+    DWORD     sendfile_num_bytes_to_send;
+    ULONGLONG sendfile_offset;
 
     int     last_io_op;
     int     this_io_op;

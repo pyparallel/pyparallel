@@ -46,6 +46,8 @@ int _Py_InstalledCtrlCHandler = 0;
 volatile long _PyParallel_SEH_EAV_InIoCallback = 0;
 volatile int _PyParallel_Finalized = 0;
 
+volatile long _PyParallel_EAV_In_PyErr_PrintEx;
+
 int _PxSocketServer_PreallocatedSockets = 64;
 int _PxSocket_MaxSyncSendAttempts = 3;
 int _PxSocket_MaxSyncRecvAttempts = 3;
@@ -69,6 +71,8 @@ static PyObject *PyExc_NoWaitersError;
 static PyObject *PyExc_WaitError;
 static PyObject *PyExc_WaitTimeoutError;
 static PyObject *PyExc_AsyncIOBuffersExhaustedError;
+static PyObject *PyExc_InvalidFileRangeError;
+static PyObject *PyExc_FileTooLargeError;
 static PyObject *PyExc_PersistenceError;
 static PyObject *PyExc_LowMemory;
 static PyObject *PyExc_SoftMemoryLoadLimitHit;
@@ -828,9 +832,11 @@ do_recycle:
                 if (s->disconnectex_flags == TF_REUSE_SOCKET)
                     __debugbreak();
             } else if (s->last_io_op == PxSocket_IO_SENDFILE) {
+                /*
                 DWORD expected = TF_REUSE_SOCKET | TF_DISCONNECT;
                 if (s->sendfile_flags == expected)
                     __debugbreak();
+                */
             }
         }
 
@@ -4719,7 +4725,19 @@ start:
 
             if (c->io_obj) {
                 PxSocket *s = (PxSocket *)c->io_obj;
-                PyErr_PrintEx(0);
+                /* Ah, __try/__except, my old friend.  We really need to alter
+                   how exceptions are allocated from memory.  This block is
+                   necessary 'cause we're racing the context reset/recycle
+                   logic in a lot of cases. */
+                __try {
+                    PyErr_PrintEx(0);
+                } __except(
+                    GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
+                        EXCEPTION_EXECUTE_HANDLER :
+                        EXCEPTION_CONTINUE_SEARCH
+                ) {
+                    ++_PyParallel_EAV_In_PyErr_PrintEx;
+                }
                 if (s->sock_fd != INVALID_SOCKET) {
                     closesocket(s->sock_fd);
                     s->sock_fd = INVALID_SOCKET;
@@ -7258,6 +7276,10 @@ do_disconnect:
             case WSAENETRESET:
             case WSAECONNABORTED:
             case WSAECONNRESET:
+            case WSAENOTCONN:
+            case WSAESHUTDOWN:
+            case WSAEHOSTDOWN:
+            case WSAEHOSTUNREACH:
                 PxSocket_RECYCLE(s);
         }
         __debugbreak();
@@ -7585,6 +7607,7 @@ do_data_received_callback:
         XXX_IMPLEMENT_ME();
     }
 
+
     result = PyObject_CallObject(func, args);
     if (result)
         assert(!PyErr_Occurred());
@@ -7653,11 +7676,11 @@ do_sendfile:
         s->sendfile_flags = TF_DISCONNECT | TF_REUSE_SOCKET;
 
     StartThreadpoolIo(s->tp_io);
-    PxOverlapped_Reset(&s->overlapped_sendfile);
+    /*PxOverlapped_Reset(&s->overlapped_sendfile);*/
     success = TransmitFile(s->sock_fd,
                            s->sendfile_handle,
-                           0, /* bytes to write (0 = write whole file) */
-                           0, /* bytes per send (0 = default) */
+                           s->sendfile_num_bytes_to_send,
+                           s->sendfile_bytes_per_send,
                            &(s->overlapped_sendfile),
                            &(s->sendfile_tfbuf),
                            s->sendfile_flags);
@@ -7740,6 +7763,9 @@ overlapped_sendfile_callback:
     s->total_bytes_sent += s->sendfile_nbytes;
     s->sendfile_nbytes = 0;
     s->sendfile_handle = 0;
+    s->sendfile_offset = 0;
+    s->sendfile_num_bytes_to_send = 0;
+    PxOverlapped_Reset(&s->overlapped_sendfile);
     SecureZeroMemory(&s->sendfile_tfbuf, sizeof(TRANSMIT_FILE_BUFFERS));
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDFILE_SCHEDULED;
 
@@ -8461,7 +8487,6 @@ setnonblock:
          * within the same page used by the heap. */
         if (s->recvbuf_size < 1024)
             __debugbreak();
-
         s->recvbuf_size = 1024;
         s->sendbuf_size = 0;
     }
@@ -10255,7 +10280,10 @@ pxsocket_next_send_id(PxSocket *s, PyObject *args)
     return PyLong_FromUnsignedLongLong(s->send_id+1);
 }
 
-PyDoc_STRVAR(pxsocket_sendfile_doc, "xxx todo\n");
+PyDoc_STRVAR(
+    pxsocket_sendfile_doc,
+    "sendfile(before, path, after)\n\n"
+);
 
 PyObject *
 pxsocket_sendfile(PxSocket *s, PyObject *args)
@@ -10316,7 +10344,7 @@ pxsocket_sendfile(PxSocket *s, PyObject *args)
 
     if ((size.QuadPart > (long long)INT_MAX) || (size.LowPart > max_fsize)) {
         CloseHandle(h);
-        PyErr_SetString(PyExc_ValueError,
+        PyErr_SetString(PyExc_FileTooLargeError,
                         "file is too large to send via sendfile()");
         goto done;
     }
@@ -10344,6 +10372,123 @@ done:
     return result;
 }
 
+PyDoc_STRVAR(
+    pxsocket_sendfile_ranged_doc,
+    "sendfile_ranged(before, path, after, offset, num_bytes_to_send)\n\n"
+);
+
+PyObject *
+pxsocket_sendfile_ranged(PxSocket *s, PyObject *args)
+{
+    PyObject *result = NULL;
+    LPCWSTR name;
+    Py_UNICODE *uname;
+    int name_len;
+    int access = GENERIC_READ;
+    int share = FILE_SHARE_READ;
+    int create_flags = OPEN_EXISTING;
+    int file_flags = (
+        FILE_FLAG_OVERLAPPED    |
+        FILE_ATTRIBUTE_READONLY |
+        FILE_FLAG_RANDOM_ACCESS
+    );
+    HANDLE h;
+    LARGE_INTEGER size;
+    TRANSMIT_FILE_BUFFERS *tf;
+    OVERLAPPED *ol = NULL;
+
+    char *before_bytes = NULL, *after_bytes = NULL;
+    int before_len = 0, after_len = 0;
+    DWORD max_fsize = INT_MAX - 1;
+
+    ULONGLONG num_bytes_to_send = 0;
+    ULONGLONG offset = 0;
+    DWORD offset_lo = 0;
+    DWORD offset_hi = 0;
+
+    //Px_GUARD
+
+    if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "sendfile already scheduled for this callback");
+        goto done;
+    }
+
+    assert(!s->sendfile_handle);
+
+    if (!PyArg_ParseTuple(args, "z#u#z#KK:sendfile_ranged",
+                          &before_bytes, &before_len,
+                          &uname, &name_len,
+                          &after_bytes, &after_len,
+                          &offset,
+                          &num_bytes_to_send))
+        goto done;
+
+    name = (LPCWSTR)uname;
+
+    h = CreateFile(name, access, share, 0, create_flags, file_flags, 0);
+    if (!h || (h == INVALID_HANDLE_VALUE)) {
+        PyErr_SetFromWindowsErrWithUnicodeFilename(0, uname);
+        goto done;
+    }
+
+    /* Subtract before/after buffer sizes from maximum sendable file size. */
+    max_fsize -= before_len;
+    max_fsize -= after_len;
+
+    if (num_bytes_to_send > (ULONGLONG)max_fsize) {
+        CloseHandle(h);
+        PyErr_SetString(PyExc_InvalidFileRangeError,
+                        "range request exceeds maximum size (>2GB)");
+        goto done;
+    }
+
+    s->sendfile_offset = offset;
+    s->sendfile_num_bytes_to_send = (DWORD)num_bytes_to_send;
+    s->overlapped_sendfile.Pointer = (PVOID)offset;
+
+    tf = &s->sendfile_tfbuf;
+    SecureZeroMemory(&s->sendfile_tfbuf, sizeof(TRANSMIT_FILE_BUFFERS));
+    if (before_len) {
+        tf->Head = before_bytes;
+        tf->HeadLength = before_len;
+    }
+    if (after_len) {
+        tf->Tail = after_bytes;
+        tf->TailLength = after_len;
+    }
+
+    s->sendfile_nbytes = num_bytes_to_send + before_len + after_len;
+    s->sendfile_handle = h;
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDFILE_SCHEDULED;
+    result = Py_None;
+
+done:
+    if (!result)
+        assert(PyErr_Occurred());
+
+    return result;
+}
+
+PyDoc_STRVAR(pxsocket_writefile_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_writefile(PxSocket *s, PyObject *args)
+{
+    PyObject *result = NULL;
+    return result;
+}
+
+PyDoc_STRVAR(pxsocket_readfile_doc, "xxx todo\n");
+
+PyObject *
+pxsocket_readfile(PxSocket *s, PyObject *args)
+{
+    PyObject *result = NULL;
+    return result;
+}
+
+
 PyDoc_STRVAR(pxsocket_elapsed_doc, "xxx todo\n");
 
 PyObject *
@@ -10363,6 +10508,9 @@ static PyMethodDef PxSocketMethods[] = {
     _PXSOCKET_N(shutdown),
     _PXSOCKET_N(shutdown_server),
     _PXSOCKET_V(sendfile),
+    _PXSOCKET_V(sendfile_ranged),
+    _PXSOCKET_V(writefile),
+    _PXSOCKET_V(readfile),
     _PXSOCKET_N(next_send_id),
     { NULL, NULL }
 };
@@ -10374,6 +10522,8 @@ static PyMethodDef PxSocketMethods[] = {
 #define _PXSOCKET_ATTR_OR(n)   _PXSOCKETMEM(n, T_OBJECT_EX, 1, #n " callback")
 #define _PXSOCKET_ATTR_I(n)    _PXSOCKETMEM(n, T_INT,       0, #n " attribute")
 #define _PXSOCKET_ATTR_IR(n)   _PXSOCKETMEM(n, T_INT,       1, #n " attribute")
+#define _PXSOCKET_ATTR_UI(n)   _PXSOCKETMEM(n, T_UINT,      0, #n " attribute")
+#define _PXSOCKET_ATTR_UIR(n)  _PXSOCKETMEM(n, T_UINT,      1, #n " attribute")
 #define _PXSOCKET_ATTR_LL(n)   _PXSOCKETMEM(n, T_LONGLONG,  0, #n " attribute")
 #define _PXSOCKET_ATTR_LLR(n)  _PXSOCKETMEM(n, T_LONGLONG,  1, #n " attribute")
 #define _PXSOCKET_ATTR_ULL(n)  _PXSOCKETMEM(n, T_ULONGLONG, 0, #n " attribute")
@@ -10423,6 +10573,22 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_ULL(stopwatch_start),
     _PXSOCKET_ATTR_ULL(stopwatch_stop),
     _PXSOCKET_ATTR_ULL(stopwatch_elapsed),
+
+    _PXSOCKET_ATTR_ULLR(num_bytes_just_sent),
+    _PXSOCKET_ATTR_ULLR(num_bytes_just_received),
+    _PXSOCKET_ATTR_ULLR(total_bytes_sent),
+    _PXSOCKET_ATTR_ULLR(total_bytes_received),
+
+    _PXSOCKET_ATTR_IR(recvbuf_size),
+    _PXSOCKET_ATTR_IR(sendbuf_size),
+
+    _PXSOCKET_ATTR_LLR(send_id),
+    _PXSOCKET_ATTR_LLR(recv_id),
+
+    _PXSOCKET_ATTR_IR(ioloops),
+    _PXSOCKET_ATTR_IR(last_thread_id),
+    _PXSOCKET_ATTR_IR(this_thread_id),
+
 
     /*
     _PXSOCKET_ATTR_ULL(stopwatch_utc_start),
@@ -10864,6 +11030,20 @@ _PyAsync_ModInit(void)
     if (!PyExc_AsyncIOBuffersExhaustedError)
         return NULL;
 
+    PyExc_InvalidFileRangeError = \
+        PyErr_NewException("_async.InvalidFileRangeError",
+                           PyExc_AsyncError,
+                           NULL);
+    if (!PyExc_InvalidFileRangeError)
+        return NULL;
+
+    PyExc_FileTooLargeError = \
+        PyErr_NewException("_async.FileTooLargeError",
+                           PyExc_AsyncError,
+                           NULL);
+    if (!PyExc_FileTooLargeError)
+        return NULL;
+
     if (PyModule_AddObject(m, "AsyncError", PyExc_AsyncError))
         return NULL;
 
@@ -10892,6 +11072,14 @@ _PyAsync_ModInit(void)
                            PyExc_AsyncIOBuffersExhaustedError))
         return NULL;
 
+    if (PyModule_AddObject(m, "InvalidFileRangeError",
+                           PyExc_InvalidFileRangeError))
+        return NULL;
+
+    if (PyModule_AddObject(m, "FileTooLargeError",
+                           PyExc_FileTooLargeError))
+        return NULL;
+
     Py_INCREF(PyExc_AsyncError);
     Py_INCREF(PyExc_ProtectionError);
     Py_INCREF(PyExc_UnprotectedError);
@@ -10901,6 +11089,8 @@ _PyAsync_ModInit(void)
     Py_INCREF(PyExc_WaitError);
     Py_INCREF(PyExc_WaitTimeoutError);
     Py_INCREF(PyExc_AsyncIOBuffersExhaustedError);
+    Py_INCREF(PyExc_InvalidFileRangeError);
+    Py_INCREF(PyExc_FileTooLargeError);
 
     return m;
 }

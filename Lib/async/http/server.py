@@ -7,6 +7,16 @@ import urllib
 import mimetypes
 import posixpath
 
+is_pyparallel = False
+try:
+    import _async
+    is_pyparallel = True
+    InvalidFileRangeError = _async.InvalidFileRangeError
+    FileTooLargeError = _async.FileTooLargeError
+except ImportError:
+    InvalidFileRangeError = RuntimeError
+    FileTooLargeError = RuntimeError
+
 from async.http import (
     DEFAULT_CONTENT_TYPE,
     DEFAULT_ERROR_CONTENT_TYPE,
@@ -163,6 +173,7 @@ class Response:
         'sendfile',
         'transport',
         'content_type',
+        'content_range',
         'last_modified',
         'other_headers',
         'content_length',
@@ -178,6 +189,7 @@ class Response:
         self.transport = request.transport
         self.last_modified = None
         self.content_type = DEFAULT_CONTENT_TYPE
+        self.content_range = None
         self.content_length = 0
         self.other_headers = []
 
@@ -210,6 +222,9 @@ class Response:
         if self.last_modified:
             lm = 'Last-Modified: %s' % self.last_modified
             self.other_headers.append(lm)
+
+        if self.content_range:
+            self.other_headers.append(self.content_range)
 
         bytes_body = None
         if body and isinstance(body, bytes):
@@ -244,6 +259,7 @@ class Request:
         'data',
         'body',
         'path',
+        'range',
         'version',
         'headers',
         'command',
@@ -257,11 +273,79 @@ class Request:
         self.data = data
 
         self.body = None
+        self.range = None
         self.version = None
         self.headers = None
         self.command = None
         self.keep_alive = False
         self.response = Response(self)
+
+class InvalidRangeRequest(BaseException):
+    pass
+
+class RangedRequest:
+    __slots__ = (
+        'first_byte',
+        'last_byte',
+        'suffix_length',
+
+        # These are filled in when set_file_size() is called.
+        'offset',
+        'num_bytes_to_send',
+        'file_size',
+        'content_range',
+    )
+
+    def __init__(self, requested_range):
+        self.first_byte = None
+        self.last_byte = None
+        self.suffix_length = None
+
+        self.offset = None
+        self.num_bytes_to_send = None
+        self.file_size = None
+        self.content_range = None
+
+        try:
+            r = requested_range.replace(' ', '')        \
+                               .replace('bytes', '')    \
+                               .replace('=', '')
+
+            if r.startswith('-'):
+                self.suffix_length = int(r[1:])
+            elif r.endswith('-'):
+                self.first_byte = int(r[:-1])
+            else:
+                pair = r.split('-')
+                self.first_byte = int(pair[0])
+                self.last_byte = int(pair[1])
+        except Exception as e:
+            raise InvalidRangeRequest
+
+    def set_file_size(self, file_size):
+        self.file_size = file_size
+
+        if self.suffix_length is not None:
+            if self.suffix_length > self.file_size:
+                raise InvalidRangeRequest
+
+            self.last_byte = file_size-1
+            self.first_byte = file_size - self.suffix_length - 1
+
+        else:
+            if self.first_byte > file_size-1:
+                raise InvalidRangeRequest
+
+            if not self.last_byte or self.last_byte > file_size-1:
+                self.last_byte = file_size-1
+
+        self.num_bytes_to_send = (self.last_byte - self.first_byte) + 1
+
+        self.content_range = 'Content-Range: %d-%d/%d' % (
+            self.first_byte,
+            self.last_byte,
+            self.file_size,
+        )
 
 class HttpServer:
 
@@ -269,9 +353,28 @@ class HttpServer:
 
     def data_received(self, transport, data):
         request = Request(transport, data)
+        try:
+            self.process_new_request(request)
+        except Exception as e:
+            if e.args:
+                msg = '\n'.join(args)
+            elif e.message:
+                msg = e.message
+            self.error(request, 500, msg)
+
+        if not request.keep_alive:
+            request.transport.close()
+
+        response = request.response
+        if not response or response.sendfile:
+            return None
+        else:
+            return bytes(response)
+
+    def process_data_received(self, request):
         self.process_new_request(request)
         if not request.keep_alive:
-            transport.close()
+            request.transport.close()
 
         response = request.response
         if not response or response.sendfile:
@@ -357,6 +460,22 @@ class HttpServer:
         elif h.connection == 'keep-alive' or version >= 'HTTP/1.1':
             request.keep_alive = True
 
+        if h.range:
+            if ',' in h.range:
+                # Don't permit multiple ranges.
+                return self.error(request, 400, "Multiple ranges not supported")
+
+            # But for anything else, the HTTP spec says to fall through and
+            # process as per normal, so we just blow away the h.range header
+            # in that case.
+            elif h.range.count('-') != 1:
+                h.range = None
+            else:
+                try:
+                    request.range = RangedRequest(h.range)
+                except InvalidRangeRequest:
+                    h.range = None
+
         overload_suffix = path.replace('/', '_')
         if overload_suffix[-1] == '_':
             overload_suffix = overload_suffix[:-1]
@@ -367,6 +486,9 @@ class HttpServer:
             func = getattr(self, funcname)
 
         return func(request)
+
+    def do_HEAD(self, request):
+        return self.do_GET(self, request)
 
     def do_GET(self, request):
         response = request.response
@@ -441,27 +563,71 @@ class HttpServer:
                     fs = os.fstat(f.fileno())
                     response.content_length = fs[6]
                     response.last_modified = date_time_string(fs.st_mtime)
-                    response.body = f.read()
-                    l = len(response.body)
+                    if request.command == 'GET':
+                        response.body = f.read()
+                        l = len(response.body)
                     return self.response(request, 200)
 
             except IOError:
                 msg = 'File not found: %s' % path
                 return self.error(request, 404, msg)
-        else:
+
+        st = os.stat(path)
+        size = st[6]
+        last_modified = date_time_string(st.st_mtime)
+
+        if request.range:
+            r = request.range
             try:
-                st = os.stat(path)
-                response.content_length = st[6]
-                response.last_modified = date_time_string(st.st_mtime)
-                response.code = 200
-                response.message = 'OK'
-                response.sendfile = True
-                before = bytes(response)
-                return response.transport.sendfile(before, path, None)
+                r.set_file_size(size)
+            except InvalidRangeRequest:
+                return self.error(request, 416)
+
+            try:
+                response.content_length = r.num_bytes_to_send
+                response.last_modified = last_modified
+                response.code = 206
+                response.message = 'Partial Content'
+                response.content_range = r.content_range
+                if request.command == 'GET':
+                    response.sendfile = True
+                    before = bytes(response)
+                    return response.transport.sendfile_ranged(
+                        before,
+                        path,
+                        None, # after
+                        r.first_byte, # offset
+                        r.num_bytes_to_send
+                    )
+
+            except InvalidFileRangeError:
+                return self.error(request, 416)
 
             except IOError:
                 msg = 'File not found: %s' % path
                 return self.error(request, 404, msg)
+
+            except Exception as e:
+                # As per spec, follow-through to a normal 200/sendfile.
+                pass
+
+        try:
+            response.content_length = st[6]
+            response.last_modified = date_time_string(st.st_mtime)
+            response.code = 200
+            response.message = 'OK'
+            if request.command == 'GET':
+                response.sendfile = True
+                before = bytes(response)
+                return response.transport.sendfile(before, path, None)
+
+        except FileTooLargeError:
+            msg = "File too large (>2GB); use ranged requests."
+            return self.error(request, 413, msg)
+
+        except IOError:
+            msg = 'File not found: %s' % path
+            return self.error(request, 404, msg)
 
     def error(self, request, code, message=None):
         r = RESPONSES[code]
