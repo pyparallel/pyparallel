@@ -491,6 +491,7 @@ class HttpServer:
         return func(request)
 
     def do_HEAD(self, request):
+        # This totally doesn't work at the moment.
         return self.do_GET(self, request)
 
     def do_GET(self, request):
@@ -602,6 +603,8 @@ class HttpServer:
                         r.first_byte, # offset
                         r.num_bytes_to_send
                     )
+                else:
+                    return
 
             except InvalidFileRangeError:
                 return self.error(request, 416)
@@ -623,6 +626,8 @@ class HttpServer:
                 response.sendfile = True
                 before = bytes(response)
                 return response.transport.sendfile(before, path, None)
+            else:
+                return
 
         except FileTooLargeError:
             msg = "File too large (>2GB); use ranged requests."
