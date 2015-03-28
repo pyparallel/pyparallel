@@ -1775,7 +1775,7 @@ static const char *pxsocket_kwlist_formatstring = \
     &(s->data_received),                     \
     &(s->data_sent),                         \
     &(s->send_failed),                       \
-    &(s->lines_received),                     \
+    &(s->lines_received),                    \
     &(s->eof_received),                      \
     &(s->connection_lost),                   \
     &(s->exception_handler),                 \
