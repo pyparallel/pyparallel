@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import json
+import time
 import shutil
 import inspect
 import calendar
@@ -957,6 +958,56 @@ def list_zfill(l, width):
         return l
 
     return [ '' for _ in range(0, width-list_len) ] + l
+
+class timer:
+    """
+    Helper class for timing execution of code within a code block.
+    Usage:
+    >>> with timer.timeit():
+        ...
+        ...
+    135ms
+    """
+    def __init__(self, verbose=False):
+        self.start = None
+        self.stop = None
+        self.elapsed = None
+        self.nsec = None
+        self.msec = None
+        self.mill = None
+        self.fmt = None
+        self.verbose = verbose
+
+    def __str__(self):
+        return self.fmt
+
+    def __repr__(self):
+        return self.fmt
+
+    def __enter__(self):
+        self.start = time.clock()
+
+    def __exit__(self, *exc_info):
+        self.stop = time.clock()
+        self.elapsed = self.stop - self.start
+        self.nsec = self.elapsed * 1e9
+        self.msec = self.elapsed * 1e6
+        self.mill = self.elapsed * 1e3
+        if self.nsec < 1000:
+            self.fmt = "%dns" % self.nsec
+        elif self.msec < 1000:
+            self.fmt = "%dµs" % self.msec
+        elif self.mill < 1000:
+            self.fmt = "%dms" % self.mill
+        else:
+            self.fmt = "%0.3fs" % self.elapsed
+
+        if self.verbose:
+            print(self.fmt)
+
+    @classmethod
+    def timeit(cls):
+        return cls(verbose=True)
 
 #===============================================================================
 # Helper Classes
