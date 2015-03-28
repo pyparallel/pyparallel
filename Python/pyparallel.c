@@ -735,24 +735,48 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
     if (force)
         goto do_recycle;
 
+    /* Invariant test all the things! */
     if (s->was_accepting) {
         if (s->was_connected)
             __debugbreak();
         else if (s->was_disconnecting)
             __debugbreak();
-        InterlockedDecrement(&s->parent->accepts_posted);
+        if (PxSocket_IS_SERVERCLIENT(s))
+            InterlockedDecrement(&s->parent->accepts_posted);
+    } else if (s->was_connecting) {
+        if (s->was_accepting)
+            __debugbreak();
+        else if (s->was_disconnecting)
+            __debugbreak();
+        else if (s->was_connected)
+            __debugbreak();
+        else if (PxSocket_IS_SERVERCLIENT(s))
+            __debugbreak();
     } else if (s->was_connected) {
         if (s->was_accepting)
             __debugbreak();
         else if (s->was_disconnecting)
             __debugbreak();
-        InterlockedDecrement(&s->parent->clients_connected);
+        else if (s->was_connecting)
+            __debugbreak();
+        if (s->parent)
+            InterlockedDecrement(&s->parent->clients_connected);
     } else if (s->was_disconnecting) {
         if (s->was_accepting)
             __debugbreak();
+        else if (s->was_connecting)
+            __debugbreak();
         else if (s->was_connected)
             __debugbreak();
-        InterlockedDecrement(&s->parent->clients_disconnecting);
+        if (s->parent)
+            InterlockedDecrement(&s->parent->clients_disconnecting);
+    }
+
+    /* We don't do anything re: recycling clients at the moment. */
+    if (PxSocket_IS_CLIENT(s)) {
+        PxSocket_CallbackComplete(s);
+        *sp = NULL;
+        return;
     }
 
     if (WaitForSingleObject(s->parent->accepts_sem, 0) == WAIT_TIMEOUT) {
@@ -6529,7 +6553,125 @@ PxSocket_IOLoop(PxSocket *s)
 
 do_connect:
     ODS(L"do_connect:\n");
-    assert(0);
+
+    if (!PxSocket_InitInitialBytes(s))
+        PxSocket_FATAL();
+
+    if (0 && s->initial_bytes.len) {
+        if (s->rbuf->w.buf != s->initial_bytes.buf)
+            __debugbreak();
+        if (s->rbuf->w.len != s->initial_bytes.len)
+            __debugbreak();
+    }
+
+    s->this_io_op = PxSocket_IO_CONNECT;
+    PxOverlapped_Reset(&s->overlapped_connectex);
+    StartThreadpoolIo(s->tp_io);
+    s->was_connecting = 1;
+    success = ConnectEx(s->sock_fd,
+                        &s->remote_addr.sa,
+                        s->remote_addr_len,
+                        s->initial_bytes.buf,
+                        s->initial_bytes.len,
+                        /*
+                        s->rbuf->w.buf,
+                        s->rbuf->w.len,
+                        */
+                        &s->connectex_sent_bytes,
+                        &s->overlapped_connectex);
+    if (success) {
+        /* We're doing an overlapped connect so this should never occur. */
+        __debugbreak();
+    } else {
+        wsa_error = WSAGetLastError();
+        switch (wsa_error) {
+            case WSAEINVAL:
+                if (s->overlapped_connectex.Internal != STATUS_PENDING)
+                    __debugbreak();
+                s->was_status_pending = 1;
+                /* Intentional follow-on to WSA_IO_PENDING. */
+            case WSA_IO_PENDING:
+                /* Overlapped accept initiated successfully, a completion
+                 * packet will be posted when a new client connects. */
+                goto end;
+
+            case WSAENOTSOCK:
+                /*
+                __debugbreak();
+                PxSocket_UpdateConnectTime(s);
+                */
+            case WSAENETRESET:
+            case WSAECONNREFUSED:
+            case WSAENETUNREACH:
+            case WSAEHOSTUNREACH:
+                PxSocket_RECYCLE(s);
+        }
+
+        PxSocket_WSAERROR("ConnectEx");
+    }
+
+    ASSERT_UNREACHABLE();
+
+overlapped_connectex_callback:
+    ODS(L"overlapped_connectex_callback:\n");
+    if (!s->was_connecting)
+        __debugbreak();
+
+    s->was_connecting = 0;
+    if (c->io_result != NO_ERROR) {
+        if (s->overlapped_connectex.Internal == NO_ERROR)
+            __debugbreak();
+
+        if (s->wsa_error == NO_ERROR)
+            __debugbreak();
+
+
+        switch (s->wsa_error) {
+            case WSAENOTSOCK:
+            case WSAENETRESET:
+            case WSAECONNREFUSED:
+            case WSAENETUNREACH:
+            case WSAEHOSTUNREACH:
+                PxSocket_RECYCLE(s);
+        }
+
+        if (s->connectex_snapshot)
+            PxContext_RollbackHeap(c, &s->connectex_snapshot);
+        PxSocket_OVERLAPPED_ERROR("ConnectEx");
+    }
+
+    err = setsockopt(s->sock_fd,
+                     SOL_SOCKET,
+                     SO_UPDATE_CONNECT_CONTEXT,
+                     NULL,
+                     0);
+
+    if (err == SOCKET_ERROR)
+        PxSocket_WSAERROR("setsockopt(SO_UPDATE_CONNECT_CONTEXT)");
+
+    s->num_bytes_just_sent = (DWORD)s->overlapped_connectex.InternalHigh;
+    if (s->num_bytes_just_sent != s->connectex_sent_bytes) {
+        /* s->connectex_sent_bytes seems to be 0... */
+        if (s->connectex_sent_bytes != 0)
+            __debugbreak();
+    }
+
+    if (s->connectex_snapshot)
+        PxContext_RollbackHeap(c, &s->connectex_snapshot);
+
+    if (s->num_bytes_just_sent == 0) {
+        if (!s->initial_bytes.len)
+            goto eof_received;
+    } else
+        s->total_bytes_sent += s->num_bytes_just_sent;
+
+    ODS(L"connected:\n");
+
+    s->was_connected = 1;
+
+connected:
+    goto start;
+
 
 do_accept:
     ODS(L"do_accept:\n");
@@ -6690,14 +6832,6 @@ overlapped_acceptex_callback:
     SetEvent(s->parent->client_connected);
 
     goto start;
-
-overlapped_connectex_callback:
-    ODS(L"overlapped_connectex_callback:\n");
-    assert(0);
-
-//connected:
-//    assert(0);
-//    goto maybe_shutdown_send_or_recv;
 
 overlapped_disconnectex_callback:
     ODS(L"overlapped_disconnectex_callback:\n");
@@ -7238,11 +7372,11 @@ do_disconnect:
     if (s->client_disconnected && s->sock_type == SOCK_STREAM)
         s->reused_socket = 1;
     else
-        /* Eh, let's try reusing it always. */
+        /* Eh, let's try reusing it always if we're not a client. */
         s->reused_socket = 1;
 
     if (s->reused_socket) {
-        assert(PxSocket_IS_SERVERCLIENT(s));
+        //assert(PxSocket_IS_SERVERCLIENT(s));
         s->disconnectex_flags = TF_REUSE_SOCKET;
     }
 
@@ -7282,7 +7416,7 @@ do_disconnect:
             case WSAEHOSTUNREACH:
                 PxSocket_RECYCLE(s);
         }
-        __debugbreak();
+        //__debugbreak();
         PxSocket_WSAERROR("DisconnectEx");
     }
 
@@ -7348,6 +7482,12 @@ do_recv:
 
     s->this_io_op = PxSocket_IO_RECV;
     c->io_result = NO_ERROR;
+
+    if (PxSocket_IS_CLIENT(s) && s->recv_id == 0) {
+        /* Fast-path for newly connected clients. */
+        n = 1;
+        goto try_synchronous_recv;
+    }
 
     if (!s->in_overlapped_callback)
         goto do_async_recv;
@@ -8627,8 +8767,10 @@ set_other_sockopts:
          * let's just make sure we only hit this path if we're a server client
          * for now.
          */
+        /*
         if (!PxSocket_IS_SERVERCLIENT(s))
             __debugbreak();
+        */
 
         assert(!s->startup_socket_snapshot);
         assert(!s->startup_heap_snapshot);
@@ -9356,7 +9498,11 @@ PxSocket_InitInitialBytes(PxSocket *s)
         return 0;
     }
 
-    snapshot = PxContext_HeapSnapshot(c);
+    if (PxSocket_IS_CLIENT(s)) {
+        s->connectex_snapshot = PxContext_HeapSnapshot(c);
+        snapshot = s->connectex_snapshot;
+    } else
+        snapshot = PxContext_HeapSnapshot(c);
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE) {
         WSABUF w;
@@ -9397,7 +9543,10 @@ PxSocket_InitInitialBytes(PxSocket *s)
         assert(s->initial_bytes.buf);
     }
 
-    PxContext_RollbackHeap(c, &snapshot);
+    /* Clients will be using the initial bytes during the ConnectEx() call, so
+     * we need to keep the heap around. */
+    if (!PxSocket_IS_CLIENT(s))
+        PxContext_RollbackHeap(c, &snapshot);
 
     return 1;
 }
@@ -9537,83 +9686,58 @@ void
 NTAPI
 PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
 {
-    /* This needs to be moved into PxSocket_IOLoop(), disable for now. */
+    Context *c = (Context *)context;
+    PxState *px;
+    char failed = 0;
+    struct sockaddr *sa;
+    int len;
+    DWORD result;
+    char *buf = NULL;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    PyTypeObject *tp = &PxSocket_Type;
+    PxListItem *item;
+    PxSocket *child;
+    struct sockaddr_in *sin;
 
-    //Context *c = (Context *)context;
-    //PxState *px;
-    //PTP_WIN32_IO_CALLBACK cb;
-    //BOOL success;
-    //SOCKET fd;
-    //struct sockaddr *sa;
-    //int len;
-    //PxSocketBuf *b;
-    //char *cbuf = NULL;
-    //size_t size = 0;
-    //WSAOVERLAPPED *ol;
-    //PyObject *result = NULL;
-    //PxSocket *s = (PxSocket *)c->io_obj;
-    //struct sockaddr_in *sin;
+    ENTERED_CALLBACK();
 
-    //Px_GUARD
+    if (_PyParallel_HitHardMemoryLimit()) {
+        PyErr_NoMemory();
+        PxSocket_FATAL();
+    }
 
+    assert(s->protocol_type);
+    assert(s->protocol);
 
-    //ENTERED_CALLBACK();
+    PxSocket_InitExceptionHandler(s);
 
-    /*
-    if (!PxSocket_InitProtocol(c))
-        goto end;
-    */
+    assert(PxSocket_IS_CLIENT(s));
 
-//    assert(s->protocol);
-//    assert(!PyErr_Occurred());
-//
-//    PxSocket_InitExceptionHandler(s);
-//
-//    b = _pxsocket_initial_bytes_to_send(c, s);
-//    if (PyErr_Occurred())
-//        PxSocket_EXCEPTION();
-//
-//    if (b) {
-//        cbuf = b->w.buf;
-//        size = b->w.len;
-//    }
-//
-//    px = c->px;
-//
-//    sin = &(s->local_addr.in);
-//    sin->sin_family = AF_INET;
-//    sin->sin_addr.s_addr = INADDR_ANY;
-//    sin->sin_port = 0;
-//    if (bind(s->sock_fd, (struct sockaddr *)sin, sizeof(*sin)))
-//        PxSocket_WSAERROR("bind");
-//
-//    c->io_type = Px_IOTYPE_SOCKET;
-//    s->this_io_op = PxSocket_IO_CONNECT;
-//
-//    ol = &(s->overlapped_connectex);
-//    PxOverlapped_Reset(ol);
-//
-//    sa = (struct sockaddr *)&(s->remote_addr.sa);
-//    len = s->remote_addr_len;
-//    fd = s->sock_fd;
-//
-//    StartThreadpoolIo(s->tp_io);
-//    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CONNECTED;
-//    success = ConnectEx(fd, sa, len, cbuf, (DWORD)size, NULL, ol);
-//    if (!success) {
-//        if (WSAGetLastError() != WSA_IO_PENDING) {
-//            Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTED;
-//            s->exception_handler = NULL;
-//            PxSocket_WSAERROR("ConnectEx");
-//        }
-//    } else {
-//        PTP_CALLBACK_INSTANCE i = c->instance;
-//        CancelThreadpoolIo(s->tp_io);
-//        cb(NULL, c, ol, NO_ERROR, 0, NULL);
-//    }
-//
-//end:
-//    return;
+    assert(s->protocol);
+    assert(!PyErr_Occurred());
+
+    s->shutdown = CreateEvent(0, 0, 0, 0);
+    if (!s->shutdown)
+        PxSocket_SYSERROR("CreateEvent(s->shutdown)");
+
+    sin = &(s->local_addr.in);
+    sin->sin_family = AF_INET;
+    sin->sin_addr.s_addr = INADDR_ANY;
+    sin->sin_port = 0;
+    if (bind(s->sock_fd, (struct sockaddr *)sin, sizeof(*sin)))
+        PxSocket_WSAERROR("bind");
+
+    px = c->px;
+    c->io_type = Px_IOTYPE_SOCKET;
+    s->next_io_op = PxSocket_IO_CONNECT;
+
+    EnterCriticalSection(&s->cs);
+    PxSocket_IOLoop(s);
+    if (_PyParallel_Finalized)
+        return;
+    LeaveCriticalSection(&s->cs);
+end:
+    return;
 }
 
 void
@@ -10209,7 +10333,7 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
     else
         cb = PxSocketServer_Start;
 
-    if (Py_PXCTX) {
+    if (Py_PXCTX || PxSocket_IS_CLIENT(s)) {
         /* If we're a parallel thread, we can just palm off the work to
          * TrySubmitThreadpoolCallback directly.
          */
