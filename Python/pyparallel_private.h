@@ -974,6 +974,8 @@ typedef struct _PxSocket {
     __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListItem link;
 
+    Heap     *connectex_snapshot;
+
     /* Start-up snapshots. */
     Heap     *startup_heap_snapshot;
     PxSocket *startup_socket_snapshot;
@@ -991,6 +993,7 @@ typedef struct _PxSocket {
     int no_exclusive_addr_use;
 
     int was_accepting;
+    int was_connecting;
     int was_connected;
     int was_disconnecting;
 
@@ -1102,6 +1105,8 @@ typedef struct _PxSocket {
     int   disconnectex_flags;
 
     int connect_time; /* seconds */
+
+    DWORD connectex_sent_bytes;
 
     /* Server-specific stuff. */
 
