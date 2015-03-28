@@ -286,6 +286,22 @@ def socket_stats(s):
         ('client_connected_count', s.client_connected_count),
         ('total_accepts_attempted', s.total_accepts_attempted),
         ('negative_accepts_to_post_count', s.negative_accepts_to_post_count),
+
+        ('recvbuf_size', s.recvbuf_size),
+        ('sendbuf_size', s.sendbuf_size),
+
+        ('send_id', s.send_id),
+        ('recv_id', s.recv_id),
+
+        ('ioloops', s.ioloops),
+        ('last_thread_id', s.last_thread_id),
+        ('this_thread_id', s.this_thread_id),
+
+        ('num_bytes_just_sent', s.num_bytes_just_sent),
+        ('num_bytes_just_received', s.num_bytes_just_received),
+
+        ('total_bytes_sent', s.total_bytes_just_sent),
+        ('total_bytes_received', s.total_bytes_just_received),
     )
 
 def context_stats():
