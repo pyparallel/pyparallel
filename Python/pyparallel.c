@@ -725,7 +725,7 @@ PxSocket_Recycle(PxSocket **sp, BOOL force)
     TP_IO *tp_io = s->tp_io;
     int num_accepts_to_post;
 
-    if (s->parent->shutting_down) {
+    if (s->parent && s->parent->shutting_down) {
         *sp = NULL;
         return;
     }
@@ -6705,7 +6705,8 @@ overlapped_disconnectex_callback:
         __debugbreak();
     /* Well... this seems like an easy one... just recycle the socket for now
      * without bothering to check for errors and whatnot. */
-    InterlockedDecrement(&s->parent->clients_disconnecting);
+    if (s->parent)
+        InterlockedDecrement(&s->parent->clients_disconnecting);
     PxSocket_RECYCLE(s);
 
 start:
@@ -7264,7 +7265,8 @@ do_disconnect:
             /* Overlapped IO successfully initiated; completion packet will
              * eventually get queued (when the IO completes or an error
              * occurs). */
-            InterlockedIncrement(&s->parent->clients_disconnecting);
+            if (s->parent)
+                InterlockedIncrement(&s->parent->clients_disconnecting);
             goto end;
         }
 
@@ -8887,7 +8889,7 @@ PxSocket_IOCallback(
     if (s->shutdown_count || (s->parent && s->parent->shutdown_count))
         return;
 
-    if (s->parent->shutting_down)
+    if (s->parent && s->parent->shutting_down)
         return;
 
     ENTERED_IO_CALLBACK();
