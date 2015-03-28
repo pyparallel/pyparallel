@@ -18,4 +18,7 @@ class PxCommand(InvariantAwareCommand):
 class TCPServerCommand(PxCommand):
     pass
 
+class TCPClientCommand(PxCommand):
+    pass
+
 # vim:set ts=8 sw=4 sts=4 tw=78 et:

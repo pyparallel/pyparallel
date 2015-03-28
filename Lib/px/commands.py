@@ -34,6 +34,7 @@ from ctk.command import (
 
 from px.command import (
     PxCommand,
+    TCPClientCommand,
     TCPServerCommand,
 )
 
@@ -282,7 +283,38 @@ class EchoServer(TCPServerCommand):
         protocol = Disconnect
         async.register(transport=server, protocol=protocol)
         async.run()
-    pass
+
+#===============================================================================
+# Clients
+#===============================================================================
+class SimpleHttpGetClient(TCPClientCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to connect to [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to connect to [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        self._out("Connecting to %s:%d..." % (ip, port))
+
+        class HttpGet:
+            initial_bytes_to_send = b'GET /json HTTP/1.0\r\n\r\n\r\n'
+            def data_received(self, transport, data):
+                #async.print(data)
+                async.debug(data)
+
+        import async
+        client = async.client(ip, port)
+        protocol = HttpGet
+        async.register(transport=client, protocol=protocol)
+        async.run()
 
 
 #===============================================================================
