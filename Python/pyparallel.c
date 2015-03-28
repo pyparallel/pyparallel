@@ -10956,6 +10956,32 @@ _async_refresh_memory_stats(PyObject *obj, PyObject *args)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(_async_debug_doc, "debug() -> print debug string\n");
+
+PyObject *
+_async_debug(PyObject *self, PyObject *o)
+{
+    Py_ssize_t nbytes;
+    char *buf = NULL;
+    if (PyBytes_Check(o)) {
+        buf = (char *)((PyBytesObject *)o)->ob_sval;
+    } else if (PyByteArray_Check(o)) {
+        buf = ((PyByteArrayObject *)o)->ob_bytes;
+    } else if (PyUnicode_Check(o)) {
+        buf = PyUnicode_AsUTF8AndSize(o, &nbytes);
+    } else {
+        PyErr_SetString(PyExc_ValueError, "must be bytes/bytearray/str");
+        return NULL;
+    }
+
+    if (!PyErr_Occurred()) {
+        assert(buf);
+        OutputDebugStringA(buf);
+        Py_RETURN_NONE;
+    }
+    return NULL;
+}
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -10970,6 +10996,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_K(list),
     /*_ASYNC_N(xlist),*/
     //_ASYNC_V(open),
+    _ASYNC_O(debug),
     _ASYNC_V(print),
     _ASYNC_V(write),
     _ASYNC_N(rdtsc),
