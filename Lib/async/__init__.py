@@ -300,8 +300,8 @@ def socket_stats(s):
         ('num_bytes_just_sent', s.num_bytes_just_sent),
         ('num_bytes_just_received', s.num_bytes_just_received),
 
-        ('total_bytes_sent', s.total_bytes_just_sent),
-        ('total_bytes_received', s.total_bytes_just_received),
+        ('total_bytes_sent', s.total_bytes_sent),
+        ('total_bytes_received', s.total_bytes_received),
     )
 
 def context_stats():
