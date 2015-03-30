@@ -350,6 +350,7 @@ class RangedRequest:
 class HttpServer:
 
     use_sendfile = True
+    #throughput = True
 
     def data_received(self, transport, data):
         request = Request(transport, data)
