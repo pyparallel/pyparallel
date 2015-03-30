@@ -66,6 +66,9 @@ PyAPI_FUNC(int)  _PyParallel_GetTLSHeapDepth(void);
 PyAPI_FUNC(void) _PyParallel_EnableTLSHeap(void);
 PyAPI_FUNC(void) _PyParallel_DisableTLSHeap(void);
 
+PyAPI_FUNC(int) _PyParallel_IsHeapOverrideActive(void);
+PyAPI_FUNC(void *) _PyParallel_GetHeapOverride(void);
+
 PyAPI_FUNC(int)  _PyParallel_DoesContextHaveActiveHeapSnapshot(void);
 
 PyAPI_FUNC(void) _PyParallel_BeginAllowThreads(void);

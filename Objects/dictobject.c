@@ -801,6 +801,13 @@ insertion_resize(PyDictObject *mp)
     return dictresize(mp, GROWTH_RATE(mp));
 }
 
+#ifdef WITH_PARALLEL
+typedef void * HANDLE;
+//extern char _PyParallel_IsHeapOverrideActive(void);
+//extern HANDLE _PyParallel_GetHeapOverride(void);
+extern char HeapFree(void *h, int flags, void *lpmem);
+#endif
+
 /*
 Internal routine to insert a new item into the table.
 Used both by the internal resize routine and by the public insert routine.
@@ -834,6 +841,15 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         assert(ep->me_key != NULL && ep->me_key != dummy);
         *value_addr = value;
         Py_DECREF(old_value); /* which **CAN** re-enter */
+#ifdef WITH_PARALLEL
+        /* Super hack to support persisting values for sockets/protcols. */
+        if (old_value != Py_None && Py_PXCTX) {
+            if (_PyParallel_IsHeapOverrideActive()) {
+                HANDLE h = _PyParallel_GetHeapOverride();
+                HeapFree(h, 0, old_value);
+            }
+        }
+#endif
     }
     else {
         if (ep->me_key == NULL) {

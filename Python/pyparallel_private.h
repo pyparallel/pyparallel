@@ -970,6 +970,10 @@ typedef struct _PxSocket {
     PTP_WORK preallocate_children_tp_work;
     PTP_TIMER slowloris_protection_tp_timer;
 
+    HANDLE heap_override;
+    PyObject *last_getattr_name;
+    PyObject *last_getattr_value;
+
     /* Link from child -> parent via link_child/unlink_child. */
     __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListItem link;
@@ -1304,6 +1308,9 @@ PxSocket_HasAttr(PxSocket *s, const char *callback)
 {
     return PyObject_HasAttrString(s->protocol, callback);
 }
+
+PyObject *
+PyObject_Clone(PyObject *src, const char *errmsg);
 
 void PxSocket_TrySendScheduled(Context *c);
 

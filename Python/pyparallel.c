@@ -260,8 +260,7 @@ _PyParallel_HitHardMemoryLimit(void)
 void *_PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc);
 void *_PyTLSHeap_Malloc(size_t n, size_t align);
 
-static
-char
+int
 _PyParallel_IsHeapOverrideActive(void)
 {
     return (heap_override != NULL);
@@ -275,7 +274,6 @@ _PyParallel_SetHeapOverride(HANDLE heap_handle)
     heap_override = heap_handle;
 }
 
-static
 HANDLE
 _PyParallel_GetHeapOverride(void)
 {
@@ -1265,20 +1263,45 @@ _Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
 
 
 int
-_PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
+_PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
 {
+    Context *c = ctx;
+    PyObject *v_copy = NULL;
+    PyObject *v = NULL;
     PyTypeObject *tp;
+    PxSocket *s = NULL;
     int result;
     assert(Py_ORIG_TYPE(o));
 
     _Px_WRITE_LOCK(o);
-    tp = Py_ORIG_TYPE_CAST(o);
-    if (tp->tp_setattro)
-        result = (*tp->tp_setattro)(o, n, v);
-    else
-        result = PyObject_GenericSetAttr(o, n, v);
-    _Px_WRITE_UNLOCK(o);
-    if (result == -1 || !_Px_objobjargproc_ass(o, n, v))
+    __try {
+        tp = Py_ORIG_TYPE_CAST(o);
+        if (c && c->io_obj && c->io_type == Px_IOTYPE_SOCKET) {
+            s = (PxSocket *)c->io_obj;
+            if (!s->heap_override) {
+                s->heap_override = HeapCreate(0, 0, 0);
+                if (!s->heap_override) {
+                    PyErr_SetFromWindowsErr(0);
+                    _Px_WRITE_UNLOCK(o);
+                    return -1;
+                }
+            }
+            _PyParallel_SetHeapOverride(s->heap_override);
+            v_copy = PyObject_Clone(v_orig, "unsupported clone object type");
+        }
+        v = (v_copy ? v_copy : v_orig);
+        if (tp->tp_setattro)
+            result = (*tp->tp_setattro)(o, n, v);
+        else
+            result = PyObject_GenericSetAttr(o, n, v);
+
+        if (_PyParallel_IsHeapOverrideActive())
+            _PyParallel_RemoveHeapOverride();
+
+    } __finally {
+        _Px_WRITE_UNLOCK(o);
+    }
+    if (result == -1 || (!s && !_Px_objobjargproc_ass(o, n, v)))
         return -1;
 
     return result;
@@ -1287,16 +1310,24 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v)
 PyObject *
 _PyObject_GenericGetAttr(PyObject *o, PyObject *n)
 {
+    Context *c = ctx;
+    PxSocket *s = NULL;
     PyTypeObject *tp;
     PyObject *result;
     assert(Py_ORIG_TYPE(o));
 
     _Px_READ_LOCK(o);
+    if (c && c->io_obj && c->io_type == Px_IOTYPE_SOCKET) {
+        s = (PxSocket *)c->io_obj;
+        s->last_getattr_name = n;
+    }
     tp = Py_ORIG_TYPE_CAST(o);
     if (tp->tp_getattro)
         result = (*tp->tp_getattro)(o, n);
     else
         result = PyObject_GenericGetAttr(o, n);
+    if (s)
+        s->last_getattr_value = result;
     _Px_READ_UNLOCK(o);
 
     return result;
@@ -4211,12 +4242,23 @@ PyObject_Clone(PyObject *src, const char *errmsg)
     } else if (PyUnicode_CheckExact(src)) {
         result = _PyUnicode_Copy(src);
 
+    } else if (PyBytes_CheckExact(src)) {
+        char *c = NULL;
+        Py_ssize_t len;
+        if (PyBytes_AsStringAndSize(src, &c, &len) != -1) {
+            result = (PyObject *)PyBytes_FromStringAndSize(c, len);
+            //(char *)b->ob_sval[0],
+            //((PyVarObject *)b)->ob_size
+        }
+    } else if (PyByteArray_CheckExact(src)) {
+        result = (PyObject *)PyByteArray_FromObject(src);
     } else {
-        assert(0);
+        XXX_IMPLEMENT_ME();
     }
 
-    assert(result);
-    assert(Px_CLONED(result));
+    if (result) {
+        assert(Px_CLONED(result));
+    }
 
     return result;
 }
@@ -4227,8 +4269,8 @@ xlist_push(PyObject *obj, PyObject *src)
     PyXListObject *xlist = (PyXListObject *)obj;
     assert(src);
 
-    /*Py_INCREF(xlist);*/
-    /*Py_INCREF(src);*/
+    Py_INCREF(xlist);
+    Py_INCREF(src);
 
     if (!Py_PXCTX)
         PxList_PushObject(xlist->head, src);
@@ -9289,6 +9331,8 @@ PxSocket_InitProtocol(PxSocket *s)
 
     p = s->protocol;
 
+    _protect(p);
+
     assert(!PyErr_Occurred());
 
 #define _PxSocket_RESOLVE_OBJECT(name) do {             \
@@ -10732,7 +10776,7 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_IR(last_thread_id),
     _PXSOCKET_ATTR_IR(this_thread_id),
 
-
+    _PXSOCKET_ATTR_O(protocol),
     /*
     _PXSOCKET_ATTR_ULL(stopwatch_utc_start),
     _PXSOCKET_ATTR_ULL(stopwatch_utc_stop),
