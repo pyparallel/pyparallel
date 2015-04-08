@@ -11026,6 +11026,15 @@ _async_debug(PyObject *self, PyObject *o)
     return NULL;
 }
 
+PyDoc_STRVAR(_async_debugbreak_doc,
+             "debugbreak() -> set breakpoint (int3)\n");
+
+PyObject *
+_async_debugbreak(PyObject *self, PyObject *o)
+{
+    __debugbreak();
+}
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -11066,6 +11075,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(submit_io),
     _ASYNC_O(read_lock),
     _ASYNC_V(_post_open),
+    _ASYNC_N(debugbreak),
     _ASYNC_V(fileopener),
     _ASYNC_V(filecloser),
     _ASYNC_O(write_lock),
