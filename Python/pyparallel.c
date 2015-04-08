@@ -1758,7 +1758,7 @@ _protect(PyObject *obj)
     }
 
     dp = _PyObject_GetDictPtr(obj);
-    if (dp && !_protected(*dp)) {
+    if (dp && *dp && !_protected(*dp)) {
         if (!_PyObject_PrepOrigType(*dp, 0)) {
             /* Manually undo the protection we applied above. */
             Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
