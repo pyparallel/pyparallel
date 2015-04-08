@@ -1012,6 +1012,56 @@ class timer:
 #===============================================================================
 # Helper Classes
 #===============================================================================
+
+class NullObject(object):
+    """
+    This is a helper class that does its best to pretend to be forgivingly
+    null-like.
+
+    >>> n = NullObject()
+    >>> n
+    None
+    >>> n.foo
+    None
+    >>> n.foo.bar.moo
+    None
+    >>> n.foo().bar.moo(True).cat().hello(False, abc=123)
+    None
+    >>> n.hornet(afterburner=True).shotdown(by=n().tomcat)
+    None
+    >>> n or 1
+    1
+    >>> str(n)
+    ''
+    >>> int(n)
+    0
+    >>> len(n)
+    0
+    """
+    def __getattr__(self, name):
+        return self
+
+    def __getitem__(self, item):
+        return self
+
+    def __call__(self, *args, **kwds):
+        return self
+
+    def __nonzero__(self):
+        return False
+
+    def __repr__(self):
+        return repr(None)
+
+    def __str__(self):
+        return ''
+
+    def __int__(self):
+        return 0
+
+    def __len__(self):
+        return 0
+
 class forgiving_list(list):
     """
     Helper class that returns None upon __getitem__ index errors.
