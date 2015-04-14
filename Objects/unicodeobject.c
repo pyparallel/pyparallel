@@ -3991,6 +3991,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
 #endif
     wchar_t *w;
     wchar_t *wchar_end;
+    short use_tls_heap = (Py_PXCTX && Py_ISPY(unicode));
 
     if (!PyUnicode_Check(unicode)) {
         PyErr_BadArgument();
@@ -4011,9 +4012,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
                 if (*four_bytes > 0xFFFF)
                     ++num_surrogates;
             }
-
+            if (use_tls_heap)
+                 _PyParallel_EnableTLSHeap();
             _PyUnicode_WSTR(unicode) = (wchar_t *) PyObject_MALLOC(
                     sizeof(wchar_t) * (_PyUnicode_LENGTH(unicode) + 1 + num_surrogates));
+            if (use_tls_heap)
+                _PyParallel_DisableTLSHeap();
             if (!_PyUnicode_WSTR(unicode)) {
                 PyErr_NoMemory();
                 return NULL;
@@ -4046,8 +4050,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
 #endif
         }
         else {
+            if (use_tls_heap)
+                _PyParallel_EnableTLSHeap();
             _PyUnicode_WSTR(unicode) = (wchar_t *) PyObject_MALLOC(sizeof(wchar_t) *
                                                   (_PyUnicode_LENGTH(unicode) + 1));
+            if (use_tls_heap)
+                _PyParallel_DisableTLSHeap();
             if (!_PyUnicode_WSTR(unicode)) {
                 PyErr_NoMemory();
                 return NULL;
@@ -4073,7 +4081,8 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
                 *w = 0;
 #else
                 /* sizeof(wchar_t) == 2 */
-                PyObject_FREE(_PyUnicode_WSTR(unicode));
+                if (!use_tls_heap)
+                    PyObject_FREE(_PyUnicode_WSTR(unicode));
                 _PyUnicode_WSTR(unicode) = NULL;
                 Py_FatalError("Impossible unicode object state, wstr "
                               "and str should share memory already.");
