@@ -11039,6 +11039,7 @@ PyObject *
 _async_debugbreak(PyObject *self, PyObject *o)
 {
     __debugbreak();
+    Py_RETURN_NONE;
 }
 
 #define _ASYNC(n, a) _METHOD(_async, n, a)
