@@ -1071,6 +1071,12 @@ _PyParallel_IsParallelContext(void)
     return active;
 }
 
+void *
+_PyParallel_GetActiveContext(void)
+{
+    return ctx;
+}
+
 void
 _PyObject_Dealloc(PyObject *o)
 {

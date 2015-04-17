@@ -67,7 +67,6 @@ PyAPI_FUNC(void) _PyParallel_EnableTLSHeap(void);
 PyAPI_FUNC(void) _PyParallel_DisableTLSHeap(void);
 
 PyAPI_FUNC(int) _PyParallel_IsHeapOverrideActive(void);
-PyAPI_FUNC(void *) _PyParallel_GetHeapOverride(void);
 
 PyAPI_FUNC(int)  _PyParallel_DoesContextHaveActiveHeapSnapshot(void);
 
@@ -112,6 +111,43 @@ __PyParallel_IsParallelContext(void)
 
 #define Py_PX(ob)   ((((PyObject*)(ob))->px))
 
+/* There are a couple of places at the moment within the non-PyParallel parts
+ * of CPython (such as ceval.c and unicodeobject.c) where we've put in custom
+ * bits of code to handle certain parallel context scenarios as a stop-gap
+ * measure.  For example: the dodgy hack we made to insertdict() in dictobject.c
+ * in order to support persisting memory/objects after a parallel context
+ * returns.
+ *
+ * In other words, the current hacks should be formalized into proper API
+ * calls, or, alternatively, the underlying structures that are being returned
+ * via the void pointer (e.g. PyParallelContext) should be made public to the
+ * rest of the interpreter.  Or some combination of both.  Either way, we
+ * wouldn't be returning opaque pointers to the structs of PyParallel's
+ * innards.
+ *
+ * But eh, it works for now.
+ */
+
+/* Returns the HANDLE to the active heap override for the current parallel
+ * context.  Should only be called after _PyParallel_IsHeapOverrideActive()
+ * is checked.  Or rather, behavior when the heap override isn't active is
+ * undefined. */
+PyAPI_FUNC(void *) _PyParallel_GetHeapOverride(void);
+
+/* Returns a pointer to the active PyParallelContext, which will only have
+ * a value if the parallel thread has been initialized via the threadpool
+ * callback mechanics (in pyparallel.c).  This provides an alternate way
+ * to check if we're in a parallel context (instead of using Py_PXCTX/
+ * _PyParallel_IsParallelContext()).
+ *
+ * The only place you would ever need to use this method instead of Py_PXCTX
+ * is if you could potentially be called from a thread that isn't holding a
+ * GIL.
+ *
+ * The only place this is *currently* being used is PyEval_AcquireThread(),
+ * by way of the Py_GUARD_AGAINST_PX_ONLY() macro (described below). */
+PyAPI_FUNC(void *) _PyParallel_GetActiveContext(void);
+
 #define Px_GUARD                         \
     if (!Py_PXCTX)                       \
         _PyParallel_ContextGuardFailure( \
@@ -136,7 +172,8 @@ __PyParallel_IsParallelContext(void)
    thread, as Py_PXCTX only tests (main thread id == current thread id)). */
 #define Py_GUARD_AGAINST_PX_ONLY()                      \
     do {                                                \
-        if (Py_PXCTX && tstate->is_parallel_thread) {   \
+        if (_PyParallel_GetActiveContext() != NULL) {   \
+            assert(tstate->is_parallel_thread);         \
             assert(tstate->px);                         \
             _PyParallel_ContextGuardFailure(            \
                 __FUNCTION__,                           \
