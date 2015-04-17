@@ -3,7 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 11.00
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{553EC33E-9816-4996-A660-5D6186A0B0B3}"
 	ProjectSection(SolutionItems) = preProject
 		..\Modules\getbuildinfo.c = ..\Modules\getbuildinfo.c
-		Performance1.psess = Performance1.psess
 		readme.txt = readme.txt
 	EndProjectSection
 EndProject
@@ -731,7 +730,6 @@ Global
 		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGUpdate|x64.ActiveCfg = Release|x64
 		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGUpdate|x64.Build.0 = Release|x64
 		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Release|Win32.ActiveCfg = Release|Win32
-		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Release|Win32.Build.0 = Release|Win32
 		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Release|x64.ActiveCfg = Release|x64
 		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Release|x64.Build.0 = Release|x64
 		{A2697BD3-28C1-4AEC-9106-8B748639FD16}.Debug|Win32.ActiveCfg = Debug|Win32

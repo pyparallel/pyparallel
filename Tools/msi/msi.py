@@ -1134,7 +1134,8 @@ def add_files(db):
         has_py = False
         for name, subdir in files.items():
             if subdir is None:
-                assert os.path.isfile(os.path.join(lib.absolute, name))
+                abs_name = os.path.join(lib.absolute, name)
+                assert os.path.isfile(abs_name), abs_name
                 if name == 'README':
                     lib.add_file("README.txt", src="README")
                 else:

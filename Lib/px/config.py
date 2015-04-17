@@ -43,7 +43,12 @@ NoSectionError = ctk.config.NoSectionError
 # Classes
 #===============================================================================
 class Config(ctk.config.Config):
-    pass
+    @property
+    def demo_data_dir(self):
+        try:
+            return ctk.config.Config.get(self, 'demo', 'data_dir')
+        except (NoSectionError, NoOptionError):
+            return self.data_dir
 
 #===============================================================================
 # Helpers
