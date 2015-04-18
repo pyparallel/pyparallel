@@ -830,13 +830,9 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
     if (ep == NULL) {
         return -1;
     }
-    old_value = *value_addr;
-    /*
-    if (Px_ASSIGNMENT_ERROR(mp, old_value))
-        return -1;
-    */
     Py_INCREF(value);
     MAINTAIN_TRACKING(mp, key, value);
+    old_value = *value_addr;
     if (old_value != NULL) {
         assert(ep->me_key != NULL && ep->me_key != dummy);
         *value_addr = value;
