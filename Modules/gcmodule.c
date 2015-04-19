@@ -374,7 +374,11 @@ update_refs(PyGC_Head *containers)
          * so serious that maybe this should be a release-build
          * check instead of an assert?
          */
-        assert(gc->gc.gc_refs != 0);
+        // trent: based on that last comment, let's make this a
+        // debugbreak.
+        if (gc->gc.gc_refs == 0)
+            __debugbreak();
+        //assert(gc->gc.gc_refs != 0);
     }
 }
 
