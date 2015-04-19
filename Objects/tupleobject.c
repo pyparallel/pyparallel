@@ -250,7 +250,7 @@ tupledealloc(register PyTupleObject *op)
 {
     register Py_ssize_t i;
     register Py_ssize_t len =  Py_SIZE(op);
-    Py_GUARD
+    Py_GUARD();
     PyObject_GC_UnTrack(op);
     Py_TRASHCAN_SAFE_BEGIN(op)
     if (len > 0) {
@@ -937,7 +937,7 @@ PyTuple_Fini(void)
 #if PyTuple_MAXSAVESIZE > 0
     /* empty tuples are used all over the place and applications may
      * rely on the fact that an empty tuple is a singleton. */
-    Py_GUARD
+    Py_GUARD();
     Py_CLEAR(free_list[0]);
 
     (void)PyTuple_ClearFreeList();

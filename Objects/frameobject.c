@@ -424,7 +424,7 @@ frame_dealloc(PyFrameObject *f)
 {
     PyObject **p, **valuestack;
     PyCodeObject *co;
-    Py_GUARD
+    Py_GUARD();
 
 #ifdef WITH_PARALLEL
     /* We crash during shutdown if this isn't in place. */
@@ -474,7 +474,7 @@ frame_traverse(PyFrameObject *f, visitproc visit, void *arg)
 {
     PyObject **fastlocals, **p;
     int i, slots;
-    Py_GUARD
+    Py_GUARD();
 
     Py_VISIT(f->f_back);
     Py_VISIT(f->f_code);
@@ -505,7 +505,7 @@ frame_clear(PyFrameObject *f)
 {
     PyObject **fastlocals, **p, **oldtop;
     int i, slots;
-    Py_GUARD
+    Py_GUARD();
 
     /* Before anything else, make sure that this frame is clearly marked
      * as being defunct!  Else, e.g., a generator reachable from this
@@ -673,7 +673,7 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
             }
         }
         else {
-            Py_GUARD
+            Py_GUARD();
             assert(numfree > 0);
             --numfree;
             f = free_list;

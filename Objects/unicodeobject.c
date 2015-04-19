@@ -1529,7 +1529,7 @@ _PyUnicode_Ready(PyObject *unicode)
 static void
 unicode_dealloc(register PyObject *unicode)
 {
-    Py_GUARD
+    Py_GUARD();
 
     switch (PyUnicode_CHECK_INTERNED(unicode)) {
     case SSTATE_NOT_INTERNED:
@@ -1762,7 +1762,7 @@ PyObject *
 tls_get_latin1_char(unsigned char ch)
 {
     PyObject *unicode;
-    Px_GUARD
+    Px_GUARD();
     unicode = tls_unicode_latin1[ch];
     if (!unicode) {
         _PyParallel_EnableTLSHeap();
@@ -1888,7 +1888,7 @@ void _PyParallelUnicode_InternInPlace(PyObject **);
 PyObject *
 _PyParallelUnicode_FromId(_Py_Identifier *id)
 {
-    Px_GUARD
+    Px_GUARD();
     assert(!PyErr_Occurred());
     assert(!id->object);
     assert(!id->next);
@@ -1937,7 +1937,7 @@ void
 __PyUnicode_ClearStaticStrings(void)
 {
     _Py_Identifier *tmp, *s;
-    Py_GUARD
+    Py_GUARD();
     s = static_strings;
     while (s) {
         Py_CLEAR(s->object);
@@ -1956,7 +1956,7 @@ void
 _PyUnicode_ClearStaticStrings_SEH()
 {
     _Py_Identifier *tmp, *s;
-    Py_GUARD
+    Py_GUARD();
     s = static_strings;
     __try {
         while (s) {
@@ -14293,7 +14293,7 @@ int _PyUnicode_Init(void)
         0x2029, /* PARAGRAPH SEPARATOR */
     };
 
-    Py_GUARD
+    Py_GUARD();
 
     /* Init the implementation */
     _Py_INCREF_UNICODE_EMPTY();
@@ -14333,7 +14333,7 @@ int _PyUnicode_Init(void)
 int
 PyUnicode_ClearFreeList(void)
 {
-    Py_GUARD
+    Py_GUARD();
     return 0;
 }
 
@@ -14341,7 +14341,7 @@ void
 _PyUnicode_Fini(void)
 {
     int i;
-    Py_GUARD
+    Py_GUARD();
 
     Py_CLEAR(unicode_empty);
 
@@ -14360,7 +14360,7 @@ _PyParallelUnicode_InternInPlace(PyObject **p)
     PyThreadState *tstate;
     int failed;
 
-    Px_GUARD
+    Px_GUARD();
 
     if (interned) {
         _PyParallel_EnableTLSHeap();
@@ -14505,7 +14505,7 @@ _Py_ReleaseInternedUnicodeStrings(void)
     PyObject *s;
     Py_ssize_t i, n;
     Py_ssize_t immortal_size = 0, mortal_size = 0;
-    Py_GUARD
+    Py_GUARD();
 
     if (interned == NULL || !PyDict_Check(interned))
         return;
@@ -14567,7 +14567,7 @@ typedef struct {
 static void
 unicodeiter_dealloc(unicodeiterobject *it)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyObject_GC_UNTRACK(it);
     Py_XDECREF(it->it_seq);
     PyObject_GC_Del(it);
@@ -14576,7 +14576,7 @@ unicodeiter_dealloc(unicodeiterobject *it)
 static int
 unicodeiter_traverse(unicodeiterobject *it, visitproc visit, void *arg)
 {
-    Py_GUARD
+    Py_GUARD();
     Py_VISIT(it->it_seq);
     return 0;
 }

@@ -537,7 +537,7 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
 #else
 #define Py_VISIT(op)                                                    \
     do {                                                                \
-        Py_GUARD                                                        \
+        Py_GUARD();                                                     \
         if (op) {                                                       \
             int vret = visit((PyObject *)(op), arg);                    \
             if (vret)                                                   \

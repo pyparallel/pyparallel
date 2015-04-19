@@ -66,7 +66,7 @@ PyCode_New(int argcount, int kwonlyargcount,
     // nothing immediately stands out as being unsafe for calling in a
     // parallel context (i.e. no random mallocs or static storage), so, let's
     // remove the guard and see what happens.
-    //Py_GUARD
+    //Py_GUARD();
 
     /* Check argument types */
     if (argcount < 0 || kwonlyargcount < 0 || nlocals < 0 ||

@@ -118,7 +118,7 @@ PyFloat_FromDouble(double fval)
     if (!Py_PXCTX)
         op = free_list;
     if (op != NULL) {
-        Py_GUARD
+        Py_GUARD();
         free_list = (PyFloatObject *) Py_TYPE(op);
         numfree--;
     } else {
@@ -184,7 +184,7 @@ PyFloat_FromString(PyObject *v)
 static void
 float_dealloc(PyFloatObject *op)
 {
-    Py_GUARD
+    Py_GUARD();
     if (PyFloat_CheckExact(op)) {
         if (numfree >= PyFloat_MAXFREELIST)  {
             PyObject_FREE(op);

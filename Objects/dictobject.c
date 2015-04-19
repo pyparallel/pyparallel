@@ -1413,7 +1413,7 @@ dict_dealloc(PyDictObject *mp)
     PyObject **values = mp->ma_values;
     PyDictKeysObject *keys = mp->ma_keys;
     Py_ssize_t i, n;
-    Py_GUARD
+    Py_GUARD();
     PyObject_GC_UnTrack(mp);
     Py_TRASHCAN_SAFE_BEGIN(mp)
     if (values != NULL) {

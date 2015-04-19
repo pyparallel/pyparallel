@@ -573,7 +573,7 @@ new_arena(void)
     uint excess;        /* number of bytes above pool alignment */
     void *address;
     int err;
-    Py_GUARD
+    Py_GUARD();
 
 #ifdef PYMALLOC_DEBUG
     if (Py_GETENV("PYTHONMALLOCSTATS"))
@@ -1360,7 +1360,7 @@ PyObject_Free(void *p)
 Py_ssize_t
 _Py_GetAllocatedBlocks(void)
 {
-    Py_GUARD
+    Py_GUARD();
     return 0;
 }
 
@@ -1395,7 +1395,7 @@ static size_t serialno = 0;     /* incremented on each debug {m,re}alloc */
 static void
 bumpserialno(void)
 {
-    Py_GUARD
+    Py_GUARD();
     ++serialno;
 }
 
@@ -1438,7 +1438,7 @@ static int
 pool_is_in_list(const poolp target, poolp list)
 {
     poolp origlist = list;
-    Py_GUARD
+    Py_GUARD();
     assert(target != NULL);
     if (list == NULL)
         return 0;
@@ -1521,7 +1521,7 @@ _PyObject_DebugFree(void *p)
 void
 _PyObject_DebugCheckAddress(const void *p)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyObject_DebugCheckAddressApi(_PYMALLOC_OBJ_ID, p);
 }
 
@@ -1707,7 +1707,7 @@ _PyObject_DebugDumpAddress(const void *p)
     int i;
     int ok;
     char id;
-    Py_GUARD
+    Py_GUARD();
 
     fprintf(stderr, "Debug memory block at address p=%p:", p);
     if (p == NULL) {
@@ -1845,7 +1845,7 @@ _PyDebugAllocatorStats(FILE *out,
 {
     char buf1[128];
     char buf2[128];
-    Py_GUARD
+    Py_GUARD();
     PyOS_snprintf(buf1, sizeof(buf1),
                   "%d %ss * %zd bytes each",
                   num_blocks, block_name, sizeof_block);
@@ -1890,7 +1890,7 @@ _PyObject_DebugMallocStats(FILE *out)
     size_t total;
     char buf[128];
 
-    Py_GUARD
+    Py_GUARD();
 
     fprintf(out, "Small block threshold = %d, in %u size classes.\n",
             SMALL_REQUEST_THRESHOLD, numclasses);
@@ -2009,7 +2009,7 @@ int
 Py_ADDRESS_IN_RANGE(void *P, poolp pool)
 {
     uint arenaindex_temp;
-    Py_GUARD
+    Py_GUARD();
     arenaindex_temp = pool->arenaindex;
 
     return arenaindex_temp < maxarenas &&

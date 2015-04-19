@@ -235,7 +235,7 @@ GC_TENTATIVELY_UNREACHABLE
 static void
 gc_list_init(PyGC_Head *list)
 {
-    Py_GUARD
+    Py_GUARD();
     list->gc.gc_prev = list;
     list->gc.gc_next = list;
 }
@@ -243,7 +243,7 @@ gc_list_init(PyGC_Head *list)
 static int
 gc_list_is_empty(PyGC_Head *list)
 {
-    Py_GUARD
+    Py_GUARD();
     return (list->gc.gc_next == list);
 }
 
@@ -264,7 +264,7 @@ gc_list_append(PyGC_Head *node, PyGC_Head *list)
 static void
 gc_list_remove(PyGC_Head *node)
 {
-    Py_GUARD
+    Py_GUARD();
     node->gc.gc_prev->gc.gc_next = node->gc.gc_next;
     node->gc.gc_next->gc.gc_prev = node->gc.gc_prev;
     node->gc.gc_next = NULL; /* object is not currently tracked */
@@ -280,7 +280,7 @@ gc_list_move(PyGC_Head *node, PyGC_Head *list)
     PyGC_Head *new_prev;
     PyGC_Head *current_prev;
     PyGC_Head *current_next;
-    Py_GUARD
+    Py_GUARD();
     current_prev = node->gc.gc_prev;
     current_next = node->gc.gc_next;
     /* Unlink from current list. */
@@ -297,7 +297,7 @@ static void
 gc_list_merge(PyGC_Head *from, PyGC_Head *to)
 {
     PyGC_Head *tail;
-    Py_GUARD
+    Py_GUARD();
     assert(from != to);
     if (!gc_list_is_empty(from)) {
         tail = to->gc.gc_prev;
@@ -314,7 +314,7 @@ gc_list_size(PyGC_Head *list)
 {
     PyGC_Head *gc;
     Py_ssize_t n = 0;
-    Py_GUARD
+    Py_GUARD();
     for (gc = list->gc.gc_next; gc != list; gc = gc->gc.gc_next) {
         n++;
     }
@@ -328,7 +328,7 @@ static int
 append_objects(PyObject *py_list, PyGC_Head *gc_list)
 {
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     for (gc = gc_list->gc.gc_next; gc != gc_list; gc = gc->gc.gc_next) {
         PyObject *op = FROM_GC(gc);
         if (op != py_list) {
@@ -351,7 +351,7 @@ static void
 update_refs(PyGC_Head *containers)
 {
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = containers->gc.gc_next;
     for (; gc != containers; gc = gc->gc.gc_next) {
         assert(gc->gc.gc_refs == GC_REACHABLE);
@@ -386,7 +386,7 @@ update_refs(PyGC_Head *containers)
 static int
 visit_decref(PyObject *op, void *data)
 {
-    Py_GUARD
+    Py_GUARD();
     assert(op != NULL);
     if (PyObject_IS_GC(op)) {
         PyGC_Head *gc = AS_GC(op);
@@ -411,7 +411,7 @@ subtract_refs(PyGC_Head *containers)
 {
     traverseproc traverse;
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = containers->gc.gc_next;
     for (; gc != containers; gc=gc->gc.gc_next) {
         traverse = Py_TYPE(FROM_GC(gc))->tp_traverse;
@@ -425,7 +425,7 @@ subtract_refs(PyGC_Head *containers)
 static int
 visit_reachable(PyObject *op, PyGC_Head *reachable)
 {
-    Py_GUARD
+    Py_GUARD();
     if (PyObject_IS_GC(op)) {
         PyGC_Head *gc = AS_GC(op);
         const Py_ssize_t gc_refs = gc->gc.gc_refs;
@@ -477,7 +477,7 @@ static void
 move_unreachable(PyGC_Head *young, PyGC_Head *unreachable)
 {
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = young->gc.gc_next;
 
     /* Invariants:  all objects "to the left" of us in young have gc_refs
@@ -534,7 +534,7 @@ static void
 untrack_dicts(PyGC_Head *head)
 {
     PyGC_Head *next, *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = head->gc.gc_next;
     while (gc != head) {
         PyObject *op = FROM_GC(gc);
@@ -549,7 +549,7 @@ untrack_dicts(PyGC_Head *head)
 static int
 has_finalizer(PyObject *op)
 {
-    Py_GUARD
+    Py_GUARD();
     if (PyGen_CheckExact(op))
         return PyGen_NeedsFinalizing((PyGenObject *)op);
     else
@@ -565,7 +565,7 @@ move_finalizers(PyGC_Head *unreachable, PyGC_Head *finalizers)
 {
     PyGC_Head *gc;
     PyGC_Head *next;
-    Py_GUARD
+    Py_GUARD();
 
     /* March over unreachable.  Move objects with finalizers into
      * `finalizers`.
@@ -587,7 +587,7 @@ move_finalizers(PyGC_Head *unreachable, PyGC_Head *finalizers)
 static int
 visit_move(PyObject *op, PyGC_Head *tolist)
 {
-    Py_GUARD
+    Py_GUARD();
     if (PyObject_IS_GC(op)) {
         if (IS_TENTATIVELY_UNREACHABLE(op)) {
             PyGC_Head *gc = AS_GC(op);
@@ -606,7 +606,7 @@ move_finalizer_reachable(PyGC_Head *finalizers)
 {
     traverseproc traverse;
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = finalizers->gc.gc_next;
     for (; gc != finalizers; gc = gc->gc.gc_next) {
         /* Note that the finalizers list may grow during this. */
@@ -637,7 +637,7 @@ handle_weakrefs(PyGC_Head *unreachable, PyGC_Head *old)
     PyGC_Head wrcb_to_call;     /* weakrefs with callbacks to call */
     PyGC_Head *next;
     int num_freed = 0;
-    Py_GUARD
+    Py_GUARD();
 
     gc_list_init(&wrcb_to_call);
 
@@ -774,7 +774,7 @@ handle_weakrefs(PyGC_Head *unreachable, PyGC_Head *old)
 static void
 debug_cycle(char *msg, PyObject *op)
 {
-    Py_GUARD
+    Py_GUARD();
     PySys_FormatStderr("gc: %s <%s %p>\n",
                        msg, Py_TYPE(op)->tp_name, op);
 }
@@ -792,7 +792,7 @@ static int
 handle_finalizers(PyGC_Head *finalizers, PyGC_Head *old)
 {
     PyGC_Head *gc;
-    Py_GUARD
+    Py_GUARD();
     gc = finalizers->gc.gc_next;
 
     if (garbage == NULL) {
@@ -821,7 +821,7 @@ static void
 delete_garbage(PyGC_Head *collectable, PyGC_Head *old)
 {
     inquiry clear;
-    Py_GUARD
+    Py_GUARD();
 
     while (!gc_list_is_empty(collectable)) {
         PyGC_Head *gc = collectable->gc.gc_next;
@@ -854,7 +854,7 @@ delete_garbage(PyGC_Head *collectable, PyGC_Head *old)
 static void
 clear_freelists(void)
 {
-    Py_GUARD
+    Py_GUARD();
     (void)PyMethod_ClearFreeList();
     (void)PyFrame_ClearFreeList();
     (void)PyCFunction_ClearFreeList();
@@ -900,7 +900,7 @@ collect(int generation, Py_ssize_t *n_collected, Py_ssize_t *n_uncollectable)
     PyGC_Head finalizers;  /* objects with, & reachable from, __del__ */
     PyGC_Head *gc;
     double t1 = 0.0;
-    Py_GUARD
+    Py_GUARD();
 
     if (debug & DEBUG_STATS) {
         PySys_WriteStderr("gc: collecting generation %d...\n",
@@ -1058,7 +1058,7 @@ invoke_gc_callback(const char *phase, int generation,
 {
     Py_ssize_t i;
     PyObject *info = NULL;
-    Py_GUARD
+    Py_GUARD();
 
     /* we may get called very early */
     if (callbacks == NULL)
@@ -1094,7 +1094,7 @@ static Py_ssize_t
 collect_with_callback(int generation)
 {
     Py_ssize_t result, collected, uncollectable;
-    Py_GUARD
+    Py_GUARD();
     invoke_gc_callback("start", generation, 0, 0);
     result = collect(generation, &collected, &uncollectable);
     invoke_gc_callback("stop", generation, collected, uncollectable);
@@ -1106,7 +1106,7 @@ collect_generations(void)
 {
     int i;
     Py_ssize_t n = 0;
-    Py_GUARD
+    Py_GUARD();
 
     /* Find the oldest generation (highest numbered) where the count
      * exceeds the threshold.  Objects in the that generation and
@@ -1135,7 +1135,7 @@ PyDoc_STRVAR(gc_enable__doc__,
 static PyObject *
 gc_enable(PyObject *self, PyObject *noargs)
 {
-    Py_GUARD
+    Py_GUARD();
     enabled = 1;
     Py_INCREF(Py_None);
     return Py_None;
@@ -1149,7 +1149,7 @@ PyDoc_STRVAR(gc_disable__doc__,
 static PyObject *
 gc_disable(PyObject *self, PyObject *noargs)
 {
-    Py_GUARD
+    Py_GUARD();
     enabled = 0;
     Py_INCREF(Py_None);
     return Py_None;
@@ -1163,7 +1163,7 @@ PyDoc_STRVAR(gc_isenabled__doc__,
 static PyObject *
 gc_isenabled(PyObject *self, PyObject *noargs)
 {
-    Py_GUARD
+    Py_GUARD();
     return PyBool_FromLong((long)enabled);
 }
 
@@ -1181,7 +1181,7 @@ gc_collect(PyObject *self, PyObject *args, PyObject *kws)
     static char *keywords[] = {"generation", NULL};
     int genarg = NUM_GENERATIONS - 1;
     Py_ssize_t n;
-    Py_GUARD
+    Py_GUARD();
 
     if (!PyArg_ParseTupleAndKeywords(args, kws, "|i", keywords, &genarg))
         return NULL;
@@ -1219,7 +1219,7 @@ PyDoc_STRVAR(gc_set_debug__doc__,
 static PyObject *
 gc_set_debug(PyObject *self, PyObject *args)
 {
-    Py_GUARD
+    Py_GUARD();
     if (!PyArg_ParseTuple(args, "i:set_debug", &debug))
         return NULL;
 
@@ -1248,7 +1248,7 @@ static PyObject *
 gc_set_thresh(PyObject *self, PyObject *args)
 {
     int i;
-    Py_GUARD
+    Py_GUARD();
     if (!PyArg_ParseTuple(args, "i|ii:set_threshold",
                           &generations[0].threshold,
                           &generations[1].threshold,
@@ -1271,7 +1271,7 @@ PyDoc_STRVAR(gc_get_thresh__doc__,
 static PyObject *
 gc_get_thresh(PyObject *self, PyObject *noargs)
 {
-    Py_GUARD
+    Py_GUARD();
     return Py_BuildValue("(iii)",
                          generations[0].threshold,
                          generations[1].threshold,
@@ -1286,7 +1286,7 @@ PyDoc_STRVAR(gc_get_count__doc__,
 static PyObject *
 gc_get_count(PyObject *self, PyObject *noargs)
 {
-    Py_GUARD
+    Py_GUARD();
     return Py_BuildValue("(iii)",
                          generations[0].count,
                          generations[1].count,
@@ -1297,7 +1297,7 @@ static int
 referrersvisit(PyObject* obj, PyObject *objs)
 {
     Py_ssize_t i;
-    Py_GUARD
+    Py_GUARD();
     for (i = 0; i < PyTuple_GET_SIZE(objs); i++)
         if (PyTuple_GET_ITEM(objs, i) == obj)
             return 1;
@@ -1310,7 +1310,7 @@ gc_referrers_for(PyObject *objs, PyGC_Head *list, PyObject *resultlist)
     PyGC_Head *gc;
     PyObject *obj;
     traverseproc traverse;
-    Py_GUARD
+    Py_GUARD();
     for (gc = list->gc.gc_next; gc != list; gc = gc->gc.gc_next) {
         obj = FROM_GC(gc);
         traverse = Py_TYPE(obj)->tp_traverse;
@@ -1333,7 +1333,7 @@ gc_get_referrers(PyObject *self, PyObject *args)
 {
     int i;
     PyObject *result;
-    Py_GUARD
+    Py_GUARD();
     result = PyList_New(0);
     if (!result) return NULL;
 
@@ -1362,7 +1362,7 @@ gc_get_referents(PyObject *self, PyObject *args)
 {
     Py_ssize_t i;
     PyObject *result;
-    Py_GUARD
+    Py_GUARD();
     result = PyList_New(0);
 
     if (result == NULL)
@@ -1396,7 +1396,7 @@ gc_get_objects(PyObject *self, PyObject *noargs)
 {
     int i;
     PyObject* result;
-    Py_GUARD
+    Py_GUARD();
 
     result = PyList_New(0);
     if (result == NULL)
@@ -1421,7 +1421,7 @@ static PyObject *
 gc_is_tracked(PyObject *self, PyObject *obj)
 {
     PyObject *result;
-    Py_GUARD
+    Py_GUARD();
 
     if (PyObject_IS_GC(obj) && IS_TRACKED(obj))
         result = Py_True;
@@ -1485,7 +1485,7 @@ PyMODINIT_FUNC
 PyInit_gc(void)
 {
     PyObject *m;
-    Py_GUARD
+    Py_GUARD();
 
     m = PyModule_Create(&gcmodule);
 
@@ -1537,7 +1537,7 @@ Py_ssize_t
 PyGC_Collect(void)
 {
     Py_ssize_t n;
-    Py_GUARD
+    Py_GUARD();
 
     if (collecting)
         n = 0; /* already collecting, don't do anything */
@@ -1553,7 +1553,7 @@ PyGC_Collect(void)
 void
 _PyGC_Fini(void)
 {
-    Py_GUARD
+    Py_GUARD();
     if (!(debug & DEBUG_SAVEALL)
         && garbage != NULL && PyList_GET_SIZE(garbage) > 0) {
         char *message;
@@ -1588,7 +1588,7 @@ _PyGC_Fini(void)
 void
 _PyGC_Dump(PyGC_Head *g)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyObject_Dump(FROM_GC(g));
 }
 
@@ -1694,7 +1694,7 @@ PyObject_GC_Del(void *op)
 {
     PyGC_Head *g;
     Py_GUARD_OBJ(op);
-    Py_GUARD
+    Py_GUARD();
     g = AS_GC(op);
     if (IS_TRACKED(op))
         gc_list_remove(g);

@@ -166,7 +166,7 @@ method_new(PyTypeObject* type, PyObject* args, PyObject *kw)
 static void
 method_dealloc(register PyMethodObject *im)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyObject_GC_UNTRACK(im);
     if (im->im_weakreflist != NULL)
         PyObject_ClearWeakRefs((PyObject *)im);
@@ -404,7 +404,7 @@ PyMethod_ClearFreeList(void)
 void
 PyMethod_Fini(void)
 {
-    Py_GUARD
+    Py_GUARD();
     (void)PyMethod_ClearFreeList();
 }
 

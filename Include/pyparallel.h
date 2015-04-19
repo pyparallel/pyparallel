@@ -164,7 +164,7 @@ PyAPI_FUNC(void *) _PyParallel_GetHeapOverride(void);
  * by way of the Py_GUARD_AGAINST_PX_ONLY() macro (described below). */
 PyAPI_FUNC(void *) _PyParallel_GetActiveContext(void);
 
-#define Px_GUARD                         \
+#define Px_GUARD()                       \
     if (!Py_PXCTX)                       \
         _PyParallel_ContextGuardFailure( \
             __FUNCTION__,                \
@@ -173,7 +173,7 @@ PyAPI_FUNC(void *) _PyParallel_GetActiveContext(void);
             1                            \
         );
 
-#define Py_GUARD                         \
+#define Py_GUARD()                       \
     if (Py_PXCTX)                        \
         _PyParallel_ContextGuardFailure( \
             __FUNCTION__,                \
@@ -411,9 +411,9 @@ _px_bitpos_uint32(unsigned int f)
     }
 
 #else /* WITH_PARALLEL */
-#define Py_GUARD
+#define Py_GUARD()
 #define Py_GUARD_AGAINST_PX_ONLY()
-#define Px_GUARD
+#define Px_GUARD()
 #define Py_GUARD_OBJ(o)
 #define Py_GUARD_MEM(o)
 #define PyPx_GUARD_OBJ(o)

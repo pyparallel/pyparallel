@@ -235,7 +235,7 @@ _PyParallel_RefreshMemoryLoad(void)
 {
     static HANDLE low_mem;
     MEMORYSTATUSEX *ms;
-    Py_GUARD
+    Py_GUARD();
 
     ms = &_memory_status;
 
@@ -1041,7 +1041,7 @@ _PyParallel_BlockingCall(void)
 {
     Context *c = ctx;
     Stats   *s = STATS(c);
-    Px_GUARD
+    Px_GUARD();
 
     if (Px_CTX_IS_DISASSOCIATED(c))
         return;
@@ -1149,7 +1149,7 @@ _PyObject_Dealloc(PyObject *o)
     destructor d;
 
     Py_GUARD_OBJ(o);
-    Py_GUARD
+    Py_GUARD();
 
     assert(Py_ORIG_TYPE(o));
 
@@ -1967,7 +1967,7 @@ PxPages_Dump(PxPages *pages)
 void
 _PxState_InitPxPages(PxState *px)
 {
-    Py_GUARD
+    Py_GUARD();
 
     InitializeSRWLock(&px->pages_srwlock);
 }
@@ -2005,7 +2005,7 @@ _PxContext_UnregisterHeaps(Context *c)
     PxState *px;
     int      i, heap_count = 0;
 
-    Py_GUARD
+    Py_GUARD();
 
     px =  c->px;
     s  = &c->stats;
@@ -3089,14 +3089,14 @@ _PxObject_Free(void *p)
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
-    Px_GUARD
+    Px_GUARD();
     return _PyHeap_Realloc(ctx, p, nbytes);
 }
 
 void
 _PxObject_Free(void *p)
 {
-    Px_GUARD
+    Px_GUARD();
     if (!p)
         return;
     _PyHeap_Free(ctx, p);
@@ -3453,7 +3453,7 @@ _PyParallel_ExecutingCallbackFromMainThread(void)
 {
     PyThreadState *tstate;
     PxState       *px;
-    Py_GUARD
+    Py_GUARD();
 
     tstate = PyThreadState_GET();
 
@@ -4260,7 +4260,7 @@ xlist_pop(PyObject *self, PyObject *args)
     PxListItem *item;
     PyObject *obj;
     assert(args == NULL);
-    Py_GUARD
+    Py_GUARD();
     /*Py_INCREF(xlist);*/
     item = PxList_Pop(xlist->head);
     obj = (item ? I2O(item) : NULL);
@@ -4726,7 +4726,7 @@ PHANDLER_ROUTINE _Py_CtrlCHandlerRoutine = (PHANDLER_ROUTINE)_Py_HandleCtrlC;
 int
 _Py_CheckCtrlC(void)
 {
-    Py_GUARD
+    Py_GUARD();
 
     if (_Py_CtrlCPressed) {
         _Py_CtrlCPressed = 0;
@@ -4773,7 +4773,7 @@ _async_run_once(PyObject *self, PyObject *args)
     PxListItem *item = NULL;
     PyThreadState *tstate;
     PyFrameObject *old_frame;
-    Py_GUARD
+    Py_GUARD();
 
     if (PyErr_CheckSignals() || _Py_CheckCtrlC())
         return NULL;
@@ -5824,7 +5824,7 @@ _call_from_main_thread(PyObject *self, PyObject *targs, int wait)
     PxState *px;
     PyObject *func, *arg, *args, *kwds, *tmp;
 
-    Px_GUARD
+    Px_GUARD();
 
     func = arg = args = kwds = tmp = NULL;
 
@@ -6282,7 +6282,7 @@ PyObject *
 _wrap(PyTypeObject *tp, PyObject *args, PyObject *kwds)
 {
     PyObject *self;
-    Py_GUARD
+    Py_GUARD();
     if (!(self = _protect(tp->tp_new(tp, args, kwds))))
         return NULL;
 
@@ -6390,7 +6390,7 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 PyThreadState *
 _PyParallel_GetThreadState(void)
 {
-    Px_GUARD
+    Px_GUARD();
     assert(ctx->pstate);
     assert(ctx->pstate != ctx->tstate);
     return ctx->pstate;
@@ -6399,7 +6399,7 @@ _PyParallel_GetThreadState(void)
 void
 _Px_NewReference(PyObject *op)
 {
-    Px_GUARD
+    Px_GUARD();
     Px_GUARD_MEM(op);
 
 #ifdef Py_DEBUG
@@ -6424,7 +6424,7 @@ void
 _Px_ForgetReference(PyObject *op)
 {
     Px_GUARD_OBJ(op);
-    Px_GUARD
+    Px_GUARD();
     ctx->stats.forgetrefs++;
 }
 
@@ -6432,7 +6432,7 @@ void
 _Px_Dealloc(PyObject *op)
 {
     Px_GUARD_OBJ(op);
-    Px_GUARD
+    Px_GUARD();
     assert(Py_ASPX(op)->ctx == ctx);
     ctx->h->deallocs++;
     ctx->stats.deallocs++;
@@ -6472,7 +6472,7 @@ _PxObject_Resize(PyVarObject *op, Py_ssize_t nitems)
 void *
 _PxMem_Malloc(size_t n)
 {
-    Px_GUARD
+    Px_GUARD();
     return _PyHeap_Malloc(ctx, n, 0, 0);
 }
 
@@ -10564,7 +10564,7 @@ pxsocket_sendfile(PxSocket *s, PyObject *args)
     int before_len = 0, after_len = 0;
     DWORD max_fsize = INT_MAX - 1;
 
-    //Px_GUARD
+    //Px_GUARD();
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         PyErr_SetString(PyExc_RuntimeError,
@@ -10662,7 +10662,7 @@ pxsocket_sendfile_ranged(PxSocket *s, PyObject *args)
     DWORD offset_lo = 0;
     DWORD offset_hi = 0;
 
-    //Px_GUARD
+    //Px_GUARD();
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         PyErr_SetString(PyExc_RuntimeError,
@@ -11001,7 +11001,7 @@ _async_register(PyObject *self, PyObject *args, PyObject *kwds)
     static const char *kwlist[] = { "transport", "protocol", NULL };
     static const char *fmt = "OO:register";
 
-    Py_GUARD
+    Py_GUARD();
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, fmt, (char **)kwlist,
                                      &transport, &protocol_type))
@@ -11039,7 +11039,7 @@ _async_refresh_memory_stats(PyObject *obj, PyObject *args)
 {
     PyObject *m;
     MEMORYSTATUSEX ms;
-    Py_GUARD
+    Py_GUARD();
 
     m = _asyncmodule_obj;
 

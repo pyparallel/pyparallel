@@ -555,7 +555,7 @@ set_dealloc(PySetObject *so)
 {
     register setentry *entry;
     Py_ssize_t fill = so->fill;
-    Py_GUARD
+    Py_GUARD();
     PyObject_GC_UnTrack(so);
     Py_TRASHCAN_SAFE_BEGIN(so)
     if (so->weakreflist != NULL)

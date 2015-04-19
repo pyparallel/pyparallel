@@ -53,7 +53,7 @@ PyType_ClearCache(void)
 {
     Py_ssize_t i;
     unsigned int cur_version_tag = next_version_tag - 1;
-    Py_GUARD
+    Py_GUARD();
 
     for (i = 0; i < (1 << MCACHE_SIZE_EXP); i++) {
         method_cache[i].version = 0;
@@ -164,7 +164,7 @@ assign_version_tag(PyTypeObject *type)
     */
     Py_ssize_t i, n;
     PyObject *bases;
-    Py_GUARD
+    Py_GUARD();
 
     if (PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG))
         return 1;
@@ -642,7 +642,7 @@ type_get_doc(PyTypeObject *type, void *context)
 static int
 type_set_doc(PyTypeObject *type, PyObject *value, void *context)
 {
-    Py_GUARD
+    Py_GUARD();
     if (!check_set_special_type_attr(type, value, "__doc__"))
         return -1;
     PyType_Modified(type);

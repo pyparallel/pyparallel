@@ -301,7 +301,7 @@ static int pending_async_exc = 0;
 int
 PyEval_ThreadsInitialized(void)
 {
-    Py_GUARD
+    Py_GUARD();
     return gil_created();
 }
 
@@ -320,7 +320,7 @@ PyEval_InitThreads(void)
 void
 _PyEval_FiniThreads(void)
 {
-    Py_GUARD
+    Py_GUARD();
     if (!gil_created())
         return;
     destroy_gil();
@@ -340,7 +340,7 @@ PyEval_AcquireLock(void)
 void
 PyEval_ReleaseLock(void)
 {
-    Py_GUARD
+    Py_GUARD();
     /* This function must succeed when the current thread state is NULL.
        We therefore avoid PyThreadState_GET() which dumps a fatal error
        in debug mode.
@@ -385,7 +385,7 @@ PyEval_ReInitThreads(void)
     _Py_IDENTIFIER(_after_fork);
     PyObject *threading, *result;
     PyThreadState *tstate = PyThreadState_GET();
-    Py_GUARD
+    Py_GUARD();
 
     if (!gil_created())
         return;
@@ -690,7 +690,7 @@ int
 Py_MakePendingCalls(void)
 {
     static int busy = 0;
-    Py_GUARD
+    Py_GUARD();
     if (busy)
         return 0;
     busy = 1;
@@ -729,14 +729,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT_RECURSION_LIMIT;
 int
 Py_GetRecursionLimit(void)
 {
-    Py_GUARD
+    Py_GUARD();
     return recursion_limit;
 }
 
 void
 Py_SetRecursionLimit(int new_limit)
 {
-    Py_GUARD
+    Py_GUARD();
     recursion_limit = new_limit;
     _Py_CheckRecursionLimit = recursion_limit;
 }

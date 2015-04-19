@@ -23,7 +23,7 @@ _Py_GetRefTotal(void)
 {
     PyObject *o;
     Py_ssize_t total;
-    Py_GUARD
+    Py_GUARD();
     total = _Py_RefTotal;
     /* ignore the references to the dummy object of the dicts and sets
        because they are not reliable and not useful (now that the
@@ -112,7 +112,7 @@ void
 dump_counts(FILE* f)
 {
     PyTypeObject *tp;
-    Py_GUARD
+    Py_GUARD();
     for (tp = type_list; tp; tp = tp->tp_next)
         fprintf(f, "%s alloc'd: %" PY_FORMAT_SIZE_T "d, "
             "freed: %" PY_FORMAT_SIZE_T "d, "
@@ -136,7 +136,7 @@ get_counts(void)
     PyTypeObject *tp;
     PyObject *result;
     PyObject *v;
-    Py_GUARD
+    Py_GUARD();
     result = PyList_New(0);
     if (result == NULL)
         return NULL;
@@ -160,7 +160,7 @@ get_counts(void)
 void
 inc_count(PyTypeObject *tp)
 {
-    Py_GUARD
+    Py_GUARD();
     if (tp->tp_next == NULL && tp->tp_prev == NULL) {
         /* first time; insert in linked list */
         if (tp->tp_next != NULL) /* sanity check */
@@ -192,7 +192,7 @@ inc_count(PyTypeObject *tp)
 
 void dec_count(PyTypeObject *tp)
 {
-    Py_GUARD
+    Py_GUARD();
     tp->tp_frees++;
     if (unlist_types_without_objects &&
         tp->tp_allocs == tp->tp_frees) {
@@ -394,7 +394,7 @@ _Py_BreakPoint(void)
 void
 _PyObject_Dump(PyObject* op)
 {
-    Py_GUARD
+    Py_GUARD();
     if (op == NULL)
         fprintf(stderr, "NULL\n");
     else {
@@ -1634,7 +1634,7 @@ PyObject _Py_NotImplementedStruct = {
 void
 _Py_ReadyTypes(void)
 {
-    Py_GUARD
+    Py_GUARD();
 
     if (PyType_Ready(&PyType_Type) < 0)
         Py_FatalError("Can't initialize type type");
@@ -1891,7 +1891,7 @@ void
 _Py_PrintReferences(FILE *fp)
 {
     PyObject *op;
-    Py_GUARD
+    Py_GUARD();
     fprintf(fp, "Remaining objects:\n");
     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] ", op, op->ob_refcnt);
@@ -1908,7 +1908,7 @@ void
 _Py_PrintReferenceAddresses(FILE *fp)
 {
     PyObject *op;
-    Py_GUARD
+    Py_GUARD();
     fprintf(fp, "Remaining object addresses:\n");
     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next)
         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] %s\n", op,
@@ -1921,7 +1921,7 @@ _Py_GetObjects(PyObject *self, PyObject *args)
     int i, n;
     PyObject *t = NULL;
     PyObject *res, *op;
-    Py_GUARD
+    Py_GUARD();
     if (self)
         Py_GUARD_OBJ(self);
 
@@ -1988,7 +1988,7 @@ PyMem_Free(void *p)
 void
 _PyObject_DebugTypeStats(FILE *out)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyCFunction_DebugMallocStats(out);
     _PyDict_DebugMallocStats(out);
     _PyFloat_DebugMallocStats(out);
@@ -2085,7 +2085,7 @@ PyObject *_PyTrash_delete_later = NULL;
 void
 _PyTrash_deposit_object(PyObject *op)
 {
-    Py_GUARD
+    Py_GUARD();
     Py_GUARD_OBJ(op);
     assert(PyObject_IS_GC(op));
     assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
@@ -2099,7 +2099,7 @@ void
 _PyTrash_thread_deposit_object(PyObject *op)
 {
     PyThreadState *tstate;
-    Py_GUARD
+    Py_GUARD();
     Py_GUARD_OBJ(op);
     tstate = PyThreadState_GET();
     assert(PyObject_IS_GC(op));
@@ -2115,7 +2115,7 @@ _PyTrash_thread_deposit_object(PyObject *op)
 void
 _PyTrash_destroy_chain(void)
 {
-    Py_GUARD
+    Py_GUARD();
     while (_PyTrash_delete_later) {
         PyObject *op = _PyTrash_delete_later;
         destructor dealloc = Py_TYPE(op)->tp_dealloc;
@@ -2141,7 +2141,7 @@ void
 _PyTrash_thread_destroy_chain(void)
 {
     PyThreadState *tstate;
-    Py_GUARD
+    Py_GUARD();
     tstate = PyThreadState_GET();
     while (tstate->trash_delete_later) {
         PyObject *op = tstate->trash_delete_later;

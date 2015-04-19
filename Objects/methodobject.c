@@ -121,7 +121,7 @@ PyCFunction_Call(PyObject *func, PyObject *arg, PyObject *kw)
 static void
 meth_dealloc(PyCFunctionObject *m)
 {
-    Py_GUARD
+    Py_GUARD();
     _PyObject_GC_UNTRACK(m);
     Py_XDECREF(m->m_self);
     Py_XDECREF(m->m_module);

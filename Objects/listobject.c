@@ -323,7 +323,7 @@ static void
 list_dealloc(PyListObject *op)
 {
     Py_ssize_t i;
-    Py_GUARD
+    Py_GUARD();
     PyObject_GC_UnTrack(op);
     Py_TRASHCAN_SAFE_BEGIN(op)
     if (op->ob_item != NULL) {
