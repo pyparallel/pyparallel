@@ -1803,7 +1803,7 @@ static const char *pxsocket_kwlist_formatstring = \
     Py_XINCREF(s->connection_made);          \
     Py_XINCREF(s->data_received);            \
     Py_XINCREF(s->data_sent);                \
-    Py_XINCREF(s->lines_received);            \
+    Py_XINCREF(s->lines_received);           \
     Py_XINCREF(s->eof_received);             \
     Py_XINCREF(s->connection_lost);          \
     Py_XINCREF(s->exception_handler);        \
@@ -1820,7 +1820,7 @@ static const char *pxsocket_kwlist_formatstring = \
     Py_XDECREF(s->connection_made);          \
     Py_XDECREF(s->data_received);            \
     Py_XDECREF(s->data_sent);                \
-    Py_XDECREF(s->lines_received);            \
+    Py_XDECREF(s->lines_received);           \
     Py_XDECREF(s->eof_received);             \
     Py_XDECREF(s->connection_lost);          \
     Py_XDECREF(s->exception_handler);        \
