@@ -2383,6 +2383,19 @@ Py_FatalError(const char *msg)
 {
     const int fd = fileno(stderr);
     PyThreadState *tstate;
+#ifdef WITH_PARALLEL
+    Py_TLS static volatile unsigned long count;
+
+    if (_PyParallel_GetActiveContext() != NULL)
+        __debugbreak();
+
+    if (InterlockedIncrement(&count) != 1)
+        __debugbreak();
+#endif
+
+#ifdef Py_DEBUG
+    __debugbreak();
+#endif
 
     fprintf(stderr, "Fatal Python error: %s\n", msg);
     fflush(stderr); /* it helps in Windows debug build */
