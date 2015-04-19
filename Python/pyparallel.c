@@ -1091,6 +1091,49 @@ _PyParallel_IsParallelContext(void)
     return active;
 }
 
+void
+_PyParallel_IncRef(void *vp)
+{
+    PyObject *op = (PyObject *)vp;
+    if ((!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op)))) {
+        _Py_INC_REFTOTAL;
+        (((PyObject*)(op))->ob_refcnt++);
+    }
+}
+
+void
+_PyParallel_DecRef(void *vp)
+{
+    PyObject *op = (PyObject *)vp;
+    if (!Py_PXCTX) {
+        if (Px_PERSISTED(op) || Px_CLONED(op))
+            Px_DECREF(op);
+        else if (!Px_ISPX(op)) {
+            /*
+            Py_ssize_t refcnt = op->ob_refcnt;
+            if (refcnt <= 0)
+                __debugbreak();
+            if (--op->ob_refcnt == 0)
+                _Py_Dealloc(op);
+            */
+            --_Py_RefTotal;
+
+            if ((--((PyObject *)(op))->ob_refcnt) != 0) {
+                if ((((PyObject *)(op))->ob_refcnt) < 0)
+                    __debugbreak();
+            } else
+                _Py_Dealloc((PyObject *)(op));
+        }
+    }
+}
+
+Py_ssize_t
+_PyParallel_RefCnt(void *vp)
+{
+    PyObject *op = (PyObject *)vp;
+    return ((PyObject *)op)->ob_refcnt;
+}
+
 void *
 _PyParallel_GetActiveContext(void)
 {

@@ -943,10 +943,14 @@ __inline
 void
 _Py_IncRef(PyObject *op)
 {
+#if defined(Py_DEBUG)
+    _PyParallel_IncRef(op);
+#else
     if ((!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op)))) {
         _Py_INC_REFTOTAL;
         (((PyObject*)(op))->ob_refcnt++);
     }
+#endif
 }
 
 #define Py_INCREF(op) (_Py_IncRef((PyObject *)op))
@@ -962,6 +966,9 @@ __inline
 void
 _Py_DecRef(PyObject *op)
 {
+#if defined(Py_DEBUG)
+    _PyParallel_DecRef(op);
+#else
     if (!Py_PXCTX) {
         if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
@@ -973,6 +980,7 @@ _Py_DecRef(PyObject *op)
                 _Py_Dealloc((PyObject *)(op));
         }
     }
+#endif
 }
 
 #define Py_DECREF(op) (_Py_DecRef((PyObject *)op))

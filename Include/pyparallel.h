@@ -44,6 +44,10 @@ PyAPI_DATA(long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 
+PyAPI_FUNC(void)       _PyParallel_IncRef(void *);
+PyAPI_FUNC(void)       _PyParallel_DecRef(void *);
+PyAPI_FUNC(Py_ssize_t) _PyParallel_RefCnt(void *);
+
 PyAPI_FUNC(void) _PyParallel_Init(void);
 PyAPI_FUNC(void) _PyParallel_Finalize(void);
 PyAPI_FUNC(void) _PyParallel_BlockingCall(void);
