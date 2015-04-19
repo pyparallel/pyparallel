@@ -420,6 +420,70 @@ class TestCallFromMainThreadAndWait(TCPServerCommand):
         async.run()
 
 #===============================================================================
+# Dev Helpers
+#===============================================================================
+class UpdateDiffs(PxCommand):
+    """
+    Diffs PyParallel against original v3.3.5 tag it was based upon and,
+    for all modified files (i.e. we exclude new files), create a diff
+    and store it in diffs/<dirname>/<filename>.diff.
+    """
+    def run(self):
+        import os
+        from collections import defaultdict
+        from ctk.path import abspath, normpath, join_path, splitpath
+
+        import pdb
+        dbg = pdb.Pdb()
+        #dbg.set_trace()
+
+        root = join_path(dirname(__file__), '../..')
+        if os.getcwd() != root:
+            os.chdir(root)
+
+        basedir = join_path(root, 'diffs')
+
+        os.system('hg st --rev v3.3.5 --rev 3.3-px > hg-st.txt')
+        with open('hg-st.txt', 'r') as f:
+            data = f.read()
+
+        lines = data.splitlines()
+        d = defaultdict(list)
+        for line in lines:
+            (action, path) = line.split(' ', 1)
+            d[action].append(path)
+
+        isdir = os.path.isdir
+        for path in d['M']:
+            (base, filename) = splitpath(path)
+            if base:
+                diffdir = join_path(basedir, base)
+            else:
+                diffdir = basedir
+            if not isdir(diffdir):
+                os.makedirs(diffdir)
+
+            patchname = filename + '.patch'
+            patchpath = join_path(diffdir, patchname)
+            cmd = (
+                'hg diff --rev v3.3.5 '
+                ' --git '
+                ' --show-function '
+                #' --ignore-all-space '
+                ' --ignore-blank-lines '
+                ' --ignore-space-change '
+                ' "%s" > "%s"' % (path, patchpath)
+            )
+            #dbg.set_trace()
+            os.system(cmd)
+            st = os.stat(patchpath)
+            if st.st_size == 0:
+                os.unlink(patchpath)
+            else:
+                self._out("Updated %s." % patchpath.replace(root + '\\', ''))
+
+
+#===============================================================================
 # System Info/Memory Commands
 #===============================================================================
 class SystemStructureSizes(PxCommand):
