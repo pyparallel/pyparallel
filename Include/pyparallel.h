@@ -94,7 +94,19 @@ PyAPI_FUNC(int) _PyParallel_Guard(const char *function,
 PyAPI_FUNC(int)     _Px_TEST(void *p);
 PyAPI_FUNC(int)     _Py_ISPY(void *ob);
 
+PyAPI_FUNC(void)    _PyParallel_SetDebugbreakOnNextException(void);
+PyAPI_FUNC(void)    _PyParallel_ClearDebugbreakOnNextException(void);
+PyAPI_FUNC(int)     _PyParallel_IsDebugbreakOnNextExceptionSet(void);
+
 PyAPI_FUNC(int)     _PyParallel_IsParallelContext(void);
+
+#define PyExc_MAYBE_BREAK() \
+    do { \
+        if (_PyParallel_IsDebugbreakOnNextExceptionSet()) { \
+            __debugbreak(); \
+            _PyParallel_ClearDebugbreakOnNextException(); \
+        } \
+    } while (0)
 
 static __inline
 int

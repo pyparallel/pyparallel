@@ -26,10 +26,12 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
 {
     PyThreadState *tstate = PyThreadState_GET();
     PyObject *oldtype, *oldvalue, *oldtraceback;
+    PyExc_MAYBE_BREAK();
 
     if (traceback != NULL && !PyTraceBack_Check(traceback)) {
         /* XXX Should never happen -- fatal error instead? */
         /* Well, it could be None. */
+        __debugbreak();
         Py_DECREF(traceback);
         traceback = NULL;
     }
@@ -55,6 +57,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
     PyThreadState *tstate = PyThreadState_GET();
     PyObject *exc_value;
     PyObject *tb = NULL;
+    PyExc_MAYBE_BREAK();
 
     if (exception != NULL &&
         !PyExceptionClass_Check(exception)) {
@@ -115,6 +118,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
 void
 PyErr_SetNone(PyObject *exception)
 {
+    PyExc_MAYBE_BREAK();
     PyErr_SetObject(exception, (PyObject *)NULL);
 }
 
@@ -122,6 +126,7 @@ void
 PyErr_SetString(PyObject *exception, const char *string)
 {
     PyObject *value = PyUnicode_FromString(string);
+    PyExc_MAYBE_BREAK();
     PyErr_SetObject(exception, value);
     Py_XDECREF(value);
 }
@@ -201,6 +206,7 @@ PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
     PyObject *inclass = NULL;
     PyObject *initial_tb = NULL;
     PyThreadState *tstate = NULL;
+    PyExc_MAYBE_BREAK();
 
     if (type == NULL) {
         /* There was no exception, so nothing to do. */
@@ -353,6 +359,7 @@ PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback)
 int
 PyErr_BadArgument(void)
 {
+    PyExc_MAYBE_BREAK();
     PyErr_SetString(PyExc_TypeError,
                     "bad argument type for built-in operation");
     return 0;
@@ -361,6 +368,7 @@ PyErr_BadArgument(void)
 PyObject *
 PyErr_NoMemory(void)
 {
+    PyExc_MAYBE_BREAK();
     PyErr_SetNone(PyExc_MemoryError);
     return NULL;
 }
@@ -374,6 +382,7 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
 #ifdef MS_WINDOWS
     WCHAR *s_buf = NULL;
 #endif /* Unix/Windows */
+    PyExc_MAYBE_BREAK();
 
 #ifdef EINTR
     if (i == EINTR && PyErr_CheckSignals())
@@ -462,8 +471,12 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
 PyObject *
 PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
 {
-    PyObject *name = filename ? PyUnicode_DecodeFSDefault(filename) : NULL;
-    PyObject *result = PyErr_SetFromErrnoWithFilenameObject(exc, name);
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+    if (filename)
+        name = PyUnicode_DecodeFSDefault(filename);
+    result = PyErr_SetFromErrnoWithFilenameObject(exc, name);
     Py_XDECREF(name);
     return result;
 }
@@ -472,10 +485,12 @@ PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
 PyObject *
 PyErr_SetFromErrnoWithUnicodeFilename(PyObject *exc, const Py_UNICODE *filename)
 {
-    PyObject *name = filename ?
-                     PyUnicode_FromUnicode(filename, wcslen(filename)) :
-             NULL;
-    PyObject *result = PyErr_SetFromErrnoWithFilenameObject(exc, name);
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+    if (filename)
+        name = PyUnicode_FromUnicode(filename, wcslen(filename));
+    result = PyErr_SetFromErrnoWithFilenameObject(exc, name);
     Py_XDECREF(name);
     return result;
 }
@@ -484,6 +499,7 @@ PyErr_SetFromErrnoWithUnicodeFilename(PyObject *exc, const Py_UNICODE *filename)
 PyObject *
 PyErr_SetFromErrno(PyObject *exc)
 {
+    PyExc_MAYBE_BREAK();
     return PyErr_SetFromErrnoWithFilenameObject(exc, NULL);
 }
 
@@ -499,6 +515,7 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilenameObject(
     PyObject *message;
     PyObject *args, *v;
     DWORD err = (DWORD)ierr;
+    PyExc_MAYBE_BREAK();
     if (err==0) err = GetLastError();
     len = FormatMessageW(
         /* Error API error */
@@ -553,12 +570,14 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilename(
     int ierr,
     const char *filename)
 {
-    PyObject *name = filename ? PyUnicode_DecodeFSDefault(filename) : NULL;
-    PyObject *ret = PyErr_SetExcFromWindowsErrWithFilenameObject(exc,
-                                                                 ierr,
-                                                                 name);
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+    if (filename)
+        name = PyUnicode_DecodeFSDefault(filename);
+    result = PyErr_SetExcFromWindowsErrWithFilenameObject(exc, ierr, name);
     Py_XDECREF(name);
-    return ret;
+    return result;
 }
 
 PyObject *PyErr_SetExcFromWindowsErrWithUnicodeFilename(
@@ -566,32 +585,41 @@ PyObject *PyErr_SetExcFromWindowsErrWithUnicodeFilename(
     int ierr,
     const Py_UNICODE *filename)
 {
-    PyObject *name = filename ?
-                     PyUnicode_FromUnicode(filename, wcslen(filename)) :
-             NULL;
-    PyObject *ret = PyErr_SetExcFromWindowsErrWithFilenameObject(exc,
-                                                                 ierr,
-                                                                 name);
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+    if (filename)
+        name = PyUnicode_FromUnicode(filename, wcslen(filename));
+    result = PyErr_SetExcFromWindowsErrWithFilenameObject(exc, ierr, name);
     Py_XDECREF(name);
-    return ret;
+    return result;
 }
 
 PyObject *PyErr_SetExcFromWindowsErr(PyObject *exc, int ierr)
 {
+    PyExc_MAYBE_BREAK();
     return PyErr_SetExcFromWindowsErrWithFilename(exc, ierr, NULL);
 }
 
 PyObject *PyErr_SetFromWindowsErr(int ierr)
 {
+    PyExc_MAYBE_BREAK();
     return PyErr_SetExcFromWindowsErrWithFilename(PyExc_WindowsError,
                                                   ierr, NULL);
 }
+
 PyObject *PyErr_SetFromWindowsErrWithFilename(
     int ierr,
     const char *filename)
 {
-    PyObject *name = filename ? PyUnicode_DecodeFSDefault(filename) : NULL;
-    PyObject *result = PyErr_SetExcFromWindowsErrWithFilenameObject(
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+
+    if (filename)
+        name = PyUnicode_DecodeFSDefault(filename);
+
+    result = PyErr_SetExcFromWindowsErrWithFilenameObject(
                                                   PyExc_WindowsError,
                                                   ierr, name);
     Py_XDECREF(name);
@@ -602,10 +630,14 @@ PyObject *PyErr_SetFromWindowsErrWithUnicodeFilename(
     int ierr,
     const Py_UNICODE *filename)
 {
-    PyObject *name = filename ?
-                     PyUnicode_FromUnicode(filename, wcslen(filename)) :
-             NULL;
-    PyObject *result = PyErr_SetExcFromWindowsErrWithFilenameObject(
+    PyObject *name = NULL;
+    PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
+
+    if (filename)
+        name = PyUnicode_FromUnicode(filename, wcslen(filename));
+
+    result = PyErr_SetExcFromWindowsErrWithFilenameObject(
                                                   PyExc_WindowsError,
                                                   ierr, name);
     Py_XDECREF(name);
@@ -617,6 +649,7 @@ PyObject *
 PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
 {
     PyObject *args, *kwargs, *error;
+    PyExc_MAYBE_BREAK();
 
     if (msg == NULL)
         return NULL;
@@ -659,6 +692,7 @@ PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
 void
 _PyErr_BadInternalCall(const char *filename, int lineno)
 {
+    PyExc_MAYBE_BREAK();
     PyErr_Format(PyExc_SystemError,
                  "%s:%d: bad argument to internal function",
                  filename, lineno);
@@ -670,6 +704,7 @@ _PyErr_BadInternalCall(const char *filename, int lineno)
 void
 PyErr_BadInternalCall(void)
 {
+    PyExc_MAYBE_BREAK();
     PyErr_Format(PyExc_SystemError,
                  "bad argument to internal function");
 }
@@ -682,6 +717,7 @@ PyErr_Format(PyObject *exception, const char *format, ...)
 {
     va_list vargs;
     PyObject* string;
+    PyExc_MAYBE_BREAK();
 
 #ifdef HAVE_STDARG_PROTOTYPES
     va_start(vargs, format);
@@ -707,6 +743,7 @@ PyErr_NewException(const char *name, PyObject *base, PyObject *dict)
     PyObject *mydict = NULL;
     PyObject *bases = NULL;
     PyObject *result = NULL;
+    PyExc_MAYBE_BREAK();
     dot = strrchr(name, '.');
     if (dot == NULL) {
         PyErr_SetString(PyExc_SystemError,
@@ -758,6 +795,7 @@ PyErr_NewExceptionWithDoc(const char *name, const char *doc,
     PyObject *ret = NULL;
     PyObject *mydict = NULL; /* points to the dict only if we create it */
     PyObject *docobj;
+    PyExc_MAYBE_BREAK();
 
     if (dict == NULL) {
         dict = mydict = PyDict_New();
@@ -790,6 +828,7 @@ PyErr_WriteUnraisable(PyObject *obj)
 {
     _Py_IDENTIFIER(__module__);
     PyObject *f, *t, *v, *tb;
+    PyExc_MAYBE_BREAK();
     PyErr_Fetch(&t, &v, &tb);
     f = PySys_GetObject("stderr");
     if (f != NULL && f != Py_None) {
@@ -862,6 +901,7 @@ PyErr_SyntaxLocationEx(const char *filename, int lineno, int col_offset)
     _Py_IDENTIFIER(offset);
     _Py_IDENTIFIER(print_file_and_line);
     _Py_IDENTIFIER(text);
+    PyExc_MAYBE_BREAK();
 
     /* add attributes for the line number and filename for the error */
     PyErr_Fetch(&exc, &v, &tb);
@@ -938,6 +978,7 @@ PyErr_ProgramText(const char *filename, int lineno)
     FILE *fp;
     int i;
     char linebuf[1000];
+    PyExc_MAYBE_BREAK();
 
     if (filename == NULL || *filename == '\0' || lineno <= 0)
         return NULL;

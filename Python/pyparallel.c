@@ -28,6 +28,7 @@ Py_TLS HANDLE heap_override;
 Py_TLS void *last_heap_override_malloc_addr;
 Py_TLS void *last_context_heap_malloc_addr;
 
+Py_TLS static int _PyParallel_BreakOnNextException;
 
 Py_TLS static int _PxNewThread = 1;
 
@@ -94,6 +95,25 @@ int
 _PyParallel_IsFinalized(void)
 {
     return _PyParallel_Finalized;
+}
+
+
+void
+_PyParallel_SetDebugbreakOnNextException(void)
+{
+    _PyParallel_BreakOnNextException = 1;
+}
+
+void
+_PyParallel_ClearDebugbreakOnNextException(void)
+{
+    _PyParallel_BreakOnNextException = 0;
+}
+
+int
+_PyParallel_IsDebugbreakOnNextExceptionSet(void)
+{
+    return _PyParallel_BreakOnNextException;
 }
 
 static __inline
@@ -11042,6 +11062,17 @@ _async_debugbreak(PyObject *self, PyObject *o)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(_async_debugbreak_on_next_exception_doc,
+             "debugbreak() as soon as next exception occurs\n");
+
+PyObject *
+_async_debugbreak_on_next_exception(PyObject *self, PyObject *o)
+{
+    _PyParallel_SetDebugbreakOnNextException();
+    Py_RETURN_NONE;
+}
+
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -11109,6 +11140,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(refresh_memory_stats),
     _ASYNC_V(call_from_main_thread),
     _ASYNC_N(seh_eav_in_io_callback),
+    _ASYNC_N(debugbreak_on_next_exception),
     _ASYNC_V(call_from_main_thread_and_wait),
 
     { NULL, NULL } /* sentinel */
