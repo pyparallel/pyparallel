@@ -11,6 +11,7 @@ join = os.path.join
 abspath = os.path.abspath
 dirname = os.path.dirname
 normpath = os.path.normpath
+splitpath = os.path.split
 
 #===============================================================================
 # Helper Methods
