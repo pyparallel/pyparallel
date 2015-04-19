@@ -89,7 +89,7 @@ static PySliceObject *slice_cache = NULL;
 void PySlice_Fini(void)
 {
     PySliceObject *obj = slice_cache;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return;
     if (obj != NULL) {
         slice_cache = NULL;
@@ -106,7 +106,7 @@ PySlice_New(PyObject *start, PyObject *stop, PyObject *step)
 {
     PySliceObject *obj;
 
-    if (!Py_PXCTX && slice_cache != NULL) {
+    if (!Py_PXCTX() && slice_cache != NULL) {
         obj = slice_cache;
         slice_cache = NULL;
         _Py_NewReference((PyObject *)obj);
@@ -280,7 +280,7 @@ Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).");
 static void
 slice_dealloc(PySliceObject *r)
 {
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return;
 
     Py_DECREF(r->step);

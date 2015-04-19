@@ -315,13 +315,13 @@ _PyParallel_RemoveHeapOverride(void)
 int
 _PyParallel_IsTLSHeapActive(void)
 {
-    return (!Py_PXCTX ? 0 : Px_TLS_HEAP_ACTIVE);
+    return (!Py_PXCTX() ? 0 : Px_TLS_HEAP_ACTIVE);
 }
 
 int
 _PyParallel_GetTLSHeapDepth(void)
 {
-    return (!Py_PXCTX ? 0 : tls.heap_depth);
+    return (!Py_PXCTX() ? 0 : tls.heap_depth);
 }
 
 void
@@ -330,7 +330,7 @@ _PyParallel_EnableTLSHeap(void)
     TLS     *t = &tls;
     Context *c = ctx;
 
-    if (!Py_PXCTX)
+    if (!Py_PXCTX())
         return;
 
     if (++t->heap_depth > 1)
@@ -354,7 +354,7 @@ _PyParallel_DisableTLSHeap(void)
     TLS     *t = &tls;
     Context *c = ctx;
 
-    if (!Py_PXCTX)
+    if (!Py_PXCTX())
         return;
 
     if (--t->heap_depth > 0)
@@ -437,7 +437,7 @@ get_main_thread_state_old(void)
         if (!tstate) {
             OutputDebugString(L"get_main_thread_state(3): !tstate\n");
 
-            if (Py_PXCTX) {
+            if (Py_PXCTX()) {
                 PyThreadState *ts1, *ts2;
                 ts1 = tls.px->tstate;
                 ts2 = ctx->px->tstate;
@@ -470,7 +470,7 @@ PXSTATE(void)
     PyThreadState *pstate = get_main_thread_state();
     if (!pstate) {
         OutputDebugString(L"_PyThreadState_Current == NULL!\n");
-        if (Py_PXCTX)
+        if (Py_PXCTX())
             px = ctx->px;
     } else
         px = (PxState *)pstate->px;
@@ -1095,7 +1095,7 @@ void
 _PyParallel_IncRef(void *vp)
 {
     PyObject *op = (PyObject *)vp;
-    if ((!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op)))) {
+    if ((!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op)))) {
         _Py_INC_REFTOTAL;
         (((PyObject*)(op))->ob_refcnt++);
     }
@@ -1105,7 +1105,7 @@ void
 _PyParallel_DecRef(void *vp)
 {
     PyObject *op = (PyObject *)vp;
-    if (!Py_PXCTX) {
+    if (!Py_PXCTX()) {
         if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
         else if (!Px_ISPX(op)) {
@@ -1319,12 +1319,12 @@ _Px_TryPersist(PyObject *o)
 int
 _Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
 {
-    if (!Py_PXCTX && !Py_PXCB) {
+    if (!Py_PXCTX() && !Py_PXCB) {
         assert(!Px_ISPX(o));
         assert(!Px_ISPX(k));
         assert(!Px_XISPX(v));
     }
-    if (!Px_ISPY(o) || (!Py_PXCTX && !Py_PXCB))
+    if (!Px_ISPY(o) || (!Py_PXCTX() && !Py_PXCB))
         return 1;
 
     return !(!_Px_TryPersist(k) || !_Px_TryPersist(v));
@@ -2237,7 +2237,7 @@ _PyParallel_GuardObj(const char *function,
         if (flags & _PY_ISPX_TEST) {
             /* Special case for Py_ISPX(o); o must be a valid object. */
             assert(s & (_OBJSIG_PY | _OBJSIG_PX));
-            return (Py_PXCTX ? 1 : ((s & _OBJSIG_PX) == _OBJSIG_PX) ? 1 : 0);
+            return (Py_PXCTX() ? 1 : ((s & _OBJSIG_PX) == _OBJSIG_PX) ? 1 : 0);
         }
 
         return ((s & _OBJSIG_PX) == _OBJSIG_PX);
@@ -3048,15 +3048,15 @@ _PxObject_Realloc(void *p, size_t nbytes)
     o = _Px_SafeObjectSignatureTest(p);
     m = _Px_MemorySignature(p);
     s = Px_MAX(o, m);
-    if (Py_PXCTX) {
+    if (Py_PXCTX()) {
         void *r;
         if (s & _SIG_PY)
-            printf("\n_PxObject_Realloc(Py_PXCTX && p = _SIG_PY)\n");
+            printf("\n_PxObject_Realloc(Py_PXCTX() && p = _SIG_PY)\n");
         r = _PyHeap_Realloc(c, p, nbytes);
         return r;
     } else {
         if (s & _SIG_PX)
-            printf("\n_PxObject_Realloc(!Py_PXCTX && p = _SIG_PX)\n");
+            printf("\n_PxObject_Realloc(!Py_PXCTX() && p = _SIG_PX)\n");
         return PyObject_Realloc(p, nbytes);
     }
     assert(0);
@@ -3072,14 +3072,14 @@ _PxObject_Free(void *p)
     o = _Px_SafeObjectSignatureTest(p);
     m = _Px_MemorySignature(p);
     s = Px_MAX(o, m);
-    if (Py_PXCTX) {
+    if (Py_PXCTX()) {
         if (!(s & _SIG_PX))
-            printf("\n_PxObject_Free(Py_PXCTX && p != _SIG_PX)\n");
+            printf("\n_PxObject_Free(Py_PXCTX() && p != _SIG_PX)\n");
         else
             _PyHeap_Free(c, p);
     } else {
         if (s & _SIG_PX)
-            printf("\n_PxObject_Free(!Py_PXCTX && p = _SIG_PX)\n");
+            printf("\n_PxObject_Free(!Py_PXCTX() && p = _SIG_PX)\n");
         else
             PyObject_Free(p);
     }
@@ -4202,7 +4202,7 @@ PyXList_New(void)
 {
     PyXListObject *xlist;
 
-    if (Py_PXCTX) {
+    if (Py_PXCTX()) {
         PyErr_SetString(PyExc_RuntimeError,
                         "xlist objects cannot be "
                         "created from parallel threads");
@@ -4341,7 +4341,7 @@ xlist_push(PyObject *obj, PyObject *src)
     Py_INCREF(xlist);
     Py_INCREF(src);
 
-    if (!Py_PXCTX)
+    if (!Py_PXCTX())
         PxList_PushObject(xlist->head, src);
     else {
         PyObject *dst;
@@ -5139,7 +5139,7 @@ submit_work(Context *c)
 {
     int retval;
     PTP_SIMPLE_CALLBACK cb = _PyParallel_WorkCallback;
-    if (Py_PXCTX) {
+    if (Py_PXCTX()) {
         assert(c->instance);
         cb(c->instance, c);
         return 1;
@@ -5555,7 +5555,7 @@ PxIO *
 get_pxio(int size)
 {
     PxIO *io = NULL;
-    PxState *px = (Py_PXCTX ? ctx->px : PXSTATE());
+    PxState *px = (Py_PXCTX() ? ctx->px : PXSTATE());
     short io_attempt = 0;
     if (size > PyAsync_IO_BUFSIZE) {
 alloc_io:
@@ -6504,7 +6504,7 @@ _Px_NegativePersistedCount(const char *fname, int lineno, Context *c, int count)
 void
 Px_DecRef(PyObject *o)
 {
-    assert(!Py_PXCTX);
+    assert(!Py_PXCTX());
     assert(Px_PERSISTED(o) || Px_CLONED(o));
 
     _Py_DEC_REFTOTAL;
@@ -8854,7 +8854,7 @@ set_other_sockopts:
     s->parent = parent;
     if (!s->parent) {
         /* Inherit our parent from the active context if applicable. */
-        if (Py_PXCTX && ctx->io_obj && ctx->io_type == Px_IOTYPE_SOCKET)
+        if (Py_PXCTX() && ctx->io_obj && ctx->io_type == Px_IOTYPE_SOCKET)
             s->parent = (PxSocket *)ctx->io_obj;
     }
 
@@ -9701,7 +9701,7 @@ PxSocket_InitExceptionHandler(PxSocket *s)
     assert(s->protocol);
     assert(!PyErr_Occurred());
     if (!s->exception_handler) {
-        assert(Py_PXCTX);
+        assert(Py_PXCTX());
         old_heap = ctx->h;
         ctx->h = s->ctx->h;
         eh = PyObject_GetAttrString(s->protocol, "exception_handler");
@@ -10446,7 +10446,7 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
     else
         cb = PxSocketServer_Start;
 
-    if (Py_PXCTX || PxSocket_IS_CLIENT(s)) {
+    if (Py_PXCTX() || PxSocket_IS_CLIENT(s)) {
         /* If we're a parallel thread, we can just palm off the work to
          * TrySubmitThreadpoolCallback directly.
          */

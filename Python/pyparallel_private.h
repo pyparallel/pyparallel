@@ -73,12 +73,12 @@ extern "C" {
 #define Px_PTR_ALIGNED_ADD(p, n) \
     (Px_PTR_ALIGN(Px_PTR_ADD(p, Px_PTR_ALIGN(n))))
 
-#define Px_ALIGNED_MALLOC(n)                                \
-    (Py_PXCTX ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+#define Px_ALIGNED_MALLOC(n)                                  \
+    (Py_PXCTX() ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
                 _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
 
-#define Px_ALIGNED_FREE(n)                                  \
-    (Py_PXCTX ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+#define Px_ALIGNED_FREE(n)                                    \
+    (Py_PXCTX() ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
                 _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
 
 #define Px_MAX(a, b) ((a > b) ? a : b)
@@ -1797,7 +1797,7 @@ static const char *pxsocket_kwlist_formatstring = \
     */
 
 #define PxSocket_XINCREF(s) do {             \
-    if (Py_PXCTX)                            \
+    if (Py_PXCTX())                          \
         break;                               \
     Py_XINCREF(s->protocol);                 \
     Py_XINCREF(s->connection_made);          \
@@ -1814,7 +1814,7 @@ static const char *pxsocket_kwlist_formatstring = \
 } while (0)
 
 #define PxSocket_XDECREF(s) do {             \
-    if (Py_PXCTX)                            \
+    if (Py_PXCTX())                          \
         break;                               \
     Py_XDECREF(s->protocol);                 \
     Py_XDECREF(s->connection_made);          \

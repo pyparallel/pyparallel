@@ -188,7 +188,7 @@ PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
 
 #ifdef WITH_PARALLEL
 #define _PyThreadState_GET() ((PyThreadState *)                     \
-    (Py_PXCTX ? (_PyParallel_GetThreadState()) :                    \
+    (Py_PXCTX() ? (_PyParallel_GetThreadState()) :                  \
                 (_Py_atomic_load_relaxed(&_PyThreadState_Current))) \
 )
 #define _PyThreadState_XGET() _PyThreadState_GET()

@@ -37,7 +37,7 @@
 #define __FROM_GC(g) ((PyObject *)(((PyGC_Head *)g)+1))
 /* Force a null-pointer deref if we're in a parallel context. */
 #define AS_GC(o)   (Py_ISPX(o) ? (PyGC_Head *)0 : __AS_GC(o))
-#define FROM_GC(g) (Py_PXCTX   ? (PyObject  *)0 : __FROM_GC(g))
+#define FROM_GC(g) (Py_PXCTX() ? (PyObject  *)0 : __FROM_GC(g))
 #endif
 
 /*** Global GC state ***/

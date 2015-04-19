@@ -1034,7 +1034,7 @@ make_new_set(PyTypeObject *type, PyObject *iterable)
     }
 
     /* create PySetObject structure */
-    if (!Py_PXCTX && numfree &&
+    if (!Py_PXCTX() && numfree &&
         (type == &PySet_Type  ||  type == &PyFrozenSet_Type)) {
         so = free_list[--numfree];
         assert (so != NULL && PyAnySet_CheckExact(so));
@@ -1116,7 +1116,7 @@ PySet_ClearFreeList(void)
 {
     int freelist_size = numfree;
     PySetObject *so;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
 
     while (numfree) {

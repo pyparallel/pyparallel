@@ -247,7 +247,7 @@ PyDict_ClearFreeList(void)
 {
     PyDictObject *op;
     int ret = numfree;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
 
     while (numfree) {
@@ -393,7 +393,7 @@ new_dict(PyDictKeysObject *keys, PyObject **values)
 {
     PyDictObject *mp;
 
-    if (!Py_PXCTX && numfree) {
+    if (!Py_PXCTX() && numfree) {
         mp = free_list[--numfree];
         assert (mp != NULL);
         assert (Py_TYPE(mp) == &PyDict_Type);
@@ -837,7 +837,7 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
         Py_DECREF(old_value); /* which **CAN** re-enter */
 #ifdef WITH_PARALLEL
         /* Super hack to support persisting values for sockets/protcols. */
-        if (old_value != Py_None && Py_PXCTX) {
+        if (old_value != Py_None && Py_PXCTX()) {
             if (_PyParallel_IsHeapOverrideActive()) {
                 HANDLE h = _PyParallel_GetHeapOverride();
                 HeapFree(h, 0, old_value);
@@ -937,7 +937,7 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
     Py_ssize_t i, oldsize;
 
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Px_ISPY(mp)) {
+    if (Py_PXCTX() && Px_ISPY(mp)) {
         __debugbreak();
         PyErr_SetString(PyExc_RuntimeError,
                         "parallel thread attempted to "
@@ -1290,7 +1290,7 @@ PyDict_Clear(PyObject *op)
     Py_ssize_t i, n;
 
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Px_ISPY(op)) {
+    if (Py_PXCTX() && Px_ISPY(op)) {
         __debugbreak();
         Py_FatalError("parallel thread attempted to clear a main thread dict");
     }
@@ -2293,7 +2293,7 @@ static PyObject *
 dict_clear(register PyDictObject *mp)
 {
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Py_ISPY(mp)) {
+    if (Py_PXCTX() && Py_ISPY(mp)) {
         __debugbreak();
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to clear "

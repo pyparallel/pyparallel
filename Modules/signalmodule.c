@@ -1319,7 +1319,7 @@ PyErr_CheckSignals(void)
     PyObject *f;
 
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
 #endif
 

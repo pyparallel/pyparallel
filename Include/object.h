@@ -782,8 +782,8 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
                                      (PyObject *)(OP));             \
 }
 #else  /* WITH_PARALLEL */
-#define _Py_INC_REFTOTAL        (Py_PXCTX ? (void)0 : _Py_RefTotal++)
-#define _Py_DEC_REFTOTAL        (Py_PXCTX ? (void)0 : _Py_RefTotal--)
+#define _Py_INC_REFTOTAL        (Py_PXCTX() ? (void)0 : _Py_RefTotal++)
+#define _Py_DEC_REFTOTAL        (Py_PXCTX() ? (void)0 : _Py_RefTotal--)
 #define _Py_REF_DEBUG_COMMA     ,
 #define _Py_CHECK_REFCNT(OP) {                                      \
     if (!Py_ISPX(OP) && ((PyObject*)OP)->ob_refcnt < 0)             \
@@ -812,17 +812,17 @@ PyAPI_FUNC(void) dec_count(PyTypeObject *);
 #define _Py_DEC_TPFREES(OP)  (Py_ISPX(OP) ? (void)0 : Py_TYPE(OP)->tp_frees--)
 #else
 #define _Py_INC_TPALLOCS(OP) (                          \
-    Py_PXCTX ? (void)0 : (                              \
+    Py_PXCTX() ? (void)0 : (                            \
         Py_ISPX(OP) ? (void)0 : inc_count(Py_TYPE(OP))  \
     )                                                   \
 )
 #define _Py_INC_TPFREES(OP) (                           \
-    Py_PXCTX ? (void)0 : (                              \
+    Py_PXCTX() ? (void)0 : (                            \
         Py_ISPX(OP) ? (void)0 : dec_count(Py_TYPE(OP))  \
     )                                                   \
 )
 #define _Py_DEC_TPFREES(OP) (                           \
-    Py_PXCTX ? (void)0 : (                              \
+    Py_PXCTX() ? (void)0 : (                            \
         Py_ISPX(OP) ? (void)0 : Py_TYPE(OP)->tp_frees-- \
     )                                                   \
 )
@@ -868,7 +868,7 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
         Py_REFCNT(op) = 1))
 #else
 #define _Py_NewReference(op) (                          \
-    (Py_PXCTX ? (_Px_NewReference(op)) : (              \
+    (Py_PXCTX() ? (_Px_NewReference(op)) : (            \
         (Py_ISPX(op) ? (_Px_NewReference(op)) : (       \
             _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
             _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
@@ -880,7 +880,7 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
 
 #define _Py_ForgetReference(op)                     \
     do {                                            \
-        if (Py_PXCTX)                               \
+        if (Py_PXCTX())                             \
             _Px_ForgetReference(op);                \
         else                                        \
             _Py_INC_TPFREES(op);                    \
@@ -905,12 +905,12 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
         (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
 #else
 #define _Py_Dealloc(op) (                                   \
-    (Py_PXCTX ? (_Px_Dealloc(op)) : (                       \
+    (Py_PXCTX() ? (_Px_Dealloc(op)) : (                     \
         (Py_ISPX(op) ? (_Px_Dealloc(op)) : (                \
             _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
             (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))    \
         ))                                                  \
-    ))                                                       \
+    ))                                                      \
 )
 #endif
 
@@ -946,7 +946,7 @@ _Py_IncRef(PyObject *op)
 #if defined(Py_DEBUG)
     _PyParallel_IncRef(op);
 #else
-    if ((!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op)))) {
+    if ((!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op)))) {
         _Py_INC_REFTOTAL;
         (((PyObject*)(op))->ob_refcnt++);
     }
@@ -955,7 +955,7 @@ _Py_IncRef(PyObject *op)
 
 #define Py_INCREF(op) (_Py_IncRef((PyObject *)op))
 #define __Py_INCREF(op)                                       \
-    (!(!Py_PXCTX && (Py_ISPY(op) || Px_PERSISTED(op))) ?      \
+    (!(!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op))) ?    \
         ((void)0) : (                                         \
             _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
             (((PyObject*)(op))->ob_refcnt++)                  \
@@ -969,7 +969,7 @@ _Py_DecRef(PyObject *op)
 #if defined(Py_DEBUG)
     _PyParallel_DecRef(op);
 #else
-    if (!Py_PXCTX) {
+    if (!Py_PXCTX()) {
         if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
         else if (!Px_ISPX(op)) {
@@ -987,7 +987,7 @@ _Py_DecRef(PyObject *op)
 
 #define __Py_DECREF(op)                                       \
     do {                                                      \
-        if (!Py_PXCTX) {                                      \
+        if (!Py_PXCTX()) {                                    \
             if (Px_PERSISTED(op))                             \
                 Px_DECREF(op);                                \
             else if (!Px_ISPX(op)) {                          \

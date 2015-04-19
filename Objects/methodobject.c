@@ -17,7 +17,7 @@ PyObject *
 PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
 {
     PyCFunctionObject *op;
-    op = (Py_PXCTX ? 0 : free_list);
+    op = (Py_PXCTX() ? 0 : free_list);
     if (op != NULL) {
         free_list = (PyCFunctionObject *)(op->m_self);
         PyObject_INIT((PyObject *)op, &PyCFunction_Type);
@@ -323,7 +323,7 @@ PyCFunction_ClearFreeList(void)
 {
     int freelist_size = numfree;
 
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
 
     while (free_list) {

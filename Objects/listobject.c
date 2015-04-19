@@ -40,7 +40,7 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
     }
 
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Py_ISPY(self)) {
+    if (Py_PXCTX() && Py_ISPY(self)) {
         __debugbreak();
         PyErr_SetString(PyExc_AssignmentError, "list_resize from px thread");
         return -1;
@@ -110,7 +110,7 @@ PyList_ClearFreeList(void)
 {
     PyListObject *op;
     int ret = numfree;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
     while (numfree) {
         op = free_list[--numfree];
@@ -157,7 +157,7 @@ PyList_New(Py_ssize_t size)
     if ((size_t)size > PY_SIZE_MAX / sizeof(PyObject *))
         return PyErr_NoMemory();
     nbytes = size * sizeof(PyObject *);
-    if (!Py_PXCTX && numfree) {
+    if (!Py_PXCTX() && numfree) {
         numfree--;
         op = free_list[numfree];
         _Py_NewReference((PyObject *)op);
@@ -606,7 +606,7 @@ list_ass_slice(PyListObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     size_t s;
     int result = -1;            /* guilty until proved innocent */
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Px_ISPY(a)) {
+    if (Py_PXCTX() && Px_ISPY(a)) {
         __debugbreak();
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to assign to a slice "
@@ -2466,7 +2466,7 @@ static int
 list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
 {
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Px_ISPY(self)) {
+    if (Py_PXCTX() && Px_ISPY(self)) {
         __debugbreak();
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to "

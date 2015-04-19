@@ -115,7 +115,7 @@ PyObject *
 PyFloat_FromDouble(double fval)
 {
     PyFloatObject *op = NULL;
-    if (!Py_PXCTX)
+    if (!Py_PXCTX())
         op = free_list;
     if (op != NULL) {
         Py_GUARD();
@@ -1921,7 +1921,7 @@ PyFloat_ClearFreeList(void)
 {
     PyFloatObject *f = free_list, *next;
     int i = numfree;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
     while (f) {
         next = (PyFloatObject*) Py_TYPE(f);

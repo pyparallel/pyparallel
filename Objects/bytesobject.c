@@ -104,7 +104,7 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
         Py_MEMCPY(op->ob_sval, str, size);
     op->ob_sval[size] = '\0';
 
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         goto end;
 
     /* share short strings */
@@ -155,7 +155,7 @@ PyBytes_FromString(const char *str)
     op->ob_shash = -1;
     Py_MEMCPY(op->ob_sval, str, size+1);
 
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         goto end;
 
     /* share short strings */
@@ -2921,7 +2921,7 @@ void
 PyBytes_Fini(void)
 {
     int i;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return;
     for (i = 0; i < UCHAR_MAX + 1; i++)
         Py_CLEAR(characters[i]);

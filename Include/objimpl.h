@@ -202,11 +202,11 @@ PyAPI_FUNC(void) _Px_NewReference(PyObject *op);
 PyAPI_FUNC(void) _Px_ForgetReference(PyObject *op);
 
 #define PyObject_New(type, typeobj)                                  \
-    (Py_PXCTX ? ((type *)_PxObject_New(typeobj)) :                   \
+    (Py_PXCTX() ? ((type *)_PxObject_New(typeobj)) :                 \
                 ((type *)_PyObject_New(typeobj)))
 
 #define PyObject_NewVar(type, typeobj, n)                            \
-    (Py_PXCTX ? ((type *)_PxObject_NewVar((typeobj)), (n)) :         \
+    (Py_PXCTX() ? ((type *)_PxObject_NewVar((typeobj)), (n)) :       \
                 ((type *)_PyObject_NewVar((typeobj)), (n)))
 
 static __inline
@@ -364,7 +364,7 @@ PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 #define __PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
     (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
 
-#define PyType_IS_GC(t)   (Py_PXCTX   ? (0) : __PyType_IS_GC(t))
+#define PyType_IS_GC(t)   (Py_PXCTX()   ? (0) : __PyType_IS_GC(t))
 #define PyObject_IS_GC(o) (Py_ISPX(o) ? (0) : __PyObject_IS_GC(o))
 static __inline
 PyVarObject *
@@ -512,11 +512,11 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
 #else /* !WITH_PARALLEL */
 
 #define PyObject_GC_New(type, typeobj)                             \
-    (Py_PXCTX ? ((type *) _PxObject_New(typeobj)) :                \
+    (Py_PXCTX() ? ((type *) _PxObject_New(typeobj)) :              \
                 ((type *) _PyObject_GC_New(typeobj)))
 
 #define PyObject_GC_NewVar(type, typeobj, n)                       \
-    (Py_PXCTX ? ((type *) _PxObject_NewVar((typeobj), (n))) :      \
+    (Py_PXCTX() ? ((type *) _PxObject_NewVar((typeobj), (n))) :    \
                 ((type *) _PyObject_GC_NewVar((typeobj), (n))))
 #endif /* WITH_PARALLEL */
 

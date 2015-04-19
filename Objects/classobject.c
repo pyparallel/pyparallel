@@ -50,7 +50,7 @@ PyMethod_New(PyObject *func, PyObject *self)
         return NULL;
     }
     im = free_list;
-    if (!Py_PXCTX && im != NULL) {
+    if (!Py_PXCTX() && im != NULL) {
         free_list = (PyMethodObject *)(im->im_self);
         PyObject_INIT((PyObject *)im, &PyMethod_Type);
         numfree--;
@@ -388,7 +388,7 @@ PyMethod_ClearFreeList(void)
 {
     int freelist_size = numfree;
 
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
 
     while (free_list) {

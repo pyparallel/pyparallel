@@ -649,7 +649,7 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
 #ifndef WITH_PARALLEL
     if (code->co_zombieframe != NULL) {
 #else
-    if (!Py_PXCTX && code->co_zombieframe != NULL &&
+    if (!Py_PXCTX() && code->co_zombieframe != NULL &&
         !_PyParallel_ExecutingCallbackFromMainThread()) {
 #ifdef Py_DEBUG
         assert(!_Px_TEST(code->co_zombieframe));
@@ -665,7 +665,7 @@ PyFrame_New(PyThreadState *tstate, PyCodeObject *code, PyObject *globals,
         ncells = PyTuple_GET_SIZE(code->co_cellvars);
         nfrees = PyTuple_GET_SIZE(code->co_freevars);
         extras = code->co_stacksize + code->co_nlocals + ncells + nfrees;
-        if (Py_PXCTX || free_list == NULL) {
+        if (Py_PXCTX() || free_list == NULL) {
             f = PyObject_GC_NewVar(PyFrameObject, &PyFrame_Type, extras);
             if (f == NULL) {
                 Py_DECREF(builtins);
@@ -985,7 +985,7 @@ int
 PyFrame_ClearFreeList(void)
 {
     int freelist_size = numfree;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
     while (free_list != NULL) {
         PyFrameObject *f = free_list;

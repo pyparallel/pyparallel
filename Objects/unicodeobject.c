@@ -1587,7 +1587,7 @@ unicode_modifiable(PyObject *unicode)
 {
     assert(_PyUnicode_CHECK(unicode));
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX) {
+    if (Py_PXCTX()) {
         if (Py_ISPY(unicode))
             return 0;
         else {
@@ -4012,7 +4012,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
 #endif
     wchar_t *w;
     wchar_t *wchar_end;
-    short use_tls_heap = (Py_PXCTX && Py_ISPY(unicode));
+    short use_tls_heap = (Py_PXCTX() && Py_ISPY(unicode));
 
     if (!PyUnicode_Check(unicode)) {
         PyErr_BadArgument();

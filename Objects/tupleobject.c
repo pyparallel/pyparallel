@@ -71,7 +71,7 @@ PyTuple_New(register Py_ssize_t size)
         PyErr_BadInternalCall();
         return NULL;
     }
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         goto newvar;
 #if PyTuple_MAXSAVESIZE > 0
     if (size == 0 && free_list[0]) {
@@ -111,7 +111,7 @@ newvar:
     for (i=0; i < size; i++)
         op->ob_item[i] = NULL;
 
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         goto end;
 
 #if PyTuple_MAXSAVESIZE > 0
@@ -913,7 +913,7 @@ PyTuple_ClearFreeList(void)
     int freelist_size = 0;
 #if PyTuple_MAXSAVESIZE > 0
     int i;
-    if (Py_PXCTX)
+    if (Py_PXCTX())
         return 0;
     for (i = 1; i < PyTuple_MAXSAVESIZE; i++) {
         PyTupleObject *p, *q;
