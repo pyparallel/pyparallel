@@ -474,6 +474,7 @@ frame_traverse(PyFrameObject *f, visitproc visit, void *arg)
 {
     PyObject **fastlocals, **p;
     int i, slots;
+    Py_GUARD
 
     Py_VISIT(f->f_back);
     Py_VISIT(f->f_code);
@@ -504,6 +505,7 @@ frame_clear(PyFrameObject *f)
 {
     PyObject **fastlocals, **p, **oldtop;
     int i, slots;
+    Py_GUARD
 
     /* Before anything else, make sure that this frame is clearly marked
      * as being defunct!  Else, e.g., a generator reachable from this
@@ -738,8 +740,10 @@ void
 PyFrame_BlockSetup(PyFrameObject *f, int type, int handler, int level)
 {
     PyTryBlock *b;
-    if (f->f_iblock >= CO_MAXBLOCKS)
+    if (f->f_iblock >= CO_MAXBLOCKS) {
+        __debugbreak();
         Py_FatalError("XXX block stack overflow");
+    }
     b = &f->f_blockstack[f->f_iblock++];
     b->b_type = type;
     b->b_level = level;
@@ -750,8 +754,10 @@ PyTryBlock *
 PyFrame_BlockPop(PyFrameObject *f)
 {
     PyTryBlock *b;
-    if (f->f_iblock <= 0)
+    if (f->f_iblock <= 0) {
+        __debugbreak();
         Py_FatalError("XXX block stack underflow");
+    }
     b = &f->f_blockstack[--f->f_iblock];
     return b;
 }
@@ -770,6 +776,8 @@ PyFrame_BlockPop(PyFrameObject *f)
 
    Exceptions raised while modifying the dict are silently ignored,
    because there is no good way to report them.
+
+   PyParallel: cancel that, let's __debugbreak().
  */
 
 static void
@@ -789,12 +797,16 @@ map_to_dict(PyObject *map, Py_ssize_t nmap, PyObject *dict, PyObject **values,
             value = PyCell_GET(value);
         }
         if (value == NULL) {
-            if (PyObject_DelItem(dict, key) != 0)
+            if (PyObject_DelItem(dict, key) != 0) {
+                //__debugbreak();
                 PyErr_Clear();
+            }
         }
         else {
-            if (PyObject_SetItem(dict, key, value) != 0)
+            if (PyObject_SetItem(dict, key, value) != 0) {
+                __debugbreak();
                 PyErr_Clear();
+            }
         }
     }
 }
@@ -818,6 +830,8 @@ map_to_dict(PyObject *map, Py_ssize_t nmap, PyObject *dict, PyObject **values,
 
    Exceptions raised while modifying the dict are silently ignored,
    because there is no good way to report them.
+
+   PyParallel: cancel that, let's __debugbreak().
 */
 
 static void
@@ -834,6 +848,7 @@ dict_to_map(PyObject *map, Py_ssize_t nmap, PyObject *dict, PyObject **values,
         assert(PyUnicode_Check(key));
         /* We only care about NULLs if clear is true. */
         if (value == NULL) {
+            //__debugbreak();
             PyErr_Clear();
             if (!clear)
                 continue;
@@ -841,8 +856,10 @@ dict_to_map(PyObject *map, Py_ssize_t nmap, PyObject *dict, PyObject **values,
         if (deref) {
             assert(PyCell_Check(values[j]));
             if (PyCell_GET(values[j]) != value) {
-                if (PyCell_Set(values[j], value) < 0)
+                if (PyCell_Set(values[j], value) < 0) {
+                    __debugbreak();
                     PyErr_Clear();
+                }
             }
         } else if (values[j] != value) {
             Py_XINCREF(value);
@@ -863,20 +880,31 @@ PyFrame_FastToLocals(PyFrameObject *f)
     PyCodeObject *co;
     Py_ssize_t j;
     int ncells, nfreevars;
-    if (f == NULL)
+#ifdef WITH_PARALLEL
+    /* Note to future self (or others): I came across this method whilst
+       trying to track down PyParallel crashes.  There are a few failure
+       points that get silently ignored.  Let's not ignore them for now
+       and __debugbreak() instead. */
+#endif
+    if (f == NULL) {
+        __debugbreak();
         return;
+    }
     locals = f->f_locals;
     if (locals == NULL) {
         locals = f->f_locals = PyDict_New();
         if (locals == NULL) {
+            __debugbreak();
             PyErr_Clear(); /* Can't report it :-( */
             return;
         }
     }
     co = f->f_code;
     map = co->co_varnames;
-    if (!PyTuple_Check(map))
+    if (!PyTuple_Check(map)) {
+        __debugbreak();
         return;
+    }
     PyErr_Fetch(&error_type, &error_value, &error_traceback);
     fast = f->f_localsplus;
     j = PyTuple_GET_SIZE(map);
@@ -915,15 +943,21 @@ PyFrame_LocalsToFast(PyFrameObject *f, int clear)
     PyCodeObject *co;
     Py_ssize_t j;
     int ncells, nfreevars;
-    if (f == NULL)
+    if (f == NULL) {
+        __debugbreak();
         return;
+    }
     locals = f->f_locals;
     co = f->f_code;
     map = co->co_varnames;
-    if (locals == NULL)
+    if (locals == NULL) {
+        __debugbreak();
         return;
-    if (!PyTuple_Check(map))
+    }
+    if (!PyTuple_Check(map)) {
+        __debugbreak();
         return;
+    }
     PyErr_Fetch(&error_type, &error_value, &error_traceback);
     fast = f->f_localsplus;
     j = PyTuple_GET_SIZE(map);
