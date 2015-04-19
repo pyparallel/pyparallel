@@ -156,13 +156,6 @@ PyCode_New(int argcount, int kwonlyargcount,
     co->co_lnotab = lnotab;
     co->co_zombieframe = NULL;
     co->co_weakreflist = NULL;
-#ifdef WITH_PARALLEL
-    co->px_execount       = 0;
-    co->px_heapsize_avg   = 0;
-    co->px_heapsize_hint  = 0;
-    co->px_heapsize_total = 0;
-    co->px = NULL;
-#endif
     return co;
 }
 
@@ -232,12 +225,6 @@ static PyMemberDef code_memberlist[] = {
     {"co_name",         T_OBJECT,       OFF(co_name),           READONLY},
     {"co_firstlineno", T_INT,           OFF(co_firstlineno),    READONLY},
     {"co_lnotab",       T_OBJECT,       OFF(co_lnotab),         READONLY},
-#ifdef WITH_PARALLEL
-    {"px_execount",       T_PYSSIZET,   OFF(px_execount),       READONLY},
-    {"px_heapsize_avg",   T_PYSSIZET,   OFF(px_heapsize_avg),   READONLY},
-    {"px_heapsize_hint",  T_PYSSIZET,   OFF(px_heapsize_hint),  READONLY},
-    {"px_heapsize_total", T_PYSSIZET,   OFF(px_heapsize_total), READONLY},
-#endif
     {NULL}      /* Sentinel */
 };
 

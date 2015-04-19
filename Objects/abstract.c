@@ -146,12 +146,6 @@ PyObject_SetItem(PyObject *o, PyObject *key, PyObject *value)
         null_error();
         return -1;
     }
-
-    /*
-    if (Px_CHECK_PROTECTION(o, key, value))
-        return -1;
-    */
-
     m = o->ob_type->tp_as_mapping;
     if (m && m->mp_ass_subscript)
         return m->mp_ass_subscript(o, key, value);
@@ -184,12 +178,6 @@ PyObject_DelItem(PyObject *o, PyObject *key)
         null_error();
         return -1;
     }
-
-    /*
-    if (Px_CHECK_PROTECTION(o, NULL, NULL))
-        return -1;
-    */
-
     m = o->ob_type->tp_as_mapping;
     if (m && m->mp_ass_subscript)
         return m->mp_ass_subscript(o, key, (PyObject*)NULL);
@@ -246,7 +234,6 @@ PyObject_AsCharBuffer(PyObject *obj,
         null_error();
         return -1;
     }
-
     pb = obj->ob_type->tp_as_buffer;
     if (pb == NULL || pb->bf_getbuffer == NULL) {
         PyErr_SetString(PyExc_TypeError,
@@ -273,7 +260,6 @@ PyObject_CheckReadBuffer(PyObject *obj)
     if (pb == NULL ||
         pb->bf_getbuffer == NULL)
         return 0;
-
     if ((*pb->bf_getbuffer)(obj, &view, PyBUF_SIMPLE) == -1) {
         PyErr_Clear();
         return 0;
@@ -293,7 +279,6 @@ int PyObject_AsReadBuffer(PyObject *obj,
         null_error();
         return -1;
     }
-
     pb = obj->ob_type->tp_as_buffer;
     if (pb == NULL ||
         pb->bf_getbuffer == NULL) {
@@ -323,7 +308,6 @@ int PyObject_AsWriteBuffer(PyObject *obj,
         null_error();
         return -1;
     }
-
     pb = obj->ob_type->tp_as_buffer;
     if (pb == NULL ||
         pb->bf_getbuffer == NULL ||
@@ -1534,11 +1518,6 @@ PySequence_SetItem(PyObject *s, Py_ssize_t i, PyObject *o)
         return -1;
     }
 
-    /*
-    if (Px_CHECK_PROTECTION(s, NULL, o))
-        return -1;
-    */
-
     m = s->ob_type->tp_as_sequence;
     if (m && m->sq_ass_item) {
         if (i < 0) {
@@ -1566,11 +1545,6 @@ PySequence_DelItem(PyObject *s, Py_ssize_t i)
         return -1;
     }
 
-    /*
-    if (Px_CHECK_PROTECTION(s, NULL, NULL))
-        return -1;
-    */
-
     m = s->ob_type->tp_as_sequence;
     if (m && m->sq_ass_item) {
         if (i < 0) {
@@ -1597,11 +1571,6 @@ PySequence_SetSlice(PyObject *s, Py_ssize_t i1, Py_ssize_t i2, PyObject *o)
         null_error();
         return -1;
     }
-
-    /*
-    if (Px_CHECK_PROTECTION(s, NULL, o))
-        return -1;
-    */
 
     mp = s->ob_type->tp_as_mapping;
     if (mp && mp->mp_ass_subscript) {
@@ -1875,7 +1844,6 @@ PySequence_Contains(PyObject *seq, PyObject *ob)
 {
     Py_ssize_t result;
     PySequenceMethods *sqm = seq->ob_type->tp_as_sequence;
-
     if (sqm != NULL && sqm->sq_contains != NULL)
         return (*sqm->sq_contains)(seq, ob);
     result = _PySequence_IterSearch(seq, ob, PY_ITERSEARCH_CONTAINS);
@@ -1961,12 +1929,6 @@ PyMapping_SetItemString(PyObject *o, char *key, PyObject *value)
     okey = PyUnicode_FromString(key);
     if (okey == NULL)
         return -1;
-
-    /*
-    if (Px_CHECK_PROTECTION(o, okey, value))
-        return -1;
-    */
-
     r = PyObject_SetItem(o, okey, value);
     Py_DECREF(okey);
     return r;
@@ -2641,7 +2603,6 @@ PyObject_GetIter(PyObject *o)
 {
     PyTypeObject *t = o->ob_type;
     getiterfunc f = NULL;
-
     f = t->tp_iter;
     if (f == NULL) {
         if (PySequence_Check(o))
@@ -2673,7 +2634,6 @@ PyObject *
 PyIter_Next(PyObject *iter)
 {
     PyObject *result;
-
     result = (*iter->ob_type->tp_iternext)(iter);
     if (result == NULL &&
         PyErr_Occurred() &&

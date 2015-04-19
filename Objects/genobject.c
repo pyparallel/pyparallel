@@ -78,35 +78,8 @@ gen_send_ex(PyGenObject *gen, PyObject *arg, int exc)
      * necessarily their creator. */
     f->f_tstate = tstate;
     Py_XINCREF(tstate->frame);
-#ifndef WITH_PARALLEL
     assert(f->f_back == NULL);
     f->f_back = tstate->frame;
-#elif 1
-    if (f->f_back != NULL)
-        __debugbreak();
-#else
-    /* xxx: eh, this isn't fixing generators. */
-    /* The assert() above was being hit when in a parallel context.
-     * Stepping into the debugger revealed that although f->f_back
-     * was not NULL, it was already the value of tstate->frame, so,
-     * given the next line after the assert above does that, I've
-     * put this logic in.
-     *
-     * In other words, I have no idea why f->f_back already equals
-     * tstate->frame when we're in a parallel context (other than
-     * a hand-wavy "something something probably TLS..."), but it
-     * does, so, let's let that one through... */
-    if (Py_PXCTX) {
-        if (f->f_back == NULL)
-            f->f_back = tstate->frame;
-        else if (f->f_back != tstate->frame)
-            /* ....and break in any other case. */
-            __debugbreak();
-    } else {
-        assert(f->f_back == NULL);
-        f->f_back = tstate->frame;
-    }
-#endif
 
     gen->gi_running = 1;
     result = PyEval_EvalFrameEx(f, exc);

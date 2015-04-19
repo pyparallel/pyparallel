@@ -803,8 +803,6 @@ insertion_resize(PyDictObject *mp)
 
 #ifdef WITH_PARALLEL
 typedef void * HANDLE;
-//extern char _PyParallel_IsHeapOverrideActive(void);
-//extern HANDLE _PyParallel_GetHeapOverride(void);
 extern char HeapFree(void *h, int flags, void *lpmem);
 #endif
 
@@ -940,13 +938,13 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
 
 #ifdef WITH_PARALLEL
     if (Py_PXCTX && Px_ISPY(mp)) {
+        __debugbreak();
         PyErr_SetString(PyExc_RuntimeError,
                         "parallel thread attempted to "
                         "resize a main thread dict");
         return -1;
     }
 #endif
-
 /* Find the smallest table size > minused. */
     for (newsize = PyDict_MINSIZE_COMBINED;
          newsize <= minused && newsize > 0;
@@ -1098,7 +1096,6 @@ PyDict_GetItem(PyObject *op, PyObject *key)
 
     if (!PyDict_Check(op))
         return NULL;
-
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1)
     {
@@ -1152,7 +1149,6 @@ PyDict_GetItemWithError(PyObject *op, PyObject *key)
         PyErr_BadInternalCall();
         return NULL;
     }
-
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1)
     {
@@ -1230,14 +1226,6 @@ PyDict_SetItem(PyObject *op, PyObject *key, PyObject *value)
     }
     assert(key);
     assert(value);
-
-    /*
-    if (Px_CHECK_PROTECTION(op, key, value))
-        return -1;
-    if (Px_PROTECTION_ERROR(op))
-        return -1;
-    */
-
     mp = (PyDictObject *)op;
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1)
@@ -1265,12 +1253,6 @@ PyDict_DelItem(PyObject *op, PyObject *key)
         return -1;
     }
     assert(key);
-
-    /*
-    if (Px_CHECK_PROTECTION(op, key, NULL))
-        return -1;
-    */
-
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1) {
         hash = PyObject_Hash(key);
@@ -1286,10 +1268,6 @@ PyDict_DelItem(PyObject *op, PyObject *key)
         return -1;
     }
     old_value = *value_addr;
-    /*
-    if (Px_ASSIGNMENT_ERROR(op, old_value))
-        return -1;
-    */
     *value_addr = NULL;
     mp->ma_used--;
     if (!_PyDict_HasSplitTable(mp)) {
@@ -1312,13 +1290,13 @@ PyDict_Clear(PyObject *op)
     Py_ssize_t i, n;
 
 #ifdef WITH_PARALLEL
-    if (Py_PXCTX && Px_ISPY(op))
+    if (Py_PXCTX && Px_ISPY(op)) {
+        __debugbreak();
         Py_FatalError("parallel thread attempted to clear a main thread dict");
+    }
 #endif
-
     if (!PyDict_Check(op))
         return;
-
     mp = ((PyDictObject *)op);
     oldkeys = mp->ma_keys;
     oldvalues = mp->ma_values;
@@ -1760,8 +1738,6 @@ dict_fromkeys(PyObject *cls, PyObject *args)
     PyObject *d;
     int status;
 
-    /* PXX TODO: px protection here? */
-
     if (!PyArg_UnpackTuple(args, "fromkeys", 1, 2, &seq, &value))
         return NULL;
 
@@ -1899,11 +1875,6 @@ PyDict_MergeFromSeq2(PyObject *d, PyObject *seq2, int override)
     assert(PyDict_Check(d));
     assert(seq2 != NULL);
 
-    /*
-    if (Px_CHECK_PROTECTION(d, seq2, NULL))
-        return -1;
-    */
-
     it = PyObject_GetIter(seq2);
     if (it == NULL)
         return -1;
@@ -1984,13 +1955,6 @@ PyDict_Merge(PyObject *a, PyObject *b, int override)
         PyErr_BadInternalCall();
         return -1;
     }
-
-    /*
-    if (Px_CHECK_PROTECTION(a, b, NULL) ||
-        Px_CHECK_PROTECTION(b, a, NULL))
-        return -1;
-    */
-
     mp = (PyDictObject*)a;
     if (PyDict_Check(b)) {
         other = (PyDictObject*)b;
@@ -2092,7 +2056,6 @@ PyDict_Copy(PyObject *o)
         PyErr_BadInternalCall();
         return NULL;
     }
-
     mp = (PyDictObject *)o;
     if (_PyDict_HasSplitTable(mp)) {
         PyDictObject *split_copy;
@@ -2133,7 +2096,6 @@ PyDict_Size(PyObject *mp)
         PyErr_BadInternalCall();
         return -1;
     }
-
     return ((PyDictObject *)mp)->ma_used;
 }
 
@@ -2144,7 +2106,6 @@ PyDict_Keys(PyObject *mp)
         PyErr_BadInternalCall();
         return NULL;
     }
-
     return dict_keys((PyDictObject *)mp);
 }
 
@@ -2155,7 +2116,6 @@ PyDict_Values(PyObject *mp)
         PyErr_BadInternalCall();
         return NULL;
     }
-
     return dict_values((PyDictObject *)mp);
 }
 
@@ -2166,7 +2126,6 @@ PyDict_Items(PyObject *mp)
         PyErr_BadInternalCall();
         return NULL;
     }
-
     return dict_items((PyDictObject *)mp);
 }
 
@@ -2178,7 +2137,6 @@ static int
 dict_equal(PyDictObject *a, PyDictObject *b)
 {
     Py_ssize_t i;
-
 
     if (a->ma_used != b->ma_used)
         /* can't be equal if # of entries differ */
@@ -2299,11 +2257,6 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
     if (!PyArg_UnpackTuple(args, "setdefault", 1, 2, &key, &failobj))
         return NULL;
 
-    /*
-    if (Px_CHECK_PROTECTION(mp, args, NULL))
-        return NULL;
-    */
-
     if (!PyUnicode_CheckExact(key) ||
         (hash = ((PyASCIIObject *) key)->hash) == -1) {
         hash = PyObject_Hash(key);
@@ -2341,6 +2294,7 @@ dict_clear(register PyDictObject *mp)
 {
 #ifdef WITH_PARALLEL
     if (Py_PXCTX && Py_ISPY(mp)) {
+        __debugbreak();
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to clear "
                         "a main thread dict");
@@ -2359,11 +2313,6 @@ dict_pop(PyDictObject *mp, PyObject *args)
     PyObject *key, *deflt = NULL;
     PyDictKeyEntry *ep;
     PyObject **value_addr;
-
-    /*
-    if (Px_CHECK_PROTECTION(mp, args, NULL))
-        return NULL;
-    */
 
     if(!PyArg_UnpackTuple(args, "pop", 1, 2, &key, &deflt))
         return NULL;
@@ -2412,10 +2361,6 @@ dict_popitem(PyDictObject *mp)
     PyDictKeyEntry *ep;
     PyObject *res;
 
-    /*
-    if (Px_CHECK_PROTECTION(mp, NULL, NULL))
-        return NULL;
-    */
 
     /* Allocate the result tuple before checking the size.  Believe it
      * or not, this allocation could trigger a garbage collection which
