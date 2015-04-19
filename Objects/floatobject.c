@@ -114,8 +114,11 @@ PyFloat_GetInfo(void)
 PyObject *
 PyFloat_FromDouble(double fval)
 {
-    register PyFloatObject *op = (Py_PXCTX ? 0 : free_list);
+    PyFloatObject *op = NULL;
+    if (!Py_PXCTX)
+        op = free_list;
     if (op != NULL) {
+        Py_GUARD
         free_list = (PyFloatObject *) Py_TYPE(op);
         numfree--;
     } else {
