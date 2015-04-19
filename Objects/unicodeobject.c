@@ -1933,33 +1933,54 @@ _PyUnicode_FromId(_Py_Identifier *id)
     return id->object;
 }
 
-/* Getting bizarre crashes when trying to install things like ipython/numpy,
-   so try band-aid with SEH. */
-#ifdef WITH_PARALLEL
-volatile long _PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings = 0;
-#endif
 void
-_PyUnicode_ClearStaticStrings()
+__PyUnicode_ClearStaticStrings(void)
 {
     _Py_Identifier *tmp, *s;
     Py_GUARD
     s = static_strings;
-#ifdef WITH_PARALLEL
-    __try {
-#endif
-    while (s && s->object) {
+    while (s) {
         Py_CLEAR(s->object);
         tmp = s->next;
         s->next = NULL;
         s = tmp;
     }
     static_strings = NULL;
+}
+
 #ifdef WITH_PARALLEL
+/* Getting bizarre crashes when trying to install things like ipython/numpy,
+   so try band-aid with SEH. */
+volatile long _PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings = 0;
+void
+_PyUnicode_ClearStaticStrings_SEH()
+{
+    _Py_Identifier *tmp, *s;
+    Py_GUARD
+    s = static_strings;
+    __try {
+        while (s) {
+            Py_CLEAR(s->object);
+            tmp = s->next;
+            s->next = NULL;
+            s = tmp;
+        }
+        static_strings = NULL;
     } __except(EXCEPTION_EXECUTE_HANDLER) {
+        __debugbreak();
+        OutputDebugStringA("PyParallel: PyUnicode: Exception in ClearStaticStrings");
         InterlockedIncrement(&_PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings);
     }
-#endif
 }
+#endif
+
+void
+_PyUnicode_ClearStaticStrings(void)
+{
+    /* Switch this around when necessary (during debugging etc). */
+    __PyUnicode_ClearStaticStrings();
+}
+
 
 /* Internal function, doesn't check maximum character */
 
