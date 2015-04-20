@@ -25,6 +25,15 @@ diff --git a/Objects/typeobject.c b/Objects/typeobject.c
      if (!check_set_special_type_attr(type, value, "__doc__"))
          return -1;
      PyType_Modified(type);
+@@ -772,7 +775,7 @@ PyType_GenericAlloc(PyTypeObject *type, 
+     if (type->tp_itemsize == 0)
+         PyObject_INIT(obj, type);
+     else
+-        (void) PyObject_INIT_VAR((PyVarObject *)obj, type, nitems);
++        (void) PyObject_INIT_VAR(obj, type, nitems);
+ 
+     if (PyType_IS_GC(type))
+         _PyObject_GC_TRACK(obj);
 @@ -2568,6 +2571,8 @@ PyObject *
      }
      Py_DECREF(mro);

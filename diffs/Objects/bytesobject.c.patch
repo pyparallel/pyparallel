@@ -10,13 +10,7 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
  #endif
  
  static PyBytesObject *characters[UCHAR_MAX + 1];
-@@ -98,11 +98,15 @@ PyBytes_FromStringAndSize(const char *st
-     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + size);
-     if (op == NULL)
-         return PyErr_NoMemory();
--    PyObject_INIT_VAR(op, &PyBytes_Type, size);
-+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
-     op->ob_shash = -1;
+@@ -103,6 +103,10 @@ PyBytes_FromStringAndSize(const char *st
      if (str != NULL)
          Py_MEMCPY(op->ob_sval, str, size);
      op->ob_sval[size] = '\0';
@@ -35,12 +29,8 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
      return (PyObject *) op;
  }
  
-@@ -146,9 +151,13 @@ PyBytes_FromString(const char *str)
-     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + size);
-     if (op == NULL)
-         return PyErr_NoMemory();
--    PyObject_INIT_VAR(op, &PyBytes_Type, size);
-+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
+@@ -149,6 +154,10 @@ PyBytes_FromString(const char *str)
+     PyObject_INIT_VAR(op, &PyBytes_Type, size);
      op->ob_shash = -1;
      Py_MEMCPY(op->ob_sval, str, size+1);
 +
@@ -58,15 +48,6 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
      return (PyObject *) op;
  }
  
-@@ -752,7 +762,7 @@ bytes_repeat(register PyBytesObject *a, 
-     op = (PyBytesObject *)PyObject_MALLOC(PyBytesObject_SIZE + nbytes);
-     if (op == NULL)
-         return PyErr_NoMemory();
--    PyObject_INIT_VAR(op, &PyBytes_Type, size);
-+    PyObject_INIT_VAR((PyVarObject *)op, &PyBytes_Type, size);
-     op->ob_shash = -1;
-     op->ob_sval[size] = '\0';
-     if (Py_SIZE(a) == 1 && n > 0) {
 @@ -2887,6 +2897,8 @@ int
          PyErr_BadInternalCall();
          return -1;

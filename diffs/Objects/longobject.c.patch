@@ -10,15 +10,6 @@ diff --git a/Objects/longobject.c b/Objects/longobject.c
  #endif
  
  static PyObject *
-@@ -183,7 +183,7 @@ PyLongObject *
-         PyErr_NoMemory();
-         return NULL;
-     }
--    return (PyLongObject*)PyObject_INIT_VAR(result, &PyLong_Type, size);
-+    return (PyLongObject*)PyObject_INIT_VAR((PyVarObject *)result, &PyLong_Type, size);
- }
- 
- PyObject *
 @@ -5080,7 +5080,7 @@ int
              assert(v->ob_digit[0] == abs(ival));
          }
