@@ -1,18 +1,15 @@
 diff --git a/Objects/classobject.c b/Objects/classobject.c
 --- a/Objects/classobject.c
 +++ b/Objects/classobject.c
-@@ -50,9 +50,9 @@ PyMethod_New(PyObject *func, PyObject *s
+@@ -50,7 +50,7 @@ PyMethod_New(PyObject *func, PyObject *s
          return NULL;
      }
      im = free_list;
 -    if (im != NULL) {
 +    if (!Py_PXCTX() && im != NULL) {
          free_list = (PyMethodObject *)(im->im_self);
--        PyObject_INIT(im, &PyMethod_Type);
-+        PyObject_INIT((PyObject *)im, &PyMethod_Type);
+         PyObject_INIT(im, &PyMethod_Type);
          numfree--;
-     }
-     else {
 @@ -166,6 +166,7 @@ method_new(PyTypeObject* type, PyObject*
  static void
  method_dealloc(register PyMethodObject *im)

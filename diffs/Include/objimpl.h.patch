@@ -32,7 +32,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #define PyObject_New(type, typeobj) \
                  ( (type *) _PyObject_New(typeobj) )
  #define PyObject_NewVar(type, typeobj, n) \
-@@ -164,6 +181,86 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
+@@ -164,6 +181,90 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
  #define PyObject_INIT_VAR(op, typeobj, size) \
      ( Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj)) )
  
@@ -87,7 +87,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
 +
 +static __inline
 +PyObject *
-+PyObject_INIT(PyObject *op, PyTypeObject *tp)
++_PyObject_INIT(PyObject *op, PyTypeObject *tp)
 +{
 +    Px_RETURN(_PxObject_Init(op, tp))
 +    Py_TYPE(op) = tp;
@@ -95,6 +95,10 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
 +    _Py_NewReference(op);
 +    return op;
 +}
++
++#define PyObject_INIT(op, tp)                   \
++    (_PyObject_INIT((PyObject *)(op),           \
++                    (PyTypeObject *)(tp)))
 +
 +static __inline
 +PyVarObject *
@@ -119,7 +123,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
  
  /* _PyObject_VAR_SIZE returns the number of bytes (as size_t) allocated for a
-@@ -185,14 +282,37 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
+@@ -185,14 +286,37 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
          (nitems)*(typeobj)->tp_itemsize,        \
          SIZEOF_VOID_P)
  
@@ -158,7 +162,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  
  /* This example code implements an object constructor with a custom
     allocator, where PyObject_New is inlined, and shows the important
-@@ -230,6 +350,9 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
+@@ -230,6 +354,9 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
  /* C equivalent of gc.collect(). */
  PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
  
@@ -168,7 +172,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  /* Test if a type has a GC head */
  #define PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
  
-@@ -237,9 +360,29 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void
+@@ -237,9 +364,29 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void
  #define PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
      (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
  
@@ -199,7 +203,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  
  /* GC information is stored BEFORE the object structure. */
  #ifndef Py_LIMITED_API
-@@ -254,12 +397,18 @@ typedef union _gc_head {
+@@ -254,12 +401,18 @@ typedef union _gc_head {
  
  extern PyGC_Head *_PyGC_generation0;
  
@@ -218,7 +222,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  /* Tell the GC to track this object.  NB: While the object is tracked the
   * collector it must be safe to call the ob_traverse method. */
  #define _PyObject_GC_TRACK(o) do { \
-@@ -295,6 +444,62 @@ extern PyGC_Head *_PyGC_generation0;
+@@ -295,6 +448,62 @@ extern PyGC_Head *_PyGC_generation0;
  #define _PyObject_GC_MAY_BE_TRACKED(obj) \
      (PyObject_IS_GC(obj) && \
          (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
@@ -281,7 +285,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #endif /* Py_LIMITED_API */
  
  PyAPI_FUNC(PyObject *) _PyObject_GC_Malloc(size_t);
-@@ -304,17 +509,28 @@ PyAPI_FUNC(void) PyObject_GC_Track(void 
+@@ -304,17 +513,28 @@ PyAPI_FUNC(void) PyObject_GC_Track(void 
  PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
  PyAPI_FUNC(void) PyObject_GC_Del(void *);
  
@@ -310,7 +314,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #define Py_VISIT(op)                                                    \
      do {                                                                \
          if (op) {                                                       \
-@@ -323,7 +539,17 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *)
+@@ -323,7 +543,17 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *)
                  return vret;                                            \
          }                                                               \
      } while (0)

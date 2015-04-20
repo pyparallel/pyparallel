@@ -10,12 +10,3 @@ diff --git a/Objects/longobject.c b/Objects/longobject.c
  #endif
  
  static PyObject *
-@@ -5080,7 +5080,7 @@ int
-             assert(v->ob_digit[0] == abs(ival));
-         }
-         else {
--            PyObject_INIT(v, &PyLong_Type);
-+            PyObject_INIT((PyObject *)v, &PyLong_Type);
-         }
-         Py_SIZE(v) = size;
-         v->ob_digit[0] = abs(ival);

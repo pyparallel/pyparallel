@@ -1,7 +1,7 @@
 diff --git a/Objects/methodobject.c b/Objects/methodobject.c
 --- a/Objects/methodobject.c
 +++ b/Objects/methodobject.c
-@@ -17,10 +17,10 @@ PyObject *
+@@ -17,7 +17,7 @@ PyObject *
  PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
  {
      PyCFunctionObject *op;
@@ -9,11 +9,7 @@ diff --git a/Objects/methodobject.c b/Objects/methodobject.c
 +    op = (Py_PXCTX() ? 0 : free_list);
      if (op != NULL) {
          free_list = (PyCFunctionObject *)(op->m_self);
--        PyObject_INIT(op, &PyCFunction_Type);
-+        PyObject_INIT((PyObject *)op, &PyCFunction_Type);
-         numfree--;
-     }
-     else {
+         PyObject_INIT(op, &PyCFunction_Type);
 @@ -121,6 +121,7 @@ PyCFunction_Call(PyObject *func, PyObjec
  static void
  meth_dealloc(PyCFunctionObject *m)
