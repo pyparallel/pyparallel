@@ -216,7 +216,6 @@ _PyObject_InitHead(PyObject *op)
     assert(Py_TYPE(op));
     op->is_px = _Py_NOT_PARALLEL;
     op->px    = _Py_NOT_PARALLEL;
-    op->slist_entry.Next = NULL;
     op->px_flags  = Py_PXFLAGS_ISPY;
     op->srw_lock  = NULL;
     op->event     = NULL;

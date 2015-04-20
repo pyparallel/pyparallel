@@ -1278,6 +1278,7 @@ PxSocket_StopwatchStop(PxSocket *s)
     return s->stopwatch_elapsed.QuadPart;
 }
 
+/*
 static __inline
 void
 PxList_PushSocket(PxListHead *head, PxSocket *s)
@@ -1300,7 +1301,7 @@ PxList_PopSocket(PxListHead *head)
 
     return s;
 }
-
+*/
 
 static __inline
 int

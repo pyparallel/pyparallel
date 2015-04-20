@@ -32,7 +32,7 @@ Py_TLS static int _PyParallel_BreakOnNextException;
 
 Py_TLS static int _PxNewThread = 1;
 
-Py_CACHE_ALIGN
+//Py_CACHE_ALIGN
 long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
@@ -4263,7 +4263,7 @@ xlist_pop(PyObject *self, PyObject *args)
     Py_GUARD();
     /*Py_INCREF(xlist);*/
     item = PxList_Pop(xlist->head);
-    obj = (item ? I2O(item) : NULL);
+    //obj = (item ? I2O(item) : NULL);
     if (obj)
         Py_REFCNT(obj) = 1;
     return obj;
