@@ -183,7 +183,7 @@ _PyLong_New(Py_ssize_t size)
         PyErr_NoMemory();
         return NULL;
     }
-    return (PyLongObject*)PyObject_INIT_VAR((PyVarObject *)result, &PyLong_Type, size);
+    return (PyLongObject*)PyObject_INIT_VAR(result, &PyLong_Type, size);
 }
 
 PyObject *

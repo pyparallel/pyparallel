@@ -243,7 +243,7 @@ PyObject_INIT(PyObject *op, PyTypeObject *tp)
 
 static __inline
 PyVarObject *
-PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
+_PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
 {
     Px_RETURN(_PxObject_InitVar(op, tp, n))
     Py_SIZE(op) = n;
@@ -252,6 +252,11 @@ PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
     _Py_NewReference((PyObject *)op);
     return op;
 }
+
+#define PyObject_INIT_VAR(op, tp, n)              \
+    (_PyObject_INIT_VAR((PyVarObject *)(op),      \
+                        (PyTypeObject *)(tp),     \
+                        (Py_ssize_t)(n)))
 
 #endif /* WITH_PARALLEL */
 
