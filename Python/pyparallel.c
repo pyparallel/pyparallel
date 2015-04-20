@@ -1116,7 +1116,7 @@ _PyParallel_DecRef(void *vp)
             if (--op->ob_refcnt == 0)
                 _Py_Dealloc(op);
             */
-            --_Py_RefTotal;
+            //--_Py_RefTotal;
 
             if ((--((PyObject *)(op))->ob_refcnt) != 0) {
                 if ((((PyObject *)(op))->ob_refcnt) < 0)
@@ -7017,7 +7017,7 @@ start:
         assert(!snapshot);
         snapshot = PxContext_HeapSnapshot(c);
         if (!PxSocket_LoadInitialBytes(s)) {
-            PxContext_RollbackHeap(c, &snapshot);
+            //PxContext_RollbackHeap(c, &snapshot);
             PxSocket_EXCEPTION();
         }
 
@@ -7027,7 +7027,7 @@ start:
         len = &w->len;
 
         if (!PxSocket_NEW_SBUF(c, s, snapshot, len, w->buf, 0, &sbuf, 0)) {
-            PxContext_RollbackHeap(c, &snapshot);
+            //PxContext_RollbackHeap(c, &snapshot);
             if (!PyErr_Occurred())
                 PyErr_SetString(PyExc_ValueError,
                                 "failed to extract sendable object from "
@@ -7064,7 +7064,7 @@ definitely_do_connection_made:
     /* xxx todo: add peer argument */
     args = PyTuple_Pack(1, s);
     if (!args) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         PxSocket_FATAL();
     }
 
@@ -7074,7 +7074,7 @@ definitely_do_connection_made:
     if (PyErr_Occurred())
         assert(!result);
     if (!result) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         PxSocket_EXCEPTION();
     }
 
@@ -7101,7 +7101,7 @@ definitely_do_connection_made:
 
     sbuf = NULL;
     if (!PxSocket_NEW_SBUF(c, s, snapshot, 0, 0, result, &sbuf, 0)) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         if (!PyErr_Occurred())
             PyErr_SetString(PyExc_ValueError,
                             "connection_made() did not return a sendable "
@@ -7376,7 +7376,7 @@ send_completed:
 
     args = PyTuple_Pack(2, s, PyLong_FromSize_t(s->send_id));
     if (!args) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         PxSocket_FATAL();
     }
 
@@ -7386,7 +7386,7 @@ send_completed:
     if (PyErr_Occurred())
         assert(!result);
     if (!result) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         PxSocket_EXCEPTION();
     }
 
@@ -7411,7 +7411,7 @@ send_completed:
 
     sbuf = NULL;
     if (!PxSocket_NEW_SBUF(c, s, snapshot, 0, 0, result, &sbuf, 0)) {
-        PxContext_RollbackHeap(c, &snapshot);
+        //PxContext_RollbackHeap(c, &snapshot);
         if (!PyErr_Occurred())
             PyErr_SetString(PyExc_ValueError,
                             "send_complete() did not return a sendable "
@@ -7851,7 +7851,7 @@ do_data_received_callback:
         assert(Py_SIZE(bytes) == s->num_bytes_just_received);
         args = PyTuple_Pack(2, s, o);
         if (!args) {
-            PxContext_RollbackHeap(c, &rbuf->snapshot);
+            //PxContext_RollbackHeap(c, &rbuf->snapshot);
             PxSocket_FATAL();
         }
     } else {
@@ -7865,7 +7865,7 @@ do_data_received_callback:
     if (PyErr_Occurred())
         assert(!result);
     if (!result) {
-        PxContext_RollbackHeap(c, &rbuf->snapshot);
+        //PxContext_RollbackHeap(c, &rbuf->snapshot);
         PxSocket_EXCEPTION();
     }
 
@@ -9623,12 +9623,12 @@ PxSocket_InitInitialBytes(PxSocket *s)
         int error = 0;
         r = PyObject_CallObject(o, NULL);
         if (!r) {
-            PyErr_PrintEx(0);
-            PxContext_RollbackHeap(c, &snapshot);
+            //PyErr_PrintEx(0);
+            //PxContext_RollbackHeap(c, &snapshot);
             return 0;
         }
         if (!PyObject2WSABUF(r, &w)) {
-            PxContext_RollbackHeap(c, &snapshot);
+            //PxContext_RollbackHeap(c, &snapshot);
             PyErr_SetString(PyExc_ValueError,
                             "initial_bytes_to_send() callable did not return "
                             "a sendable object (bytes, bytearray or unicode)");
@@ -9641,7 +9641,7 @@ PxSocket_InitInitialBytes(PxSocket *s)
             assert(!s->initial_bytes.buf);
 
             if (!PyObject2WSABUF(o, &s->initial_bytes)) {
-                PxContext_RollbackHeap(c, &snapshot);
+                //PxContext_RollbackHeap(c, &snapshot);
                 PyErr_SetString(PyExc_ValueError,
                                 "initial_bytes_to_send is not a sendable "
                                 "object (bytes, bytearray or unicode)");
