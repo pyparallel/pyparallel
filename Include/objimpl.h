@@ -232,7 +232,7 @@ _PyObject_InitHead(PyObject *op)
 
 static __inline
 PyObject *
-PyObject_INIT(PyObject *op, PyTypeObject *tp)
+_PyObject_INIT(PyObject *op, PyTypeObject *tp)
 {
     Px_RETURN(_PxObject_Init(op, tp))
     Py_TYPE(op) = tp;
@@ -240,6 +240,10 @@ PyObject_INIT(PyObject *op, PyTypeObject *tp)
     _Py_NewReference(op);
     return op;
 }
+
+#define PyObject_INIT(op, tp)                   \
+    (_PyObject_INIT((PyObject *)(op),           \
+                    (PyTypeObject *)(tp)))
 
 static __inline
 PyVarObject *
