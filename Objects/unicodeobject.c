@@ -1978,7 +1978,7 @@ void
 _PyUnicode_ClearStaticStrings(void)
 {
     /* Switch this around when necessary (during debugging etc). */
-    __PyUnicode_ClearStaticStrings();
+    _PyUnicode_ClearStaticStrings_SEH();
 }
 
 
