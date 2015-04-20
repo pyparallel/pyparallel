@@ -349,6 +349,9 @@ class DemoServer(TCPServerCommand):
 #===============================================================================
 # Testing
 #===============================================================================
+def _test_generator():
+    yield '1'
+
 class TestGenerator(TCPServerCommand):
     port = None
     class PortArg(NonEphemeralPortInvariant):
@@ -367,13 +370,26 @@ class TestGenerator(TCPServerCommand):
 
         self._out("Running test server on %s port %d ..." % (ip, port))
 
-        class GeneratorTest:
-            def data_received(self, transport, data):
-                return b', '.join([chr(i) for i in (1, 2, 3)])
+        class GeneratorTest1:
+            def initial_bytes_to_send(self):
+                return (', '.join([chr(i) for i in (1, 2, 3)])).encode('utf-8')
+
+        class GeneratorTest2:
+            def initial_bytes_to_send(self):
+                return (', '.join(chr(i) for i in (1, 2, 3))).encode('utf-8')
 
         import async
+        class GeneratorTest3:
+            def yield_c(self):
+                for c in ('A', 'B', 'C'):
+                    async.debug(c)
+                    yield c
+
+            def data_received(self, transport, data):
+                return (', '.join(c for c in self.yield_c())).encode('utf-8')
+
         server = async.server(ip, port)
-        protocol = GeneratorTest
+        protocol = GeneratorTest3
         async.register(transport=server, protocol=protocol)
         async.run()
 
