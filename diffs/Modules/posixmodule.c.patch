@@ -1,0 +1,12 @@
+diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+--- a/Modules/posixmodule.c
++++ b/Modules/posixmodule.c
+@@ -973,7 +973,7 @@ int
+     const int i1 = fd >> IOINFO_L2E;
+     const int i2 = fd & ((1 << IOINFO_L2E) - 1);
+ 
+-    static size_t sizeof_ioinfo = 0;
++    Py_TLS static size_t sizeof_ioinfo = 0;
+ 
+     /* Determine the actual size of the ioinfo structure,
+      * as used by the CRT loaded in memory

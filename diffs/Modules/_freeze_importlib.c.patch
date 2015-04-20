@@ -1,0 +1,15 @@
+diff --git a/Modules/_freeze_importlib.c b/Modules/_freeze_importlib.c
+--- a/Modules/_freeze_importlib.c
++++ b/Modules/_freeze_importlib.c
+@@ -2,6 +2,11 @@
+    Lib/importlib/_bootstrap.py into a frozen module in Python/importlib.h
+ */
+ 
++/*
++#undef WITH_PARALLEL
++#define DISABLE_PARALLEL 1
++*/
++
+ #include <Python.h>
+ #include <marshal.h>
+ 

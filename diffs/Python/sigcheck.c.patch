@@ -1,0 +1,14 @@
+diff --git a/Python/sigcheck.c b/Python/sigcheck.c
+--- a/Python/sigcheck.c
++++ b/Python/sigcheck.c
+@@ -12,6 +12,10 @@
+ int
+ PyErr_CheckSignals(void)
+ {
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX)
++        return 0;
++#endif
+ 	if (!PyOS_InterruptOccurred())
+ 		return 0;
+ 	PyErr_SetNone(PyExc_KeyboardInterrupt);

@@ -1,0 +1,75 @@
+diff --git a/Objects/listobject.c b/Objects/listobject.c
+--- a/Objects/listobject.c
++++ b/Objects/listobject.c
+@@ -39,6 +39,13 @@ list_resize(PyListObject *self, Py_ssize
+         return 0;
+     }
+ 
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Py_ISPY(self)) {
++        __debugbreak();
++        PyErr_SetString(PyExc_AssignmentError, "list_resize from px thread");
++        return -1;
++    }
++#endif
+     /* This over-allocates proportional to the list size, making room
+      * for additional growth.  The over-allocation is mild, but is
+      * enough to give linear-time amortized behavior over a long
+@@ -103,6 +110,8 @@ PyList_ClearFreeList(void)
+ {
+     PyListObject *op;
+     int ret = numfree;
++    if (Py_PXCTX())
++        return 0;
+     while (numfree) {
+         op = free_list[--numfree];
+         assert(PyList_CheckExact(op));
+@@ -148,7 +157,7 @@ PyList_New(Py_ssize_t size)
+     if ((size_t)size > PY_SIZE_MAX / sizeof(PyObject *))
+         return PyErr_NoMemory();
+     nbytes = size * sizeof(PyObject *);
+-    if (numfree) {
++    if (!Py_PXCTX() && numfree) {
+         numfree--;
+         op = free_list[numfree];
+         _Py_NewReference((PyObject *)op);
+@@ -314,6 +323,7 @@ static void
+ list_dealloc(PyListObject *op)
+ {
+     Py_ssize_t i;
++    Py_GUARD();
+     PyObject_GC_UnTrack(op);
+     Py_TRASHCAN_SAFE_BEGIN(op)
+     if (op->ob_item != NULL) {
+@@ -595,6 +605,15 @@ list_ass_slice(PyListObject *a, Py_ssize
+     Py_ssize_t k;
+     size_t s;
+     int result = -1;            /* guilty until proved innocent */
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Px_ISPY(a)) {
++        __debugbreak();
++        PyErr_SetString(PyExc_AssignmentError,
++                        "parallel thread attempted to assign to a slice "
++                        "of a main thread list");
++        return result;
++    }
++#endif
+ #define b ((PyListObject *)v)
+     if (v == NULL)
+         n = 0;
+@@ -2446,6 +2465,15 @@ list_subscript(PyListObject* self, PyObj
+ static int
+ list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
+ {
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Px_ISPY(self)) {
++        __debugbreak();
++        PyErr_SetString(PyExc_AssignmentError,
++                        "parallel thread attempted to "
++                        "assign to main thread list");
++        return -1;
++    }
++#endif
+     if (PyIndex_Check(item)) {
+         Py_ssize_t i = PyNumber_AsSsize_t(item, PyExc_IndexError);
+         if (i == -1 && PyErr_Occurred())

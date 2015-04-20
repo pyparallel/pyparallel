@@ -1,0 +1,43 @@
+diff --git a/Python/ceval_gil.h b/Python/ceval_gil.h
+--- a/Python/ceval_gil.h
++++ b/Python/ceval_gil.h
+@@ -145,6 +145,9 @@ static void create_gil(void)
+     _Py_atomic_store_relaxed(&gil_last_holder, NULL);
+     _Py_ANNOTATE_RWLOCK_CREATE(&gil_locked);
+     _Py_atomic_store_explicit(&gil_locked, 0, _Py_memory_order_release);
++#ifdef WITH_PARALLEL
++    _PyParallel_CreatedGIL();
++#endif
+ }
+ 
+ static void destroy_gil(void)
+@@ -160,6 +163,9 @@ static void destroy_gil(void)
+ #endif
+     _Py_atomic_store_explicit(&gil_locked, -1, _Py_memory_order_release);
+     _Py_ANNOTATE_RWLOCK_DESTROY(&gil_locked);
++#ifdef WITH_PARALLEL
++    _PyParallel_DestroyedGIL();
++#endif
+ }
+ 
+ static void recreate_gil(void)
+@@ -181,6 +187,9 @@ static void drop_gil(PyThreadState *tsta
+         _Py_atomic_store_relaxed(&gil_last_holder, tstate);
+     }
+ 
++#ifdef WITH_PARALLEL
++    _PyParallel_AboutToDropGIL();
++#endif
+     MUTEX_LOCK(gil_mutex);
+     _Py_ANNOTATE_RWLOCK_RELEASED(&gil_locked, /*is_write=*/1);
+     _Py_atomic_store_relaxed(&gil_locked, 0);
+@@ -236,6 +245,9 @@ static void take_gil(PyThreadState *tsta
+     MUTEX_LOCK(switch_mutex);
+ #endif
+     /* We now hold the GIL */
++#ifdef WITH_PARALLEL
++    _PyParallel_JustAcquiredGIL();
++#endif
+     _Py_atomic_store_relaxed(&gil_locked, 1);
+     _Py_ANNOTATE_RWLOCK_ACQUIRED(&gil_locked, /*is_write=*/1);
+ 

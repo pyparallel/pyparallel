@@ -1,0 +1,76 @@
+diff --git a/Include/pymem.h b/Include/pymem.h
+--- a/Include/pymem.h
++++ b/Include/pymem.h
+@@ -53,15 +53,21 @@ PyAPI_FUNC(void *) PyMem_Malloc(size_t);
+ PyAPI_FUNC(void *) PyMem_Realloc(void *, size_t);
+ PyAPI_FUNC(void) PyMem_Free(void *);
+ 
++#ifdef WITH_PARALLEL
++PyAPI_FUNC(void *) _PxMem_Malloc(size_t);
++PyAPI_FUNC(void *) _PxMem_Realloc(void *, size_t);
++PyAPI_FUNC(void) _PxMem_Free(void *);
++#endif
++
+ /* Starting from Python 1.6, the wrappers Py_{Malloc,Realloc,Free} are
+    no longer supported. They used to call PyErr_NoMemory() on failure. */
+ 
+ /* Macros. */
+ #ifdef PYMALLOC_DEBUG
+ /* Redirect all memory operations to Python's debugging allocator. */
+-#define PyMem_MALLOC		_PyMem_DebugMalloc
+-#define PyMem_REALLOC		_PyMem_DebugRealloc
+-#define PyMem_FREE		_PyMem_DebugFree
++#define _PyMem_MALLOC		_PyMem_DebugMalloc
++#define _PyMem_REALLOC		_PyMem_DebugRealloc
++#define _PyMem_FREE		_PyMem_DebugFree
+ 
+ #else	/* ! PYMALLOC_DEBUG */
+ 
+@@ -71,14 +77,44 @@ PyAPI_FUNC(void) PyMem_Free(void *);
+    pymalloc. To solve these problems, allocate an extra byte. */
+ /* Returns NULL to indicate error if a negative size or size larger than
+    Py_ssize_t can represent is supplied.  Helps prevents security holes. */
+-#define PyMem_MALLOC(n)		((size_t)(n) > (size_t)PY_SSIZE_T_MAX ? NULL \
++#define _PyMem_MALLOC(n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX ? NULL \
+ 				: malloc((n) ? (n) : 1))
+-#define PyMem_REALLOC(p, n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX  ? NULL \
++#define _PyMem_REALLOC(p, n)	((size_t)(n) > (size_t)PY_SSIZE_T_MAX  ? NULL \
+ 				: realloc((p), (n) ? (n) : 1))
+-#define PyMem_FREE		free
++#define _PyMem_FREE		free
+ 
+ #endif	/* PYMALLOC_DEBUG */
+ 
++
++#ifdef WITH_PARALLEL
++#define PyMem_MALLOC(n) \
++    (Py_PXCTX() ? _PxMem_Malloc((size_t)n) : _PyMem_MALLOC((size_t)n))
++
++#define PyMem_REALLOC(p, n) \
++    (Py_PXCTX() ? _PxMem_Realloc((p), (n)) : _PyMem_REALLOC((p), (n)))
++
++#define PyMem_FREE(p) (Py_PXCTX() ? _PxMem_Free((p)) : _PyMem_FREE(p))
++#else
++#define PyMem_MALLOC  _PyMem_MALLOC
++#define PyMem_REALLOC _PyMem_REALLOC
++#define PyMem_FREE    _PyMem_FREE
++#endif
++
++/* PyParallel XXX: the new memory API in 3.4 is going to require a lot of work
++   to bring PyParallel in line with it, given how many significant changes we
++   make in this area.  So, that's something on the todo list for later.
++
++   For now, we add in stubs for PyMem_Raw(Malloc|Realloc|Free), because I want
++   to pick up some fixes to myreadline.c, and the fixes involve changing the
++   PyMem_(MALLOC|REALLOC|FREE) calls in that file to the new PyMem_Raw ones.
++
++   I could just replace with the malloc/realloc/free literals, but eh, it'll
++   be one less thing generating merge conflicts down the track. */
++#define PyMem_RawMalloc(n)      malloc(n)
++#define PyMem_RawRealloc(p, n)  realloc(p, n)
++#define PyMem_RawFree(p)        free(p)
++
++
+ /*
+  * Type-oriented memory interface
+  * ==============================

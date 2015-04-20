@@ -1,0 +1,205 @@
+diff --git a/Python/ceval.c b/Python/ceval.c
+--- a/Python/ceval.c
++++ b/Python/ceval.c
+@@ -70,6 +70,10 @@ ppc_getcounter(uint64 *v)
+                          "=a" (((int*)&(val))[0]), "=d" (((int*)&(val))[1]));
+ 
+ 
++#elif defined(WITH_INTRINSICS)
++
++#define READ_TIMESTAMP(var) (var = _Py_rdtsc())
++
+ #else
+ 
+ #error "Don't know how to implement timestamp counter for this architecture"
+@@ -297,6 +301,7 @@ static int pending_async_exc = 0;
+ int
+ PyEval_ThreadsInitialized(void)
+ {
++    Py_GUARD();
+     return gil_created();
+ }
+ 
+@@ -315,6 +320,7 @@ PyEval_InitThreads(void)
+ void
+ _PyEval_FiniThreads(void)
+ {
++    Py_GUARD();
+     if (!gil_created())
+         return;
+     destroy_gil();
+@@ -327,12 +333,14 @@ PyEval_AcquireLock(void)
+     PyThreadState *tstate = PyThreadState_GET();
+     if (tstate == NULL)
+         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
++    Py_GUARD_AGAINST_PX_ONLY();
+     take_gil(tstate);
+ }
+ 
+ void
+ PyEval_ReleaseLock(void)
+ {
++    Py_GUARD();
+     /* This function must succeed when the current thread state is NULL.
+        We therefore avoid PyThreadState_GET() which dumps a fatal error
+        in debug mode.
+@@ -347,6 +355,7 @@ PyEval_AcquireThread(PyThreadState *tsta
+     if (tstate == NULL)
+         Py_FatalError("PyEval_AcquireThread: NULL new thread state");
+     /* Check someone has called PyEval_InitThreads() to create the lock */
++    Py_GUARD_AGAINST_PX_ONLY();
+     assert(gil_created());
+     take_gil(tstate);
+     if (PyThreadState_Swap(tstate) != NULL)
+@@ -361,6 +370,7 @@ PyEval_ReleaseThread(PyThreadState *tsta
+         Py_FatalError("PyEval_ReleaseThread: NULL thread state");
+     if (PyThreadState_Swap(NULL) != tstate)
+         Py_FatalError("PyEval_ReleaseThread: wrong thread state");
++    Py_GUARD_AGAINST_PX_ONLY();
+     drop_gil(tstate);
+ }
+ 
+@@ -375,6 +385,7 @@ PyEval_ReInitThreads(void)
+     _Py_IDENTIFIER(_after_fork);
+     PyObject *threading, *result;
+     PyThreadState *tstate = PyThreadState_GET();
++    Py_GUARD();
+ 
+     if (!gil_created())
+         return;
+@@ -419,10 +430,33 @@ void
+    dynamically loaded modules needn't be compiled separately for use
+    with and without threads: */
+ 
++#ifdef WITH_PARALLEL
++PyAPI_FUNC(PyThreadState *) _PyParallel_GetCurrentThreadState(void);
++#endif
++
+ PyThreadState *
+ PyEval_SaveThread(void)
+ {
+-    PyThreadState *tstate = PyThreadState_Swap(NULL);
++    PyThreadState *tstate;
++#ifdef WITH_PARALLEL
++    PyThreadState *pstate;
++    long cur_thread_id = _Py_get_current_thread_id();
++    tstate = _PyParallel_GetCurrentThreadState();
++    Py_GUARD_AGAINST_PX_ONLY();
++    /*tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);*/
++    if (tstate->thread_id != cur_thread_id) {
++        /* Verify we've been called from a parallel thread. */
++        pstate = _PyParallel_GetThreadState();
++        assert(tstate->is_parallel_thread == 0);
++        assert(pstate != NULL);
++        assert(pstate->thread_id == cur_thread_id);
++        assert(pstate->is_parallel_thread == 1);
++        _PyParallel_BlockingCall();
++        return pstate;
++    }
++    assert(tstate->is_parallel_thread == 0);
++#endif
++    tstate = PyThreadState_Swap(NULL);
+     if (tstate == NULL)
+         Py_FatalError("PyEval_SaveThread: NULL tstate");
+ #ifdef WITH_THREAD
+@@ -437,6 +471,11 @@ PyEval_RestoreThread(PyThreadState *tsta
+ {
+     if (tstate == NULL)
+         Py_FatalError("PyEval_RestoreThread: NULL tstate");
++#ifdef WITH_PARALLEL
++    /* Ensure this is a no-op when called from a parallel context thread. */
++    if (tstate->is_parallel_thread == 1)
++        return;
++#endif
+ #ifdef WITH_THREAD
+     if (gil_created()) {
+         int err = errno;
+@@ -651,6 +690,7 @@ int
+ Py_MakePendingCalls(void)
+ {
+     static int busy = 0;
++    Py_GUARD();
+     if (busy)
+         return 0;
+     busy = 1;
+@@ -689,12 +729,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
+ int
+ Py_GetRecursionLimit(void)
+ {
++    Py_GUARD();
+     return recursion_limit;
+ }
+ 
+ void
+ Py_SetRecursionLimit(int new_limit)
+ {
++    Py_GUARD();
+     recursion_limit = new_limit;
+     _Py_CheckRecursionLimit = recursion_limit;
+ }
+@@ -1236,6 +1278,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+         assert(stack_pointer >= f->f_valuestack); /* else underflow */
+         assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
+ 
++#ifdef WITH_PARALLEL
++        /* Parallel threads skip the normal thread periodic tasks below. */
++
++        if (tstate->is_parallel_thread) {
++            goto fast_next_opcode_notracing;
++        }
++#endif /* WITH_PARALLEL */
++
++
+         /* Do periodic things.  Doing this every time through
+            the loop would add too much overhead, so we do it
+            only every Nth instruction.  We also do it if
+@@ -1314,7 +1365,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+         }
+ 
+         /* Extract opcode and argument */
+-
++#ifdef WITH_PARALLEL
++    fast_next_opcode_notracing:
++#endif
+         opcode = NEXTOP();
+         oparg = 0;   /* allows oparg to be stored in a register because
+             it doesn't have to be remembered across a full loop */
+@@ -2295,9 +2348,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+             PREDICT(POP_JUMP_IF_TRUE);
+             DISPATCH();
+ 
++#ifdef WITH_PARALLEL
++#define PREVENT_PARALLEL_IMPORT() do {                                      \
++    if (Py_PXCTX()) {                                                       \
++        PyErr_SetString(PyExc_ImportError,                                  \
++                        "import not permitted within parallel context");    \
++        break;                                                              \
++    }                                                                       \
++} while (0)
++#else
++#define PREVENT_PARALLEL_IMPORT()
++#endif
++
+         TARGET(IMPORT_NAME)
+         {
+             _Py_IDENTIFIER(__import__);
++            PREVENT_PARALLEL_IMPORT();
+             w = GETITEM(names, oparg);
+             x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
+             if (x == NULL) {
+@@ -2343,6 +2409,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+         }
+ 
+         TARGET(IMPORT_STAR)
++            PREVENT_PARALLEL_IMPORT();
+             v = POP();
+             PyFrame_FastToLocals(f);
+             if ((x = f->f_locals) == NULL) {
+@@ -2359,6 +2426,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+             break;
+ 
+         TARGET(IMPORT_FROM)
++            PREVENT_PARALLEL_IMPORT();
+             w = GETITEM(names, oparg);
+             v = TOP();
+             READ_TIMESTAMP(intr0);

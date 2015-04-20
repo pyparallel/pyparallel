@@ -1,0 +1,116 @@
+diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+--- a/Objects/exceptions.c
++++ b/Objects/exceptions.c
+@@ -2115,6 +2115,74 @@ SimpleExtendsException(PyExc_Exception, 
+ SimpleExtendsException(PyExc_Exception, ReferenceError,
+                        "Weak ref proxy used after referent went away.");
+ 
++#ifdef WITH_PARALLEL
++/*
++ *    ParallelError extends Exception
++ */
++SimpleExtendsException(PyExc_Exception, ParallelError,
++                       "Base class for parallel errors.");
++
++/*
++ *    ParallelThreadInitializationError extends ParallelError
++ */
++SimpleExtendsException(PyExc_ParallelError,
++                       ParallelThreadInitializationError,
++                       "Failed to initialize new parallel thread.");
++
++/*
++ *    ParallelContextInitializationError extends ParallelError
++ */
++SimpleExtendsException(PyExc_ParallelError,
++                       ParallelContextInitializationError,
++                       "Failed to initialize parallel context for callback.");
++/*
++ *    ParallelContextError extends ParallelError
++ */
++SimpleExtendsException(PyExc_ParallelError,
++                       ParallelContextError,
++                       "Operation not permitted from within parallel context.");
++
++/*
++ *    ParallelImportError extends ParallelContextError
++ */
++SimpleExtendsException(PyExc_ParallelContextError,
++                       ParallelImportError,
++                       "Import not permitted from within parallel context.");
++
++/*
++ *    ParallelGlobalVariableAccessError extends ParallelContextError
++ */
++SimpleExtendsException(PyExc_ParallelContextError,
++                       ParallelGlobalVariableAccessError,
++                       "Implicit access to global variables not "
++                       "permitted within parallel context.");
++
++/*
++ *    ParallelNonlocalVariableAccessError extends ParallelContextError
++ */
++SimpleExtendsException(PyExc_ParallelContextError,
++                       ParallelNonlocalVariableAccessError,
++                       "Implicit access to nonlocal variables not "
++                       "permitted within parallel context.");
++
++/*
++ *    AsyncError extends Exception
++ */
++SimpleExtendsException(PyExc_Exception, AsyncError,
++                       "Base class for async errors.");
++
++/*
++ *    AsyncNoEventsError extends Exception
++ */
++SimpleExtendsException(PyExc_AsyncError, AsyncRunCalledWithoutEventsError,
++                       "Async run() called without any events.");
++
++/*
++ *    AsyncNoEventsError extends Exception
++ */
++SimpleExtendsException(PyExc_AsyncError, AsyncRunNoActiveEventsError,
++                       "Async run() detected that there are no active events.");
++#endif
+ 
+ /*
+  *    MemoryError extends Exception
+@@ -2423,6 +2491,18 @@ void
+     PRE_INIT(BufferError)
+     PRE_INIT(MemoryError)
+     PRE_INIT(BufferError)
++#ifdef WITH_PARALLEL
++    PRE_INIT(ParallelError)
++    PRE_INIT(ParallelThreadInitializationError)
++    PRE_INIT(ParallelContextInitializationError)
++    PRE_INIT(ParallelContextError)
++    PRE_INIT(ParallelImportError)
++    PRE_INIT(ParallelGlobalVariableAccessError)
++    PRE_INIT(ParallelNonlocalVariableAccessError)
++    PRE_INIT(AsyncError)
++    PRE_INIT(AsyncRunCalledWithoutEventsError)
++    PRE_INIT(AsyncRunNoActiveEventsError)
++#endif
+     PRE_INIT(Warning)
+     PRE_INIT(UserWarning)
+     PRE_INIT(DeprecationWarning)
+@@ -2501,6 +2581,18 @@ void
+     POST_INIT(BufferError)
+     POST_INIT(MemoryError)
+     POST_INIT(BufferError)
++#ifdef WITH_PARALLEL
++    POST_INIT(ParallelError)
++    POST_INIT(ParallelThreadInitializationError)
++    POST_INIT(ParallelContextInitializationError)
++    POST_INIT(ParallelContextError)
++    POST_INIT(ParallelImportError)
++    POST_INIT(ParallelGlobalVariableAccessError)
++    POST_INIT(ParallelNonlocalVariableAccessError)
++    POST_INIT(AsyncError)
++    POST_INIT(AsyncRunCalledWithoutEventsError)
++    POST_INIT(AsyncRunNoActiveEventsError)
++#endif
+     POST_INIT(Warning)
+     POST_INIT(UserWarning)
+     POST_INIT(DeprecationWarning)

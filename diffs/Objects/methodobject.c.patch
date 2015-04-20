@@ -1,0 +1,34 @@
+diff --git a/Objects/methodobject.c b/Objects/methodobject.c
+--- a/Objects/methodobject.c
++++ b/Objects/methodobject.c
+@@ -17,10 +17,10 @@ PyObject *
+ PyCFunction_NewEx(PyMethodDef *ml, PyObject *self, PyObject *module)
+ {
+     PyCFunctionObject *op;
+-    op = free_list;
++    op = (Py_PXCTX() ? 0 : free_list);
+     if (op != NULL) {
+         free_list = (PyCFunctionObject *)(op->m_self);
+-        PyObject_INIT(op, &PyCFunction_Type);
++        PyObject_INIT((PyObject *)op, &PyCFunction_Type);
+         numfree--;
+     }
+     else {
+@@ -121,6 +121,7 @@ PyCFunction_Call(PyObject *func, PyObjec
+ static void
+ meth_dealloc(PyCFunctionObject *m)
+ {
++    Py_GUARD();
+     _PyObject_GC_UNTRACK(m);
+     Py_XDECREF(m->m_self);
+     Py_XDECREF(m->m_module);
+@@ -322,6 +323,9 @@ PyCFunction_ClearFreeList(void)
+ {
+     int freelist_size = numfree;
+ 
++    if (Py_PXCTX())
++        return 0;
++
+     while (free_list) {
+         PyCFunctionObject *v = free_list;
+         free_list = (PyCFunctionObject *)(v->m_self);

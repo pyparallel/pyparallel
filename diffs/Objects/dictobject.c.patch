@@ -1,0 +1,104 @@
+diff --git a/Objects/dictobject.c b/Objects/dictobject.c
+--- a/Objects/dictobject.c
++++ b/Objects/dictobject.c
+@@ -247,6 +247,9 @@ PyDict_ClearFreeList(void)
+ {
+     PyDictObject *op;
+     int ret = numfree;
++    if (Py_PXCTX())
++        return 0;
++
+     while (numfree) {
+         op = free_list[--numfree];
+         assert(PyDict_CheckExact(op));
+@@ -389,7 +392,8 @@ static PyObject *
+ new_dict(PyDictKeysObject *keys, PyObject **values)
+ {
+     PyDictObject *mp;
+-    if (numfree) {
++
++    if (!Py_PXCTX() && numfree) {
+         mp = free_list[--numfree];
+         assert (mp != NULL);
+         assert (Py_TYPE(mp) == &PyDict_Type);
+@@ -797,6 +801,11 @@ insertion_resize(PyDictObject *mp)
+     return dictresize(mp, GROWTH_RATE(mp));
+ }
+ 
++#ifdef WITH_PARALLEL
++typedef void * HANDLE;
++extern char HeapFree(void *h, int flags, void *lpmem);
++#endif
++
+ /*
+ Internal routine to insert a new item into the table.
+ Used both by the internal resize routine and by the public insert routine.
+@@ -826,6 +835,15 @@ insertdict(PyDictObject *mp, PyObject *k
+         assert(ep->me_key != NULL && ep->me_key != dummy);
+         *value_addr = value;
+         Py_DECREF(old_value); /* which **CAN** re-enter */
++#ifdef WITH_PARALLEL
++        /* Super hack to support persisting values for sockets/protcols. */
++        if (old_value != Py_None && Py_PXCTX()) {
++            if (_PyParallel_IsHeapOverrideActive()) {
++                HANDLE h = _PyParallel_GetHeapOverride();
++                HeapFree(h, 0, old_value);
++            }
++        }
++#endif
+     }
+     else {
+         if (ep->me_key == NULL) {
+@@ -918,6 +936,15 @@ dictresize(PyDictObject *mp, Py_ssize_t 
+     PyObject **oldvalues;
+     Py_ssize_t i, oldsize;
+ 
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Px_ISPY(mp)) {
++        __debugbreak();
++        PyErr_SetString(PyExc_RuntimeError,
++                        "parallel thread attempted to "
++                        "resize a main thread dict");
++        return -1;
++    }
++#endif
+ /* Find the smallest table size > minused. */
+     for (newsize = PyDict_MINSIZE_COMBINED;
+          newsize <= minused && newsize > 0;
+@@ -1262,6 +1289,12 @@ PyDict_Clear(PyObject *op)
+     PyObject **oldvalues;
+     Py_ssize_t i, n;
+ 
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Px_ISPY(op)) {
++        __debugbreak();
++        Py_FatalError("parallel thread attempted to clear a main thread dict");
++    }
++#endif
+     if (!PyDict_Check(op))
+         return;
+     mp = ((PyDictObject *)op);
+@@ -1380,6 +1413,7 @@ dict_dealloc(PyDictObject *mp)
+     PyObject **values = mp->ma_values;
+     PyDictKeysObject *keys = mp->ma_keys;
+     Py_ssize_t i, n;
++    Py_GUARD();
+     PyObject_GC_UnTrack(mp);
+     Py_TRASHCAN_SAFE_BEGIN(mp)
+     if (values != NULL) {
+@@ -2258,6 +2292,15 @@ dict_setdefault(register PyDictObject *m
+ static PyObject *
+ dict_clear(register PyDictObject *mp)
+ {
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX() && Py_ISPY(mp)) {
++        __debugbreak();
++        PyErr_SetString(PyExc_AssignmentError,
++                        "parallel thread attempted to clear "
++                        "a main thread dict");
++        return NULL;
++    }
++#endif
+     PyDict_Clear((PyObject *)mp);
+     Py_RETURN_NONE;
+ }

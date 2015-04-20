@@ -1,0 +1,420 @@
+diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
+--- a/Objects/obmalloc.c
++++ b/Objects/obmalloc.c
+@@ -238,6 +238,14 @@ static int running_on_valgrind = -1;
+ #define SIMPLELOCK_LOCK(lock)   /* acquire released lock */
+ #define SIMPLELOCK_UNLOCK(lock) /* release acquired lock */
+ 
++#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC)
++#define SRWLOCK_DECL(lock)          static SRWLOCK lock = SRWLOCK_INIT;
++#define SRWLOCK_WRITE_LOCK(lock)    AcquireSRWLockExclusive(&lock)
++#define SRWLOCK_WRITE_UNLOCK(lock)  ReleaseSRWLockExclusive(&lock)
++#define SRWLOCK_READ_LOCK(lock)     AcquireSRWLockShared(&lock)
++#define SRWLOCK_READ_UNLOCK(lock)   ReleaseSRWLockShared(&lock)
++#endif
++
+ /*
+  * Basic types
+  * I don't care if these are defined in <sys/types.h> or elsewhere. Axiom.
+@@ -328,11 +336,28 @@ struct arena_object {
+ /*
+  * This malloc lock
+  */
++#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC) && defined(Py_DEBUG) && 0
++#include <Windows.h>
++//static SRWLOCK srwlock = SRWLOCK_INIT;
++SRWLOCK_DECL(_malloc_srwlock)
++#define LOCK()          SRWLOCK_WRITE_LOCK(_malloc_srwlock)
++#define UNLOCK()        SRWLOCK_WRITE_UNLOCK(_malloc_srwlock)
++#define WRITE_LOCK()    LOCK()
++#define WRITE_UNLOCK()  UNLOCK()
++#define READ_LOCK()     SRWLOCK_READ_LOCK(_malloc_srwlock)
++#define READ_UNLOCK()   SRWLOCK_READ_UNLOCK(_malloc_srwlock)
++
++#else
+ SIMPLELOCK_DECL(_malloc_lock)
+ #define LOCK()          SIMPLELOCK_LOCK(_malloc_lock)
+ #define UNLOCK()        SIMPLELOCK_UNLOCK(_malloc_lock)
+ #define LOCK_INIT()     SIMPLELOCK_INIT(_malloc_lock)
+ #define LOCK_FINI()     SIMPLELOCK_FINI(_malloc_lock)
++#define WRITE_LOCK()
++#define WRITE_UNLOCK()
++#define READ_LOCK()
++#define READ_UNLOCK()
++#endif
+ 
+ /*
+  * Pool table -- headed, circular, doubly-linked lists of partially used pools.
+@@ -525,6 +550,17 @@ static size_t ntimes_arena_allocated = 0
+ /* High water mark (max value ever seen) for narenas_currently_allocated. */
+ static size_t narenas_highwater = 0;
+ 
++static Py_ssize_t _Py_AllocatedBlocks = 0;
++
++Py_ssize_t
++_Py_GetAllocatedBlocks(void)
++{
++    READ_LOCK();
++    return _Py_AllocatedBlocks;
++    READ_UNLOCK();
++}
++
++
+ /* Allocate a new arena.  If we run out of memory, return NULL.  Else
+  * allocate a new arena, and return the address of an arena_object
+  * describing the new arena.  It's expected that the caller will set
+@@ -533,10 +569,11 @@ static size_t narenas_highwater = 0;
+ static struct arena_object*
+ new_arena(void)
+ {
+-    struct arena_object* arenaobj;
++    struct arena_object* arenaobj = NULL;
+     uint excess;        /* number of bytes above pool alignment */
+     void *address;
+     int err;
++    Py_GUARD();
+ 
+ #ifdef PYMALLOC_DEBUG
+     if (Py_GETENV("PYTHONMALLOCSTATS"))
+@@ -552,15 +589,15 @@ new_arena(void)
+          */
+         numarenas = maxarenas ? maxarenas << 1 : INITIAL_ARENA_OBJECTS;
+         if (numarenas <= maxarenas)
+-            return NULL;                /* overflow */
++            goto end;                   /* overflow */
+ #if SIZEOF_SIZE_T <= SIZEOF_INT
+         if (numarenas > PY_SIZE_MAX / sizeof(*arenas))
+-            return NULL;                /* overflow */
++            goto end;                   /* overflow */
+ #endif
+         nbytes = numarenas * sizeof(*arenas);
+         arenaobj = (struct arena_object *)realloc(arenas, nbytes);
+         if (arenaobj == NULL)
+-            return NULL;
++            goto end;
+         arenas = arenaobj;
+ 
+         /* We might need to fix pointers that were copied.  However,
+@@ -603,7 +640,7 @@ new_arena(void)
+          */
+         arenaobj->nextarena = unused_arena_objects;
+         unused_arena_objects = arenaobj;
+-        return NULL;
++        goto end;
+     }
+     arenaobj->address = (uptr)address;
+ 
+@@ -624,6 +661,7 @@ new_arena(void)
+     }
+     arenaobj->ntotalpools = arenaobj->nfreepools;
+ 
++end:
+     return arenaobj;
+ }
+ 
+@@ -768,6 +806,7 @@ PyObject_Malloc(size_t nbytes)
+     poolp pool;
+     poolp next;
+     uint size;
++    Px_RETURN(_PxMem_Malloc(nbytes))
+ 
+ #ifdef WITH_VALGRIND
+     if (UNLIKELY(running_on_valgrind == -1))
+@@ -785,6 +824,8 @@ PyObject_Malloc(size_t nbytes)
+     if (nbytes > PY_SSIZE_T_MAX)
+         return NULL;
+ 
++    _Py_AllocatedBlocks++;
++
+     /*
+      * This implicitly redirects malloc(0).
+      */
+@@ -901,6 +942,7 @@ PyObject_Malloc(size_t nbytes)
+                  * and free list are already initialized.
+                  */
+                 bp = pool->freeblock;
++                assert(bp != NULL);
+                 pool->freeblock = *(block **)bp;
+                 UNLOCK();
+                 return (void *)bp;
+@@ -958,7 +1000,15 @@ redirect:
+      */
+     if (nbytes == 0)
+         nbytes = 1;
+-    return (void *)malloc(nbytes);
++    {
++        void *result = malloc(nbytes);
++        if (!result) {
++            LOCK();
++            _Py_AllocatedBlocks--;
++            UNLOCK();
++        }
++        return result;
++    }
+ }
+ 
+ /* free */
+@@ -974,10 +1024,13 @@ PyObject_Free(void *p)
+ #ifndef Py_USING_MEMORY_DEBUGGER
+     uint arenaindex_temp;
+ #endif
++    Px_RETURN_VOID(_PxMem_Free(p))
+ 
+     if (p == NULL)      /* free(NULL) has no effect */
+         return;
+ 
++    _Py_AllocatedBlocks--;
++
+ #ifdef WITH_VALGRIND
+     if (UNLIKELY(running_on_valgrind > 0))
+         goto redirect;
+@@ -1207,6 +1260,9 @@ PyObject_Realloc(void *p, size_t nbytes)
+     if (p == NULL)
+         return PyObject_Malloc(nbytes);
+ 
++    PyPx_GUARD_MEM(p);
++    Px_RETURN(_PxMem_Realloc(p, nbytes))
++
+     /*
+      * Limit ourselves to PY_SSIZE_T_MAX bytes to prevent security holes.
+      * Most python internals blindly use a signed Py_ssize_t to track
+@@ -1283,20 +1339,33 @@ PyObject_Realloc(void *p, size_t nbytes)
+ void *
+ PyObject_Malloc(size_t n)
+ {
++    Px_RETURN(_PxMem_Malloc(n))
+     return PyMem_MALLOC(n);
+ }
+ 
+ void *
+ PyObject_Realloc(void *p, size_t n)
+ {
++    PyPx_GUARD_MEM(p);
++    Px_RETURN(_PxMem_Realloc(p, n))
+     return PyMem_REALLOC(p, n);
+ }
+ 
+ void
+ PyObject_Free(void *p)
+ {
++    PyPx_GUARD_MEM(p);
++    Px_RETURN_VOID(_PxMem_Free(p))
+     PyMem_FREE(p);
+ }
++
++Py_ssize_t
++_Py_GetAllocatedBlocks(void)
++{
++    Py_GUARD();
++    return 0;
++}
++
+ #endif /* WITH_PYMALLOC */
+ 
+ #ifdef PYMALLOC_DEBUG
+@@ -1328,6 +1397,7 @@ static size_t serialno = 0;     /* incre
+ static void
+ bumpserialno(void)
+ {
++    Py_GUARD();
+     ++serialno;
+ }
+ 
+@@ -1370,6 +1440,7 @@ static int
+ pool_is_in_list(const poolp target, poolp list)
+ {
+     poolp origlist = list;
++    Py_GUARD();
+     assert(target != NULL);
+     if (list == NULL)
+         return 0;
+@@ -1414,16 +1485,19 @@ p[2*S+n+S: 2*S+n+2*S]
+ void *
+ _PyMem_DebugMalloc(size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Malloc(nbytes))
+     return _PyObject_DebugMallocApi(_PYMALLOC_MEM_ID, nbytes);
+ }
+ void *
+ _PyMem_DebugRealloc(void *p, size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Realloc(p, nbytes))
+     return _PyObject_DebugReallocApi(_PYMALLOC_MEM_ID, p, nbytes);
+ }
+ void
+ _PyMem_DebugFree(void *p)
+ {
++    Px_RETURN_VOID(_PxMem_Free(p))
+     _PyObject_DebugFreeApi(_PYMALLOC_MEM_ID, p);
+ }
+ 
+@@ -1431,21 +1505,25 @@ void
+ void *
+ _PyObject_DebugMalloc(size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Malloc(nbytes))
+     return _PyObject_DebugMallocApi(_PYMALLOC_OBJ_ID, nbytes);
+ }
+ void *
+ _PyObject_DebugRealloc(void *p, size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Realloc(p, nbytes))
+     return _PyObject_DebugReallocApi(_PYMALLOC_OBJ_ID, p, nbytes);
+ }
+ void
+ _PyObject_DebugFree(void *p)
+ {
++    Px_RETURN_VOID(_PxMem_Free(p))
+     _PyObject_DebugFreeApi(_PYMALLOC_OBJ_ID, p);
+ }
+ void
+ _PyObject_DebugCheckAddress(const void *p)
+ {
++    Py_GUARD();
+     _PyObject_DebugCheckAddressApi(_PYMALLOC_OBJ_ID, p);
+ }
+ 
+@@ -1457,6 +1535,7 @@ void *
+     uchar *p;           /* base address of malloc'ed block */
+     uchar *tail;        /* p + 2*SST + nbytes == pointer to tail pad bytes */
+     size_t total;       /* nbytes + 4*SST */
++    Px_RETURN(_PxMem_Malloc(nbytes))
+ 
+     bumpserialno();
+     total = nbytes + 4*SST;
+@@ -1497,6 +1576,9 @@ void
+ 
+     if (p == NULL)
+         return;
++
++    Px_RETURN_VOID(_PxMem_Free(p))
++
+     _PyObject_DebugCheckAddressApi(api, p);
+     nbytes = read_size_t(q);
+     nbytes += 4*SST;
+@@ -1517,6 +1599,9 @@ void *
+     if (p == NULL)
+         return _PyObject_DebugMallocApi(api, nbytes);
+ 
++    PyPx_GUARD_MEM(p);
++    Px_RETURN(_PxMem_Realloc(p, nbytes))
++
+     _PyObject_DebugCheckAddressApi(api, p);
+     bumpserialno();
+     original_nbytes = read_size_t(q - 2*SST);
+@@ -1571,6 +1656,7 @@ void *
+     const uchar *tail;
+     int i;
+     char id;
++    Px_VOID
+ 
+     if (p == NULL) {
+         msg = "didn't expect a NULL pointer";
+@@ -1623,6 +1709,7 @@ void
+     int i;
+     int ok;
+     char id;
++    Py_GUARD();
+ 
+     fprintf(stderr, "Debug memory block at address p=%p:", p);
+     if (p == NULL) {
+@@ -1737,7 +1824,7 @@ printone(FILE *out, const char* msg, siz
+     k = 3;
+     do {
+         size_t nextvalue = value / 10;
+-        unsigned int digit = (unsigned int)(value - nextvalue * 10);
++        PY_UINT32_T digit = (PY_UINT32_T)(value - nextvalue * 10);
+         value = nextvalue;
+         buf[i--] = (char)(digit + '0');
+         --k;
+@@ -1760,8 +1847,9 @@ void
+ {
+     char buf1[128];
+     char buf2[128];
++    Py_GUARD();
+     PyOS_snprintf(buf1, sizeof(buf1),
+-                  "%d %ss * %" PY_FORMAT_SIZE_T "d bytes each",
++                  "%d %ss * %zd bytes each",
+                   num_blocks, block_name, sizeof_block);
+     PyOS_snprintf(buf2, sizeof(buf2),
+                   "%48s ", buf1);
+@@ -1804,6 +1892,8 @@ void
+     size_t total;
+     char buf[128];
+ 
++    Py_GUARD();
++
+     fprintf(out, "Small block threshold = %d, in %u size classes.\n",
+             SMALL_REQUEST_THRESHOLD, numclasses);
+ 
+@@ -1920,10 +2010,69 @@ void
+ int
+ Py_ADDRESS_IN_RANGE(void *P, poolp pool)
+ {
+-    uint arenaindex_temp = pool->arenaindex;
++    uint arenaindex_temp;
++    Py_GUARD();
++    arenaindex_temp = pool->arenaindex;
+ 
+     return arenaindex_temp < maxarenas &&
+            (uptr)P - arenas[arenaindex_temp].address < (uptr)ARENA_SIZE &&
+            arenas[arenaindex_temp].address != 0;
+ }
+ #endif
++
++#if defined(WITH_PARALLEL) && defined(WITH_PYMALLOC)
++#ifdef MS_WINDOWS
++#include <Windows.h>
++int
++_PyMem_InRange(void *m)
++{
++    struct arena_object *arena;
++    uint arenaindex_temp;
++    uptr address;
++    uptr addr2;
++    uptr up;
++    uptr pdiff;
++    poolp pool;
++    int invalid = 0;
++    int result = 0;
++    int result2 = 0;
++    void *v;
++    struct arena_object *ap = NULL;
++
++    up = (uptr)m;
++    pool = POOL_ADDR(m);
++    READ_LOCK();
++    __try {
++        arenaindex_temp = pool->arenaindex;
++    } __except(
++        GetExceptionCode() == EXCEPTION_ACCESS_VIOLATION ?
++            EXCEPTION_EXECUTE_HANDLER :
++            EXCEPTION_CONTINUE_SEARCH
++    ) {
++        invalid = 1;
++    }
++    if (invalid)
++        goto end;
++
++    if (arenaindex_temp < maxarenas) {
++        v = (void *)arenas[arenaindex_temp].address;
++        ap = (struct arena_object *)v;
++        addr2 = arenas[arenaindex_temp].address;
++        arena = &arenas[arenaindex_temp];
++        address = arena->address;
++        pdiff = up - address;
++        if (pdiff < (uptr)ARENA_SIZE)
++            if (address != 0)
++                result = 1;
++    }
++    result2 = arenaindex_temp < maxarenas &&
++           (uptr)m - arenas[arenaindex_temp].address < (uptr)ARENA_SIZE &&
++           arenas[arenaindex_temp].address != 0;
++    assert(result == result2);
++end:
++    READ_UNLOCK();
++    return result;
++}
++#endif /* MS_WINDOWS */
++#endif
++

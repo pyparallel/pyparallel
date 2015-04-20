@@ -1,0 +1,318 @@
+diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
+--- a/Modules/socketmodule.c
++++ b/Modules/socketmodule.c
+@@ -302,6 +302,14 @@ typedef size_t socklen_t;
+ #  include <fcntl.h>
+ # endif
+ 
++/* Our CMSG stuff is busted on Windows. */
++#ifdef CMSG_LEN
++#undef CMSG_LEN
++#endif
++#ifdef CMSG_DATA
++#undef CMSG_DATA
++#endif
++
+ #endif
+ 
+ #include <stddef.h>
+@@ -442,9 +450,6 @@ dup_socket(SOCKET handle)
+ #define SEGMENT_SIZE (32 * 1024 -1)
+ #endif
+ 
+-/* Convert "sock_addr_t *" to "struct sockaddr *". */
+-#define SAS2SA(x)       (&((x)->sa))
+-
+ /*
+  * Constants for getnameinfo()
+  */
+@@ -804,6 +809,9 @@ init_sockobject(PySocketSockObject *s,
+     s->sock_family = family;
+     s->sock_type = type;
+     s->sock_proto = proto;
++#ifdef WITH_PARALLEL
++    s->sock_backlog = 0;
++#endif
+ 
+     s->errorhandler = &set_error;
+ #ifdef SOCK_NONBLOCK
+@@ -1775,7 +1783,7 @@ getsockaddrarg(PySocketSockObject *s, Py
+    Return 1 if the family is known, 0 otherwise.  The length is returned
+    through len_ret. */
+ 
+-static int
++int
+ getsockaddrlen(PySocketSockObject *s, socklen_t *len_ret)
+ {
+     switch (s->sock_family) {
+@@ -2066,6 +2074,68 @@ Wait for an incoming connection.  Return
+ representing the connection, and the address of the client.\n\
+ For IP sockets, the address info is a pair (hostaddr, port).");
+ 
++#ifdef WITH_PARALLEL
++PyObject *
++sock_acceptex(PySocketSockObject *s)
++{
++    sock_addr_t addrbuf;
++    SOCKET_T newfd = INVALID_SOCKET;
++    socklen_t addrlen;
++    PyObject *sock = NULL;
++    PyObject *addr = NULL;
++    PyObject *res = NULL;
++    int timeout;
++    if (!getsockaddrlen(s, &addrlen))
++        return NULL;
++    memset(&addrbuf, 0, addrlen);
++
++    if (!IS_SELECTABLE(s))
++        return select_error();
++
++    BEGIN_SELECT_LOOP(s)
++    Py_BEGIN_ALLOW_THREADS
++    timeout = internal_select_ex(s, 0, interval);
++    if (!timeout) {
++        newfd = accept(s->sock_fd, SAS2SA(&addrbuf), &addrlen);
++    }
++    Py_END_ALLOW_THREADS
++
++    if (timeout == 1) {
++        PyErr_SetString(socket_timeout, "timed out");
++        return NULL;
++    }
++    END_SELECT_LOOP(s)
++
++    if (newfd == INVALID_SOCKET)
++        return s->errorhandler();
++
++    sock = PyLong_FromSocket_t(newfd);
++    if (sock == NULL) {
++        SOCKETCLOSE(newfd);
++        goto finally;
++    }
++
++    addr = makesockaddr(s->sock_fd, SAS2SA(&addrbuf),
++                        addrlen, s->sock_proto);
++    if (addr == NULL)
++        goto finally;
++
++    res = PyTuple_Pack(2, sock, addr);
++
++finally:
++    Py_XDECREF(sock);
++    Py_XDECREF(addr);
++    return res;
++}
++
++PyDoc_STRVAR(acceptex_doc,
++"acceptex(func[, args[, kwds[, callback[, errback]]]]) -> None\
++\n\
++Wait for an incoming connection.  Return a new socket file descriptor\n\
++representing the connection, and the address of the client.\n\
++For IP sockets, the address info is a pair (hostaddr, port).");
++#endif
++
+ /* s.setblocking(flag) method.  Argument:
+    False -- non-blocking mode; same as settimeout(0)
+    True -- blocking mode; same as settimeout(None)
+@@ -2568,6 +2638,9 @@ sock_listen(PySocketSockObject *s, PyObj
+     Py_END_ALLOW_THREADS
+     if (res < 0)
+         return s->errorhandler();
++#ifdef WITH_PARALLEL
++    s->sock_backlog = backlog;
++#endif
+     Py_INCREF(Py_None);
+     return Py_None;
+ }
+@@ -3875,6 +3948,12 @@ static PyMethodDef sock_methods[] = {
+     {"sendmsg",           (PyCFunction)sock_sendmsg, METH_VARARGS,
+                       sendmsg_doc},
+ #endif
++#ifdef WITH_PARALLEL
++    /*
++    {"acceptex", (PyCFunction)sock_acceptex, METH_VARARGS, acceptex_doc},
++    {"connectex", (PyCFunction)sock_connectex, METH_VARARGS, acceptex_doc},
++    */
++#endif
+     {NULL,                      NULL}           /* sentinel */
+ };
+ 
+@@ -3884,6 +3963,9 @@ static PyMemberDef sock_memberlist[] = {
+        {"type", T_INT, offsetof(PySocketSockObject, sock_type), READONLY, "the socket type"},
+        {"proto", T_INT, offsetof(PySocketSockObject, sock_proto), READONLY, "the socket protocol"},
+        {"timeout", T_DOUBLE, offsetof(PySocketSockObject, sock_timeout), READONLY, "the socket timeout"},
++#ifdef WITH_PARALLEL
++    {"backlog", T_INT, offsetof(PySocketSockObject, sock_backlog), READONLY, "the backlog specified to listen(n)"},
++#endif
+        {0},
+ };
+ 
+@@ -3896,7 +3978,8 @@ sock_dealloc(PySocketSockObject *s)
+     if (s->sock_fd != -1) {
+         PyObject *exc, *val, *tb;
+         Py_ssize_t old_refcount = Py_REFCNT(s);
+-        ++Py_REFCNT(s);
++        /* ++Py_REFCNT(self); */
++        Py_INCREF(s);
+         PyErr_Fetch(&exc, &val, &tb);
+         if (PyErr_WarnFormat(PyExc_ResourceWarning, 1,
+                              "unclosed %R", s))
+@@ -3938,15 +4021,15 @@ sock_repr(PySocketSockObject *s)
+ static PyObject *
+ sock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+ {
+-    PyObject *new;
+-
+-    new = type->tp_alloc(type, 0);
+-    if (new != NULL) {
+-        ((PySocketSockObject *)new)->sock_fd = -1;
+-        ((PySocketSockObject *)new)->sock_timeout = -1.0;
+-        ((PySocketSockObject *)new)->errorhandler = &set_error;
+-    }
+-    return new;
++    PyObject *n;
++
++    n = type->tp_alloc(type, 0);
++    if (n != NULL) {
++        ((PySocketSockObject *)n)->sock_fd = -1;
++        ((PySocketSockObject *)n)->sock_timeout = -1.0;
++        ((PySocketSockObject *)n)->errorhandler = &set_error;
++    }
++    return n;
+ }
+ 
+ 
+@@ -3967,6 +4050,12 @@ sock_initobj(PyObject *self, PyObject *a
+                                      &family, &type, &proto, &fdobj))
+         return -1;
+ 
++    /*
++    s->sock_fd = -1;
++    s->sock_timeout = -1.0;
++    s->errorhandler = &set_error;
++    */
++
+     if (fdobj != NULL && fdobj != Py_None) {
+ #ifdef MS_WINDOWS
+         /* recreate a socket that was duplicated */
+@@ -5496,16 +5585,46 @@ os_cleanup(void)
+     WSACleanup();
+ }
+ 
++#define _WSA_RESOLVE(n)                                 \
++    do {                                                \
++        ret = WSAIoctl(                                 \
++            sock,                                       \
++            SIO_GET_EXTENSION_FUNCTION_POINTER,         \
++            (void *)&##n##_GUID,                        \
++            sizeof(##n##_GUID),                         \
++            (void *)&##n##,                             \
++            sizeof(##n##),                              \
++            &size,                                      \
++            NULL,                                       \
++            NULL                                        \
++        );                                              \
++        if (ret == SOCKET_ERROR) {                      \
++            closesocket(sock);                          \
++            PyErr_SetString(PyExc_ImportError,          \
++                            "WSAIoctl failed to get "   \
++                            "function pointer to "      \
++                            "extension '" #n "'");      \
++            return 0;                                   \
++        }                                               \
++    } while (0)
++
++
+ static int
+ os_init(void)
+ {
+-    WSADATA WSAData;
++    WSADATA wsadata;
+     int ret;
++#ifdef WITH_PARALLEL
++    SOCKET sock;
++    DWORD  size;
++    ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
++#else
+     ret = WSAStartup(0x0101, &WSAData);
++#endif
+     switch (ret) {
+     case 0:     /* No error */
+         Py_AtExit(os_cleanup);
+-        return 1; /* Success */
++        goto next;
+     case WSASYSNOTREADY:
+         PyErr_SetString(PyExc_ImportError,
+                         "WSAStartup failed: network not ready");
+@@ -5521,6 +5640,27 @@ os_init(void)
+         break;
+     }
+     return 0; /* Failure */
++next:
++#ifndef WITH_PARALLEL
++    return 1; /* Success */
++#else
++    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
++    if (sock == INVALID_SOCKET) {
++        PyErr_SetFromWindowsErr(0);
++        return 0;
++    }
++    _WSA_RESOLVE(_AcceptEx);
++    _WSA_RESOLVE(_ConnectEx);
++    _WSA_RESOLVE(_WSARecvMsg);
++    _WSA_RESOLVE(_WSASendMsg);
++    _WSA_RESOLVE(_DisconnectEx);
++    _WSA_RESOLVE(_TransmitFile);
++    _WSA_RESOLVE(_TransmitPackets);
++    _WSA_RESOLVE(_GetAcceptExSockaddrs);
++
++    closesocket(sock);
++    return 1; /* Success */
++#endif /* !WITH_PARALLEL */
+ }
+ 
+ #endif /* MS_WINDOWS */
+@@ -5570,6 +5710,23 @@ PySocketModule_APIObject PySocketModuleA
+     &sock_type,
+     NULL,
+     NULL
++#ifdef WITH_PARALLEL
++    ,
++    getsockaddrarg,
++    getsockaddrlen,
++    makesockaddr,
++    set_error,
++    set_herror,
++    set_gaierror,
++    NULL, /* LPFN_ACCEPTEX             */
++    NULL, /* LPFN_CONNECTEX            */
++    NULL, /* LPFN_WSARECVMSG           */
++    NULL, /* LPFN_WSASENDMSG           */
++    NULL, /* LPFN_DISCONNECTEX         */
++    NULL, /* LPFN_TRANSMITFILE         */
++    NULL, /* LPFN_TRANSMITPACKETS      */
++    NULL  /* LPFN_GETACCEPTEXSOCKADDRS */
++#endif
+ };
+ 
+ 
+@@ -5653,6 +5810,19 @@ PyInit__socket(void)
+     Py_INCREF(has_ipv6);
+     PyModule_AddObject(m, "has_ipv6", has_ipv6);
+ 
++#ifdef WITH_PARALLEL
++#ifdef MS_WINDOWS
++    PySocketModuleAPI.AcceptEx = _AcceptEx;
++    PySocketModuleAPI.ConnectEx = _ConnectEx;
++    PySocketModuleAPI.WSARecvMsg = _WSARecvMsg;
++    PySocketModuleAPI.WSASendMsg = _WSASendMsg;
++    PySocketModuleAPI.DisconnectEx = _DisconnectEx;
++    PySocketModuleAPI.TransmitFile = _TransmitFile;
++    PySocketModuleAPI.TransmitPackets = _TransmitPackets;
++    PySocketModuleAPI.GetAcceptExSockaddrs = _GetAcceptExSockaddrs;
++#endif /* MS_WINDOWS    */
++#endif /* WITH_PARALLEL */
++
+     /* Export C API */
+     if (PyModule_AddObject(m, PySocket_CAPI_NAME,
+            PyCapsule_New(&PySocketModuleAPI, PySocket_CAPSULE_NAME, NULL)

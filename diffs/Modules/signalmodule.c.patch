@@ -1,0 +1,15 @@
+diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+--- a/Modules/signalmodule.c
++++ b/Modules/signalmodule.c
+@@ -1318,6 +1318,11 @@ PyErr_CheckSignals(void)
+     int i;
+     PyObject *f;
+ 
++#ifdef WITH_PARALLEL
++    if (Py_PXCTX())
++        return 0;
++#endif
++
+     if (!is_tripped)
+         return 0;
+ 

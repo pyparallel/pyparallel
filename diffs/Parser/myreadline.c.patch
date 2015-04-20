@@ -1,0 +1,89 @@
+diff --git a/Parser/myreadline.c b/Parser/myreadline.c
+--- a/Parser/myreadline.c
++++ b/Parser/myreadline.c
+@@ -68,7 +68,7 @@ my_fgets(char *buf, int len, FILE *fp)
+         */
+         if (GetLastError()==ERROR_OPERATION_ABORTED) {
+             hInterruptEvent = _PyOS_SigintEvent();
+-            switch (WaitForSingleObject(hInterruptEvent, 10)) {
++            switch (WaitForSingleObjectEx(hInterruptEvent, 10, FALSE)) {
+             case WAIT_OBJECT_0:
+                 ResetEvent(hInterruptEvent);
+                 return 1; /* Interrupt */
+@@ -114,7 +114,8 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+     size_t n;
+     char *p, *pr;
+     n = 100;
+-    if ((p = (char *)PyMem_MALLOC(n)) == NULL)
++    p = (char *)PyMem_RawMalloc(n);
++    if (p == NULL)
+         return NULL;
+     fflush(sys_stdout);
+     if (prompt)
+@@ -124,7 +125,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+     case 0: /* Normal case */
+         break;
+     case 1: /* Interrupt */
+-        PyMem_FREE(p);
++        PyMem_RawFree(p);
+         return NULL;
+     case -1: /* EOF */
+     case -2: /* Error */
+@@ -140,7 +141,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+             PyErr_SetString(PyExc_OverflowError, "input line too long");
+             return NULL;
+         }
+-        pr = (char *)PyMem_REALLOC(p, n + incr);
++        pr = (char *)PyMem_RawRealloc(p, n + incr);
+         if (pr == NULL) {
+             PyMem_FREE(p);
+             PyErr_NoMemory();
+@@ -151,7 +152,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+             break;
+         n += strlen(p+n);
+     }
+-    pr = (char *)PyMem_REALLOC(p, n+1);
++    pr = (char *)PyMem_RawRealloc(p, n+1);
+     if (pr == NULL) {
+         PyMem_FREE(p);
+         PyErr_NoMemory();
+@@ -174,7 +175,8 @@ char *(*PyOS_ReadlineFunctionPointer)(FI
+ char *
+ PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
+ {
+-    char *rv;
++    char *rv, *res;
++    size_t len;
+ 
+     if (_PyOS_ReadlineTState == PyThreadState_GET()) {
+         PyErr_SetString(PyExc_RuntimeError,
+@@ -198,6 +200,13 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+ #endif
+ 
+     _PyOS_ReadlineTState = PyThreadState_GET();
++
++/*
++#ifdef WITH_PARALLEL
++    rv = PyOS_StdioReadline (sys_stdin, sys_stdout, prompt);
++#else
++*/
++
+     Py_BEGIN_ALLOW_THREADS
+ #ifdef WITH_THREAD
+     PyThread_acquire_lock(_PyOS_ReadlineLock, 1);
+@@ -221,5 +230,14 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+ 
+     _PyOS_ReadlineTState = NULL;
+ 
+-    return rv;
++    if (rv == NULL)
++        return NULL;
++
++    len = strlen(rv) + 1;
++    res = PyMem_Malloc(len);
++    if (res != NULL)
++        memcpy(res, rv, len);
++    PyMem_RawFree(rv);
++
++    return res;
+ }

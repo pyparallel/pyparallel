@@ -1,0 +1,12 @@
+diff --git a/Lib/idlelib/PyShell.py b/Lib/idlelib/PyShell.py
+--- a/Lib/idlelib/PyShell.py
++++ b/Lib/idlelib/PyShell.py
+@@ -828,7 +828,7 @@ class ModifiedInterpreter(InteractiveInt
+ 
+ class PyShell(OutputWindow):
+ 
+-    shell_title = "Python " + python_version() + " Shell"
++    shell_title = "PyParallel " + python_version() + " Shell"
+ 
+     # Override classes
+     ColorDelegator = ModifiedColorDelegator

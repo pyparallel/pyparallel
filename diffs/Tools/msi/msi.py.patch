@@ -1,0 +1,277 @@
+diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
+--- a/Tools/msi/msi.py
++++ b/Tools/msi/msi.py
+@@ -31,7 +31,10 @@ MSVCR = "100"
+ # Name of certificate in default store to sign MSI with
+ certname = None
+ # Make a zip file containing the PDB files for this build?
+-pdbzip = True
++# (PyParallel: we set this to false as we inline all our pdbs in the .msi.)
++pdbzip = False
++# Run zip -0 <msiname>.zip <msiname> after msi is built.
++zipmsi = True
+ 
+ try:
+     from config import *
+@@ -61,6 +64,18 @@ for l in lines:
+     if name == 'PY_RELEASE_SERIAL': serial = value
+ 
+ short_version = major+"."+minor
++
++# PyParallel: we're making installers far more frequently now (after every few
++# commits), so use the hg repo serial revision as our serial number (ensures
++# the installer .msi gets a unique version).
++from subprocess import check_output
++hgsum = check_output('hg sum')
++# First line of output will look something like this:
++#   'parent: 94329:2ce4e90fd470 tip'
++#            ^^^^^
++#            We want that bit.
++serial = hgsum.splitlines()[0].split(' ')[1].split(':')[0]
++
+ # See PC/make_versioninfo.c
+ FIELD3 = 1000*int(micro) + 10*level + int(serial)
+ current_version = "%s.%d" % (short_version, FIELD3)
+@@ -74,8 +89,8 @@ upgrade_code_snapshot='{92A24481-3ECB-40
+ upgrade_code='{65E6DE48-A358-434D-AA4F-4AF72DB4718F}'
+ upgrade_code_64='{6A965A0C-6EE6-4E3A-9983-3263F56311EC}'
+ 
+-if snapshot:
+-    current_version = "%s.%s.%s" % (major, minor, int(time.time()/3600/24))
++#if snapshot:
++#    current_version = "%s.%s.%s" % (major, minor, int(time.time()/3600/24))
+ 
+ if full_current_version is None:
+     full_current_version = current_version
+@@ -130,6 +145,17 @@ if level < 0xf:
+         docfile += '%x%s' % (level, serial)
+ docfile = 'python%s%s%s.chm' % (major, minor, docfile)
+ 
++from os.path import (
++    join,
++    exists,
++    dirname,
++    abspath,
++    normpath,
++)
++
++def join_path(*args):
++    return abspath(normpath(join(*args)))
++
+ # Build the mingw import library, libpythonXY.a
+ # This requires 'nm' and 'dlltool' executables on your PATH
+ def build_mingw_lib(lib_file, def_file, dll_file, mingw_lib):
+@@ -186,6 +212,9 @@ if msilib.pe_type(dll_path) != msilib.pe
+ 
+ if msilib.Win64:
+     upgrade_code = upgrade_code_64
++    bits = 64
++else:
++    bits = 32
+ 
+ if snapshot:
+     product_code = msilib.gen_uuid()
+@@ -232,13 +261,13 @@ def build_database():
+     # schema represents the installer 2.0 database schema.
+     # sequence is the set of standard sequences
+     # (ui/execute, admin/advt/install)
+-    msiname = "python-%s%s.msi" % (full_current_version, msilib.arch_ext)
++    msiname = "pyparallel-%s%s.msi" % (full_current_version, msilib.arch_ext)
+     db = msilib.init_database(msiname,
+-                  schema, ProductName="Python "+full_current_version+productsuffix,
++                  schema, ProductName="PyParallel "+full_current_version+productsuffix,
+                   ProductCode=product_code,
+                   ProductVersion=current_version,
+-                  Manufacturer=u"Python Software Foundation",
+-                  request_uac = True)
++                  Manufacturer=u"Trent Nelson",
++                  request_uac = False)
+     # The default sequencing of the RemoveExistingProducts action causes
+     # removal of files that got just installed. Place it after
+     # InstallInitialize, so we first uninstall everything, but still roll
+@@ -253,7 +282,7 @@ def build_database():
+     # accordingly.
+     add_data(db, "Property", [("UpgradeCode", uc),
+                               ("WhichUsers", "ALL"),
+-                              ("ProductLine", "Python%s%s" % (major, minor)),
++                              ("ProductLine", "PyParallel%s%s" % (major, minor)),
+                              ])
+     db.Commit()
+     return db, msiname
+@@ -286,7 +315,7 @@ def remove_old_versions(db):
+               None, migrate_features, None, "REMOVEOLDSNAPSHOT")])
+         props = "REMOVEOLDSNAPSHOT;REMOVEOLDVERSION"
+ 
+-    props += ";TARGETDIR;DLLDIR;LAUNCHERDIR"
++    props += ";TARGETDIR;DLLDIR;LAUNCHERDIR;CONFDIR"
+     # Installer collects the product codes of the earlier releases in
+     # these properties. In order to allow modification of the properties,
+     # they must be declared as secure. See "SecureCustomProperties Property"
+@@ -409,10 +438,10 @@ def add_ui(db):
+ 
+     # Fonts, see "TextStyle Table"
+     add_data(db, "TextStyle",
+-             [("DlgFont8", "Tahoma", 9, None, 0),
+-              ("DlgFontBold8", "Tahoma", 8, None, 1), #bold
+-              ("VerdanaBold10", "Verdana", 10, None, 1),
+-              ("VerdanaRed9", "Verdana", 9, 255, 0),
++             [("DlgFont8", "Segoe UI", 9, None, 0),
++              ("DlgFontBold8", "Segoe UI", 8, None, 1), #bold
++              ("VerdanaBold10", "Segoe UI", 10, None, 1),
++              ("VerdanaRed9", "Segoe UI", 9, 255, 0),
+              ])
+ 
+     compileargs = r'-Wi "[TARGETDIR]Lib\compileall.py" -f -x "bad_coding|badsyntax|site-packages|py2_|lib2to3\\tests|venv\\scripts" "[TARGETDIR]Lib"'
+@@ -423,7 +452,7 @@ def add_ui(db):
+         # See "Custom Action Type 51",
+         # "Custom Action Execution Scheduling Options"
+         ("InitialTargetDir", 307, "TARGETDIR",
+-         "[WindowsVolume]Python%s%s" % (major, minor)),
++         "[WindowsVolume]PyParallel%s%s" % (major, minor)),
+         ("SetDLLDirToTarget", 307, "DLLDIR", "[TARGETDIR]"),
+         ("SetDLLDirToSystem32", 307, "DLLDIR", SystemFolderName),
+         ("SetLauncherDirToTarget", 307, "LAUNCHERDIR", "[TARGETDIR]"),
+@@ -858,7 +887,9 @@ def add_features(db):
+     # We don't support advertisement of extensions
+     ext_feature = Feature(db, "Extensions", "Register Extensions",
+                           "Make this Python installation the default Python installation", 3,
+-                         parent = default_feature, attributes=2|8)
++                         parent = default_feature, attributes=2|8,
++                         # PyParallel: don't register as default Python.
++                         level=2)
+     if have_tcl:
+         tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 5,
+                     parent = default_feature, attributes=2)
+@@ -905,9 +936,10 @@ def generate_license():
+     shutil.copyfileobj(open("crtlicense.txt"), out)
+     for name, pat, file in (("bzip2","bzip2-*", "LICENSE"),
+                       ("openssl", "openssl-*", "LICENSE"),
+-                      ("Tcl", "tcl8*", "license.terms"),
+-                      ("Tk", "tk8*", "license.terms"),
+-                      ("Tix", "tix-*", "license.terms")):
++                      ("Tcl", "tcl-8*", "license.terms"),
++                      ("Tk", "tk-8*", "license.terms"),
++                      #("Tix", "tix-*", "license.terms")
++                      ):
+         out.write("\nThis copy of Python includes a copy of %s, which is licensed under the following terms:\n\n" % name)
+         dirs = glob.glob(srcdir+"/../"+pat)
+         if not dirs:
+@@ -927,6 +959,46 @@ class PyDirectory(Directory):
+             kw['componentflags'] = 2 #msidbComponentAttributesOptional
+         Directory.__init__(self, *args, **kw)
+ 
++    def add_file(self, *args, **kw):
++        # We always include .pdb files for PyParallel, 'cause it's gonna'
++        # crash sooner or later.
++        Directory.add_file(self, *args, **kw)
++        filename = args[0]
++        ix = filename.rfind('.')
++        if ix == -1:
++            return
++        ext = filename[ix+1:]
++
++        if ext not in ('pyd', 'dll', 'exe'):
++            return
++
++        if 'Visual Studio' in kw.get('src', ''):
++            return
++
++        if filename.startswith('wininst'):
++            return
++
++        if filename == 'python3.dll':
++            return
++
++        if filename.startswith(('tcl', 'tk')):
++            return
++
++        pdbname = '.'.join((filename[:ix], 'pdb'))
++        pdbpath = os.path.join(srcdir, pdbname)
++
++        if not exists(pdbpath):
++            pdbpath = join_path(self.absolute, pdbname)
++
++        if not exists(pdbpath):
++            import pdb
++            dbg = pdb.Pdb()
++            dbg.set_trace()
++
++        print "%s -> %s" % (filename, pdbname)
++        Directory.add_file(self, pdbname, **kw)
++
++
+ def hgmanifest():
+     # Fetch file list from Mercurial
+     process = subprocess.Popen(['hg', 'manifest'], stdout=subprocess.PIPE)
+@@ -949,7 +1021,7 @@ def hgmanifest():
+ def add_files(db):
+     installer = msilib.MakeInstaller()
+     hgfiles = hgmanifest()
+-    cab = CAB("python")
++    cab = CAB("pyparallel")
+     tmpfiles = []
+     # Add all executables, icons, text files into the TARGETDIR component
+     root = PyDirectory(db, cab, None, srcdir, "TARGETDIR", "SourceDir")
+@@ -958,6 +1030,10 @@ def add_files(db):
+         root.add_file("%s/w9xpopen.exe" % PCBUILD)
+     root.add_file("README.txt", src="README")
+     root.add_file("NEWS.txt", src="Misc/NEWS")
++    root.add_file("px.bat", src="Tools/pyparallel/px.bat")
++    root.add_file("tefb.bat", src="Tools/pyparallel/tefb.bat")
++    root.add_file("px-http-server.bat", src="Tools/pyparallel/px-http-server.bat")
++    root.add_file("python33-http-server.bat", src="Tools/pyparallel/python33-http-server.bat")
+     generate_license()
+     root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
+     root.start_component("python.exe", keyfile="python.exe")
+@@ -1028,6 +1104,12 @@ def add_files(db):
+         print("WARNING: _ctypes.pyd not found, ctypes will not be included")
+         extensions.remove("_ctypes.pyd")
+ 
++    # Add PyParallel conf\*.conf files.
++    trail = '%s|%s' % (root.make_short('conf'), 'conf')
++    conf = PyDirectory(db, cab, root, 'conf', 'conf', trail)
++    conf.add_file('px.conf')
++    conf.add_file('techempower_frameworks_benchmark.conf')
++
+     # Add all .py files in Lib, except tkinter, test
+     dirs = []
+     pydirs = [(root, "Lib", hgfiles["Lib"], default_feature)]
+@@ -1052,7 +1134,8 @@ def add_files(db):
+         has_py = False
+         for name, subdir in files.items():
+             if subdir is None:
+-                assert os.path.isfile(os.path.join(lib.absolute, name))
++                abs_name = os.path.join(lib.absolute, name)
++                assert os.path.isfile(abs_name), abs_name
+                 if name == 'README':
+                     lib.add_file("README.txt", src="README")
+                 else:
+@@ -1289,7 +1372,7 @@ def add_registry(db):
+     # Shortcuts, see "Shortcut Table"
+     add_data(db, "Directory",
+              [("ProgramMenuFolder", "TARGETDIR", "."),
+-              ("MenuDir", "ProgramMenuFolder", "PY%s%s|%sPython %s.%s" % (major,minor,testprefix,major,minor))])
++              ("MenuDir", "ProgramMenuFolder", "PY%s%s|%sPyParallel %s.%s (%d-bit)" % (major,minor,testprefix,major,minor,bits))])
+     add_data(db, "RemoveFile",
+              [("MenuDir", "TARGETDIR", None, "MenuDir", 2)])
+     tcltkshortcuts = []
+@@ -1322,7 +1405,7 @@ def add_registry(db):
+ def build_pdbzip():
+     pdbexclude = ['kill_python.pdb', 'make_buildinfo.pdb',
+                   'make_versioninfo.pdb']
+-    path = "python-%s%s-pdb.zip" % (full_current_version, msilib.arch_ext)
++    path = "pyparallel-%s%s-pdb.zip" % (full_current_version, msilib.arch_ext)
+     pdbzip = zipfile.ZipFile(path, 'w')
+     for f in glob.glob1(os.path.join(srcdir, PCBUILD), "*.pdb"):
+         if f not in pdbexclude and not f.endswith('_d.pdb'):
+@@ -1417,3 +1500,10 @@ if certname:
+ 
+ if pdbzip:
+     build_pdbzip()
++
++if zipmsi:
++    cmd = 'zip -0 %s.zip %s' % (msiname, msiname)
++    print 'Running: %s' % cmd
++    os.system(cmd)
++
++# vim:set tw=0:

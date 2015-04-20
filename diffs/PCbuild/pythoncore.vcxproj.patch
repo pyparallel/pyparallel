@@ -1,0 +1,101 @@
+diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
+--- a/PCbuild/pythoncore.vcxproj
++++ b/PCbuild/pythoncore.vcxproj
+@@ -158,6 +158,7 @@
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">$(PyDllName)</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">$(PyDllName)</TargetName>
+     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PyDllName)</TargetName>
++    <PreBuildEventUseInBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</PreBuildEventUseInBuild>
+   </PropertyGroup>
+   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+     <ClCompile>
+@@ -165,6 +166,8 @@
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -201,6 +204,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -236,6 +241,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -274,6 +281,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -306,6 +315,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -342,6 +353,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -375,6 +388,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -411,6 +426,8 @@ IF %ERRORLEVEL% NEQ 0 (
+       <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+       <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
++      <BrowseInformation>true</BrowseInformation>
++      <AssemblerOutput>All</AssemblerOutput>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+@@ -492,6 +509,8 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClInclude Include="..\Include\patchlevel.h" />
+     <ClInclude Include="..\Include\pgen.h" />
+     <ClInclude Include="..\Include\pgenheaders.h" />
++    <ClInclude Include="..\Include\pyparallel.h" />
++    <ClInclude Include="..\Include\pxlist.h" />
+     <ClInclude Include="..\Include\py_curses.h" />
+     <ClInclude Include="..\Include\pyarena.h" />
+     <ClInclude Include="..\Include\pycapsule.h" />
+@@ -691,6 +710,8 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClCompile Include="..\PC\dl_nt.c" />
+     <ClCompile Include="..\PC\getpathp.c" />
+     <ClCompile Include="..\PC\msvcrtmodule.c" />
++    <ClCompile Include="..\Python\pyparallel.c" />
++    <ClCompile Include="..\Python\pxlist.c" />
+     <ClCompile Include="..\Python\random.c" />
+     <ClCompile Include="..\Python\_warnings.c" />
+     <ClCompile Include="..\Python\asdl.c" />

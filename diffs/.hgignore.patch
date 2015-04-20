@@ -1,0 +1,28 @@
+diff --git a/.hgignore b/.hgignore
+--- a/.hgignore
++++ b/.hgignore
+@@ -80,6 +80,8 @@ PCbuild/*.user
+ PCbuild/*.suo
+ PCbuild/*.*sdf
+ PCbuild/Win32-temp-*
++PCbuild/Win32-pg*
++PCbuild/x64-pg*
+ PCbuild/x64-temp-*
+ PCbuild/amd64
+ BuildLog.htm
+@@ -89,3 +91,14 @@ Modules/_testembed
+ .coverage
+ coverage/
+ htmlcov/
++Lib/distutils/command/wininst-*
++website/
++Lib/site-packages/
++contrib/
++Scripts\cygdb-script.py
++Scripts\cython-script.py
++Scripts\cythonize-script.py
++easy_install-3.3-script.py
++*.ipch
++*.psess
++*.vsp
+\ No newline at end of file

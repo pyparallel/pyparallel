@@ -1,0 +1,107 @@
+diff --git a/Objects/tupleobject.c b/Objects/tupleobject.c
+--- a/Objects/tupleobject.c
++++ b/Objects/tupleobject.c
+@@ -20,8 +20,8 @@ static PyTupleObject *free_list[PyTuple_
+ static int numfree[PyTuple_MAXSAVESIZE];
+ #endif
+ #ifdef COUNT_ALLOCS
+-Py_ssize_t fast_tuple_allocs;
+-Py_ssize_t tuple_zero_allocs;
++Py_TLS Py_ssize_t fast_tuple_allocs;
++Py_TLS Py_ssize_t tuple_zero_allocs;
+ #endif
+ 
+ /* Debug statistic to count GC tracking of tuples.
+@@ -30,8 +30,8 @@ Py_ssize_t tuple_zero_allocs;
+    does not necessarily prove that the heuristic is inefficient.
+ */
+ #ifdef SHOW_TRACK_COUNT
+-static Py_ssize_t count_untracked = 0;
+-static Py_ssize_t count_tracked = 0;
++Py_TLS static Py_ssize_t count_untracked = 0;
++Py_TLS static Py_ssize_t count_tracked = 0;
+ 
+ static void
+ show_track(void)
+@@ -71,6 +71,8 @@ PyTuple_New(register Py_ssize_t size)
+         PyErr_BadInternalCall();
+         return NULL;
+     }
++    if (Py_PXCTX())
++        goto newvar;
+ #if PyTuple_MAXSAVESIZE > 0
+     if (size == 0 && free_list[0]) {
+         op = free_list[0];
+@@ -96,6 +98,7 @@ PyTuple_New(register Py_ssize_t size)
+     else
+ #endif
+     {
++newvar:
+         /* Check for overflow */
+         if (size > (PY_SSIZE_T_MAX - sizeof(PyTupleObject) -
+                     sizeof(PyObject *)) / sizeof(PyObject *)) {
+@@ -107,6 +110,10 @@ PyTuple_New(register Py_ssize_t size)
+     }
+     for (i=0; i < size; i++)
+         op->ob_item[i] = NULL;
++
++    if (Py_PXCTX())
++        goto end;
++
+ #if PyTuple_MAXSAVESIZE > 0
+     if (size == 0) {
+         free_list[0] = op;
+@@ -118,6 +125,7 @@ PyTuple_New(register Py_ssize_t size)
+     count_tracked++;
+ #endif
+     _PyObject_GC_TRACK(op);
++end:
+     return (PyObject *) op;
+ }
+ 
+@@ -146,6 +154,20 @@ PyTuple_GetItem(register PyObject *op, r
+     return ((PyTupleObject *)op) -> ob_item[i];
+ }
+ 
++PyObject **
++PyTuple_GetItemAddr(register PyObject *op, register Py_ssize_t i)
++{
++    if (!PyTuple_Check(op)) {
++        PyErr_BadInternalCall();
++        return NULL;
++    }
++    if (i < 0 || i >= Py_SIZE(op)) {
++        PyErr_SetString(PyExc_IndexError, "tuple index out of range");
++        return NULL;
++    }
++    return &(((PyTupleObject *)op)->ob_item[i]);
++}
++
+ int
+ PyTuple_SetItem(register PyObject *op, register Py_ssize_t i, PyObject *newitem)
+ {
+@@ -228,6 +250,7 @@ tupledealloc(register PyTupleObject *op)
+ {
+     register Py_ssize_t i;
+     register Py_ssize_t len =  Py_SIZE(op);
++    Py_GUARD();
+     PyObject_GC_UnTrack(op);
+     Py_TRASHCAN_SAFE_BEGIN(op)
+     if (len > 0) {
+@@ -890,6 +913,8 @@ PyTuple_ClearFreeList(void)
+     int freelist_size = 0;
+ #if PyTuple_MAXSAVESIZE > 0
+     int i;
++    if (Py_PXCTX())
++        return 0;
+     for (i = 1; i < PyTuple_MAXSAVESIZE; i++) {
+         PyTupleObject *p, *q;
+         p = free_list[i];
+@@ -912,6 +937,7 @@ PyTuple_Fini(void)
+ #if PyTuple_MAXSAVESIZE > 0
+     /* empty tuples are used all over the place and applications may
+      * rely on the fact that an empty tuple is a singleton. */
++    Py_GUARD();
+     Py_CLEAR(free_list[0]);
+ 
+     (void)PyTuple_ClearFreeList();

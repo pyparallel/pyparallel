@@ -1,0 +1,41 @@
+diff --git a/Objects/classobject.c b/Objects/classobject.c
+--- a/Objects/classobject.c
++++ b/Objects/classobject.c
+@@ -50,9 +50,9 @@ PyMethod_New(PyObject *func, PyObject *s
+         return NULL;
+     }
+     im = free_list;
+-    if (im != NULL) {
++    if (!Py_PXCTX() && im != NULL) {
+         free_list = (PyMethodObject *)(im->im_self);
+-        PyObject_INIT(im, &PyMethod_Type);
++        PyObject_INIT((PyObject *)im, &PyMethod_Type);
+         numfree--;
+     }
+     else {
+@@ -166,6 +166,7 @@ method_new(PyTypeObject* type, PyObject*
+ static void
+ method_dealloc(register PyMethodObject *im)
+ {
++    Py_GUARD();
+     _PyObject_GC_UNTRACK(im);
+     if (im->im_weakreflist != NULL)
+         PyObject_ClearWeakRefs((PyObject *)im);
+@@ -387,6 +388,9 @@ PyMethod_ClearFreeList(void)
+ {
+     int freelist_size = numfree;
+ 
++    if (Py_PXCTX())
++        return 0;
++
+     while (free_list) {
+         PyMethodObject *im = free_list;
+         free_list = (PyMethodObject *)(im->im_self);
+@@ -400,6 +404,7 @@ PyMethod_ClearFreeList(void)
+ void
+ PyMethod_Fini(void)
+ {
++    Py_GUARD();
+     (void)PyMethod_ClearFreeList();
+ }
+ 

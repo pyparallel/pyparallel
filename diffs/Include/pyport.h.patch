@@ -1,0 +1,56 @@
+diff --git a/Include/pyport.h b/Include/pyport.h
+--- a/Include/pyport.h
++++ b/Include/pyport.h
+@@ -152,8 +152,19 @@ Used in:  PY_LONG_LONG
+    reduction modulo the prime 2**_PyHASH_BITS - 1. */
+ 
+ #if SIZEOF_VOID_P >= 8
++#ifdef WITH_PARALLEL
++#if SIZEOF_VOID_P > 8
++#error SIZEOF_VOID_P is greater than 8!
++#endif
++#define _Py_DEADBEEF 0xdead1234beef5678
++#define _Px_DEADBEEF 0x9876beef5432dead
++#endif
+ #define _PyHASH_BITS 61
+ #else
++#ifdef WITH_PARALLEL
++#define _Py_DEADBEEF 0xdeadbeef
++#define _Px_DEADBEEF 0xb33fdead
++#endif
+ #define _PyHASH_BITS 31
+ #endif
+ #define _PyHASH_MODULUS (((size_t)1 << _PyHASH_BITS) - 1)
+@@ -297,6 +308,14 @@ typedef size_t Py_uhash_t;
+ /* enable more aggressive optimization for visual studio */
+ #pragma optimize("agtw", on)
+ #endif
++#ifndef FORCEINLINE
++#if (_MSC_VER >= 1200)
++#define FORCEINLINE __forceinline
++#else
++#define FORCEINLINE __inline
++#endif
++#define Py_INLINE FORCEINLINE
++#endif
+ /* ignore warnings if the compiler decides not to inline a function */
+ #pragma warning(disable: 4710)
+ /* fastest possible local call under MSVC */
+@@ -881,4 +900,17 @@ extern pid_t forkpty(int *, char *, stru
+ #endif
+ #endif
+ 
++#ifdef WITH_PARALLEL
++#ifdef MS_WINDOWS
++#define Py_TLS __declspec(thread)
++#define Py_CACHE_ALIGN __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
++#else
++#define Py_TLS __thread
++#define Py_CACHE_ALIGN
++#endif
++#else
++#define Py_TLS
++#define Py_CACHE_ALIGN
++#endif
++
+ #endif /* Py_PYPORT_H */

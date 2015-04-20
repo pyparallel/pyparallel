@@ -1,0 +1,30 @@
+diff --git a/Objects/longobject.c b/Objects/longobject.c
+--- a/Objects/longobject.c
++++ b/Objects/longobject.c
+@@ -30,7 +30,7 @@
+ */
+ static PyLongObject small_ints[NSMALLNEGINTS + NSMALLPOSINTS];
+ #ifdef COUNT_ALLOCS
+-Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
++Py_TLS Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
+ #endif
+ 
+ static PyObject *
+@@ -183,7 +183,7 @@ PyLongObject *
+         PyErr_NoMemory();
+         return NULL;
+     }
+-    return (PyLongObject*)PyObject_INIT_VAR(result, &PyLong_Type, size);
++    return (PyLongObject*)PyObject_INIT_VAR((PyVarObject *)result, &PyLong_Type, size);
+ }
+ 
+ PyObject *
+@@ -5080,7 +5080,7 @@ int
+             assert(v->ob_digit[0] == abs(ival));
+         }
+         else {
+-            PyObject_INIT(v, &PyLong_Type);
++            PyObject_INIT((PyObject *)v, &PyLong_Type);
+         }
+         Py_SIZE(v) = size;
+         v->ob_digit[0] = abs(ival);

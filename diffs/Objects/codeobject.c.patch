@@ -1,0 +1,19 @@
+diff --git a/Objects/codeobject.c b/Objects/codeobject.c
+--- a/Objects/codeobject.c
++++ b/Objects/codeobject.c
+@@ -59,6 +59,15 @@ PyCode_New(int argcount, int kwonlyargco
+     unsigned char *cell2arg = NULL;
+     Py_ssize_t i, n_cellvars;
+ 
++    // We originally had a Py_GUARD here, and all was well.  It was never hit
++    // by normal parallel contexts.  Then, after misusing datrie, it was
++    // suddenly being hit -- turns out Cython calls PyCode_New() when an
++    // exception occurs in order to do stuff.  I've since perused the body and
++    // nothing immediately stands out as being unsafe for calling in a
++    // parallel context (i.e. no random mallocs or static storage), so, let's
++    // remove the guard and see what happens.
++    //Py_GUARD();
++
+     /* Check argument types */
+     if (argcount < 0 || kwonlyargcount < 0 || nlocals < 0 ||
+         code == NULL ||

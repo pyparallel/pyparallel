@@ -1,0 +1,445 @@
+diff --git a/Objects/object.c b/Objects/object.c
+--- a/Objects/object.c
++++ b/Objects/object.c
+@@ -8,6 +8,13 @@
+ extern "C" {
+ #endif
+ 
++#ifdef WITH_PARALLEL
++#include <Windows.h>
++static CRITICAL_SECTION stdout_cs;
++static CRITICAL_SECTION stderr_cs;
++#define CS_SPINCOUNT 4
++#endif
++
+ #ifdef Py_REF_DEBUG
+ Py_ssize_t _Py_RefTotal;
+ 
+@@ -15,7 +22,9 @@ Py_ssize_t
+ _Py_GetRefTotal(void)
+ {
+     PyObject *o;
+-    Py_ssize_t total = _Py_RefTotal;
++    Py_ssize_t total;
++    Py_GUARD();
++    total = _Py_RefTotal;
+     /* ignore the references to the dummy object of the dicts and sets
+        because they are not reliable and not useful (now that the
+        hash table code is well-tested) */
+@@ -38,7 +47,21 @@ Py_ssize_t
+  * together via the _ob_prev and _ob_next members of a PyObject, which
+  * exist only in a Py_TRACE_REFS build.
+  */
++#ifndef WITH_PARALLEL
+ static PyObject refchain = {&refchain, &refchain};
++#else
++static PyObject refchain = {
++    _Py_NOT_PARALLEL,
++    _Py_NOT_PARALLEL,
++    NULL,
++    Py_PXFLAGS_ISPY,
++    NULL,
++    NULL,
++    NULL,
++    &refchain,
++    &refchain
++};
++#endif
+ 
+ /* Insert op at the front of the list of all objects.  If force is true,
+  * op is added even if _ob_prev and _ob_next are non-NULL already.  If
+@@ -54,6 +77,7 @@ static PyObject refchain = {&refchain, &
+ void
+ _Py_AddToAllObjects(PyObject *op, int force)
+ {
++    Px_VOID
+ #ifdef  Py_DEBUG
+     if (!force) {
+         /* If it's initialized memory, op must be in or out of
+@@ -72,22 +96,23 @@ void
+ #endif  /* Py_TRACE_REFS */
+ 
+ #ifdef COUNT_ALLOCS
+-static PyTypeObject *type_list;
++Py_TLS static PyTypeObject *type_list;
+ /* All types are added to type_list, at least when
+    they get one object created. That makes them
+    immortal, which unfortunately contributes to
+    garbage itself. If unlist_types_without_objects
+    is set, they will be removed from the type_list
+    once the last object is deallocated. */
+-static int unlist_types_without_objects;
+-extern Py_ssize_t tuple_zero_allocs, fast_tuple_allocs;
+-extern Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
+-extern Py_ssize_t null_strings, one_strings;
++Py_TLS static int unlist_types_without_objects;
++Py_TLS extern Py_ssize_t tuple_zero_allocs, fast_tuple_allocs;
++Py_TLS extern Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
++Py_TLS extern Py_ssize_t null_strings, one_strings;
++
+ void
+ dump_counts(FILE* f)
+ {
+     PyTypeObject *tp;
+-
++    Py_GUARD();
+     for (tp = type_list; tp; tp = tp->tp_next)
+         fprintf(f, "%s alloc'd: %" PY_FORMAT_SIZE_T "d, "
+             "freed: %" PY_FORMAT_SIZE_T "d, "
+@@ -111,7 +136,7 @@ get_counts(void)
+     PyTypeObject *tp;
+     PyObject *result;
+     PyObject *v;
+-
++    Py_GUARD();
+     result = PyList_New(0);
+     if (result == NULL)
+         return NULL;
+@@ -135,6 +160,7 @@ get_counts(void)
+ void
+ inc_count(PyTypeObject *tp)
+ {
++    Py_GUARD();
+     if (tp->tp_next == NULL && tp->tp_prev == NULL) {
+         /* first time; insert in linked list */
+         if (tp->tp_next != NULL) /* sanity check */
+@@ -166,6 +192,7 @@ inc_count(PyTypeObject *tp)
+ 
+ void dec_count(PyTypeObject *tp)
+ {
++    Py_GUARD();
+     tp->tp_frees++;
+     if (unlist_types_without_objects &&
+         tp->tp_allocs == tp->tp_frees) {
+@@ -189,6 +216,7 @@ void
+ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
+ {
+     char buf[300];
++    Py_GUARD_OBJ(op);
+ 
+     PyOS_snprintf(buf, sizeof(buf),
+                   "%s:%i object at %p has negative ref count "
+@@ -202,12 +230,16 @@ void
+ void
+ Py_IncRef(PyObject *o)
+ {
++    Py_GUARD_OBJ(o);
++    Px_VOID_OP(o)
+     Py_XINCREF(o);
+ }
+ 
+ void
+ Py_DecRef(PyObject *o)
+ {
++    Py_GUARD_OBJ(o);
++    Px_VOID_OP(o)
+     Py_XDECREF(o);
+ }
+ 
+@@ -216,8 +248,11 @@ PyObject_Init(PyObject *op, PyTypeObject
+ {
+     if (op == NULL)
+         return PyErr_NoMemory();
++    Px_RETURN(_PxObject_Init(op, tp))
++    Py_GUARD_MEM(op);
+     /* Any changes should be reflected in PyObject_INIT (objimpl.h) */
+     Py_TYPE(op) = tp;
++    _PyObject_InitHead(op);
+     _Py_NewReference(op);
+     return op;
+ }
+@@ -227,9 +262,12 @@ PyObject_InitVar(PyVarObject *op, PyType
+ {
+     if (op == NULL)
+         return (PyVarObject *) PyErr_NoMemory();
++    Px_RETURN(_PxObject_InitVar(op, tp, size))
++    Py_GUARD_MEM(op);
+     /* Any changes should be reflected in PyObject_INIT_VAR */
+     op->ob_size = size;
+     Py_TYPE(op) = tp;
++    _PyObject_InitHead((PyObject *)op);
+     _Py_NewReference((PyObject *)op);
+     return op;
+ }
+@@ -238,6 +276,7 @@ PyObject *
+ _PyObject_New(PyTypeObject *tp)
+ {
+     PyObject *op;
++    Px_RETURN(_PxObject_New(tp))
+     op = (PyObject *) PyObject_MALLOC(_PyObject_SIZE(tp));
+     if (op == NULL)
+         return PyErr_NoMemory();
+@@ -248,7 +287,10 @@ PyVarObject *
+ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
+ {
+     PyVarObject *op;
+-    const size_t size = _PyObject_VAR_SIZE(tp, nitems);
++    size_t size;
++    Px_RETURN(_PxObject_NewVar(tp, nitems))
++
++    size = _PyObject_VAR_SIZE(tp, nitems);
+     op = (PyVarObject *) PyObject_MALLOC(size);
+     if (op == NULL)
+         return (PyVarObject *)PyErr_NoMemory();
+@@ -259,14 +301,27 @@ int
+ PyObject_Print(PyObject *op, FILE *fp, int flags)
+ {
+     int ret = 0;
++#ifdef WITH_PARALLEL
++    CRITICAL_SECTION *cs = NULL;
++
++    if (fp == stdout)
++        cs = &stdout_cs;
++    else if (fp == stderr)
++        cs = &stderr_cs;
++
++    if (cs)
++        EnterCriticalSection(cs);
++#endif
++    ret = -1;
+     if (PyErr_CheckSignals())
+-        return -1;
++        goto end;
+ #ifdef USE_STACKCHECK
+     if (PyOS_CheckStack()) {
+         PyErr_SetString(PyExc_MemoryError, "stack overflow");
+-        return -1;
++        goto end;
+     }
+ #endif
++    ret = 0;
+     clearerr(fp); /* Clear any previous error condition */
+     if (op == NULL) {
+         Py_BEGIN_ALLOW_THREADS
+@@ -274,7 +329,7 @@ PyObject_Print(PyObject *op, FILE *fp, i
+         Py_END_ALLOW_THREADS
+     }
+     else {
+-        if (op->ob_refcnt <= 0)
++        if (!Py_ISPX(op) && op->ob_refcnt <= 0)
+             /* XXX(twouters) cast refcount to long until %zd is
+                universally available */
+             Py_BEGIN_ALLOW_THREADS
+@@ -320,6 +375,11 @@ PyObject_Print(PyObject *op, FILE *fp, i
+             ret = -1;
+         }
+     }
++end:
++#ifdef WITH_PARALLEL
++    if (cs)
++        LeaveCriticalSection(cs);
++#endif
+     return ret;
+ }
+ 
+@@ -334,6 +394,7 @@ void
+ void
+ _PyObject_Dump(PyObject* op)
+ {
++    Py_GUARD();
+     if (op == NULL)
+         fprintf(stderr, "NULL\n");
+     else {
+@@ -1573,6 +1634,8 @@ PyObject _Py_NotImplementedStruct = {
+ void
+ _Py_ReadyTypes(void)
+ {
++    Py_GUARD();
++
+     if (PyType_Ready(&PyType_Type) < 0)
+         Py_FatalError("Can't initialize type type");
+ 
+@@ -1734,16 +1797,44 @@ void
+ 
+     if (PyType_Ready(&PySeqIter_Type) < 0)
+         Py_FatalError("Can't initialize sequence iterator type");
++
++#ifdef WITH_PARALLEL
++    InitializeCriticalSectionAndSpinCount(&stdout_cs, CS_SPINCOUNT);
++    InitializeCriticalSectionAndSpinCount(&stderr_cs, CS_SPINCOUNT);
++#endif
+ }
+ 
++#if defined(Py_DEBUG) && defined(WITH_PARALLEL)
++void
++_Py_VerifyObjectHead(PyObject *op)
++{
++    assert(Py_TYPE(op));
++    assert(op->ob_refcnt == 1);
++    assert(op->is_px    == _Py_NOT_PARALLEL);
++    assert(op->px       == _Py_NOT_PARALLEL);
++    assert(op->srw_lock == NULL);
++#ifndef Py_TRACE_REFS
++    assert(op->_ob_next == _Py_NOT_PARALLEL);
++    assert(op->_ob_prev == _Py_NOT_PARALLEL);
++#else
++    assert(op->_ob_next == NULL);
++    assert(op->_ob_prev == NULL);
++#endif
++}
++#else
++#define _Py_VerifyObjectHead(o)
++#endif
+ 
+ #ifdef Py_TRACE_REFS
+ 
+ void
+ _Py_NewReference(PyObject *op)
+ {
++    Px_RETURN_VOID(_Px_NewReference(op))
++    Py_GUARD_OBJ(op);
+     _Py_INC_REFTOTAL;
+     op->ob_refcnt = 1;
++    _Py_VerifyObjectHead(op);
+     _Py_AddToAllObjects(op, 1);
+     _Py_INC_TPALLOCS(op);
+ }
+@@ -1754,6 +1845,8 @@ void
+ #ifdef SLOW_UNREF_CHECK
+     register PyObject *p;
+ #endif
++    Px_RETURN_VOID(_Px_ForgetReference(op))
++    Py_GUARD_OBJ(op);
+     if (op->ob_refcnt < 0)
+         Py_FatalError("UNREF negative refcnt");
+     if (op == &refchain ||
+@@ -1783,7 +1876,10 @@ void
+ void
+ _Py_Dealloc(PyObject *op)
+ {
+-    destructor dealloc = Py_TYPE(op)->tp_dealloc;
++    destructor dealloc;
++    PyPx_GUARD_OBJ(op);
++    Px_RETURN_VOID(_Px_Dealloc(op))
++    dealloc = Py_TYPE(op)->tp_dealloc;
+     _Py_ForgetReference(op);
+     (*dealloc)(op);
+ }
+@@ -1795,6 +1891,7 @@ void
+ _Py_PrintReferences(FILE *fp)
+ {
+     PyObject *op;
++    Py_GUARD();
+     fprintf(fp, "Remaining objects:\n");
+     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
+         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] ", op, op->ob_refcnt);
+@@ -1811,6 +1908,7 @@ void
+ _Py_PrintReferenceAddresses(FILE *fp)
+ {
+     PyObject *op;
++    Py_GUARD();
+     fprintf(fp, "Remaining object addresses:\n");
+     for (op = refchain._ob_next; op != &refchain; op = op->_ob_next)
+         fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] %s\n", op,
+@@ -1823,6 +1921,12 @@ PyObject *
+     int i, n;
+     PyObject *t = NULL;
+     PyObject *res, *op;
++    Py_GUARD();
++    if (self)
++        Py_GUARD_OBJ(self);
++
++    if (args)
++        Py_GUARD_OBJ(args);
+ 
+     if (!PyArg_ParseTuple(args, "i|O", &n, &t))
+         return NULL;
+@@ -1861,24 +1965,31 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject
+ void *
+ PyMem_Malloc(size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Malloc(nbytes))
+     return PyMem_MALLOC(nbytes);
+ }
+ 
+ void *
+ PyMem_Realloc(void *p, size_t nbytes)
+ {
++    Px_RETURN(_PxMem_Realloc(p, nbytes))
++    Py_GUARD_MEM(p);
+     return PyMem_REALLOC(p, nbytes);
+ }
+ 
+ void
+ PyMem_Free(void *p)
+ {
++    Px_RETURN_VOID(_PxMem_Free(p))
++    if (p)
++        Py_GUARD_MEM(p);
+     PyMem_FREE(p);
+ }
+ 
+ void
+ _PyObject_DebugTypeStats(FILE *out)
+ {
++    Py_GUARD();
+     _PyCFunction_DebugMallocStats(out);
+     _PyDict_DebugMallocStats(out);
+     _PyFloat_DebugMallocStats(out);
+@@ -1910,6 +2021,8 @@ Py_ReprEnter(PyObject *obj)
+     PyObject *list;
+     Py_ssize_t i;
+ 
++    PyPx_GUARD_OBJ(obj);
++
+     dict = PyThreadState_GetDict();
+     if (dict == NULL)
+         return 0;
+@@ -1938,6 +2051,8 @@ Py_ReprLeave(PyObject *obj)
+     PyObject *list;
+     Py_ssize_t i;
+ 
++    PyPx_GUARD_OBJ(obj);
++
+     dict = PyThreadState_GetDict();
+     if (dict == NULL)
+         return;
+@@ -1971,6 +2086,8 @@ PyObject *_PyTrash_delete_later = NULL;
+ void
+ _PyTrash_deposit_object(PyObject *op)
+ {
++    Py_GUARD();
++    Py_GUARD_OBJ(op);
+     assert(PyObject_IS_GC(op));
+     assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
+     assert(op->ob_refcnt == 0);
+@@ -1982,7 +2099,10 @@ void
+ void
+ _PyTrash_thread_deposit_object(PyObject *op)
+ {
+-    PyThreadState *tstate = PyThreadState_GET();
++    PyThreadState *tstate;
++    Py_GUARD();
++    Py_GUARD_OBJ(op);
++    tstate = PyThreadState_GET();
+     assert(PyObject_IS_GC(op));
+     assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
+     assert(op->ob_refcnt == 0);
+@@ -1996,6 +2116,7 @@ void
+ void
+ _PyTrash_destroy_chain(void)
+ {
++    Py_GUARD();
+     while (_PyTrash_delete_later) {
+         PyObject *op = _PyTrash_delete_later;
+         destructor dealloc = Py_TYPE(op)->tp_dealloc;
+@@ -2020,7 +2141,9 @@ void
+ void
+ _PyTrash_thread_destroy_chain(void)
+ {
+-    PyThreadState *tstate = PyThreadState_GET();
++    PyThreadState *tstate;
++    Py_GUARD();
++    tstate = PyThreadState_GET();
+     while (tstate->trash_delete_later) {
+         PyObject *op = tstate->trash_delete_later;
+         destructor dealloc = Py_TYPE(op)->tp_dealloc;
+@@ -2049,6 +2172,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
+ void
+ _Py_Dealloc(PyObject *op)
+ {
++    Px_RETURN_VOID_OP(op, _Px_Dealloc(op))
++    Py_GUARD_OBJ(op);
+     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA
+     (*Py_TYPE(op)->tp_dealloc)(op);
+ }

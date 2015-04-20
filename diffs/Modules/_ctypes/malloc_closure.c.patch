@@ -1,0 +1,14 @@
+diff --git a/Modules/_ctypes/malloc_closure.c b/Modules/_ctypes/malloc_closure.c
+--- a/Modules/_ctypes/malloc_closure.c
++++ b/Modules/_ctypes/malloc_closure.c
+@@ -27,8 +27,8 @@ typedef union _tagITEM {
+     union _tagITEM *next;
+ } ITEM;
+ 
+-static ITEM *free_list;
+-static int _pagesize;
++Py_TLS static ITEM *free_list;
++Py_TLS static int _pagesize;
+ 
+ static void more_core(void)
+ {

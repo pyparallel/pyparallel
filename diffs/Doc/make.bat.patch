@@ -1,0 +1,17 @@
+diff --git a/Doc/make.bat b/Doc/make.bat
+--- a/Doc/make.bat
++++ b/Doc/make.bat
+@@ -2,8 +2,11 @@
+ setlocal
+ 
+ set SVNROOT=http://svn.python.org/projects
+-if "%PYTHON%" EQU "" set PYTHON=py -2
+-if "%HTMLHELP%" EQU "" set HTMLHELP=%ProgramFiles%\HTML Help Workshop\hhc.exe
++rem if "%PYTHON%" EQU "" set PYTHON=py -2
++set PYTHON=python
++rem Download hhc.exe from https://github.com/tpn/tools.
++set HTMLHELP=hhc.exe
++rem if "%HTMLHELP%" EQU "" set HTMLHELP=%ProgramFiles%\HTML Help Workshop\hhc.exe
+ if "%DISTVERSION%" EQU "" for /f "usebackq" %%v in (`%PYTHON% tools/sphinxext/patchlevel.py`) do set DISTVERSION=%%v
+ 
+ if "%1" EQU "" goto help

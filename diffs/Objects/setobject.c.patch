@@ -1,0 +1,29 @@
+diff --git a/Objects/setobject.c b/Objects/setobject.c
+--- a/Objects/setobject.c
++++ b/Objects/setobject.c
+@@ -555,6 +555,7 @@ set_dealloc(PySetObject *so)
+ {
+     register setentry *entry;
+     Py_ssize_t fill = so->fill;
++    Py_GUARD();
+     PyObject_GC_UnTrack(so);
+     Py_TRASHCAN_SAFE_BEGIN(so)
+     if (so->weakreflist != NULL)
+@@ -1033,7 +1034,7 @@ make_new_set(PyTypeObject *type, PyObjec
+     }
+ 
+     /* create PySetObject structure */
+-    if (numfree &&
++    if (!Py_PXCTX() && numfree &&
+         (type == &PySet_Type  ||  type == &PyFrozenSet_Type)) {
+         so = free_list[--numfree];
+         assert (so != NULL && PyAnySet_CheckExact(so));
+@@ -1115,6 +1116,8 @@ PySet_ClearFreeList(void)
+ {
+     int freelist_size = numfree;
+     PySetObject *so;
++    if (Py_PXCTX())
++        return 0;
+ 
+     while (numfree) {
+         numfree--;

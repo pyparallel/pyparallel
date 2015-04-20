@@ -1,0 +1,12 @@
+diff --git a/Include/Python.h b/Include/Python.h
+--- a/Include/Python.h
++++ b/Include/Python.h
+@@ -52,6 +52,8 @@
+ 
+ #include "pyatomic.h"
+ 
++#include "pyparallel.h"
++
+ /* Debug-mode build with pymalloc implies PYMALLOC_DEBUG.
+  *  PYMALLOC_DEBUG is in error if pymalloc is not in use.
+  */

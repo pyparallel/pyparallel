@@ -1,0 +1,13 @@
+diff --git a/PCbuild/python.vcxproj b/PCbuild/python.vcxproj
+--- a/PCbuild/python.vcxproj
++++ b/PCbuild/python.vcxproj
+@@ -280,6 +280,9 @@
+       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+       <FunctionLevelLinking>true</FunctionLevelLinking>
+       <CompileAs>Default</CompileAs>
++      <ExpandAttributedSource>true</ExpandAttributedSource>
++      <AssemblerOutput>All</AssemblerOutput>
++      <BrowseInformation>true</BrowseInformation>
+     </ClCompile>
+     <ResourceCompile>
+       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>

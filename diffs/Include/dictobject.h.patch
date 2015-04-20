@@ -1,0 +1,19 @@
+diff --git a/Include/dictobject.h b/Include/dictobject.h
+--- a/Include/dictobject.h
++++ b/Include/dictobject.h
+@@ -39,7 +39,15 @@ PyAPI_DATA(PyTypeObject) PyDictValues_Ty
+ 
+ #define PyDict_Check(op) \
+                  PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_DICT_SUBCLASS)
++#ifndef WITH_PARALLEL
+ #define PyDict_CheckExact(op) (Py_TYPE(op) == &PyDict_Type)
++#else
++#define PyDict_CheckExact(op) (      \
++    Py_TYPE(op) == &PyDict_Type ||   \
++    Py_ORIG_TYPE(op) == &PyDict_Type \
++)
++#endif
++
+ #define PyDictKeys_Check(op) (Py_TYPE(op) == &PyDictKeys_Type)
+ #define PyDictItems_Check(op) (Py_TYPE(op) == &PyDictItems_Type)
+ #define PyDictValues_Check(op) (Py_TYPE(op) == &PyDictValues_Type)

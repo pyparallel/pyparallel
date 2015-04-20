@@ -1,0 +1,29 @@
+diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.filters
+--- a/PCbuild/pythoncore.vcxproj.filters
++++ b/PCbuild/pythoncore.vcxproj.filters
+@@ -408,6 +408,12 @@
+     <ClInclude Include="..\Python\ceval_gil.h">
+       <Filter>Python</Filter>
+     </ClInclude>
++    <ClInclude Include="..\Include\pyparallel.h">
++      <Filter>Include</Filter>
++    </ClInclude>
++    <ClInclude Include="..\Include\pxlist.h">
++      <Filter>Include</Filter>
++    </ClInclude>
+     <ClInclude Include="..\Include\namespaceobject.h">
+       <Filter>Include</Filter>
+     </ClInclude>
+@@ -917,6 +923,12 @@
+     <ClCompile Include="..\Modules\_winapi.c">
+       <Filter>PC</Filter>
+     </ClCompile>
++    <ClCompile Include="..\Python\pyparallel.c">
++      <Filter>Python</Filter>
++    </ClCompile>
++    <ClCompile Include="..\Python\pxlist.c">
++      <Filter>Python</Filter>
++    </ClCompile>
+     <ClCompile Include="..\Objects\namespaceobject.c">
+       <Filter>Objects</Filter>
+     </ClCompile>

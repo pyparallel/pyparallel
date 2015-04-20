@@ -1,0 +1,95 @@
+diff --git a/Include/pystate.h b/Include/pystate.h
+--- a/Include/pystate.h
++++ b/Include/pystate.h
+@@ -119,6 +119,11 @@ typedef struct _ts {
+ 
+     /* XXX signal handlers should also be here */
+ 
++#ifdef WITH_PARALLEL
++    void *px;
++    int is_parallel_thread;
++#endif
++
+ } PyThreadState;
+ #endif
+ 
+@@ -129,6 +134,10 @@ PyAPI_FUNC(void) PyInterpreterState_Dele
+ PyAPI_FUNC(int) _PyState_AddModule(PyObject*, struct PyModuleDef*);
+ #if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
+ /* New in 3.3 */
++PyAPI_FUNC(void) PyInterpreterState_Delete(PyInterpreterState *);
++PyAPI_FUNC(int) _PyState_AddModule(PyObject*, struct PyModuleDef*);
++#if !defined(Py_LIMITED_API) || Py_LIMITED_API+0 >= 0x03030000
++/* New in 3.3 */
+ PyAPI_FUNC(int) PyState_AddModule(PyObject*, struct PyModuleDef*);
+ PyAPI_FUNC(int) PyState_RemoveModule(struct PyModuleDef*);
+ #endif
+@@ -145,10 +154,30 @@ PyAPI_FUNC(void) _PyGILState_Reinit(void
+ #endif
+ 
+ PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
++PyAPI_FUNC(PyThreadState *) PyThreadState_XGet(void);
+ PyAPI_FUNC(PyThreadState *) PyThreadState_Swap(PyThreadState *);
+ PyAPI_FUNC(PyObject *) PyThreadState_GetDict(void);
+ PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
+ 
++#ifdef WITH_PARALLEL
++PyAPI_FUNC(void) _PyParallel_CreatedNewInterpreterState(PyInterpreterState *);
++PyAPI_FUNC(void) _PyParallel_DeletingInterpreterState(PyInterpreterState *);
++
++PyAPI_FUNC(void *) _PyParallel_CreatedNewThreadState(PyThreadState *);
++PyAPI_FUNC(void) _PyParallel_InitializedThreadState(PyThreadState *);
++
++PyAPI_FUNC(void) _PyParallel_ClearingInterpreterState(PyInterpreterState *);
++PyAPI_FUNC(void) _PyParallel_ClearedInterpreterState(PyInterpreterState *);
++
++PyAPI_FUNC(void) _PyParallel_ClearingThreadState(PyThreadState *);
++PyAPI_FUNC(void) _PyParallel_ClearedThreadState(PyThreadState *);
++
++PyAPI_FUNC(void) _PyParallel_DeletingThreadState(PyThreadState *);
++PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
++
++PyAPI_FUNC(PyThreadState *) _PyParallel_GetThreadState(void);
++PyAPI_FUNC(PyThreadState *) _PyParallel_GetMainThreadState(void);
++#endif
+ 
+ /* Variable and macro for in-line access to current thread state */
+ 
+@@ -158,11 +187,24 @@ PyAPI_FUNC(int) PyThreadState_SetAsyncEx
+ PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
+ #endif
+ 
++#ifdef WITH_PARALLEL
++#define _PyThreadState_GET() ((PyThreadState *)                     \
++    (Py_PXCTX() ? (_PyParallel_GetThreadState()) :                  \
++                (_Py_atomic_load_relaxed(&_PyThreadState_Current))) \
++)
++#define _PyThreadState_XGET() _PyThreadState_GET()
++#else
++#define _PyThreadState_GET()                                        \
++    ((PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current))
++#define _PyThreadState_XGET() _PyThreadState_GET()
++#endif
++
+ #if defined(Py_DEBUG) || defined(Py_LIMITED_API)
+ #define PyThreadState_GET() PyThreadState_Get()
++#define PyThreadState_XGET() PyThreadState_XGet()
+ #else
+-#define PyThreadState_GET() \
+-    ((PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current))
++#define PyThreadState_GET() _PyThreadState_GET()
++#define PyThreadState_XGET() _PyThreadState_XGET()
+ #endif
+ 
+ typedef
+@@ -220,10 +262,6 @@ PyAPI_FUNC(PyThreadState *) PyGILState_G
+ #ifndef Py_LIMITED_API
+ PyAPI_FUNC(PyObject *) _PyThread_CurrentFrames(void);
+ #endif
+-
+-/* Routines for advanced debuggers, requested by David Beazley.
+-   Don't use unless you know what you are doing! */
+-#ifndef Py_LIMITED_API
+ PyAPI_FUNC(PyInterpreterState *) PyInterpreterState_Head(void);
+ PyAPI_FUNC(PyInterpreterState *) PyInterpreterState_Next(PyInterpreterState *);
+ PyAPI_FUNC(PyThreadState *) PyInterpreterState_ThreadHead(PyInterpreterState *);

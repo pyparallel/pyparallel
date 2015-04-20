@@ -1,0 +1,33 @@
+diff --git a/Objects/floatobject.c b/Objects/floatobject.c
+--- a/Objects/floatobject.c
++++ b/Objects/floatobject.c
+@@ -114,8 +114,11 @@ PyFloat_GetInfo(void)
+ PyObject *
+ PyFloat_FromDouble(double fval)
+ {
+-    register PyFloatObject *op = free_list;
++    PyFloatObject *op = NULL;
++    if (!Py_PXCTX())
++        op = free_list;
+     if (op != NULL) {
++        Py_GUARD();
+         free_list = (PyFloatObject *) Py_TYPE(op);
+         numfree--;
+     } else {
+@@ -181,6 +184,7 @@ PyFloat_FromString(PyObject *v)
+ static void
+ float_dealloc(PyFloatObject *op)
+ {
++    Py_GUARD();
+     if (PyFloat_CheckExact(op)) {
+         if (numfree >= PyFloat_MAXFREELIST)  {
+             PyObject_FREE(op);
+@@ -1917,6 +1921,8 @@ PyFloat_ClearFreeList(void)
+ {
+     PyFloatObject *f = free_list, *next;
+     int i = numfree;
++    if (Py_PXCTX())
++        return 0;
+     while (f) {
+         next = (PyFloatObject*) Py_TYPE(f);
+         PyObject_FREE(f);

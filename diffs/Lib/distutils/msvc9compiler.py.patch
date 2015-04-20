@@ -1,0 +1,19 @@
+diff --git a/Lib/distutils/msvc9compiler.py b/Lib/distutils/msvc9compiler.py
+--- a/Lib/distutils/msvc9compiler.py
++++ b/Lib/distutils/msvc9compiler.py
+@@ -413,10 +413,14 @@ class MSVCCompiler(CCompiler) :
+         self.ldflags_shared = ['/DLL', '/nologo', '/INCREMENTAL:NO']
+         if self.__version >= 7:
+             self.ldflags_shared_debug = [
+-                '/DLL', '/nologo', '/INCREMENTAL:no', '/DEBUG', '/pdb:None'
++                '/DLL', '/nologo', '/INCREMENTAL:no', '/DEBUG',
+                 ]
+         self.ldflags_static = [ '/nologo']
+ 
++        if self.__version >= 10:
++            self.ldflags_shared.append('/manifest')
++            self.ldflags_shared_debug.append('/manifest')
++
+         self.initialized = True
+ 
+     # -- Worker methods ------------------------------------------------
