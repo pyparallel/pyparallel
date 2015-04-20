@@ -1038,7 +1038,7 @@ _Py_DecRef(PyObject *op)
  * Python integers aren't currently weakly referencable.  Best practice is
  * to use Py_CLEAR() even if you can't think of a reason for why you need to.
  */
-#ifndef WITH_PARALLEL
+
 #define Py_CLEAR(op)                              \
     do {                                          \
         if (op) {                                 \
@@ -1051,23 +1051,6 @@ _Py_DecRef(PyObject *op)
 /* Macros to use in case the object pointer may be NULL: */
 #define Py_XINCREF(op) do { if ((op) == NULL) ; else Py_INCREF(op); } while (0)
 #define Py_XDECREF(op) do { if ((op) == NULL) ; else Py_DECREF(op); } while (0)
-
-
-#else /* !WITH_PARALLEL */
-
-#define Py_CLEAR(op)                              \
-    do {                                          \
-        if (op && !Py_ISPX(op)) {                 \
-            PyObject *_py_tmp = (PyObject *)(op); \
-            (op) = NULL;                          \
-            Py_DECREF(_py_tmp);                   \
-        }                                         \
-    } while (0)
-
-#define Py_XINCREF(op) do { if (op) Py_INCREF(op); } while (0)
-#define Py_XDECREF(op) do { if (op) Py_DECREF(op); } while (0)
-
-#endif /* WITH_PARALLEL */
 
 /*
 These are provided as conveniences to Python runtime embedders, so that
