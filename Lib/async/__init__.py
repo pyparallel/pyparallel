@@ -1,5 +1,5 @@
 import socket
-HOSTNAME = socket.gethostname()
+HOSTNAME = socket.gethostname().encode('utf-8')
 IPADDR = socket.gethostbyname(HOSTNAME)
 
 class Constant(dict):
