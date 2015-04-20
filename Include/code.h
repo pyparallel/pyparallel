@@ -30,13 +30,6 @@ typedef struct {
 				   Objects/lnotab_notes.txt for details. */
     void *co_zombieframe;     /* for optimization only (see frameobject.c) */
     PyObject *co_weakreflist;   /* to support weakrefs to code objects */
-#ifdef WITH_PARALLEL
-    Py_ssize_t px_execount;
-    Py_ssize_t px_heapsize_avg;
-    Py_ssize_t px_heapsize_hint;
-    Py_ssize_t px_heapsize_total;
-    void  *px;
-#endif
 } PyCodeObject;
 
 /* Masks for co_flags above */
