@@ -8842,7 +8842,6 @@ create_pxsocket(
             0 <= d3 && d3 <= 255 && 0 <= d4 && d4 <= 255)
         {
             struct sockaddr_in *sin;
-            int *len;
 
             /* xxx todo: now that we've switched to having a context
              * encapsulate the socket, we should change these char[n]
@@ -8855,10 +8854,10 @@ create_pxsocket(
 
             if (PxSocket_IS_CLIENT(s)) {
                 sin = &(s->remote_addr.in);
-                len = &(s->remote_addr_len);
+                s->remote_addr_len = sizeof(struct sockaddr_in);
             } else if (PxSocket_IS_SERVER(s)) {
                 sin = &(s->local_addr.in);
-                len = &(s->local_addr_len);
+                s->local_addr_len = sizeof(struct sockaddr_in);
             } else
                 assert(0);
 
@@ -8869,7 +8868,6 @@ create_pxsocket(
 
             sin->sin_family = AF_INET;
             sin->sin_port = htons((short)s->port);
-            *len = sizeof(*sin);
         } else {
             PyErr_SetString(PyExc_ValueError, "invalid IPv4 address");
             PxSocket_FATAL();
