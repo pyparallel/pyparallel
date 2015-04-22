@@ -18,7 +18,7 @@ diff --git a/Include/object.h b/Include/object.h
  #ifdef Py_TRACE_REFS
  /* Define pointers to support a doubly-linked list of all live heap objects. */
  #define _PyObject_HEAD_EXTRA            \
-@@ -73,10 +74,69 @@ whose size is determined when the object
+@@ -73,10 +74,39 @@ whose size is determined when the object
  
  #define _PyObject_EXTRA_INIT 0, 0,
  
@@ -26,6 +26,7 @@ diff --git a/Include/object.h b/Include/object.h
 +#else /* Py_TRACE_REFS */
  #define _PyObject_HEAD_EXTRA
  #define _PyObject_EXTRA_INIT
+-#endif
 +#endif /* Py_TRACE_REFS */
 +#else /* !WITH_PARALLEL */
 +/* We use _ob_next/_ob_prev in parallel contexts, so if we're WITH_PARALLEL,
@@ -34,38 +35,9 @@ diff --git a/Include/object.h b/Include/object.h
 +#define _Py_NOT_PARALLEL ((void *)_Py_DEADBEEF)
 +#define _Py_IS_PARALLEL  ((void *)_Px_DEADBEEF)
 +
-+#ifdef MS_WINDOWS
-+/* So dodgy putting this in object.h. */
-+#ifdef _WIN64
-+#pragma warning(push)
-+#pragma warning(disable:4324)   // structure padded due to align()
-+typedef struct __declspec(align(16)) _Py_SLIST_ENTRY *Py_PSLIST_ENTRY;
-+typedef struct __declspec(align(16)) _Py_SLIST_ENTRY {
-+    Py_PSLIST_ENTRY Next;
-+} Py_SLIST_ENTRY;
-+#pragma warning(pop)
-+
-+typedef struct _Py_SLIST_ENTRY32 {
-+    unsigned long Next;
-+} Py_SLIST_ENTRY32, *Py_PSLIST_ENTRY32;
-+
-+#else
-+typedef struct _Py_SINGLE_LIST_ENTRY {
-+    struct _Py_SINGLE_LIST_ENTRY *Next;
-+} Py_SINGLE_LIST_ENTRY, *Py_PSINGLE_LIST_ENTRY;
-+
-+#define Py_SLIST_ENTRY Py_SINGLE_LIST_ENTRY
-+#define _Py_SLIST_ENTRY _Py_SINGLE_LIST_ENTRY
-+#define Py_PSLIST_ENTRY Py_PSINGLE_LIST_ENTRY
-+
-+typedef Py_SLIST_ENTRY Py_SLIST_ENTRY32, *Py_PSLIST_ENTRY32;
- #endif
-+#endif
-+
 +#define _PyObject_HEAD_EXTRA            \
 +    void   *is_px;                      \
 +    void   *px;                         \
-+    Py_SLIST_ENTRY slist_entry;         \
 +    size_t  px_flags;                   \
 +    void   *srw_lock;                   \
 +    void   *event;                      \
@@ -76,7 +48,6 @@ diff --git a/Include/object.h b/Include/object.h
 +#define _PyObject_EXTRA_INIT            \
 +    (void *)_Py_NOT_PARALLEL,           \
 +    (void *)_Py_NOT_PARALLEL,           \
-+    NULL,                               \
 +    Py_PXFLAGS_ISPY,                    \
 +    NULL,                               \
 +    NULL,                               \
@@ -89,7 +60,7 @@ diff --git a/Include/object.h b/Include/object.h
  
  /* PyObject_HEAD defines the initial segment of every PyObject. */
  #define PyObject_HEAD                   PyObject ob_base;
-@@ -115,6 +175,8 @@ typedef struct {
+@@ -115,6 +145,8 @@ typedef struct {
  
  #define Py_REFCNT(ob)           (((PyObject*)(ob))->ob_refcnt)
  #define Py_TYPE(ob)             (((PyObject*)(ob))->ob_type)
@@ -98,7 +69,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define Py_SIZE(ob)             (((PyVarObject*)(ob))->ob_size)
  
  /********************* String Literals ****************************************/
-@@ -143,7 +205,12 @@ typedef struct _Py_Identifier {
+@@ -143,7 +175,12 @@ typedef struct _Py_Identifier {
      PyObject *object;
  } _Py_Identifier;
  
@@ -111,7 +82,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define _Py_IDENTIFIER(varname) _Py_static_string(PyId_##varname, #varname)
  
  /*
-@@ -706,6 +773,7 @@ PyAPI_FUNC(void) _Py_NegativeRefcount(co
+@@ -706,6 +743,7 @@ PyAPI_FUNC(void) _Py_NegativeRefcount(co
  PyAPI_FUNC(PyObject *) _PyDict_Dummy(void);
  PyAPI_FUNC(PyObject *) _PySet_Dummy(void);
  PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
@@ -119,7 +90,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define _Py_INC_REFTOTAL        _Py_RefTotal++
  #define _Py_DEC_REFTOTAL        _Py_RefTotal--
  #define _Py_REF_DEBUG_COMMA     ,
-@@ -714,7 +782,16 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
+@@ -714,7 +752,16 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
                  _Py_NegativeRefcount(__FILE__, __LINE__,        \
                                       (PyObject *)(OP));         \
  }
@@ -137,7 +108,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define _Py_INC_REFTOTAL
  #define _Py_DEC_REFTOTAL
  #define _Py_REF_DEBUG_COMMA
-@@ -724,17 +801,46 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
+@@ -724,17 +771,46 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
  #ifdef COUNT_ALLOCS
  PyAPI_FUNC(void) inc_count(PyTypeObject *);
  PyAPI_FUNC(void) dec_count(PyTypeObject *);
@@ -184,7 +155,7 @@ diff --git a/Include/object.h b/Include/object.h
  #ifdef Py_TRACE_REFS
  /* Py_TRACE_REFS is such major surgery that we call external routines. */
  PyAPI_FUNC(void) _Py_NewReference(PyObject *);
-@@ -748,22 +854,72 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyO
+@@ -748,22 +824,72 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyO
  /* Without Py_TRACE_REFS, there's little enough to do that we expand code
   * inline.
   */
@@ -258,7 +229,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define Py_INCREF(op) (                         \
      _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
      ((PyObject*)(op))->ob_refcnt++)
-@@ -777,6 +933,78 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
+@@ -777,6 +903,78 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
          _Py_Dealloc((PyObject *)(op));                  \
      } while (0)
  
@@ -337,7 +308,7 @@ diff --git a/Include/object.h b/Include/object.h
  /* Safely decref `op` and set `op` to NULL, especially useful in tp_clear
   * and tp_dealloc implementatons.
   *
-@@ -830,6 +1058,12 @@ they can have object code that is not de
+@@ -830,6 +1028,12 @@ they can have object code that is not de
  */
  PyAPI_FUNC(void) Py_IncRef(PyObject *);
  PyAPI_FUNC(void) Py_DecRef(PyObject *);
@@ -350,7 +321,7 @@ diff --git a/Include/object.h b/Include/object.h
  
  PyAPI_DATA(PyTypeObject) _PyNone_Type;
  PyAPI_DATA(PyTypeObject) _PyNotImplemented_Type;
-@@ -870,6 +1104,16 @@ PyAPI_DATA(PyObject) _Py_NotImplementedS
+@@ -870,6 +1074,16 @@ PyAPI_DATA(PyObject) _Py_NotImplementedS
   */
  PyAPI_DATA(int) _Py_SwappedOp[];
  
@@ -367,7 +338,7 @@ diff --git a/Include/object.h b/Include/object.h
  
  /*
  More conventions
-@@ -980,7 +1224,9 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy
+@@ -980,7 +1194,9 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy
  
  #define Py_TRASHCAN_SAFE_BEGIN(op) \
      do { \

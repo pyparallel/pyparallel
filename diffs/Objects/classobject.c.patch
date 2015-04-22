@@ -1,7 +1,42 @@
 diff --git a/Objects/classobject.c b/Objects/classobject.c
 --- a/Objects/classobject.c
 +++ b/Objects/classobject.c
-@@ -50,7 +50,7 @@ PyMethod_New(PyObject *func, PyObject *s
+@@ -36,6 +36,34 @@ PyMethod_Self(PyObject *im)
+     return ((PyMethodObject *)im)->im_self;
+ }
+ 
++PyObject *
++PyMethod_Clone(PyObject *orig)
++{
++    PyMethodObject *om = (PyMethodObject *)orig;
++    PyMethodObject *im = NULL;
++
++    if (!Py_PXCTX())
++        __debugbreak();
++
++    if (!PyMethod_Check(orig)) {
++        PyErr_BadInternalCall();
++        return NULL;
++    }
++
++    if (om->im_weakreflist)
++        __debugbreak();
++
++    im = PyObject_GC_New(PyMethodObject, &PyMethod_Type);
++    if (!im)
++        return NULL;
++    
++    im->im_func = om->im_func;
++    im->im_self = om->im_self;
++
++    return (PyObject *)im;
++}
++
++
+ /* Method objects are used for bound instance methods returned by
+    instancename.methodname. ClassName.methodname returns an ordinary
+    function.
+@@ -50,7 +78,7 @@ PyMethod_New(PyObject *func, PyObject *s
          return NULL;
      }
      im = free_list;
@@ -10,7 +45,7 @@ diff --git a/Objects/classobject.c b/Objects/classobject.c
          free_list = (PyMethodObject *)(im->im_self);
          PyObject_INIT(im, &PyMethod_Type);
          numfree--;
-@@ -166,6 +166,7 @@ method_new(PyTypeObject* type, PyObject*
+@@ -166,6 +194,7 @@ method_new(PyTypeObject* type, PyObject*
  static void
  method_dealloc(register PyMethodObject *im)
  {
@@ -18,7 +53,7 @@ diff --git a/Objects/classobject.c b/Objects/classobject.c
      _PyObject_GC_UNTRACK(im);
      if (im->im_weakreflist != NULL)
          PyObject_ClearWeakRefs((PyObject *)im);
-@@ -387,6 +388,9 @@ PyMethod_ClearFreeList(void)
+@@ -387,6 +416,9 @@ PyMethod_ClearFreeList(void)
  {
      int freelist_size = numfree;
  
@@ -28,7 +63,7 @@ diff --git a/Objects/classobject.c b/Objects/classobject.c
      while (free_list) {
          PyMethodObject *im = free_list;
          free_list = (PyMethodObject *)(im->im_self);
-@@ -400,6 +404,7 @@ PyMethod_ClearFreeList(void)
+@@ -400,6 +432,7 @@ PyMethod_ClearFreeList(void)
  void
  PyMethod_Fini(void)
  {

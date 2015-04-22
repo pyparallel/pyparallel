@@ -67,54 +67,35 @@ diff --git a/Python/ceval.c b/Python/ceval.c
  
      if (!gil_created())
          return;
-@@ -419,10 +430,33 @@ void
-    dynamically loaded modules needn't be compiled separately for use
-    with and without threads: */
- 
-+#ifdef WITH_PARALLEL
-+PyAPI_FUNC(PyThreadState *) _PyParallel_GetCurrentThreadState(void);
-+#endif
-+
+@@ -422,7 +433,18 @@ void
  PyThreadState *
  PyEval_SaveThread(void)
  {
 -    PyThreadState *tstate = PyThreadState_Swap(NULL);
 +    PyThreadState *tstate;
-+#ifdef WITH_PARALLEL
-+    PyThreadState *pstate;
-+    long cur_thread_id = _Py_get_current_thread_id();
-+    tstate = _PyParallel_GetCurrentThreadState();
-+    Py_GUARD_AGAINST_PX_ONLY();
-+    /*tstate = (PyThreadState*)_Py_atomic_load_relaxed(&_PyThreadState_Current);*/
-+    if (tstate->thread_id != cur_thread_id) {
-+        /* Verify we've been called from a parallel thread. */
-+        pstate = _PyParallel_GetThreadState();
-+        assert(tstate->is_parallel_thread == 0);
-+        assert(pstate != NULL);
-+        assert(pstate->thread_id == cur_thread_id);
-+        assert(pstate->is_parallel_thread == 1);
-+        _PyParallel_BlockingCall();
-+        return pstate;
++    /* Inline Py_GUARD_AGAINST_PX_ONLY(); we can't use the macro as it has
++       a couple of extra assertions against tstate-> stuff. */
++    if (_PyParallel_GetActiveContext() != NULL) {
++        _PyParallel_ContextGuardFailure(
++            __FUNCTION__,
++            __FILE__,
++            __LINE__,
++            0
++        );
 +    }
-+    assert(tstate->is_parallel_thread == 0);
-+#endif
 +    tstate = PyThreadState_Swap(NULL);
      if (tstate == NULL)
          Py_FatalError("PyEval_SaveThread: NULL tstate");
  #ifdef WITH_THREAD
-@@ -437,6 +471,11 @@ PyEval_RestoreThread(PyThreadState *tsta
+@@ -435,6 +457,7 @@ PyEval_SaveThread(void)
+ void
+ PyEval_RestoreThread(PyThreadState *tstate)
  {
++    Py_GUARD_AGAINST_PX_ONLY();
      if (tstate == NULL)
          Py_FatalError("PyEval_RestoreThread: NULL tstate");
-+#ifdef WITH_PARALLEL
-+    /* Ensure this is a no-op when called from a parallel context thread. */
-+    if (tstate->is_parallel_thread == 1)
-+        return;
-+#endif
  #ifdef WITH_THREAD
-     if (gil_created()) {
-         int err = errno;
-@@ -651,6 +690,7 @@ int
+@@ -651,6 +674,7 @@ int
  Py_MakePendingCalls(void)
  {
      static int busy = 0;
@@ -122,7 +103,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (busy)
          return 0;
      busy = 1;
-@@ -689,12 +729,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
+@@ -689,12 +713,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
  int
  Py_GetRecursionLimit(void)
  {
@@ -137,7 +118,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      recursion_limit = new_limit;
      _Py_CheckRecursionLimit = recursion_limit;
  }
-@@ -1236,6 +1278,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1236,6 +1262,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
          assert(stack_pointer >= f->f_valuestack); /* else underflow */
          assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
  
@@ -153,7 +134,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          /* Do periodic things.  Doing this every time through
             the loop would add too much overhead, so we do it
             only every Nth instruction.  We also do it if
-@@ -1314,7 +1365,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1314,7 +1349,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
          }
  
          /* Extract opcode and argument */
@@ -164,7 +145,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          opcode = NEXTOP();
          oparg = 0;   /* allows oparg to be stored in a register because
              it doesn't have to be remembered across a full loop */
-@@ -2295,9 +2348,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2295,9 +2332,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
              PREDICT(POP_JUMP_IF_TRUE);
              DISPATCH();
  
@@ -187,7 +168,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
              w = GETITEM(names, oparg);
              x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
              if (x == NULL) {
-@@ -2343,6 +2409,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2343,6 +2393,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
          }
  
          TARGET(IMPORT_STAR)
@@ -195,7 +176,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
              v = POP();
              PyFrame_FastToLocals(f);
              if ((x = f->f_locals) == NULL) {
-@@ -2359,6 +2426,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2359,6 +2410,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
              break;
  
          TARGET(IMPORT_FROM)

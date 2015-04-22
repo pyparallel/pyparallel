@@ -57,22 +57,24 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
  
      if (_PyOS_ReadlineTState == PyThreadState_GET()) {
          PyErr_SetString(PyExc_RuntimeError,
-@@ -198,6 +200,13 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+@@ -198,6 +200,11 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
  #endif
  
      _PyOS_ReadlineTState = PyThreadState_GET();
 +
-+/*
 +#ifdef WITH_PARALLEL
 +    rv = PyOS_StdioReadline (sys_stdin, sys_stdout, prompt);
 +#else
-+*/
 +
      Py_BEGIN_ALLOW_THREADS
  #ifdef WITH_THREAD
      PyThread_acquire_lock(_PyOS_ReadlineLock, 1);
-@@ -221,5 +230,14 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+@@ -219,7 +226,18 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+     PyThread_release_lock(_PyOS_ReadlineLock);
+ #endif
  
++#endif /* !WITH_PARALLEL */
++
      _PyOS_ReadlineTState = NULL;
  
 -    return rv;
