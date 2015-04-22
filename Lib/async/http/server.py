@@ -353,14 +353,17 @@ class HttpServer:
     #throughput = True
 
     def data_received(self, transport, data):
+        #async.debug(data)
         request = Request(transport, data)
         try:
             self.process_new_request(request)
         except Exception as e:
-            if e.args:
-                msg = '\n'.join(args)
-            elif e.message:
-                msg = e.message
+            msg = repr(e)
+            async.debug(msg)
+            #if e.args:
+            #    msg = '\n'.join(e.args)
+            #elif e.message:
+            #    msg = e.message
             self.error(request, 500, msg)
 
         if not request.keep_alive:
@@ -493,7 +496,7 @@ class HttpServer:
 
     def do_HEAD(self, request):
         # This totally doesn't work at the moment.
-        return self.do_GET(self, request)
+        return self.do_GET(request)
 
     def do_GET(self, request):
         response = request.response
