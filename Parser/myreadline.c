@@ -204,11 +204,9 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 
     _PyOS_ReadlineTState = PyThreadState_GET();
 
-/*
 #ifdef WITH_PARALLEL
     rv = PyOS_StdioReadline (sys_stdin, sys_stdout, prompt);
 #else
-*/
 
     Py_BEGIN_ALLOW_THREADS
 #ifdef WITH_THREAD
@@ -230,6 +228,8 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
 #ifdef WITH_THREAD
     PyThread_release_lock(_PyOS_ReadlineLock);
 #endif
+
+#endif /* !WITH_PARALLEL */
 
     _PyOS_ReadlineTState = NULL;
 
