@@ -36,6 +36,34 @@ PyMethod_Self(PyObject *im)
     return ((PyMethodObject *)im)->im_self;
 }
 
+PyObject *
+PyMethod_Clone(PyObject *orig)
+{
+    PyMethodObject *om = (PyMethodObject *)orig;
+    PyMethodObject *im = NULL;
+
+    if (!Py_PXCTX())
+        __debugbreak();
+
+    if (!PyMethod_Check(orig)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+
+    if (om->im_weakreflist)
+        __debugbreak();
+
+    im = PyObject_GC_New(PyMethodObject, &PyMethod_Type);
+    if (!im)
+        return NULL;
+    
+    im->im_func = om->im_func;
+    im->im_self = om->im_self;
+
+    return (PyObject *)im;
+}
+
+
 /* Method objects are used for bound instance methods returned by
    instancename.methodname. ClassName.methodname returns an ordinary
    function.
