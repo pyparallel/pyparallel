@@ -975,7 +975,7 @@ typedef struct _PxSocket {
     PyObject *last_getattr_value;
 
     /* Link from child -> parent via link_child/unlink_child. */
-    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    //__declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListItem link;
 
     Heap     *connectex_snapshot;
@@ -1119,7 +1119,7 @@ typedef struct _PxSocket {
     DWORD acceptex_addr_len;
     DWORD acceptex_recv_bytes;
 
-    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    //__declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListHead link_child;
 
     int num_accepts_to_post;
@@ -1155,7 +1155,7 @@ typedef struct _PxSocket {
     PxSocket *child;
 
     /* Keep at least a cache line away from link_child. */
-    __declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
+    //__declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListHead unlink_child;
 
     int child_id;
