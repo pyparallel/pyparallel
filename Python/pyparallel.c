@@ -8910,7 +8910,7 @@ setnonblock:
             PxSocket_WSAERROR("setsockopt(SO_RCVBUF)");
     } else {
         val = (char *)&(s->recvbuf_size);
-        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, &len) == SOCKET_ERROR)
+        if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, val, len) == SOCKET_ERROR)
             PxSocket_WSAERROR("setsockopt(SO_RCVBUF)");
     }
 
