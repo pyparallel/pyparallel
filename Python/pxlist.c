@@ -215,11 +215,13 @@ PxList_Push(PxListHead *head, PxListItem *item)
     return E2I(InterlockedPushEntrySList(head, I2E(&item->slist_entry)));
 }
 
+/*
 void
 PxList_PushObject(PxListHead *head, PyObject *op)
 {
     InterlockedPushEntrySList(head, O2E(op));
 }
+*/
 
 PxListItem *
 PxList_Transfer(PxListHead *head, PxListItem *item)
