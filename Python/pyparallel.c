@@ -1417,7 +1417,15 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
                 }
             }
             _PyParallel_SetHeapOverride(s->heap_override);
-            v_copy = PyObject_Clone(v_orig, "unsupported clone object type");
+            if (Py_ISPY(v_orig)) {
+                /* If it's a main thread object, don't bother cloning it. */
+                ;
+            } else {
+                if (!Py_ISPX(v_orig))
+                    __debugbreak();
+                v_copy = PyObject_Clone(v_orig,
+                                        "unsupported clone object type");
+            }
         }
         v = (v_copy ? v_copy : v_orig);
         if (tp->tp_setattro)
@@ -1752,6 +1760,34 @@ done:
     return success;
 }
 
+BOOL
+_Py_HandleCtrlC(DWORD ctrltype)
+{
+    if (ctrltype == CTRL_C_EVENT) {
+        _Py_sfence();
+        _Py_CtrlCPressed = 1;
+        _Py_lfence();
+        _Py_clflush(&_Py_CtrlCPressed);
+        return TRUE;
+    }
+    return FALSE;
+}
+PHANDLER_ROUTINE _Py_CtrlCHandlerRoutine = (PHANDLER_ROUTINE)_Py_HandleCtrlC;
+
+int
+_Py_CheckCtrlC(void)
+{
+    Py_GUARD();
+
+    if (_Py_CtrlCPressed) {
+        _Py_CtrlCPressed = 0;
+        PyErr_SetNone(PyExc_KeyboardInterrupt);
+        return 1;
+    }
+
+    return 0;
+}
+
 PyObject *
 _async_wait(PyObject *self, PyObject *o)
 {
@@ -1761,7 +1797,28 @@ _async_wait(PyObject *self, PyObject *o)
     if (!_PyEvent_TryCreate(o))
         return NULL;
 
-    result = WaitForSingleObject((HANDLE)o->event, INFINITE);
+    if (Py_PXCTX()) {
+        /* This should really be handled via a threadpool wait. */
+        result = WaitForSingleObject((HANDLE)o->event, INFINITE);
+    } else {
+        /* Stolen from _async_run_once(). */
+        if (!_Py_InstalledCtrlCHandler) {
+            if (!SetConsoleCtrlHandler(_Py_CtrlCHandlerRoutine, TRUE)) {
+                PyErr_SetFromWindowsErr(0);
+                return NULL;
+            }
+            _Py_InstalledCtrlCHandler = 1;
+        }
+
+        do {
+            result = WaitForSingleObject((HANDLE)o->event, 100);
+            if (PyErr_CheckSignals() || _Py_CheckCtrlC())
+                return NULL;
+            if (result == WAIT_TIMEOUT)
+                continue;
+            break;
+        } while (1);
+    }
 
     if (result == WAIT_OBJECT_0)
         Py_RETURN_NONE;
@@ -1905,10 +1962,12 @@ PyObject *
 _async_protect(PyObject *self, PyObject *obj)
 {
     Py_INCREF(obj);
+    /*
     if (Py_ISPX(obj)) {
         PyErr_SetNone(PyExc_ProtectionError);
         return NULL;
     }
+    */
     Py_INCREF(obj);
     return _protect(obj);
 }
@@ -4350,7 +4409,8 @@ PyObject_Clone(PyObject *src, const char *errmsg)
         PyByteArray_CheckExact(src)     ||
         PyUnicode_CheckExact(src)       ||
         PyLong_CheckExact(src)          ||
-        PyFloat_CheckExact(src)
+        PyFloat_CheckExact(src)         ||
+        PyMethod_Check(src)
     );
 
     if (!valid_type) {
@@ -4382,17 +4442,28 @@ PyObject_Clone(PyObject *src, const char *errmsg)
         }
     } else if (PyByteArray_CheckExact(src)) {
         result = (PyObject *)PyByteArray_FromObject(src);
+    } else if (PyMethod_Check(src)) {
+        result = (PyObject *)PyMethod_Clone(src);
     } else {
         XXX_IMPLEMENT_ME();
     }
 
     if (result) {
-        assert(Px_CLONED(result));
+        if (!Px_CLONED(result))
+            __debugbreak();
     }
 
     return result;
 }
 
+PyObject *
+xlist_push(PyObject *obj, PyObject *src)
+{
+    __debugbreak();
+    return NULL;
+}
+
+/*
 PyObject *
 xlist_push(PyObject *obj, PyObject *src)
 {
@@ -4416,13 +4487,12 @@ xlist_push(PyObject *obj, PyObject *src)
         PxList_PushObject(xlist->head, dst);
     }
 
-    /*
-    if (Px_CV_WAITERS(xlist))
-        ConditionVariableWakeOne(&(xlist->cv));
-    */
+    //if (Px_CV_WAITERS(xlist))
+    //    ConditionVariableWakeOne(&(xlist->cv));
 
     Py_RETURN_NONE;
 }
+*/
 
 PyObject *
 xlist_flush(PyObject *self, PyObject *arg)
@@ -4768,34 +4838,6 @@ _PxState_PurgeContexts(PxState *px)
     }
 
     return destroyed;
-}
-
-BOOL
-_Py_HandleCtrlC(DWORD ctrltype)
-{
-    if (ctrltype == CTRL_C_EVENT) {
-        _Py_sfence();
-        _Py_CtrlCPressed = 1;
-        _Py_lfence();
-        _Py_clflush(&_Py_CtrlCPressed);
-        return TRUE;
-    }
-    return FALSE;
-}
-PHANDLER_ROUTINE _Py_CtrlCHandlerRoutine = (PHANDLER_ROUTINE)_Py_HandleCtrlC;
-
-int
-_Py_CheckCtrlC(void)
-{
-    Py_GUARD();
-
-    if (_Py_CtrlCPressed) {
-        _Py_CtrlCPressed = 0;
-        PyErr_SetNone(PyExc_KeyboardInterrupt);
-        return 1;
-    }
-
-    return 0;
 }
 
 #ifndef _WIN64
@@ -6631,6 +6673,22 @@ int PxSocket_InitInitialBytes(PxSocket *s);
 void
 PxSocket_IOLoop(PxSocket *s)
 {
+    /* Note to self: there are a bunch of lines that are commented out
+       calls to heap rollback, e.g.: 
+
+        if (!PxSocket_LoadInitialBytes(s)) {
+            //PxContext_RollbackHeap(c, &snapshot);
+            PxSocket_EXCEPTION();
+        }
+
+       Context: we were initially rolling back heaps on failure.  However,
+       this currently memsets all that memory back to 0 as part of the
+       rewind, which will include whatever tstate->cur_exc etc point at,
+       which PxSocket_EXCEPTION() will push to the main thread's error
+       list.
+
+       So, comment out the heap rollback for now to stop that.  (Leaving
+       it in is useful though, as it marks exceptional exit points.) */
     PyObject *func, *args, *result;
     PyBytesObject *bytes;
     TLS *t = &tls;
@@ -6794,10 +6852,39 @@ overlapped_connectex_callback:
         if (s->overlapped_connectex.Internal == NO_ERROR)
             __debugbreak();
 
+        if (s->wsa_error == NO_ERROR) {
+            switch (c->io_result) {
+                case ERROR_CONNECTION_REFUSED:
+                    s->wsa_error = WSAECONNREFUSED;
+                    break;
+                /* Haven't seen any of these in the wild, but putting in
+                   some stub code anyway to make things easier down the
+                   track. */
+                case ERROR_NETWORK_UNREACHABLE:
+                    __debugbreak();
+                    //s->wsa_error = WSANETUNREACH;
+                    break;
+                case ERROR_HOST_UNREACHABLE:
+                    __debugbreak();
+                    //s->wsa_error = WSAHOSTUNREACH;
+                case ERROR_CONNECTION_INVALID:
+                    __debugbreak();
+                    //s->wsa_error = WSANOTSOCK?
+                    break;
+                case ERROR_HOST_DOWN:
+                    __debugbreak();
+                    //s->wsa_error = WSANETDOWN?
+                    break;
+            }
+        }
+
         if (s->wsa_error == NO_ERROR)
+            /* If you hit this breakpoint, review the value of c->io_result
+               and see if you need to add to the switch statement above. */
             __debugbreak();
 
-
+        /* Disable this for client sockets... */
+        /*
         switch (s->wsa_error) {
             case WSAENOTSOCK:
             case WSAENETRESET:
@@ -6806,6 +6893,7 @@ overlapped_connectex_callback:
             case WSAEHOSTUNREACH:
                 PxSocket_RECYCLE(s);
         }
+        */
 
         if (s->connectex_snapshot)
             PxContext_RollbackHeap(c, &s->connectex_snapshot);
@@ -7919,6 +8007,8 @@ do_data_received_callback:
         XXX_IMPLEMENT_ME();
     }
 
+    if (PyErr_Occurred())
+        __debugbreak();
 
     result = PyObject_CallObject(func, args);
     if (result)
@@ -8495,6 +8585,9 @@ pxsocket_dealloc(PxSocket *s)
     if (s->ip)
         free(s->ip);
 
+    if (s->heap_override)
+        HeapDestroy(s->heap_override);
+
     Py_TYPE(s)->tp_free((PyObject *)s);
 }
 
@@ -8647,6 +8740,8 @@ create_pxsocket(
 
     if (!init_object(c, c->io_obj, tp, 0))
         PxSocket_FATAL();
+
+    _protect(c->io_obj);
 
     InitializeCriticalSectionAndSpinCount(&s->cs, CS_SOCK_SPINCOUNT);
 
@@ -9455,13 +9550,16 @@ PxSocket_InitProtocol(PxSocket *s)
     assert(s->protocol_type);
     assert(!s->protocol);
 
+    assert(!PyErr_Occurred());
+
     s->protocol = PyObject_CallObject(s->protocol_type, NULL);
     if (!s->protocol)
         return 0;
 
     p = s->protocol;
 
-    _protect(p);
+    if (!_protect(p))
+        return 0;
 
     assert(!PyErr_Occurred());
 
@@ -10498,6 +10596,14 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
     PTP_SIMPLE_CALLBACK cb;
 
     assert(c);
+
+    if (PyErr_Occurred()) {
+        __debugbreak();
+        PyErr_PrintEx(0);
+        PyErr_Clear();
+    }
+
+    assert(!PyErr_Occurred());
 
     if (!PxSocket_SetProtocolType(s, protocol_type))
         return NULL;

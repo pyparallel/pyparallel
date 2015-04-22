@@ -150,6 +150,9 @@ __PyParallel_IsParallelContext(void)
  * undefined. */
 PyAPI_FUNC(void *) _PyParallel_GetHeapOverride(void);
 
+/* Update: switched dictobject.c to use the method below instead. */
+PyAPI_FUNC(void)   _PyParallel_MaybeFreeObject(void *);
+
 /* Returns a pointer to the active PyParallelContext, which will only have
  * a value if the parallel thread has been initialized via the threadpool
  * callback mechanics (in pyparallel.c).  This provides an alternate way
@@ -244,7 +247,8 @@ _px_bitpos_uint32(unsigned int f)
 #define _PYTEST(f)  (_ONLY_ONE_BIT(f) &&  (_px_bitpos_uint32(f) % 2))
 #define _PXTEST(f)  (_ONLY_ONE_BIT(f) && !(_px_bitpos_uint32(f) % 2))
 
-#ifdef Py_DEBUG
+#if defined(Py_DEBUG) && 0
+/* Erm, disabling these for now, they don't appear to be working. */
 #define Py_ISPY(pointer)           \
     _PyParallel_Guard(             \
         __FUNCTION__,              \
@@ -264,8 +268,8 @@ _px_bitpos_uint32(unsigned int f)
     )
 #else
 #define Py_ISPY(op) (                         \
-    (((void *)(((PyObject *)(op))->is_px)) != \
-     ((void *)(_Py_IS_PARALLEL)))             \
+    (((void *)(((PyObject *)(op))->is_px)) == \
+     ((void *)(_Py_NOT_PARALLEL)))            \
 )
 #define Py_ISPX(op) (                         \
     (((void *)(((PyObject *)(op))->is_px)) == \
