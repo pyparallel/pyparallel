@@ -801,11 +801,6 @@ insertion_resize(PyDictObject *mp)
     return dictresize(mp, GROWTH_RATE(mp));
 }
 
-#ifdef WITH_PARALLEL
-typedef void * HANDLE;
-extern char HeapFree(void *h, int flags, void *lpmem);
-#endif
-
 /*
 Internal routine to insert a new item into the table.
 Used both by the internal resize routine and by the public insert routine.
