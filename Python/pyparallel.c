@@ -116,6 +116,67 @@ _PyParallel_IsDebugbreakOnNextExceptionSet(void)
     return _PyParallel_BreakOnNextException;
 }
 
+void
+_PyParallel_MaybeFreeObject(void *vp)
+{
+    PyObject *o = (PyObject *)vp;
+    Context *oc;
+    PxSocket *os;
+    PxObject *ox;
+    HANDLE oh;
+
+    /* a = "active" */
+    PxSocket *as;
+    HANDLE ah;
+
+    /* Validate incoming object. */
+
+    if (!o)
+        __debugbreak();
+
+    if (!Py_PXCTX())
+        __debugbreak();
+
+    if (!Px_CLONED(o))
+        __debugbreak();
+
+    if (!_PyParallel_IsHeapOverrideActive())
+        __debugbreak();
+
+    ox = (PxObject *)o->px;
+    if (!ox)
+        __debugbreak();
+
+    oc = ox->ctx;
+    if (!oc)
+        __debugbreak();
+
+    os = (PxSocket *)oc->io_obj;
+    if (!os)
+        __debugbreak();
+
+    oh = os->heap_override;
+    if (!oh)
+        __debugbreak();
+
+    /* End of incoming object validation. */
+
+    /* Set up the active values. */
+    as = (PxSocket *)ctx->io_obj;
+    if (!as)
+        __debugbreak();
+
+    ah = as->heap_override;
+    if (!ah)
+        __debugbreak();
+
+    /* Verify the object came from the active heap override. */
+    if (oh != ah)
+        __debugbreak();
+
+    HeapFree(ah, 0, o);
+}
+
 static __inline
 void
 CheckListEntry(PLIST_ENTRY entry)
