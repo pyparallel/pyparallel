@@ -8894,13 +8894,13 @@ setnonblock:
     if (PxSocket_THROUGHPUT(s)) {
         s->recvbuf_size = 65536 - Px_PTR_ALIGN(sizeof(RBUF));
     } else if (PxSocket_IS_SERVERCLIENT(s) || PxSocket_CONCURRENCY(s)) {
-        /* This is about 1635 bytes at the time of writing. */
+        /* This is about 1152 bytes at the time of writing. */
         s->recvbuf_size = s->ctx->h->remaining - Px_PTR_ALIGN(sizeof(RBUF));
-        /* If it gets below 1024, break.  We want to keep the entire buffer
+        /* If it gets below 512, break.  We want to keep the entire buffer
          * within the same page used by the heap. */
-        if (s->recvbuf_size < 1024)
+        if (s->recvbuf_size < 512)
             __debugbreak();
-        s->recvbuf_size = 1024;
+        //s->recvbuf_size = 512;
         s->sendbuf_size = 0;
     }
 
