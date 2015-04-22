@@ -4378,7 +4378,7 @@ xlist_pop(PyObject *self, PyObject *args)
 {
     PyXListObject *xlist = (PyXListObject *)self;
     PxListItem *item;
-    PyObject *obj;
+    PyObject *obj = NULL;
     assert(args == NULL);
     Py_GUARD();
     /*Py_INCREF(xlist);*/
