@@ -434,7 +434,16 @@ PyThreadState *
 PyEval_SaveThread(void)
 {
     PyThreadState *tstate;
-    Py_GUARD_AGAINST_PX_ONLY();
+    /* Inline Py_GUARD_AGAINST_PX_ONLY(); we can't use the macro as it has
+       a couple of extra assertions against tstate-> stuff. */
+    if (_PyParallel_GetActiveContext() != NULL) {
+        _PyParallel_ContextGuardFailure(
+            __FUNCTION__,
+            __FILE__,
+            __LINE__,
+            0
+        );
+    }
     tstate = PyThreadState_Swap(NULL);
     if (tstate == NULL)
         Py_FatalError("PyEval_SaveThread: NULL tstate");
