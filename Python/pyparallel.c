@@ -11280,6 +11280,105 @@ _async_debugbreak_on_next_exception(PyObject *self, PyObject *o)
     Py_RETURN_NONE;
 }
 
+/* 0 on failure, 1 on success */
+int
+_extract_socket(Context *c, PxSocket **s)
+{
+    if (!c) {
+        PyErr_SetString(PyExc_RuntimeError, "no active context");
+        return 0;
+    }
+
+    if (!c->io_obj) {
+        PyErr_SetString(PyExc_RuntimeError, "no active socket");
+        return 0;
+    }
+
+    if (c->io_type != Px_IOTYPE_SOCKET) {
+        PyErr_SetString(PyExc_RuntimeError, "active I/O object isn't socket");
+        return 0;
+    }
+
+    *s = (PxSocket *)c->io_obj;
+
+    return 1;
+}
+
+PyDoc_STRVAR(_async_enable_heap_override_doc,
+             "enables heap override\n");
+
+PyObject *
+_async_enable_heap_override(PyObject *self, PyObject *o)
+{
+    Context  *c = ctx;
+    PxSocket *s = NULL;
+
+    if (!_extract_socket(c, &s))
+        return NULL;
+
+    if (_PyParallel_IsHeapOverrideActive()) {
+        if (s->heap_override == _PyParallel_GetHeapOverride())
+            Py_RETURN_NONE;
+        else {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "heap override already set");
+            return NULL;
+        }
+    }
+
+    if (!s->heap_override) {
+        s->heap_override = HeapCreate(0, 0, 0);
+        if (!s->heap_override) {
+            PyErr_SetFromWindowsErr(0);
+            return NULL;
+        }
+    }
+
+    _PyParallel_SetHeapOverride(s->heap_override);
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(_async_disable_heap_override_doc,
+             "disables heap override\n");
+
+PyObject *
+_async_disable_heap_override(PyObject *self, PyObject *o)
+{
+    Context  *c = ctx;
+    PxSocket *s = NULL;
+    HANDLE    h = NULL;
+
+    if (!_extract_socket(c, &s))
+        return NULL;
+
+    if (!_PyParallel_IsHeapOverrideActive()) {
+        PyErr_SetString(PyExc_RuntimeError, "no heap override set");
+        return NULL;
+    }
+
+    h = _PyParallel_GetHeapOverride();
+    if (s->heap_override != h) {
+        /* Could this happen? */
+        __debugbreak();
+    }
+
+    _PyParallel_RemoveHeapOverride();
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(_async_is_heap_override_active_doc,
+             "returns boolean indicating whether heap override is active\n");
+
+PyObject *
+_async_is_heap_override_active(PyObject *self, PyObject *o)
+{
+    if (_PyParallel_IsHeapOverrideActive())
+        Py_RETURN_TRUE;
+    else
+        Py_RETURN_FALSE;
+}
+
+
 
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
@@ -11345,9 +11444,12 @@ PyMethodDef _async_methods[] = {
     _ASYNC_N(active_io_loops),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_N(persisted_contexts),
+    _ASYNC_N(enable_heap_override),
     _ASYNC_N(refresh_memory_stats),
+    _ASYNC_N(disable_heap_override),
     _ASYNC_V(call_from_main_thread),
     _ASYNC_N(seh_eav_in_io_callback),
+    _ASYNC_N(is_heap_override_active),
     _ASYNC_N(debugbreak_on_next_exception),
     _ASYNC_V(call_from_main_thread_and_wait),
 
