@@ -444,6 +444,23 @@ class UpdateDiffs(PxCommand):
     for all modified files (i.e. we exclude new files), create a diff
     and store it in diffs/<dirname>/<filename>.diff.
     """
+    base_rev = None
+    class BaseRevArg(StringInvariant):
+        _help = 'base rev/tag to diff against [default: %default]'
+        _default = 'v3.3.5'
+        _mandatory = False
+
+    target_rev = None
+    class TargetRevArg(StringInvariant):
+        _help = 'target rev/tag to diff against [default: %default]'
+        _default = '3.3-px'
+        _mandatory = False
+
+    root = None
+    class RootArg(DirectoryInvariant):
+        _help = 'hg repository root'
+        _mandatory = False
+
     def run(self):
         import os
         from collections import defaultdict
@@ -453,13 +470,26 @@ class UpdateDiffs(PxCommand):
         dbg = pdb.Pdb()
         #dbg.set_trace()
 
-        root = join_path(dirname(__file__), '../..')
+        root = self.options.root
+        if not root:
+            root = join_path(dirname(__file__), '../..')
+
         if os.getcwd() != root:
             os.chdir(root)
 
         basedir = join_path(root, 'diffs')
 
-        os.system('hg st --rev v3.3.5 --rev 3.3-px > hg-st.txt')
+        base_rev = self.options.base_rev
+        target_rev = self.options.target_rev
+
+        #dbg.set_trace()
+        cmd = (
+            'hg st --rev %s --rev %s > hg-st.txt' % (
+                base_rev,
+                target_rev,
+        ))
+        os.system(cmd)
+
         with open('hg-st.txt', 'r') as f:
             data = f.read()
 
@@ -482,13 +512,17 @@ class UpdateDiffs(PxCommand):
             patchname = filename + '.patch'
             patchpath = join_path(diffdir, patchname)
             cmd = (
-                'hg diff --rev v3.3.5 '
+                'hg diff --rev %s '
                 ' --git '
                 ' --show-function '
                 #' --ignore-all-space '
                 ' --ignore-blank-lines '
                 ' --ignore-space-change '
-                ' "%s" > "%s"' % (path, patchpath)
+                ' "%s" > "%s"' % (
+                    base_rev,
+                    path,
+                    patchpath,
+                )
             )
             #dbg.set_trace()
             os.system(cmd)
