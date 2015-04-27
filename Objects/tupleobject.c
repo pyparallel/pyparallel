@@ -280,14 +280,16 @@ tuplerepr(PyTupleObject *v)
     Py_ssize_t i, n;
     PyObject *s = NULL;
     _PyAccu acc;
-    static PyObject *sep = NULL;
+    Py_TLS static PyObject *sep = NULL;
 
     n = Py_SIZE(v);
     if (n == 0)
         return PyUnicode_FromString("()");
 
     if (sep == NULL) {
+        PyPx_EnableTLSHeap();
         sep = PyUnicode_FromString(", ");
+        PyPx_DisableTLSHeap();
         if (sep == NULL)
             return NULL;
     }
