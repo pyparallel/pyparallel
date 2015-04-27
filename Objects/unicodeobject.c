@@ -175,17 +175,19 @@ extern "C" {
    Another way to look at this is that to say that the actual reference
    count of a string is:  s->ob_refcnt + (s->state ? 2 : 0)
 */
-static PyObject *interned = NULL;
+Py_TLS static PyObject *interned = NULL;
 
 /* The empty Unicode object is shared to improve performance. */
-static PyObject *unicode_empty = NULL;
+Py_TLS static PyObject *unicode_empty = NULL;
 
 #define _Py_INCREF_UNICODE_EMPTY()                      \
     do {                                                \
         if (unicode_empty != NULL)                      \
             Py_INCREF(unicode_empty);                   \
         else {                                          \
+            PyPx_EnableTLSHeap()                        \
             unicode_empty = PyUnicode_New(0, 0);        \
+            PyPx_DisableTLSHeap()                       \
             if (unicode_empty != NULL) {                \
                 Py_INCREF(unicode_empty);               \
                 assert(_PyUnicode_CheckConsistency(unicode_empty, 1)); \
@@ -3865,10 +3867,13 @@ PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
 int
 _PyUnicode_HasNULChars(PyObject* s)
 {
-    static PyObject *nul = NULL;
+    Py_TLS static PyObject *nul = NULL;
 
-    if (nul == NULL)
+    if (nul == NULL) {
+        PyPx_EnableTLSHeap();
         nul = PyUnicode_FromStringAndSize("\0", 1);
+        PyPx_DisableTLSHeap();
+    }
     if (nul == NULL)
         return -1;
     return PyUnicode_Contains(s, nul);
