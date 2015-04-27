@@ -687,8 +687,11 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
         return;
     }
 
-    assert(c->h->base == s->base);
-    assert(c->h->id == s->id);
+    if (c->h->base != s->base)
+        __debugbreak();
+
+    if (c->h->id != s->id)
+        __debugbreak();
 
     /* Heap snapshot lines up with context's current heap, so we can now
      * memcpy the snapshot back over the active heap. */
