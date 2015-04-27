@@ -81,9 +81,11 @@ static PyObject *
 join_list_unicode(PyObject *lst)
 {
     /* return u''.join(lst) */
-    static PyObject *sep = NULL;
+    Py_TLS static PyObject *sep = NULL;
     if (sep == NULL) {
+        PyPx_EnableTLSHeap();
         sep = PyUnicode_FromStringAndSize("", 0);
+        PyPx_DisableTLSHeap();
         if (sep == NULL)
             return NULL;
     }
