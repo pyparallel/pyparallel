@@ -92,6 +92,32 @@ static BOOL _PyParallel_LowMemory = FALSE;
 static MEMORYSTATUSEX _memory_status;
 
 int
+PyPx_EnableTLSHeap(void)
+{
+    if (!Py_PXCTX())
+        return 0;
+
+    if (heap_override)
+        return 0;
+
+    _PyParallel_EnableTLSHeap();
+    return 1;
+}
+
+int
+PyPx_DisableTLSHeap(void)
+{
+    if (!Py_PXCTX())
+        return 0;
+
+    if (!heap_override)
+        return 0;
+
+    _PyParallel_DisableTLSHeap();
+    return 1;
+}
+
+int
 _PyParallel_IsFinalized(void)
 {
     return _PyParallel_Finalized;
