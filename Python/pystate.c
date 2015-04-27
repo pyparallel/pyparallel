@@ -461,7 +461,7 @@ PyThreadState_Swap(PyThreadState *newts)
     PyThreadState *oldts = (PyThreadState*)_Py_atomic_load_relaxed(
         &_PyThreadState_Current);
 #if defined(WITH_PARALLEL) && defined(Py_DEBUG) && 0
-    /* Make sure oldts and newts aren't parallel. 
+    /* Make sure oldts and newts aren't parallel.
        (xxx: disabled; was causing crashes during Py_Finalize())
      */
 
