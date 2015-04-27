@@ -1,0 +1,18 @@
+diff --git a/Include/ceval.h b/Include/ceval.h
+--- a/Include/ceval.h
++++ b/Include/ceval.h
+@@ -177,11 +177,11 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwi
+ #endif
+ 
+ #define Py_BEGIN_ALLOW_THREADS { \
+-                        PyThreadState *_save; \
+-                        _save = PyEval_SaveThread();
++                        PyThreadState *_save = NULL; \
++                        if (!Py_PXCTX()) _save = PyEval_SaveThread();
+ #define Py_BLOCK_THREADS        PyEval_RestoreThread(_save);
+ #define Py_UNBLOCK_THREADS      _save = PyEval_SaveThread();
+-#define Py_END_ALLOW_THREADS    PyEval_RestoreThread(_save); \
++#define Py_END_ALLOW_THREADS    if (_save) PyEval_RestoreThread(_save); \
+                  }
+ 
+ #else /* !WITH_THREAD */

@@ -1,0 +1,16 @@
+diff --git a/Modules/_json.c b/Modules/_json.c
+--- a/Modules/_json.c
++++ b/Modules/_json.c
+@@ -81,9 +81,11 @@ static PyObject *
+ join_list_unicode(PyObject *lst)
+ {
+     /* return u''.join(lst) */
+-    static PyObject *sep = NULL;
++    Py_TLS static PyObject *sep = NULL;
+     if (sep == NULL) {
++        PyPx_EnableTLSHeap();
+         sep = PyUnicode_FromStringAndSize("", 0);
++        PyPx_DisableTLSHeap();
+         if (sep == NULL)
+             return NULL;
+     }

@@ -88,7 +88,25 @@ diff --git a/Objects/tupleobject.c b/Objects/tupleobject.c
      PyObject_GC_UnTrack(op);
      Py_TRASHCAN_SAFE_BEGIN(op)
      if (len > 0) {
-@@ -890,6 +913,8 @@ PyTuple_ClearFreeList(void)
+@@ -257,14 +280,16 @@ tuplerepr(PyTupleObject *v)
+     Py_ssize_t i, n;
+     PyObject *s = NULL;
+     _PyAccu acc;
+-    static PyObject *sep = NULL;
++    Py_TLS static PyObject *sep = NULL;
+ 
+     n = Py_SIZE(v);
+     if (n == 0)
+         return PyUnicode_FromString("()");
+ 
+     if (sep == NULL) {
++        PyPx_EnableTLSHeap();
+         sep = PyUnicode_FromString(", ");
++        PyPx_DisableTLSHeap();
+         if (sep == NULL)
+             return NULL;
+     }
+@@ -890,6 +915,8 @@ PyTuple_ClearFreeList(void)
      int freelist_size = 0;
  #if PyTuple_MAXSAVESIZE > 0
      int i;
@@ -97,7 +115,7 @@ diff --git a/Objects/tupleobject.c b/Objects/tupleobject.c
      for (i = 1; i < PyTuple_MAXSAVESIZE; i++) {
          PyTupleObject *p, *q;
          p = free_list[i];
-@@ -912,6 +937,7 @@ PyTuple_Fini(void)
+@@ -912,6 +939,7 @@ PyTuple_Fini(void)
  #if PyTuple_MAXSAVESIZE > 0
      /* empty tuples are used all over the place and applications may
       * rely on the fact that an empty tuple is a singleton. */

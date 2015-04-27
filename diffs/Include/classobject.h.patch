@@ -1,0 +1,11 @@
+diff --git a/Include/classobject.h b/Include/classobject.h
+--- a/Include/classobject.h
++++ b/Include/classobject.h
+@@ -24,6 +24,7 @@ PyAPI_FUNC(PyObject *) PyMethod_New(PyOb
+ 
+ PyAPI_FUNC(PyObject *) PyMethod_Function(PyObject *);
+ PyAPI_FUNC(PyObject *) PyMethod_Self(PyObject *);
++PyAPI_FUNC(PyObject *) PyMethod_Clone(PyObject *);
+ 
+ /* Macros for direct access to these values. Type checks are *not*
+    done, so use with care. */

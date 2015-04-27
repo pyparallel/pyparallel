@@ -84,7 +84,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      PyThreadState *oldts = (PyThreadState*)_Py_atomic_load_relaxed(
          &_PyThreadState_Current);
 +#if defined(WITH_PARALLEL) && defined(Py_DEBUG) && 0
-+    /* Make sure oldts and newts aren't parallel. 
++    /* Make sure oldts and newts aren't parallel.
 +       (xxx: disabled; was causing crashes during Py_Finalize())
 +     */
 +
@@ -98,7 +98,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
  
      _Py_atomic_store_relaxed(&_PyThreadState_Current, newts);
      /* It should not be possible for more than one thread state
-@@ -461,8 +500,7 @@ PyThreadState_Swap(PyThreadState *newts)
+@@ -461,14 +500,15 @@ PyThreadState_Swap(PyThreadState *newts)
  PyObject *
  PyThreadState_GetDict(void)
  {
@@ -108,3 +108,11 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      if (tstate == NULL)
          return NULL;
  
+     if (tstate->dict == NULL) {
+         PyObject *d;
++        PyPx_EnableTLSHeap();
+         tstate->dict = d = PyDict_New();
++        PyPx_DisableTLSHeap();
+         if (d == NULL)
+             PyErr_Clear();
+     }
