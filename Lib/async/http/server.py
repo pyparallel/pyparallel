@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import html
+import json
 import async
 import urllib
 import mimetypes
@@ -162,6 +163,7 @@ class Response:
     __slots__ = (
         'body',
         'code',
+        'etag',
         'date',
         'server',
         'version',
@@ -171,27 +173,38 @@ class Response:
         'explain',
         'message',
         'sendfile',
+        'timestamp',
         'transport',
         'content_type',
         'content_range',
         'last_modified',
         'other_headers',
         'content_length',
+        '_response',
     )
 
     def __init__(self, request):
         self.body = ''
         self.code = 0
+        self.etag = None
+        self.date = None
         self.server = DEFAULT_SERVER_RESPONSE
+        self.version = None
+        self.headers = None
         self.request = request
+        self.command = None
         self.explain = ''
+        self.message = None
         self.sendfile = False
+        self.timestamp = None
         self.transport = request.transport
         self.last_modified = None
         self.content_type = DEFAULT_CONTENT_TYPE
         self.content_range = None
-        self.content_length = 0
+        self.last_modified = None
         self.other_headers = []
+        self.content_length = 0
+        self._response = None
 
     def __bytes__(self):
         self.date = date_time_string()
@@ -251,7 +264,21 @@ class Response:
         if bytes_body:
             response += bytes_body
 
+        self._response = response
         return response
+
+    def _to_dict(self):
+        return {
+            k: getattr(self, k)
+                for k in self.__slots__
+                    if k not in ('transport', 'request')
+        }
+
+    #def __repr__(self):
+    #    return repr(self._to_dict())
+
+    def _to_json(self):
+        return json.dumps(self._to_dict())
 
 
 class Request:
@@ -260,11 +287,15 @@ class Request:
         'body',
         'path',
         'range',
+        'query',
         'version',
         'headers',
         'command',
+        'raw_path',
         'response',
+        'fragment',
         'transport',
+        'timestamp',
         'keep_alive',
     )
 
@@ -273,12 +304,31 @@ class Request:
         self.data = data
 
         self.body = None
+        self.path = None
         self.range = None
+        self.query = {}
         self.version = None
         self.headers = None
         self.command = None
+        self.raw_path = None
+        self.fragment = None
+        self.timestamp = None
         self.keep_alive = False
         self.response = Response(self)
+
+    def _to_dict(self):
+        return {
+            k: getattr(self, k)
+                for k in self.__slots__
+                    if k not in ('transport', 'response')
+        }
+
+    #def __repr__(self):
+    #    return repr(self._to_dict())
+
+    def _to_json(self):
+        return json.dumps(self._to_dict())
+
 
 class InvalidRangeRequest(BaseException):
     pass
@@ -358,12 +408,12 @@ class HttpServer:
         try:
             self.process_new_request(request)
         except Exception as e:
-            msg = repr(e)
-            async.debug(msg)
-            #if e.args:
-            #    msg = '\n'.join(e.args)
-            #elif e.message:
-            #    msg = e.message
+            #msg = repr(e)
+            #async.debug(msg)
+            if e.args:
+                msg = '\n'.join(e.args)
+            elif e.message:
+                msg = e.message
             self.error(request, 500, msg)
 
         if not request.keep_alive:
@@ -395,9 +445,9 @@ class HttpServer:
         words = requestline.split()
         num_words = len(words)
         if num_words == 3:
-            (command, path, version) = words
+            (command, raw_path, version) = words
             if version[:5] != b'HTTP/':
-                msg = "Bad request version (%r)" % version
+                msg = "Bad request version (%s)" % version
                 return self.error(request, 400, msg)
             try:
                 base_version_number = version.split(b'/', 1)[1]
@@ -412,7 +462,7 @@ class HttpServer:
                     raise ValueError
                 version_number = int(version_number[0]), int(version_number[1])
             except (ValueError, IndexError):
-                msg = "Bad request version (%r)" % version
+                msg = "Bad request version (%s)" % version
                 return self.error(request, 400, msg)
             if version_number >= (1, 1):
                 request.keep_alive = True
@@ -421,9 +471,9 @@ class HttpServer:
                 return self.error(request, 505, msg)
 
         elif num_words == 2:
-            (command, path) = words
+            (command, raw_path) = words
             if command != b'GET':
-                msg = "Bad HTTP/0.9 request type (%r)" % command
+                msg = "Bad HTTP/0.9 request type (%s)" % command
                 return self.error(request, 400, msg)
 
         elif not words:
@@ -431,13 +481,13 @@ class HttpServer:
             request.keep_alive = False
             return
         else:
-            msg = "Bad request syntax (%r)" % requestline
+            msg = "Bad request syntax (%s)" % requestline
             return self.error(request, 400, msg)
 
         command = command.decode()
         funcname = 'do_%s' % command
         if not hasattr(self, funcname):
-            msg = 'Unsupported method (%r)' % funcname
+            msg = 'Unsupported method (%s)' % funcname
             return self.error(request, 501, msg)
 
         ix = rest.rfind(b'\r\n\r\n')
@@ -452,17 +502,52 @@ class HttpServer:
 
         h = request.headers = headers
 
-        path = path.decode()
         version = version.decode()
+        raw_path = raw_path.decode()
 
-        request.path = path
-        request.command = command
+        # Eh, urllib.parse.urlparse doesn't work here... I took a look at the
+        # source and figure it's either because of all the global caching
+        # going on, or it's using a generator somewhere.  So, let's just
+        # manually unpack the url as needed.  (Update: probably should review
+        # this assumption now that we've supposedly fixed generators.)
+        url = raw_path
+        if '#' in url:
+            (url, request.fragment) = url.split('#', 1)
+        if '?' in url:
+            (url, qs) = url.split('?', 1)
+            if '&' in qs:
+                pairs = qs.split('&')
+            else:
+                pairs = [ qs, ]
+
+            for pair in pairs:
+                # Discard anything that isn't in key=value format.
+                if '=' not in pair:
+                    continue
+                (key, value) = pair.split('=')
+                if '%' in value:
+                    value = url_unquote(value)
+                request.query[key] = value
+
+        request.path = url
+        request.raw_path = raw_path
         request.version = version
+        request.command = command
 
-        if h.connection == 'close':
+        # IE sends through 'Keep-Alive', not 'keep-alive' like everything
+        # else.
+        connection = (h.connection or '').lower()
+        if connection == 'close':
             request.keep_alive = False
-        elif h.connection == 'keep-alive' or version >= 'HTTP/1.1':
+        elif connection == 'keep-alive' or version >= 'HTTP/1.1':
             request.keep_alive = True
+
+        if not h.range:
+            # See if there's a ?range=1234-5678 and use that (handy when you
+            # want to test range handling via the browser, where typing
+            # /foo?range=1234-4567 is easy).
+            if 'range' in request.query:
+                h.range = request.query['range']
 
         if h.range:
             if ',' in h.range:
@@ -480,6 +565,35 @@ class HttpServer:
                 except InvalidRangeRequest:
                     h.range = None
 
+        # This routing/dispatching logic is quite possibly the most horrendous
+        # thing I've ever written.  On the other hand, it gets the immediate
+        # job done, so eh.
+        self.pre_route(request)
+        func = self.dispatch(request)
+        if not func:
+            return self.error(request, 400, 'Unsupported Method')
+
+        return func(request)
+
+    def pre_route(self, request):
+        """Fiddle with request.path if necessary here."""
+        return None
+
+    def route(self, request):
+        """Override in subclass if desired.  Return a callable."""
+        return None
+
+    def dispatch(self, request):
+        func = self.route(request)
+        if not func:
+            func = self.simple_overload_dispatch(request)
+        return func
+
+    def simple_overload_dispatch(self, request):
+        func = None
+        path = request.path
+        command = request.command
+        funcname = 'do_%s' % command
         overload_suffix = path.replace('/', '_')
         if overload_suffix[-1] == '_':
             overload_suffix = overload_suffix[:-1]
@@ -488,14 +602,18 @@ class HttpServer:
             func = getattr(self, overload_funcname)
         except AttributeError:
             try:
-                func = getattr(self, funcname)
+                # Take off the command bit.
+                overload_funcname = overload_suffix
+                func = getattr(self, overload_funcname)
             except AttributeError:
-                return self.error(request, 400, 'Unsupported Method')
+                try:
+                    func = getattr(self, funcname)
+                except AttributeError:
+                    pass
 
-        return func(request)
+        return func
 
     def do_HEAD(self, request):
-        # This totally doesn't work at the moment.
         return self.do_GET(request)
 
     def do_GET(self, request):
@@ -521,6 +639,7 @@ class HttpServer:
         return self.sendfile(request, path)
 
     def list_directory(self, request, path):
+        #async.debug(repr(request))
         try:
             paths = os.listdir(path)
         except os.error:
@@ -536,16 +655,20 @@ class HttpServer:
         items = []
         item_fmt = '<li><a href="%s">%s</a></li>'
 
+        join = os.path.join
+        isdir = os.path.isdir
+        islink = os.path.islink
+
         for name in paths:
-            fullname = os.path.join(path, name)
+            fullname = join(path, name)
             displayname = linkname = name
 
             # Append / for directories or @ for symbolic links
-            if os.path.isdir(fullname):
+            if isdir(fullname):
                 displayname = name + "/"
                 linkname = name + "/"
 
-            if os.path.islink(fullname):
+            if islink(fullname):
                 # Note: a link to a directory displays with @ and links with /
                 displayname = name + "@"
 
