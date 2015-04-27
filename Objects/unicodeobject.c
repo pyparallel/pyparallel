@@ -185,9 +185,9 @@ Py_TLS static PyObject *unicode_empty = NULL;
         if (unicode_empty != NULL)                      \
             Py_INCREF(unicode_empty);                   \
         else {                                          \
-            PyPx_EnableTLSHeap()                        \
+            PyPx_EnableTLSHeap();                       \
             unicode_empty = PyUnicode_New(0, 0);        \
-            PyPx_DisableTLSHeap()                       \
+            PyPx_DisableTLSHeap();                      \
             if (unicode_empty != NULL) {                \
                 Py_INCREF(unicode_empty);               \
                 assert(_PyUnicode_CheckConsistency(unicode_empty, 1)); \
