@@ -97,9 +97,6 @@ PyPx_EnableTLSHeap(void)
     if (!Py_PXCTX())
         return 0;
 
-    if (heap_override)
-        return 0;
-
     _PyParallel_EnableTLSHeap();
     return 1;
 }
@@ -108,9 +105,6 @@ int
 PyPx_DisableTLSHeap(void)
 {
     if (!Py_PXCTX())
-        return 0;
-
-    if (!heap_override)
         return 0;
 
     _PyParallel_DisableTLSHeap();
