@@ -35,8 +35,7 @@ def json_serialization(request=None, obj=None):
 
     return request
 
-class JSONSerializationHttpServer(HttpServer):
-    concurrency = True
+class BaseHttpServer(HttpServer):
 
     def get_json(self, request):
         json_serialization(request)
@@ -74,3 +73,15 @@ class JSONSerializationHttpServer(HttpServer):
         obj = { 'rdtsc': _timestamp() }
         json_serialization(request, obj)
 
+class HttpServerConcurrency(BaseHttpServer):
+    concurrency = True
+
+class HttpServerLowLatency(BaseHttpServer):
+    low_latency = True
+    max_sync_send_attempts = 0
+    max_sync_recv_attempts = 0
+
+class HttpServerThroughput(BaseHttpServer):
+    throughput = True
+    max_sync_send_attempts = 1
+    max_sync_recv_attempts = 1

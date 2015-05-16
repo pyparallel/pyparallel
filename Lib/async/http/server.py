@@ -401,6 +401,9 @@ class HttpServer:
 
     use_sendfile = True
     #throughput = True
+    #low_latency = True
+    #max_sync_send_attempts = 100
+    #max_sync_recv_attempts = 100
 
     def data_received(self, transport, data):
         #async.debug(data)

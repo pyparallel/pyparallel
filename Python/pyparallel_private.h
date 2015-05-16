@@ -775,6 +775,8 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDFILE_SCHEDULED         (1ULL << 30)
 #define Px_SOCKFLAGS_WRITEFILE_SCHEDULED        (1ULL << 31)
 #define Px_SOCKFLAGS_READFILE_SCHEDULED         (1ULL << 32)
+#define Px_SOCKFLAGS_LOW_LATENCY                (1ULL << 33)
+#define Px_SOCKFLAGS_low_latency                (1ULL << 33)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -803,6 +805,9 @@ typedef struct _PxObject {
 
 #define PxSocket_CONCURRENCY(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONCURRENCY)
+
+#define PxSocket_LOW_LATENCY(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_LOW_LATENCY)
 
 #define PxSocket_CAN_RECV(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CAN_RECV)
@@ -989,7 +994,7 @@ typedef struct _PxSocket {
      * versus stateful information like "close scheduled" or "sendfile
      * scheduled".
      */
-    int startup_socket_flags;
+    ULONGLONG startup_socket_flags;
 
     int reused;
     int recycled;
@@ -1066,6 +1071,7 @@ typedef struct _PxSocket {
     BOOL is_low_memory;
 
     int slowloris_protection_seconds;
+    volatile long memory_failures;
     volatile long negative_child_connect_time_count;
     volatile long num_times_sloworis_protection_triggered;
 

@@ -22,6 +22,9 @@ extern "C" {
 
 Py_CACHE_ALIGN
 Py_TLS Context *ctx = NULL;
+Py_TLS Context *tmp_ctx = NULL; /* A temp context to use for error handling
+                                   if an exception occurs in a parallel ctx
+                                   whilst trying to create a new context */
 Py_TLS TLS tls;
 Py_TLS PyThreadState *TSTATE;
 Py_TLS HANDLE heap_override;
@@ -742,7 +745,7 @@ PxSocket_ResetBuffers(PxSocket *s)
 void
 PxSocket_Reuse(PxSocket *s)
 {
-    int flags;
+    ULONGLONG flags;
     PxSocket old;
     memcpy(&old, s, sizeof(PxSocket));
 
@@ -6516,10 +6519,17 @@ PyDoc_STRVAR(_async_call_from_main_thread_and_wait_doc, "XXX TODO\n");
 PyThreadState *
 _PyParallel_GetThreadState(void)
 {
+    Context *c = ctx;
     Px_GUARD();
-    assert(ctx->pstate);
-    assert(ctx->pstate != ctx->tstate);
-    return ctx->pstate;
+    if (!c)
+        c = tmp_ctx;
+    if (!c)
+        __debugbreak();
+    if (!c->pstate)
+        __debugbreak();
+    if (c->pstate == c->tstate)
+        __debugbreak();
+    return c->pstate;
 }
 
 void
@@ -7296,17 +7306,10 @@ do_send:
     s->this_io_op = PxSocket_IO_SEND;
     c->io_result = NO_ERROR;
 
-    /* trent 22-jan-15: Ah!  I've just realized the synchronous send logic is
-     * bogus.  Always do async sends (for now). */
-
-    goto do_async_send;
-
-    ASSERT_UNREACHABLE();
-
     if (!s->in_overlapped_callback)
         goto do_async_send;
 
-    if (PxSocket_THROUGHPUT(s)) {
+    if (PxSocket_THROUGHPUT(s) || PxSocket_LOW_LATENCY(s)) {
         n = s->max_sync_send_attempts;
         goto try_synchronous_send;
     }
@@ -7314,14 +7317,12 @@ do_send:
     n = 1;
     if (PxSocket_IS_HOG(s) && _PxSocket_ActiveHogs >= _PyParallel_NumCPUs-1)
         goto do_async_send;
-    else if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs-1)
+    else if (_PxSocket_ActiveIOLoops >= _PyParallel_NumCPUs)
         goto do_async_send;
     else if (PxSocket_CONCURRENCY(s))
         goto do_async_send;
 
 try_synchronous_send:
-    /* See comment above (re: always do async sends). */
-    ASSERT_UNREACHABLE();
     ODS(L"try_synchronous_send:\n");
     s->send_id++;
     /* Should have been set above. */
@@ -7334,6 +7335,7 @@ try_synchronous_send:
     err = SOCKET_ERROR;
     wsa_error = NO_ERROR;
     for (i = 1; i <= n; i++) {
+        s->num_bytes_just_sent = 0;
         err = WSASend(s->sock_fd,
                       &sbuf->w,
                       1,        /* number of buffers, currently always 1 */
@@ -7341,15 +7343,43 @@ try_synchronous_send:
                       0,        /* flags */
                       NULL,     /* overlapped */
                       NULL);    /* completion routine */
-        if (err != SOCKET_ERROR)
+
+        if (err == NO_ERROR)
             break;
-        else {
-            wsa_error = WSAGetLastError();
-            if (wsa_error == WSAEWOULDBLOCK && i < n)
-                Sleep(0);
-            else
-                break;
+
+        wsa_error = WSAGetLastError();
+        /* Balk if we get anything other than EWOULDBLOCK. */
+        if (wsa_error != WSAEWOULDBLOCK)
+            break;
+
+        if (s->num_bytes_just_sent > 0) {
+            /* Some, but not all of the bytes were sent. */
+            DWORD remaining = 0;
+            char *buf = NULL;
+
+            if (s->num_bytes_just_sent == sbuf->w.len)
+                /* Shouldn't ever happen. */
+                __debugbreak();
+
+            remaining = sbuf->w.len - s->num_bytes_just_sent;
+            if (remaining <= 0)
+                __debugbreak();
+
+            buf = (char *)(_Py_PTR_ADD(sbuf->w.buf, remaining));
+
+            /* Adjust counters. */
+            s->total_bytes_sent += s->num_bytes_just_sent;
+            s->num_bytes_just_sent = 0;
+
+            /* Adjust buffer. */
+            sbuf->w.len = remaining;
+            sbuf->w.buf = buf;
         }
+        if (i < n) {
+            YieldProcessor();
+            continue;
+        } else
+            break;
     }
 
     if (err != SOCKET_ERROR) {
@@ -7361,6 +7391,10 @@ try_synchronous_send:
          *
          * (I would think that... no, this shouldn't happen, but hey, when
          *  in doubt, assert!  Or __debugbreak() as the case may be.)
+         *
+         *  Update: now that we've fixed the loop above to properly deal with
+         *  partial sends, s->num_bytes_just_sent should definitely match
+         *  sbuf->w.len at this point.
          */
         if (s->num_bytes_just_sent != sbuf->w.len)
             __debugbreak();
@@ -7409,7 +7443,6 @@ do_async_send:
 
     if (c->io_result != NO_ERROR)
         __debugbreak();
-
 
     //PxOverlapped_Reset(&sbuf->ol);
     PxOverlapped_Reset(&s->overlapped_wsasend);
@@ -7775,7 +7808,7 @@ do_recv:
     if (!s->in_overlapped_callback)
         goto do_async_recv;
 
-    if (PxSocket_THROUGHPUT(s)) {
+    if (PxSocket_THROUGHPUT(s) || PxSocket_LOW_LATENCY(s)) {
         n = s->max_sync_recv_attempts;
         goto try_synchronous_recv;
     }
@@ -8804,8 +8837,11 @@ create_pxsocket(
         if (PxSocket_CONCURRENCY(parent))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CONCURRENCY;
 
-        else if (PxSocket_THROUGHPUT(parent))
+        if (PxSocket_THROUGHPUT(parent))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_THROUGHPUT;
+
+        if (PxSocket_LOW_LATENCY(parent))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LOW_LATENCY;
 
         if (s->data_received || s->lines_received)
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
@@ -9556,6 +9592,7 @@ _Py_IDENTIFIER(initial_bytes_to_send);
 _Py_IDENTIFIER(lines_mode);
 _Py_IDENTIFIER(throughput);
 _Py_IDENTIFIER(concurrency);
+_Py_IDENTIFIER(low_latency);
 _Py_IDENTIFIER(shutdown_send);
 
 /* ints */
@@ -9652,6 +9689,7 @@ PxSocket_InitProtocol(PxSocket *s)
 
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
+    _PxSocket_RESOLVE_BOOL(low_latency);
     _PxSocket_RESOLVE_BOOL(shutdown_send);
 
     _PxSocket_RESOLVE_INT(max_sync_send_attempts);
@@ -9694,17 +9732,19 @@ PxSocket_InitProtocol(PxSocket *s)
         return 0;
     }
 
-    if (!PxSocket_THROUGHPUT(s)) {
+    if (!PxSocket_THROUGHPUT(s) && !PxSocket_LOW_LATENCY(s)) {
         if (PxSocket_MAX_SYNC_SEND_ATTEMPTS(s)) {
             PyErr_SetString(PyExc_ValueError,
                             "protocol has 'max_sync_send_attempts' "
-                            "set without 'throughput' set to True");
+                            "set without 'throughput' or 'low_latency' "
+                            "set to True");
             return 0;
         }
         if (PxSocket_MAX_SYNC_RECV_ATTEMPTS(s)) {
             PyErr_SetString(PyExc_ValueError,
                             "protocol has 'max_sync_recv_attempts' "
-                            "set without 'throughput' set to True");
+                            "set without 'throughput' or 'low_latency' "
+                            "set to True");
             return 0;
         }
     } else {
@@ -10051,11 +10091,12 @@ PxSocketServer_CreateClientSocket(
     if (_PyParallel_Finalized)
         return;
 
+    tmp_ctx = c;
     x = new_context(0);
     if (!x) {
-        /* xxx todo */
-        __debugbreak();
-        XXX_IMPLEMENT_ME();
+        /* Can't do much else here. */
+        InterlockedIncrement(&s->memory_failures);
+        SetEvent(&s->low_memory);
         return;
     }
 
