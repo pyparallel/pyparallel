@@ -2548,9 +2548,27 @@ _PyParallel_ContextGuardFailure(const char *function,
 /*
 #endif
 */
-#define Px_SIZEOF_HEAP        Px_CACHE_ALIGN(sizeof(Heap))
-#define Px_USEABLE_HEAP_SIZE (Px_PAGE_ALIGN_SIZE - Px_SIZEOF_HEAP)
-#define Px_NEW_HEAP_SIZE(n)  Px_PAGE_ALIGN((Py_MAX(n, Px_USEABLE_HEAP_SIZE)))
+#define Px_SIZEOF_HEAP           Px_CACHE_ALIGN(sizeof(Heap))
+#define Px_USEABLE_HEAP_SIZE(n) (Py_MAX(n, Px_PAGE_ALIGN_SIZE) - Px_SIZEOF_HEAP)
+#define Px_NEW_HEAP_SIZE(n) \
+    (Py_MAX(Px_PAGE_ALIGN(Px_USEABLE_HEAP_SIZE(n)+Px_SIZEOF_HEAP), \
+            (n+Px_SIZEOF_HEAP)))
+
+static __inline
+size_t
+_PyParallel_NewHeapSize(size_t needed)
+{
+    size_t new_size = 0;
+    size_t tmp2 = 0;
+    if (needed + Px_SIZEOF_HEAP <= Px_PAGE_ALIGN_SIZE)
+        new_size = Px_PAGE_ALIGN(needed);
+    else
+        new_size = needed + Px_SIZEOF_HEAP;
+    tmp2 = Px_NEW_HEAP_SIZE(needed);
+    if (tmp2 != new_size)
+        __debugbreak();
+    return new_size;
+}
 
 void *
 Heap_Init(Context *c, size_t n, int page_size)
@@ -2881,7 +2899,7 @@ begin:
         return PyErr_NoMemory();
 
     /* Force a resize. */
-    if (!_PyHeap_Init(c, Px_NEW_HEAP_SIZE(aligned_size)))
+    if (!_PyHeap_Init(c, _PyParallel_NewHeapSize(aligned_size)))
         return PyErr_NoMemory();
 
     goto begin;
@@ -8951,7 +8969,9 @@ setnonblock:
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
 
     if (PxSocket_THROUGHPUT(s)) {
-        s->recvbuf_size = 65536 - Px_PTR_ALIGN(sizeof(RBUF));
+        size_t sizeof_rbuf = sizeof(RBUF);
+        size_t aligned_sizeof_rbuf = Px_PTR_ALIGN(sizeof_rbuf);
+        s->recvbuf_size = 65536 - aligned_sizeof_rbuf;
     } else if (PxSocket_IS_SERVERCLIENT(s) || PxSocket_CONCURRENCY(s)) {
         /* This is about 1152 bytes at the time of writing. */
         s->recvbuf_size = s->ctx->h->remaining - Px_PTR_ALIGN(sizeof(RBUF));
