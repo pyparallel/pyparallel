@@ -162,6 +162,36 @@ class ThroughputHttpServer(TCPServerCommand):
             except KeyboardInterrupt:
                 server.shutdown()
 
+class CheatingPlaintextHttpServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Cheating: Serving HTTP on %s port %d ..." % (ip, port))
+
+        import async
+        from . import BaseCheatingPlaintextHttpServer
+        protocol = BaseCheatingPlaintextHttpServer
+
+        with chdir(root):
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=protocol)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
 
 class MutipleHttpServers(TCPServerCommand):
     port = None
@@ -182,18 +212,21 @@ class MutipleHttpServers(TCPServerCommand):
         self._out("Concurrency: Serving HTTP on %s port %d ..." % (ip, port))
         self._out("Low Latency: Serving HTTP on %s port %d ..." % (ip, port+1))
         self._out("Throughput:  Serving HTTP on %s port %d ..." % (ip, port+2))
+        self._out("Cheating:    Serving HTTP on %s port %d ..." % (ip, port+3))
 
         import async
         from . import (
             HttpServerConcurrency,
             HttpServerLowLatency,
             HttpServerThroughput,
+            BaseCheatingPlaintextHttpServer,
         )
 
         protocols = (
             HttpServerConcurrency,
             HttpServerLowLatency,
             HttpServerThroughput,
+            BaseCheatingPlaintextHttpServer,
         )
 
         ports = (port, port+1, port+2)

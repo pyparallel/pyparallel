@@ -6719,13 +6719,14 @@ end:
 }
 
 int PxSocket_InitInitialBytes(PxSocket *s);
+int PxSocket_InitNextBytes(PxSocket *s);
 
 /* Hybrid sync/async IO loop. */
 void
 PxSocket_IOLoop(PxSocket *s)
 {
     /* Note to self: there are a bunch of lines that are commented out
-       calls to heap rollback, e.g.: 
+       calls to heap rollback, e.g.:
 
         if (!PxSocket_LoadInitialBytes(s)) {
             //PxContext_RollbackHeap(c, &snapshot);
@@ -6836,6 +6837,9 @@ do_connect:
     ODS(L"do_connect:\n");
 
     if (!PxSocket_InitInitialBytes(s))
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitNextBytes(s))
         PxSocket_FATAL();
 
     if (0 && s->initial_bytes.len) {
@@ -6988,7 +6992,10 @@ do_accept:
     ODS(L"do_accept:\n");
     //rbuf = NULL;
     if (!PxSocket_InitInitialBytes(s))
-        PxSocket_EXCEPTION();
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitNextBytes(s))
+        PxSocket_FATAL();
 
     /*
      * It's handy knowing whether or not our protocol sends the first chunk of
@@ -7417,11 +7424,17 @@ try_synchronous_send:
         if (s->num_bytes_just_sent != sbuf->w.len)
             __debugbreak();
 
+        s->last_io_op = PxSocket_IO_SEND;
+        s->this_io_op = 0;
+
         s->total_bytes_sent += s->num_bytes_just_sent;
-        snapshot = sbuf->snapshot;
-        PxContext_RollbackHeap(c, &sbuf->snapshot);
-        if (s->rbuf->snapshot == snapshot)
-            s->rbuf->snapshot = NULL;
+        /* snapshot won't be set if we've just sent static "next bytes". */
+        if (sbuf->snapshot) {
+            snapshot = sbuf->snapshot;
+            PxContext_RollbackHeap(c, &sbuf->snapshot);
+            if (s->rbuf->snapshot == snapshot)
+                s->rbuf->snapshot = NULL;
+        }
         w = NULL;
         sbuf = NULL;
         snapshot = NULL;
@@ -7591,6 +7604,10 @@ overlapped_send_callback:
 
 send_completed:
     ODS(L"send_completed:\n");
+
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_NEXT_BYTES)
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDING_NEXT_BYTES;
+
     func = s->send_complete;
     if (!func)
         goto try_recv;
@@ -7863,7 +7880,7 @@ try_synchronous_recv:
                      * data if the amount was less than our socket buffer.
                      * (At least, I've seen it do this.)
                      */
-                    if (s->num_bytes_just_received >= (DWORD)s->recvbuf_size)
+                    if (s->num_bytes_just_received > (DWORD)s->recvbuf_size)
                         /* Now *this* should never happen. */
                         __debugbreak();
                     else {
@@ -7888,6 +7905,8 @@ try_synchronous_recv:
 
     if (err != SOCKET_ERROR) {
         /* Receive completed synchronously. */
+        s->last_io_op = PxSocket_IO_RECV;
+        s->this_io_op = 0;
         if (s->num_bytes_just_received == 0)
             goto eof_received;
         w = NULL;
@@ -8032,12 +8051,55 @@ do_data_received_callback:
     assert(!rbuf);
     rbuf = s->rbuf;
 
+    if (s->next_bytes_to_send) {
+        /* We bypass the data_received() callback if next_bytes_to_send is
+         * provided.  This basically means we're completely ignoring whatever
+         * the other side has just sent us.  (Useful for baseline benchmarks
+         * where you want to take the PyObject_CallObject overhead out of the
+         * equation.) */
+        DWORD *len;
+
+        assert(!snapshot);
+
+        if (s->next_bytes_callable)
+            snapshot = PxContext_HeapSnapshot(c);
+
+        if (!PxSocket_LoadNextBytes(s))
+            PxSocket_EXCEPTION();
+
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SENDING_NEXT_BYTES;
+
+        w = &s->next_bytes;
+        len = &w->len;
+
+        if (!s->next_bytes_callable) {
+            /* Re-use the rbuf if we're sending static data. */
+            sbuf = (SBUF *)rbuf;
+            rbuf = NULL;
+            s->sbuf = sbuf;
+            sbuf->w.len = w->len;
+            sbuf->w.buf = w->buf;
+            goto do_send;
+        }
+
+        if (!PxSocket_NEW_SBUF(c, s, snapshot, len, w->buf, 0, &sbuf, 0)) {
+            if (!PyErr_Occurred())
+                PyErr_SetString(PyExc_ValueError,
+                                "failed to extract sendable object from "
+                                "next_bytes_to_send");
+            PxSocket_EXCEPTION();
+        }
+        
+        rbuf = NULL;
+        goto do_send;
+    }
+
     if (s->num_bytes_just_received < (DWORD)s->recvbuf_size) {
         if (rbuf->ob_sval[s->num_bytes_just_received] != 0) {
             PyBytesObject *bytes;
             size_t size;
             size_t trailing;
-            bytes = R2B(s->rbuf);
+            bytes = R2B(rbuf);
             size = Py_SIZE(bytes);
             trailing = size - s->num_bytes_just_received;
             if (size > s->num_bytes_just_received)
@@ -8680,7 +8742,7 @@ PyObject *
 create_pxsocket(
     PyObject *args,
     PyObject *kwds,
-    int flags,
+    ULONGLONG flags,
     PxSocket *parent,
     Context *use_this_context
 )
@@ -8843,6 +8905,8 @@ create_pxsocket(
         s->max_sync_recv_attempts = parent->max_sync_recv_attempts;
         s->initial_bytes_to_send = parent->initial_bytes_to_send;
         s->initial_bytes_callable = parent->initial_bytes_callable;
+        s->next_bytes_to_send = parent->next_bytes_to_send;
+        s->next_bytes_callable = parent->next_bytes_callable;
         s->send_complete = parent->send_complete;
         s->connection_made = parent->connection_made;
         s->connection_closed = parent->connection_closed;
@@ -8864,8 +8928,14 @@ create_pxsocket(
         if (s->data_received || s->lines_received)
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
+        if (s->next_bytes_to_send)
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
         if (Px_SOCKFLAGS(parent) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE)
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE;
+
+        if (Px_SOCKFLAGS(parent) & Px_SOCKFLAGS_NEXT_BYTES_CALLABLE)
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_NEXT_BYTES_CALLABLE;
 
     } else {
         assert(
@@ -9607,6 +9677,7 @@ _Py_IDENTIFIER(connection_made);
 _Py_IDENTIFIER(connection_closed);
 _Py_IDENTIFIER(exception_handler);
 _Py_IDENTIFIER(initial_bytes_to_send);
+_Py_IDENTIFIER(next_bytes_to_send);
 
 /* bools */
 _Py_IDENTIFIER(lines_mode);
@@ -9706,6 +9777,8 @@ PxSocket_InitProtocol(PxSocket *s)
 
     /* This is initialized in more detail during PxSocket_InitInitialBytes. */
     _PxSocket_RESOLVE(initial_bytes_to_send);
+    /* This is initialized in more detail during PxSocket_InitNextBytes. */
+    _PxSocket_RESOLVE(next_bytes_to_send);
 
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
@@ -9718,6 +9791,12 @@ PxSocket_InitProtocol(PxSocket *s)
     assert(!PyErr_Occurred());
 
     if (s->data_received || s->lines_received)
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
+    /* Having next_bytes_to_send set implies that we want to keep the
+     * connection open, which currently requires us to toggle the CAN_RECV
+     * flag. */
+    if (s->next_bytes_to_send)
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
     if (s->lines_mode && !s->lines_received) {
@@ -9819,6 +9898,10 @@ PxSocket_SetProtocolType(PxSocket *s, PyObject *protocol_type)
     "initial_bytes_to_send must be one of the following types: bytes, " \
     "unicode or callable"
 
+#define INVALID_NEXT_BYTES                                              \
+    "next_bytes_to_send must be one of the following types: bytes, "    \
+    "unicode or callable"
+
 /* 0 = failure (error will be set), 1 = no error occurred */
 int
 PxSocket_InitInitialBytes(PxSocket *s)
@@ -9904,6 +9987,92 @@ PxSocket_InitInitialBytes(PxSocket *s)
     return 1;
 }
 
+/* 0 = failure (error will be set), 1 = no error occurred */
+int
+PxSocket_InitNextBytes(PxSocket *s)
+{
+    Context *c = s->ctx;
+    PyObject *o, *t = s->protocol;
+    int is_static = 0;
+    Heap *snapshot = NULL;
+
+    assert(t);
+    assert(!PyErr_Occurred());
+
+    o = s->next_bytes_to_send;
+
+    if (!o || o == Py_None)
+        return 1;
+
+    is_static = (
+        PyBytes_Check(o)        ||
+        PyByteArray_Check(o)    ||
+        PyUnicode_Check(o)
+    );
+
+    if (is_static)
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_NEXT_BYTES_CALLABLE;
+    else if (PyCallable_Check(o))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_NEXT_BYTES_CALLABLE;
+    else {
+        PyErr_SetString(PyExc_ValueError, INVALID_NEXT_BYTES);
+        return 0;
+    }
+
+    if (PxSocket_IS_CLIENT(s)) {
+        s->connectex_snapshot = PxContext_HeapSnapshot(c);
+        snapshot = s->connectex_snapshot;
+    } else
+        snapshot = PxContext_HeapSnapshot(c);
+
+    if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_NEXT_BYTES_CALLABLE) {
+        WSABUF w;
+        PyObject *r;
+        int error = 0;
+        r = PyObject_CallObject(o, NULL);
+        if (!r) {
+            //PyErr_PrintEx(0);
+            //PxContext_RollbackHeap(c, &snapshot);
+            return 0;
+        }
+        if (!PyObject2WSABUF(r, &w)) {
+            //PxContext_RollbackHeap(c, &snapshot);
+            PyErr_SetString(PyExc_ValueError,
+                            "next_bytes_to_send() callable did not return "
+                            "a sendable object (bytes, bytearray or unicode)");
+            return 0;
+        }
+        s->next_bytes_callable = o;
+    } else {
+        s->next_bytes_callable = NULL;
+        if (!PxSocket_IS_SERVERCLIENT(s)) {
+            assert(!s->next_bytes.buf);
+
+            if (!PyObject2WSABUF(o, &s->next_bytes)) {
+                //PxContext_RollbackHeap(c, &snapshot);
+                PyErr_SetString(PyExc_ValueError,
+                                "next_bytes_to_send is not a sendable "
+                                "object (bytes, bytearray or unicode)");
+                return 0;
+            }
+
+        } else {
+            s->next_bytes.len = s->parent->next_bytes.len;
+            s->next_bytes.buf = s->parent->next_bytes.buf;
+        }
+
+        assert(s->next_bytes.buf);
+    }
+
+    /* Clients will be using the initial bytes during the ConnectEx() call, so
+     * we need to keep the heap around. */
+    /* xxx: do we need this logic for next bytes? */
+    if (!PxSocket_IS_CLIENT(s))
+        PxContext_RollbackHeap(c, &snapshot);
+
+    return 1;
+}
+
 
 /* 0 = failure, 1 = success */
 int
@@ -9931,6 +10100,34 @@ PxSocket_LoadInitialBytes(PxSocket *s)
 
     return 1;
 }
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_LoadNextBytes(PxSocket *s)
+{
+    Context *c = s->ctx;
+    PyObject *o, *r;
+
+    if (!s->next_bytes_callable)
+        return 1;
+
+    assert(Px_SOCKFLAGS(s) & Px_SOCKFLAGS_NEXT_BYTES_CALLABLE);
+    o = s->next_bytes_callable;
+
+    r = PyObject_CallObject(o, NULL);
+    if (!r)
+        return 0;
+
+    if (!PyObject2WSABUF(r, &s->next_bytes)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "next_bytes_to_send() callable did not return "
+                        "a sendable object (bytes, bytearray or unicode)");
+        return 0;
+    }
+
+    return 1;
+}
+
 
 void
 PxSocket_InitExceptionHandler(PxSocket *s)
@@ -10111,8 +10308,10 @@ PxSocketServer_CreateClientSocket(
     if (_PyParallel_Finalized)
         return;
 
+    ctx = NULL;
     tmp_ctx = c;
     x = new_context(0);
+    tmp_ctx = NULL;
     if (!x) {
         /* Can't do much else here. */
         InterlockedIncrement(&s->memory_failures);
@@ -10294,6 +10493,9 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     assert(!PyErr_Occurred());
 
     if (!PxSocket_InitInitialBytes(s))
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitNextBytes(s))
         PxSocket_FATAL();
 
     px = c->px;

@@ -85,3 +85,20 @@ class HttpServerThroughput(BaseHttpServer):
     throughput = True
     max_sync_send_attempts = 1
     max_sync_recv_attempts = 1
+
+
+plaintext_http11_response = (
+    'HTTP/1.1 200 OK\r\n'
+    'Server: PyParallel Web Server v0.1\r\n'
+    'Date: Sat, 16 May 2015 15:21:34 GMT\r\n'
+    'Content-Type: text/plain;charset=utf-8\r\n'
+    'Content-Length: 15\r\n'
+    '\r\n'
+    'Hello, World!\r\n'
+)
+
+class BaseCheatingPlaintextHttpServer:
+    #concurrency = True
+    initial_bytes_to_send = plaintext_http11_response
+    next_bytes_to_send = plaintext_http11_response
+

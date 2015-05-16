@@ -777,6 +777,10 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_READFILE_SCHEDULED         (1ULL << 32)
 #define Px_SOCKFLAGS_LOW_LATENCY                (1ULL << 33)
 #define Px_SOCKFLAGS_low_latency                (1ULL << 33)
+#define Px_SOCKFLAGS_NEXT_BYTES                 (1ULL << 34)
+#define Px_SOCKFLAGS_NEXT_BYTES_STATIC          (1ULL << 35)
+#define Px_SOCKFLAGS_NEXT_BYTES_CALLABLE        (1ULL << 36)
+#define Px_SOCKFLAGS_SENDING_NEXT_BYTES         (1ULL << 37)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -823,6 +827,9 @@ typedef struct _PxObject {
 
 #define PxSocket_HAS_INITIAL_BYTES(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_INITIAL_BYTES)
+
+#define PxSocket_HAS_NEXT_BYTES(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_NEXT_BYTES)
 
 #define PxSocket_HAS_SEND_COMPLETE(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HAS_SEND_COMPLETE)
@@ -1056,6 +1063,9 @@ typedef struct _PxSocket {
     PyObject *initial_bytes_to_send;
     PyObject *initial_bytes_callable;
     WSABUF    initial_bytes;
+    PyObject *next_bytes_to_send;
+    PyObject *next_bytes_callable;
+    WSABUF    next_bytes;
 
     int       max_sync_send_attempts;
     int       max_sync_recv_attempts;
