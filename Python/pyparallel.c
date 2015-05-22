@@ -11520,6 +11520,129 @@ _async_refresh_memory_stats(PyObject *obj, PyObject *args)
     Py_RETURN_NONE;
 }
 
+/* 0 = success, 1 = failure */
+int
+_set_privilege(TCHAR *priv, BOOL enable)
+{
+    TOKEN_PRIVILEGES tp;
+    HANDLE ph, th;
+    DWORD access, error;
+    BOOL status;
+    int result = 1;
+
+    ph = GetCurrentProcess();
+    access = TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY;
+    if (!OpenProcessToken(ph, access, &th))
+        return 1;
+
+    if (!LookupPrivilegeValue(NULL, priv, &tp.Privileges[0].Luid))
+        goto close_th;
+
+    tp.PrivilegeCount = 1;
+    tp.Privileges[0].Attributes = (enable ? SE_PRIVILEGE_ENABLED : 0);
+
+    status = AdjustTokenPrivileges(th, FALSE, &tp, 0, NULL, 0);
+    error = GetLastError();
+    if (!status || (error != ERROR_SUCCESS))
+        goto close_th;
+
+    result = 0;
+
+close_th:
+    CloseHandle(th);
+
+    return result;
+}
+
+PyDoc_STRVAR(_async_load_sys_info_doc, "xxx todo\n");
+PyObject *
+_async_load_sys_info(PyObject *obj, PyObject *args)
+{
+    PyObject *m;
+    SYSTEM_INFO si;
+    MEMORYSTATUSEX ms;
+    size_t lpage_sz, min_fscache_sz, max_fscache_sz;
+    DWORD fscache_flags;
+
+    Py_GUARD();
+
+    m = _asyncmodule_obj;
+
+    _refresh("_sys_large_page_minimum", GetLargePageMinimum());
+
+#define _set_obj(n, o)                          \
+    do {                                        \
+        if (PyModule_AddObject(m, n, o))        \
+            return NULL;                        \
+    } while (0)
+#define _set_true(n) _set_obj(n, Py_True)
+#define _set_false(n) _set_obj(n, Py_False)
+
+    if (_set_privilege(SE_LOCK_MEMORY_NAME, TRUE))
+        _set_false("_sys_large_pages_available");
+    else
+        _set_true("_sys_large_pages_available");
+
+    if (!GetSystemFileCacheSize(&min_fscache_sz,
+                                &max_fscache_sz,
+                                &fscache_flags))
+    {
+        PyErr_SetFromWindowsErr(0);
+        return NULL;
+    }
+
+    _refresh("_sys_min_filesystem_cache_size", min_fscache_sz);
+    _refresh("_sys_max_filesystem_scache_size", max_fscache_sz);
+
+    if (fscache_flags & FILE_CACHE_MAX_HARD_ENABLE)
+        _set_true("_sys_file_cache_max_hard_enable");
+    else
+        _set_false("_sys_file_cache_max_hard_enable");
+
+    if (fscache_flags & FILE_CACHE_MIN_HARD_ENABLE)
+        _set_true("_sys_file_cache_min_hard_enable");
+    else
+        _set_false("_sys_file_cache_min_hard_enable");
+
+#define _set_lpvoid(n, pv)                      \
+    do {                                        \
+        PyObject *o = PyLong_FromVoidPtr(pv);   \
+        if (PyModule_AddObject(m, n, o))        \
+            return NULL;                        \
+    } while (0)
+
+#define _set_dword(n, ul)                       \
+    do {                                        \
+        PyObject *o = PyLong_FromLong(ul);      \
+        if (PyModule_AddObject(m, n, o))        \
+            return NULL;                        \
+    } while (0)
+
+#define _set_word(n, w)                         \
+    do {                                        \
+        DWORD dw = (DWORD)w;                    \
+        PyObject *o = PyLong_FromLong(w);       \
+        if (PyModule_AddObject(m, n, o))        \
+            return NULL;                        \
+    } while (0)
+
+    GetSystemInfo(&si);
+
+    _set_lpvoid("_sys_min_address_allocation", si.lpMinimumApplicationAddress);
+    _set_lpvoid("_sys_max_address_allocation", si.lpMaximumApplicationAddress);
+    _set_dword("_sys_allocation_granularity", si.dwAllocationGranularity);
+
+    _set_dword("_sys_cpu_type", si.dwProcessorType);
+    _set_dword("_sys_num_cpus", si.dwNumberOfProcessors);
+    _set_dword("_sys_active_cpu_mask", si.dwActiveProcessorMask);
+    _set_dword("_sys_page_size", si.dwPageSize);
+
+    _set_word("_sys_cpu_level", si.wProcessorLevel);
+    _set_word("_sys_cpu_revision", si.wProcessorRevision);
+
+    Py_RETURN_NONE;
+}
+
 PyDoc_STRVAR(_async_debug_doc, "debug() -> print debug string\n");
 
 PyObject *
@@ -11772,6 +11895,8 @@ _PyAsync_ModInit(void)
 
     _asyncmodule_obj = m;
     _async_refresh_memory_stats(NULL, NULL);
+    if (!_async_load_sys_info(NULL, NULL))
+        return NULL;
 
     socket_api = PySocketModule_ImportModuleAndAPI();
     if (!socket_api)
