@@ -8090,7 +8090,7 @@ do_data_received_callback:
                                 "next_bytes_to_send");
             PxSocket_EXCEPTION();
         }
-        
+
         rbuf = NULL;
         goto do_send;
     }
