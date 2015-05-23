@@ -713,7 +713,7 @@ PyObject *
 create_pxsocket(
     PyObject *args,
     PyObject *kwds,
-    int flags,
+    ULONGLONG flags,
     PxSocket *parent,
     Context *use_this_context
 );
