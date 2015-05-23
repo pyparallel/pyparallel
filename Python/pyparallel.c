@@ -11282,8 +11282,8 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_ULL(stopwatch_stop),
     _PXSOCKET_ATTR_ULL(stopwatch_elapsed),
 
-    _PXSOCKET_ATTR_ULLR(num_bytes_just_sent),
-    _PXSOCKET_ATTR_ULLR(num_bytes_just_received),
+    _PXSOCKET_ATTR_UIR(num_bytes_just_sent),
+    _PXSOCKET_ATTR_UIR(num_bytes_just_received),
     _PXSOCKET_ATTR_ULLR(total_bytes_sent),
     _PXSOCKET_ATTR_ULLR(total_bytes_received),
 
