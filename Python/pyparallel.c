@@ -6720,6 +6720,7 @@ end:
 
 int PxSocket_InitInitialBytes(PxSocket *s);
 int PxSocket_InitNextBytes(PxSocket *s);
+int PxSocket_LoadNextBytes(PxSocket *s);
 
 /* Hybrid sync/async IO loop. */
 void
