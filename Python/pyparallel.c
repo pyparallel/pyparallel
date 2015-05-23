@@ -8980,7 +8980,7 @@ create_pxsocket(
         PxSocket_FATAL();
     }
 
-    if (host[0] >= '1' && host[0] <= '9') {
+    if (host[0] >= '0' && host[0] <= '9') {
         int d1, d2, d3, d4;
         char ch;
 
