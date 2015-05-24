@@ -3531,7 +3531,7 @@ skip_threadpool_stuff_for_now:
 
     goto done;
 
-free_cleanup_group:
+//free_cleanup_group:
     CloseThreadpoolCleanupGroup(px->ptp_cg);
 
 free_threadpool:
@@ -9060,7 +9060,7 @@ create_socket:
 
 setnonblock:
     fd = s->sock_fd;
-    if (ioctlsocket(fd, FIONBIO, &nonblock) == SOCKET_ERROR)
+    if (ioctlsocket(fd, FIONBIO, (ULONG *)&nonblock) == SOCKET_ERROR)
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
 
     if (PxSocket_THROUGHPUT(s)) {
@@ -9636,7 +9636,7 @@ PxSocket_IOCallback(
     }
 
     __try {
-        if (s->ctx->io_obj == s)
+        if (s->ctx->io_obj == (PyObject *)s)
             LeaveCriticalSection(&s->cs);
     } __except(EXCEPTION_EXECUTE_HANDLER) {
         InterlockedIncrement(&_PyParallel_SEH_EAV_InIoCallback);
