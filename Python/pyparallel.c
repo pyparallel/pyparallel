@@ -11617,7 +11617,7 @@ _async_load_sys_info(PyObject *obj, PyObject *args)
     }
 
     _refresh("_sys_min_filesystem_cache_size", min_fscache_sz);
-    _refresh("_sys_max_filesystem_scache_size", max_fscache_sz);
+    _refresh("_sys_max_filesystem_cache_size", max_fscache_sz);
 
     if (fscache_flags & FILE_CACHE_MAX_HARD_ENABLE)
         _set_true("_sys_file_cache_max_hard_enable");
