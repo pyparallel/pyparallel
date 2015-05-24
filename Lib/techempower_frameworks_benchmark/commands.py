@@ -193,7 +193,7 @@ class CheatingPlaintextHttpServer(TCPServerCommand):
                 server.shutdown()
 
 
-class MutipleHttpServers(TCPServerCommand):
+class MultipleHttpServers(TCPServerCommand):
     port = None
     class PortArg(NonEphemeralPortInvariant):
         _help = 'port to listen on [default: %default]'
@@ -209,13 +209,15 @@ class MutipleHttpServers(TCPServerCommand):
         port = int(self.options.port)
         root = self.options.root or os.getcwd()
 
-        self._out("Concurrency: Serving HTTP on %s port %d ..." % (ip, port))
-        self._out("Low Latency: Serving HTTP on %s port %d ..." % (ip, port+1))
-        self._out("Throughput:  Serving HTTP on %s port %d ..." % (ip, port+2))
-        self._out("Cheating:    Serving HTTP on %s port %d ..." % (ip, port+3))
+        self._out("Base:            Serving HTTP on %s port %d ..." % (ip, port))
+        self._out("Concurrency:     Serving HTTP on %s port %d ..." % (ip, port+1))
+        self._out("Low Latency:     Serving HTTP on %s port %d ..." % (ip, port+2))
+        self._out("Throughput:      Serving HTTP on %s port %d ..." % (ip, port+3))
+        self._out("Base Cheating:   Serving HTTP on %s port %d ..." % (ip, port+4))
 
         import async
         from . import (
+            BaseHttpServer,
             HttpServerConcurrency,
             HttpServerLowLatency,
             HttpServerThroughput,
@@ -223,6 +225,7 @@ class MutipleHttpServers(TCPServerCommand):
         )
 
         protocols = (
+            BaseHttpServer,
             HttpServerConcurrency,
             HttpServerLowLatency,
             HttpServerThroughput,
@@ -230,6 +233,56 @@ class MutipleHttpServers(TCPServerCommand):
         )
 
         ports = (port, port+1, port+2)
+        with chdir(root):
+            servers = []
+            for (port, protocol) in zip(ports, protocols):
+                server = async.server(ip, port)
+                async.register(transport=server, protocol=protocol)
+                servers.append(server)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                for server in servers:
+                    server.shutdown()
+                raise
+
+class MutipleCheatingHttpServers(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 7080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Base Cheating:        Serving HTTP on %s port %d ..." % (ip, port))
+        self._out("Low Latency Cheating: Serving HTTP on %s port %d ..." % (ip, port+1))
+        self._out("Throughput Cheating:  Serving HTTP on %s port %d ..." % (ip, port+2))
+        self._out("Concurrency Cheating: Serving HTTP on %s port %d ..." % (ip, port+3))
+
+        import async
+        from . import (
+            BaseCheatingPlaintextHttpServer,
+            LowLatencyCheatingHttpServer,
+            ThroughputCheatingHttpServer,
+            ConcurrencyCheatingHttpServer,
+        )
+
+        protocols = (
+            BaseCheatingPlaintextHttpServer,
+            LowLatencyCheatingHttpServer,
+            ThroughputCheatingHttpServer,
+            ConcurrencyCheatingHttpServer,
+        )
+
+        ports = (port, port+1, port+2, port+3)
         with chdir(root):
             servers = []
             for (port, protocol) in zip(ports, protocols):

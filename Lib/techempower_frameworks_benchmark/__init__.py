@@ -3,8 +3,11 @@
 #===============================================================================
 import json
 
+import async
+
 from async import (
     rdtsc,
+    sys_stats,
     socket_stats,
     memory_stats,
     context_stats,
@@ -51,10 +54,12 @@ class BaseHttpServer(HttpServer):
         #request.keep_alive = True
         #request.response.other_headers.append('Refresh: 1')
         stats = {
+            'system': dict(sys_stats()),
             'server': dict(socket_stats(request.transport.parent)),
             'memory': dict(memory_stats()),
             'contexts': dict(context_stats()),
             'elapsed': request.transport.elapsed(),
+            'thread': async.thread_seq_id(),
         }
         json_serialization(request, stats)
 
@@ -102,3 +107,17 @@ class BaseCheatingPlaintextHttpServer:
     initial_bytes_to_send = plaintext_http11_response
     next_bytes_to_send = plaintext_http11_response
 
+class LowLatencyCheatingHttpServer:
+    low_latency = True
+    initial_bytes_to_send = plaintext_http11_response
+    next_bytes_to_send = plaintext_http11_response
+
+class ConcurrencyCheatingHttpServer:
+    concurrency = True
+    initial_bytes_to_send = plaintext_http11_response
+    next_bytes_to_send = plaintext_http11_response
+
+class ThroughputCheatingHttpServer:
+    throughput = True
+    initial_bytes_to_send = plaintext_http11_response
+    next_bytes_to_send = plaintext_http11_response
