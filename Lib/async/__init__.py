@@ -265,6 +265,29 @@ class EchoLine:
 #===============================================================================
 # Misc
 #===============================================================================
+def sys_stats():
+    a = _async
+    return (
+        # SYSTEM_INFO stuff
+        ('min_address_allocation', a._sys_min_address_allocation),
+        ("max_address_allocation", a._sys_max_address_allocation),
+        ("allocation_granularity", a._sys_allocation_granularity),
+        ("cpu_type", a._sys_cpu_type),
+        ("num_cpus", a._sys_num_cpus),
+        ("active_cpu_mask", a._sys_active_cpu_mask),
+        ("page_size", a._sys_page_size),
+        ("cpu_level", a._sys_cpu_level),
+        ("cpu_revision", a._sys_cpu_revision),
+
+        # Misc stuff
+        ("large_page_minimum", a._sys_large_page_minimum),
+        ("large_pages_available", a._sys_large_pages_available),
+        ("min_filesystem_cache_size", a._sys_min_filesystem_cache_size),
+        ("max_filesystem_cache_size", a._sys_max_filesystem_cache_size),
+        ("file_cache_min_hard_enable", a._sys_file_cache_max_hard_enable),
+        ("file_cache_max_hard_enable", a._sys_file_cache_max_hard_enable),
+    )
+
 def socket_stats(s):
     return (
         ('sem_acquired', s.sem_acquired),
