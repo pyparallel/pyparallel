@@ -34,6 +34,10 @@ Py_TLS void *last_context_heap_malloc_addr;
 Py_TLS static int _PyParallel_BreakOnNextException;
 
 Py_TLS static int _PxNewThread = 1;
+Py_TLS static long _PyParallel_ThreadSeqId = 0;
+Py_TLS static PyObject *_PyParallel_ThreadSeqIdObj = NULL;
+
+volatile long _PyParallel_NextThreadSeqId = 0;
 
 //Py_CACHE_ALIGN
 long Py_MainThreadId  = -1;
@@ -3705,8 +3709,28 @@ _PyParallel_InitTLS(void)
         return 0;
 
     t->thread_id = _Py_get_current_thread_id();
+    _PyParallel_ThreadSeqId = InterlockedIncrement(&_PyParallel_NextThreadSeqId);
 
     return 1;
+}
+
+PyDoc_STRVAR(_async_thread_seq_id_doc,
+             "if in a parallel thread, return the sequence id of this "
+             "thread, otherwise, return None");
+
+PyObject *
+_async_thread_seq_id(PyObject *self, PyObject *o)
+{
+    if (!Py_PXCTX())
+        Py_RETURN_NONE;
+
+    if (!_PyParallel_ThreadSeqIdObj) {
+        _PyParallel_EnableTLSHeap();
+        _PyParallel_ThreadSeqIdObj = PyLong_FromLong(_PyParallel_ThreadSeqId);
+        _PyParallel_DisableTLSHeap();
+    }
+
+    return _PyParallel_ThreadSeqIdObj;
 }
 
 void
@@ -11844,6 +11868,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(_dbg_address),
     _ASYNC_V(submit_timer),
     _ASYNC_O(submit_class),
+    _ASYNC_N(thread_seq_id),
     _ASYNC_O(submit_client),
     _ASYNC_O(submit_server),
     _ASYNC_O(try_read_lock),
