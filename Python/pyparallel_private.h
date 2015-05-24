@@ -1045,7 +1045,6 @@ typedef struct _PxSocket {
     DWORD num_bytes_just_sent;
     DWORD num_bytes_just_received;
 
-
     PyObject *protocol_type;
     PyObject *protocol;
 
