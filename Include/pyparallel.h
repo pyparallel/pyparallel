@@ -171,7 +171,7 @@ PyAPI_FUNC(void)   _PyParallel_MaybeFreeObject(void *);
 PyAPI_FUNC(void *) _PyParallel_GetActiveContext(void);
 
 #define Px_GUARD()                       \
-    if (!Py_PXCTX())                       \
+    if (!Py_PXCTX())                     \
         _PyParallel_ContextGuardFailure( \
             __FUNCTION__,                \
             __FILE__,                    \
@@ -180,7 +180,7 @@ PyAPI_FUNC(void *) _PyParallel_GetActiveContext(void);
         );
 
 #define Py_GUARD()                       \
-    if (Py_PXCTX())                        \
+    if (Py_PXCTX())                      \
         _PyParallel_ContextGuardFailure( \
             __FUNCTION__,                \
             __FILE__,                    \
@@ -356,7 +356,7 @@ _px_bitpos_uint32(unsigned int f)
 
 #define PyPx_GUARD_OBJ(o)          \
     do {                           \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         Px_GUARD_OBJ(o);           \
     else                           \
         Py_GUARD_OBJ(o);           \
@@ -364,7 +364,7 @@ _px_bitpos_uint32(unsigned int f)
 
 #define PyPx_GUARD_MEM(m)          \
     do {                           \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         Px_GUARD_MEM(m);           \
     else                           \
         Py_GUARD_MEM(m);           \
@@ -372,25 +372,25 @@ _px_bitpos_uint32(unsigned int f)
 
 
 #define Px_BREAK()                 \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         break
 
 #define Px_RETURN(arg)             \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         return (arg);
 
 #define Px_VOID                    \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         return;
 
 #define Px_RETURN_VOID(arg)        \
-    if (Py_PXCTX()) {                \
+    if (Py_PXCTX()) {              \
         (arg);                     \
         return;                    \
     }
 
 #define Px_RETURN_NULL             \
-    if (Py_PXCTX())                  \
+    if (Py_PXCTX())                \
         return NULL;
 
 #define Px_RETURN_OP(op, arg)      \
@@ -412,7 +412,7 @@ _px_bitpos_uint32(unsigned int f)
         return NULL;
 
 #define Px_CLEARFREELIST           \
-    if (Py_PXCTX()) {                \
+    if (Py_PXCTX()) {              \
         numfree = 0;               \
         return ret;                \
     }
