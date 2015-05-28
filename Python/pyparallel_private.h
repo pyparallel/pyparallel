@@ -986,6 +986,10 @@ typedef struct _PxSocket {
     PyObject *last_getattr_name;
     PyObject *last_getattr_value;
 
+    /* The bit of each thread_seq_id is set each time the socket is scheduled
+       on a given thread. */
+    ULONGLONG thread_seq_id_bitmap;
+
     /* Link from child -> parent via link_child/unlink_child. */
     //__declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListItem link;

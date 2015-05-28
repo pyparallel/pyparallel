@@ -34,6 +34,7 @@ _object = object
 try:
     import _async
     from _async import *
+    _async.refresh_rio_availability()
 except ImportError:
     pass
 
@@ -282,6 +283,7 @@ def sys_stats():
         # Misc stuff
         ("large_page_minimum", a._sys_large_page_minimum),
         ("large_pages_available", a._sys_large_pages_available),
+        ("registered_io_available", a._sys_registered_io_available),
         ("min_filesystem_cache_size", a._sys_min_filesystem_cache_size),
         ("max_filesystem_cache_size", a._sys_max_filesystem_cache_size),
         ("file_cache_min_hard_enable", a._sys_file_cache_max_hard_enable),

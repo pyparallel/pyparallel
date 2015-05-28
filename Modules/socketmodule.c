@@ -5616,6 +5616,7 @@ os_init(void)
 #ifdef WITH_PARALLEL
     SOCKET sock;
     DWORD  size;
+    GUID rio_func_table_guid = WSAID_MULTIPLE_RIO;
     ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
 #else
     ret = WSAStartup(0x0101, &WSAData);
@@ -5643,11 +5644,16 @@ next:
 #ifndef WITH_PARALLEL
     return 1; /* Success */
 #else
-    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    //sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sock = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_REGISTERED_IO);
     if (sock == INVALID_SOCKET) {
-        PyErr_SetFromWindowsErr(0);
-        return 0;
+        sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        if (sock == INVALID_SOCKET) {
+            PyErr_SetFromWindowsErr(0);
+            return 0;
+        }
     }
+
     _WSA_RESOLVE(_AcceptEx);
     _WSA_RESOLVE(_ConnectEx);
     _WSA_RESOLVE(_WSARecvMsg);
@@ -5656,6 +5662,26 @@ next:
     _WSA_RESOLVE(_TransmitFile);
     _WSA_RESOLVE(_TransmitPackets);
     _WSA_RESOLVE(_GetAcceptExSockaddrs);
+
+/*
+#ifndef SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER
+#define SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER _WSAIORW(IOC_WS2,36)
+#endif
+*/
+
+    if (WSAIoctl(sock,
+                 SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER,
+                 &rio_func_table_guid,
+                 sizeof(GUID),
+                 (void  **)&_rio,
+                 sizeof(_rio),
+                 &size,
+                 NULL,
+                 NULL))
+    {
+        DWORD err = GetLastError();
+        __debugbreak();
+    }
 
     closesocket(sock);
     return 1; /* Success */
@@ -5819,6 +5845,9 @@ PyInit__socket(void)
     PySocketModuleAPI.TransmitFile = _TransmitFile;
     PySocketModuleAPI.TransmitPackets = _TransmitPackets;
     PySocketModuleAPI.GetAcceptExSockaddrs = _GetAcceptExSockaddrs;
+
+    memcpy(&PySocketModuleAPI.rio, &_rio, sizeof(_rio));
+ 
 #endif /* MS_WINDOWS    */
 #endif /* WITH_PARALLEL */
 

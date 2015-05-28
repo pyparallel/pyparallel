@@ -51,6 +51,8 @@ int _PxBlockingCallsThreshold = 20;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
+static int _PyParallel_RegisteredIOAvailable = 0;
+
 volatile long _PyParallel_SEH_EAV_InIoCallback = 0;
 volatile int _PyParallel_Finalized = 0;
 
@@ -3709,7 +3711,13 @@ _PyParallel_InitTLS(void)
         return 0;
 
     t->thread_id = _Py_get_current_thread_id();
-    _PyParallel_ThreadSeqId = InterlockedIncrement(&_PyParallel_NextThreadSeqId);
+    t->thread_seq_id = InterlockedIncrement(&_PyParallel_NextThreadSeqId);
+    _PyParallel_ThreadSeqId = t->thread_seq_id;
+
+    if (!_PyParallel_RegisteredIOAvailable)
+        return 1;
+
+    //InitializeCriticalSectionAndSpinCount(&t->riobuf_bitmap_cs, 24);
 
     return 1;
 }
@@ -6808,6 +6816,10 @@ PxSocket_IOLoop(PxSocket *s)
     //__rdtscp(&(s->this_cpuid));
     s->last_io_op = s->this_io_op;
     s->this_io_op = 0;
+
+    s->thread_seq_id_bitmap |= (
+        1ULL << (_PyParallel_ThreadSeqId % Px_INTPTR_BITS)
+    );
 
     s->ioloops++;
 
@@ -11320,6 +11332,7 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_IR(ioloops),
     _PXSOCKET_ATTR_IR(last_thread_id),
     _PXSOCKET_ATTR_IR(this_thread_id),
+    _PXSOCKET_ATTR_ULLR(thread_seq_id_bitmap),
 
     _PXSOCKET_ATTR_O(protocol),
     /*
@@ -11812,7 +11825,20 @@ _async_is_heap_override_active(PyObject *self, PyObject *o)
         Py_RETURN_FALSE;
 }
 
-
+PyDoc_STRVAR(_async_refresh_rio_availability_doc,
+             "call after socket has been imported");
+PyObject *
+_async_refresh_rio_availability(PyObject *self, PyObject *o)
+{
+    PyObject *m = _asyncmodule_obj;
+    Py_GUARD();
+    if (RIOReceive) {
+        _set_true("_sys_registered_io_available");
+        _PyParallel_RegisteredIOAvailable = 1;
+    } else
+        _set_false("_sys_registered_io_available");
+    Py_RETURN_NONE;
+}
 
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
@@ -11885,6 +11911,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(call_from_main_thread),
     _ASYNC_N(seh_eav_in_io_callback),
     _ASYNC_N(is_heap_override_active),
+    _ASYNC_N(refresh_rio_availability),
     _ASYNC_N(debugbreak_on_next_exception),
     _ASYNC_V(call_from_main_thread_and_wait),
 

@@ -133,6 +133,10 @@ const static GUID _DisconnectEx_GUID = WSAID_DISCONNECTEX;
 const static GUID _TransmitFile_GUID = WSAID_TRANSMITFILE;
 const static GUID _TransmitPackets_GUID = WSAID_TRANSMITPACKETS;
 const static GUID _GetAcceptExSockaddrs_GUID = WSAID_GETACCEPTEXSOCKADDRS;
+
+static RIO_EXTENSION_FUNCTION_TABLE _rio = { 0, };
+const static GUID _rio_GUID = WSAID_MULTIPLE_RIO;
+
 #endif /* MS_WINDOWS */
 #endif /* WITH_PARALLEL */
 
@@ -274,6 +278,8 @@ typedef struct {
     LPFN_TRANSMITFILE TransmitFile;
     LPFN_TRANSMITPACKETS TransmitPackets;
     LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs;
+
+    RIO_EXTENSION_FUNCTION_TABLE rio;
 #else /* MS_WINDOWS */
     void (*null01)(void); /* LPFN_ACCEPTEX             */
     void (*null02)(void); /* LPFN_CONNECTEX            */
@@ -283,6 +289,8 @@ typedef struct {
     void (*null06)(void); /* LPFN_TRANSMITFILE         */
     void (*null07)(void); /* LPFN_TRANSMITPACKETS      */
     void (*null08)(void); /* LPFN_GETACCEPTEXSOCKADDRS */
+    // Erm, embedded the RIO struct is going to blow things up.
+    void (*null09)(void); /* RIO_EXTENSION_FUNCTION_TABLE */
 #endif /* MS_WINDOWS */
 #endif /* WITH_PARALLEL */
 } PySocketModule_APIObject;
