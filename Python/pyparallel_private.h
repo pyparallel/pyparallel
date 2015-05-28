@@ -11,6 +11,7 @@ extern "C" {
 
 #include "../Modules/socketmodule.h"
 #include <Windows.h>
+//#include <ntddk.h>
 #include "pyparallel.h"
 
 #pragma comment(lib, "ws2_32.lib")
@@ -385,6 +386,12 @@ typedef struct _PxThreadLocalState {
     DWORD       thread_seq_id;
     PxState    *px;
     Stats       stats;
+
+    /*
+    CRITICAL_SECTION riobuf_bitmap_cs;
+    RTL_BITMAP       riobuf_bitmap;
+    WSABUF           riobuf;
+    */
 
 } PxThreadLocalState, TLS;
 
@@ -1633,6 +1640,20 @@ static PySocketModule_APIObject PySocketModule;
 #define TransmitFile            PySocketModule.TransmitFile
 #define TransmitPackets         PySocketModule.TransmitPackets
 #define GetAcceptExSockaddrs    PySocketModule.GetAcceptExSockaddrs
+
+#define RIOReceive PySocketModule.rio.RIOReceive
+#define RIOReceiveEx PySocketModule.rio.RIOReceiveEx
+#define RIOSend PySocketModule.rio.RIOSend
+#define RIOSendEx PySocketModule.rio.RIOSendEx
+#define RIOCloseCompletionQueue PySocketModule.rio.RIOCloseCompletionQueue
+#define RIOCreateCompletionQueue PySocketModule.rio.RIOCreateCompletionQueue
+#define RIOCreateRequestQueue PySocketModule.rio.RIOCreateRequestQueue
+#define RIODequeueCompletion PySocketModule.rio.RIODequeueCompletion
+#define RIODeregisterBuffer PySocketModule.rio.RIODeregisterBuffer
+#define RIONotify PySocketModule.rio.RIONotify
+#define RIORegisterBuffer PySocketModule.rio.RIORegisterBuffer
+#define RIOResizeCompletionQueue PySocketModule.rio.RIOResizeCompletionQueue
+#define RIOResizeRequestQueue PySocketModule.rio.RIOResizeRequestQueue
 
 #define PxSocket_Check(v)         (     \
     Py_TYPE(v) == &PxSocket_Type ||     \
