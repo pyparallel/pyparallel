@@ -7021,7 +7021,7 @@ overlapped_connectex_callback:
 
     s->was_connected = 1;
 
-connected:
+//connected:
     goto start;
 
 
@@ -7810,7 +7810,7 @@ do_disconnect:
 
     ASSERT_UNREACHABLE();
 
-disconnected:
+//disconnected:
     ODS(L"disconnected:\n");
 //connection_closed:
     Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CLOSE_SCHEDULED;
@@ -9149,7 +9149,7 @@ setnonblock:
      * overlapped sends for everything). */
     s->sendbuf_size = 0;
     val = (char *)&(s->sendbuf_size);
-    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, &len) == SOCKET_ERROR)
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, val, len) == SOCKET_ERROR)
         PxSocket_WSAERROR("setsockopt(SO_SNDBUF)");
 
 set_other_sockopts:
@@ -9654,7 +9654,7 @@ PxSocket_IOCallback(
         InterlockedIncrement(&_PyParallel_SEH_EAV_InIoCallback);
     }
 
-end:
+//end:
     return;
 }
 
@@ -10276,14 +10276,9 @@ PxSocket_Connect(PTP_CALLBACK_INSTANCE instance, void *context)
     Context *c = (Context *)context;
     PxState *px;
     char failed = 0;
-    struct sockaddr *sa;
-    int len;
-    DWORD result;
     char *buf = NULL;
     PxSocket *s = (PxSocket *)c->io_obj;
     PyTypeObject *tp = &PxSocket_Type;
-    PxListItem *item;
-    PxSocket *child;
     struct sockaddr_in *sin;
 
     ENTERED_CALLBACK();
@@ -10635,7 +10630,7 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
     if (WSAEventSelect(s->sock_fd, s->fd_accept, FD_ACCEPT) == SOCKET_ERROR)
         PxSocket_WSAERROR("WSAEventSelect(FD_ACCEPT)");
 
-post_accepts:
+//post_accepts:
     s->num_accepts_to_post = s->target_accepts_posted;
     while (--s->num_accepts_to_post) {
         ++s->total_accepts_attempted;
@@ -10866,7 +10861,7 @@ cleaned_up_children:
     if (s->accepts_sem)
         CloseHandle(s->accepts_sem);
 
-cleanup_threadpool:
+//cleanup_threadpool:
     CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
                                        FALSE, /* cancel pending callbacks */
                                        s);   /* I'm not sure if we need to
@@ -11137,7 +11132,6 @@ pxsocket_sendfile_ranged(PxSocket *s, PyObject *args)
         FILE_FLAG_RANDOM_ACCESS
     );
     HANDLE h;
-    LARGE_INTEGER size;
     TRANSMIT_FILE_BUFFERS *tf;
     OVERLAPPED *ol = NULL;
 
@@ -11598,8 +11592,7 @@ _async_load_sys_info(PyObject *obj, PyObject *args)
 {
     PyObject *m;
     SYSTEM_INFO si;
-    MEMORYSTATUSEX ms;
-    size_t lpage_sz, min_fscache_sz, max_fscache_sz;
+    size_t min_fscache_sz, max_fscache_sz;
     DWORD fscache_flags;
 
     Py_GUARD();
@@ -11672,7 +11665,7 @@ _async_load_sys_info(PyObject *obj, PyObject *args)
 
     _set_dword("_sys_cpu_type", si.dwProcessorType);
     _set_dword("_sys_num_cpus", si.dwNumberOfProcessors);
-    _set_dword("_sys_active_cpu_mask", si.dwActiveProcessorMask);
+    _set_lpvoid("_sys_active_cpu_mask", (void *)si.dwActiveProcessorMask);
     _set_dword("_sys_page_size", si.dwPageSize);
 
     _set_word("_sys_cpu_level", si.wProcessorLevel);
