@@ -875,6 +875,7 @@ def add_features(db):
     # Features that have no advertisement trigger (e.g. the test suite)
     # must not support advertisement
     global default_feature, tcltk, htmlfiles, tools, testsuite, ext_feature, private_crt, prepend_path
+    global source
     default_feature = Feature(db, "DefaultFeature", "Python",
                               "Python Interpreter and Libraries",
                               1, directory = "TARGETDIR")
@@ -890,16 +891,20 @@ def add_features(db):
                          parent = default_feature, attributes=2|8,
                          # PyParallel: don't register as default Python.
                          level=2)
+    source = Feature(db, "Source", "Source",
+                     "Include all source code required to build and modify PyParallel", 5,
+                     parent=default_feature,
+                     attributes=2|8)
     if have_tcl:
-        tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 5,
+        tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 7,
                     parent = default_feature, attributes=2)
     htmlfiles = Feature(db, "Documentation", "Documentation",
-                        "Python HTMLHelp File", 7, parent = default_feature)
+                        "Python HTMLHelp File", 9, parent = default_feature)
     tools = Feature(db, "Tools", "Utility Scripts",
-                    "Python utility scripts (Tools/)", 9,
+                    "Python utility scripts (Tools/)", 11,
                     parent = default_feature, attributes=2)
     testsuite = Feature(db, "Testsuite", "Test suite",
-                        "Python test suite (Lib/test/)", 11,
+                        "Python test suite (Lib/test/)", 13,
                         parent = default_feature, attributes=2|8)
     # prepend_path is an additional feature which is to be off by default.
     # Since the default level for the above features is 1, this needs to be
@@ -907,7 +912,7 @@ def add_features(db):
     prepend_path = Feature(db, "PrependPath", "Add python.exe to Path",
                         "Prepend [TARGETDIR] to the system Path variable. "
                         "This allows you to type 'python' into a command "
-                        "prompt without needing the full path.", 13,
+                        "prompt without needing the full path.", 15,
                         parent = default_feature, attributes=2|8,
                         level=2)
 
@@ -1041,6 +1046,14 @@ def add_files(db):
     root.start_component("pythonw.exe", keyfile="pythonw.exe")
     root.add_file("%s/pythonw.exe" % PCBUILD)
 
+    # Include pyparallel.c and pyparallel_private.h in the top level directory;
+    # helpful when python.exe crashes, you launch JIT debugging with VS, which
+    # you'll then need to point at pyparallel.c.
+    root.add_file("pyparallel.c",
+                  src=os.path.abspath("../../Python/pyparallel.c"))
+    root.add_file("pyparallel_private.h",
+                  src=os.path.abspath("../../Python/pyparallel_private.h"))
+
     # msidbComponentAttributesSharedDllRefCount = 8, see "Component Table"
     dlldir = PyDirectory(db, cab, root, srcdir, "DLLDIR", ".")
     launcherdir = PyDirectory(db, cab, root, srcdir, "LAUNCHERDIR", ".")
@@ -1112,7 +1125,18 @@ def add_files(db):
 
     # Add all .py files in Lib, except tkinter, test
     dirs = []
-    pydirs = [(root, "Lib", hgfiles["Lib"], default_feature)]
+    pydirs = [
+        (root, "Lib",       hgfiles["Lib"],     default_feature),
+        (root, "Python",    hgfiles["Python"],  source),
+        (root, "PCbuild",   hgfiles["PCbuild"], source),
+        (root, "PC",        hgfiles["PC"],      source),
+        (root, "diffs",     hgfiles["diffs"],   source),
+        (root, "Include",   hgfiles["Include"], source),
+        (root, "Grammar",   hgfiles["Grammar"], source),
+        (root, "Objects",   hgfiles["Objects"], source),
+        (root, "Modules",   hgfiles["Modules"], source),
+        (root, "Parser",    hgfiles["Parser"],  source),
+    ]
     while pydirs:
         # Commit every now and then, or else installer will complain
         db.Commit()
@@ -1133,6 +1157,10 @@ def add_files(db):
         dirs.append(lib)
         has_py = False
         for name, subdir in files.items():
+            if name.startswith('.'):
+                continue
+            if '~' in name:
+                continue
             if subdir is None:
                 abs_name = os.path.join(lib.absolute, name)
                 assert os.path.isfile(abs_name), abs_name
