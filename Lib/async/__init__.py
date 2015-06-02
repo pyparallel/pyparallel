@@ -353,8 +353,8 @@ def memory_stats():
 #===============================================================================
 def _tefb_json():
     import techempower_frameworks_benchmark as tefb
-    server = _async.server(IPADDR, 8080)
-    _async.register(transport=server, protocol=tefb.JSONSerializationHttpServer)
+    server = _async.server('0.0.0.0', 8080)
+    _async.register(transport=server, protocol=tefb.BaseHttpServer)
     _async.run_once()
     return server
 

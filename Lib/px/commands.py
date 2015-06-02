@@ -42,7 +42,8 @@ from px.command import (
 # Globals
 #===============================================================================
 HOSTNAME = socket.gethostname()
-IPADDR = socket.gethostbyname(HOSTNAME)
+#IPADDR = socket.gethostbyname(HOSTNAME)
+IPADDR = '0.0.0.0'
 
 #===============================================================================
 # Miscellaneous/Generic Commands
