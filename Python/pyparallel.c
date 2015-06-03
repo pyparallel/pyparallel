@@ -18,6 +18,9 @@ extern "C" {
 #define ODS(s)
 #endif
 
+#define MAX_DNS_LABEL_LENGTH 63
+#define MAX_DNS_NAME_LENGTH  253
+
 #define CS_SOCK_SPINCOUNT 4
 
 Py_CACHE_ALIGN
@@ -99,6 +102,8 @@ static short _PyParallel_CurrentMemoryLoad;
 static BOOL _PyParallel_LowMemory = FALSE;
 
 static MEMORYSTATUSEX _memory_status;
+
+void PxSocket_IOLoop(PxSocket *s);
 
 int
 PyPx_EnableTLSHeap(void)
@@ -2555,24 +2560,26 @@ _PyParallel_ContextGuardFailure(const char *function,
 #endif
 */
 #define Px_SIZEOF_HEAP           Px_CACHE_ALIGN(sizeof(Heap))
+/*
 #define Px_USEABLE_HEAP_SIZE(n) (Py_MAX(n, Px_PAGE_ALIGN_SIZE) - Px_SIZEOF_HEAP)
 #define Px_NEW_HEAP_SIZE(n) \
     (Py_MAX(Px_PAGE_ALIGN(Px_USEABLE_HEAP_SIZE(n)+Px_SIZEOF_HEAP), \
             (n+Px_SIZEOF_HEAP)))
+*/
 
 static __inline
 size_t
 _PyParallel_NewHeapSize(size_t needed)
 {
     size_t new_size = 0;
-    size_t tmp2 = 0;
+    //size_t tmp2 = 0;
     if (needed + Px_SIZEOF_HEAP <= Px_PAGE_ALIGN_SIZE)
         new_size = Px_PAGE_ALIGN(needed);
     else
         new_size = needed + Px_SIZEOF_HEAP;
-    tmp2 = Px_NEW_HEAP_SIZE(needed);
-    if (tmp2 != new_size)
-        __debugbreak();
+    //tmp2 = Px_NEW_HEAP_SIZE(needed);
+    //if (tmp2 != new_size)
+    //    __debugbreak();
     return new_size;
 }
 
@@ -2769,7 +2776,7 @@ begin:
         return next;
     }
 
-    if (!_PyTLSHeap_Init(Px_NEW_HEAP_SIZE(aligned_size), 0))
+    if (!_PyTLSHeap_Init(_PyParallel_NewHeapSize(aligned_size), 0))
         return PyErr_NoMemory();
 
     goto begin;
@@ -4013,6 +4020,35 @@ _PyParallel_WaitCallback(
     c->wait_result = wait_result;
 
     _PyParallel_WorkCallback(instance, c);
+}
+
+void
+NTAPI
+_PxSocket_WaitCallback(
+    PTP_CALLBACK_INSTANCE instance,
+    void *context,
+    PTP_WAIT wait,
+    TP_WAIT_RESULT wait_result)
+{
+    Context *c = (Context *)context;
+    PxSocket *s = (PxSocket *)c->io_obj;
+
+    if (_PyParallel_Finalized)
+        return;
+
+    if (wait != s->tp_wait)
+        __debugbreak();
+
+    s->wait_result = wait_result;
+
+    ENTERED_CALLBACK();
+
+    EnterCriticalSection(&s->cs);
+    PxSocket_IOLoop(s);
+    if (_PyParallel_Finalized)
+        return;
+    LeaveCriticalSection(&s->cs);
+    return;
 }
 
 void
@@ -5401,15 +5437,27 @@ new_context(size_t heapsize)
 
     if (ctx) {
         Context *x = ctx;
-        if (x && x->tp_ctx) {
-            if (x->tp_ctx != x)
-                __debugbreak();
+        if (x) {
+            if (x->tp_ctx) {
+                if (x->tp_ctx != x)
+                    __debugbreak();
 
-            if (x->ptp_cbe != &x->tp_cbe)
-                __debugbreak();
+                if (x->ptp_cbe != &x->tp_cbe)
+                    __debugbreak();
 
-            c->tp_ctx = x;
-            c->ptp_cbe = x->ptp_cbe;
+                c->tp_ctx = x;
+                c->ptp_cbe = x->ptp_cbe;
+            }
+            if (x->tpw_ctx) {
+                if (x->tpw_ctx != x)
+                    __debugbreak();
+
+                if (x->ptpw_cbe != &x->tpw_cbe)
+                    __debugbreak();
+
+                c->tpw_ctx = x;
+                c->ptpw_cbe = x->ptpw_cbe;
+            }
         }
     }
 
@@ -5466,6 +5514,16 @@ PxSocket_ThreadpoolCleanupGroupCancelCallback(
     }
 }
 
+void
+CALLBACK
+PxContext_ThreadpoolWaitCleanupGroupCancelCallback(
+    _Inout_opt_ PVOID object_context,
+    _Inout_opt_ PVOID cleanup_context
+)
+{
+    return;
+}
+
 /* 0 = failure, 1 = success */
 int
 create_threadpool_for_context(Context *c,
@@ -5518,6 +5576,58 @@ create_threadpool_for_context(Context *c,
     return 1;
 }
 
+/* 0 = failure, 1 = success */
+int
+create_threadpoolwait_for_context(Context *c)
+{
+    PxState *px = c->px;
+    DWORD err = NO_ERROR;
+
+    assert(!c->ptpw);
+    assert(!c->ptpw_cg);
+    assert(!c->ptpw_cgcb);
+    assert(!c->ptpw_cbe);
+    assert(!c->tpw_ctx);
+
+    c->ptpw = CreateThreadpool(NULL);
+    if (!c->ptpw) {
+        err = GetLastError();
+        __debugbreak();
+    }
+
+    c->ptpw_cbe = &c->tpw_cbe;
+    InitializeThreadpoolEnvironment(c->ptpw_cbe);
+
+    c->ptpw_cg = CreateThreadpoolCleanupGroup();
+    if (!c->ptpw_cg) {
+        err = GetLastError();
+        __debugbreak();
+    }
+
+    /*
+    SetThreadpoolThreadMaximum(c->ptpw, max_threads);
+    if (!SetThreadpoolThreadMinimum(c->ptpw, min_threads)) {
+        err = GetLastError();
+        __debugbreak();
+    }
+    */
+
+    SetThreadpoolCallbackPool(c->ptpw_cbe, c->ptpw);
+
+    c->ptpw_cgcb = PxContext_ThreadpoolWaitCleanupGroupCancelCallback;
+    SetThreadpoolCallbackCleanupGroup(c->ptpw_cbe, c->ptpw_cg, c->ptpw_cgcb);
+
+    c->tpw_ctx = c;
+
+    /* Only top-level contexts (i.e. those with threadpool contexts) get added
+     * to the PxState list of contexts. */
+    //EnterCriticalSection(&px->contexts_cs);
+    //InsertTailList(&px->contexts, &c->px_link);
+    //LeaveCriticalSection(&px->contexts_cs);
+
+    return 1;
+}
+
 Context *
 new_context_for_socket(size_t heapsize)
 {
@@ -5538,6 +5648,9 @@ new_context_for_socket(size_t heapsize)
         DWORD min_threads = _PyParallel_NumCPUs;
         DWORD max_threads = _PyParallel_NumCPUs * 2;
         if (!create_threadpool_for_context(c, min_threads, max_threads))
+            __debugbreak();
+
+        if (!create_threadpoolwait_for_context(c))
             __debugbreak();
     }
 
@@ -6791,11 +6904,23 @@ PxSocket_IOLoop(PxSocket *s)
     Heap *snapshot = NULL;
     int i, n, success, flags = 0;
     TRANSMIT_FILE_BUFFERS *tf = NULL;
+    char *host = NULL;
+    int hostlen = 0;
+    TCHAR hostname[MAX_DNS_NAME_LENGTH+1] = { 0, };
+    int hostname_len = 0;
+    Py_TLS static ADDRINFOEX hints = { 0, };
+    PADDRINFOEX aiex = NULL;
 
     /* AcceptEx stuff */
     DWORD sockaddr_len, local_addr_len, remote_addr_len;
     LPSOCKADDR local_addr;
     LPSOCKADDR remote_addr;
+
+    if (hints.ai_family != AF_INET) {
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+    }
 
     sockaddr_len = sizeof(SOCKADDR);
     s->acceptex_addr_len = sockaddr_len + 16;
@@ -6825,6 +6950,7 @@ PxSocket_IOLoop(PxSocket *s)
 
     ODS(L"PxSocket_IOLoop()\n");
 
+dispatch_io_op:
     if (s->next_io_op) {
         int op = s->next_io_op;
         s->next_io_op = 0;
@@ -6835,6 +6961,9 @@ PxSocket_IOLoop(PxSocket *s)
                 goto do_connect;
             case PxSocket_IO_ACCEPT:
                 goto do_accept;
+            case PxSocket_IO_GETADDRINFOEX:
+                s->this_io_op = PxSocket_IO_GETADDRINFOEX;
+                goto do_getaddrinfoex;
             default:
                 assert(0);
         }
@@ -6849,6 +6978,9 @@ PxSocket_IOLoop(PxSocket *s)
             case PxSocket_IO_CONNECT:
                 //PxSocket_UpdateConnectTime(s);
                 goto overlapped_connectex_callback;
+
+            case PxSocket_IO_GETADDRINFOEX:
+                goto overlapped_getaddrinfoex_callback;
 
             case PxSocket_IO_SEND:
                 goto overlapped_send_callback;
@@ -6872,6 +7004,20 @@ PxSocket_IOLoop(PxSocket *s)
 
 do_connect:
     ODS(L"do_connect:\n");
+
+    if (!s->remote_addr_len) {
+        hostlen = s->hostlen;
+        host = s->host;
+        if (!host)
+            __debugbreak();
+        if (hostlen <= 0 || hostlen >= MAX_DNS_NAME_LENGTH)
+            __debugbreak();
+        goto do_getaddrinfoex;
+    }
+
+    if (!s->remote_addr.in.sin_port) {
+        s->remote_addr.in.sin_port = htons((short)s->port);
+    }
 
     if (!PxSocket_InitInitialBytes(s))
         PxSocket_FATAL();
@@ -7024,6 +7170,181 @@ overlapped_connectex_callback:
 //connected:
     goto start;
 
+do_getaddrinfoex:
+    ODS(L"getaddrinfoex:\n");
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/ms738518(v=vs.85).aspx
+
+    if (!host || !hostlen)
+        __debugbreak();
+
+    flags = 0;
+    hostname_len = MultiByteToWideChar(CP_UTF8,
+                                       flags,
+                                       (LPCSTR)host,
+                                       hostlen,
+                                       &hostname[0],
+                                       MAX_DNS_NAME_LENGTH);
+    if (!hostname_len) {
+        PyErr_SetFromWindowsErr(0);
+        PxSocket_FATAL();
+    }
+
+    PxOverlapped_Reset(&s->overlapped_getaddrinfoex);
+
+    if (!s->getaddrinfoex_handle) {
+        s->getaddrinfoex_handle = CreateEvent(0, 0, 0, 0);
+        if (!s->getaddrinfoex_handle) {
+            PyErr_SetFromWindowsErr(0);
+            PxSocket_FATAL();
+        }
+    }
+    if (!s->tp_wait) {
+        PTP_WAIT_CALLBACK cb = _PxSocket_WaitCallback;
+        PTP_CALLBACK_ENVIRON cbe = (c->ptpw_cbe ? c->ptpw_cbe : c->ptp_cbe);
+        s->tp_wait = CreateThreadpoolWait(cb, c, cbe);
+        if (!s->tp_wait) {
+            err = GetLastError();
+            __debugbreak();
+            PyErr_SetFromWindowsErr(0);
+            PxSocket_FATAL();
+        }
+    }
+    SetThreadpoolWait(s->tp_wait,
+                      s->getaddrinfoex_handle,
+                      NULL); // s->wait_timeout);
+
+    s->overlapped_getaddrinfoex.hEvent = (HANDLE)s->getaddrinfoex_handle;
+    s->this_io_op = PxSocket_IO_GETADDRINFOEX;
+    s->next_io_op_after_getaddrinfoex = PxSocket_IO_CONNECT;
+
+    s->getaddrinfoex_results_addrlen = &s->remote_addr_len;
+    s->getaddrinfoex_results_addr = &s->remote_addr;
+
+    err = GetAddrInfoExW(hostname,
+                         NULL,
+                         NS_DNS,
+                         NULL,
+                         &hints,
+                         &s->getaddrinfoex_results,
+                         NULL, // timeval timeout,
+                         &s->overlapped_getaddrinfoex,
+                         NULL,  // completion routine
+                         NULL); // cancel handle
+
+    if (err != NO_ERROR) {
+        wsa_error = WSAGetLastError();
+        if (wsa_error == WSA_IO_PENDING)
+            goto end;
+
+        switch (wsa_error) {
+            case WSATRY_AGAIN:
+                __debugbreak();
+                break;
+            case WSAEINVAL:
+                __debugbreak();
+                break;
+            case WSANOTINITIALISED:
+                __debugbreak();
+                break;
+            case WSANO_DATA:
+                __debugbreak();
+                break;
+            case WSANO_RECOVERY:
+                __debugbreak();
+                break;
+            case WSAEAFNOSUPPORT:
+                __debugbreak();
+                break;
+            case WSA_NOT_ENOUGH_MEMORY:
+                __debugbreak();
+                break;
+            case WSAHOST_NOT_FOUND:
+                __debugbreak();
+                break;
+            case WSATYPE_NOT_FOUND:
+                __debugbreak();
+                break;
+            case WSASERVICE_NOT_FOUND:
+                __debugbreak();
+                break;
+            case WSAESOCKTNOSUPPORT:
+                __debugbreak();
+                break;
+        }
+    }
+
+    ASSERT_UNREACHABLE();
+
+
+overlapped_getaddrinfoex_callback:
+    ODS(L"overlapped_getaddrinfoex_callback:\n");
+
+    if (s->wait_result == WAIT_TIMEOUT) {
+        XXX_IMPLEMENT_ME();
+    }
+
+    wsa_error = s->overlapped_getaddrinfoex.Internal;
+    if (wsa_error != NO_ERROR) {
+        switch (wsa_error) {
+            case WSATRY_AGAIN:
+                //__debugbreak();
+                break;
+            case WSAEINVAL:
+                //__debugbreak();
+                break;
+            case WSANOTINITIALISED:
+                //__debugbreak();
+                break;
+            case WSANO_DATA:
+                //__debugbreak();
+                break;
+            case WSANO_RECOVERY:
+                //__debugbreak();
+                break;
+            case WSAEAFNOSUPPORT:
+                //__debugbreak();
+                break;
+            case WSA_NOT_ENOUGH_MEMORY:
+                //__debugbreak();
+                break;
+            case WSAHOST_NOT_FOUND:
+                //__debugbreak();
+                break;
+            case WSATYPE_NOT_FOUND:
+                //__debugbreak();
+                break;
+            case WSASERVICE_NOT_FOUND:
+                //__debugbreak();
+                break;
+            case WSAESOCKTNOSUPPORT:
+                //__debugbreak();
+                break;
+        }
+        PyErr_SetFromWindowsErr(wsa_error);
+        PxSocket_FATAL();
+    }
+
+    if (!s->getaddrinfoex_results)
+        __debugbreak();
+
+    if (s->next_io_op_after_getaddrinfoex != PxSocket_IO_CONNECT)
+        __debugbreak();
+
+    if (!s->getaddrinfoex_results_addrlen)
+        __debugbreak();
+
+    if (!s->getaddrinfoex_results_addr)
+        __debugbreak();
+
+    aiex = s->getaddrinfoex_results;
+    *s->getaddrinfoex_results_addrlen = aiex->ai_addrlen;
+    memcpy(s->getaddrinfoex_results_addr, aiex->ai_addr, aiex->ai_addrlen);
+    FreeAddrInfoEx(s->getaddrinfoex_results);
+    s->getaddrinfoex_results = NULL;
+    s->next_io_op = s->next_io_op_after_getaddrinfoex;
+    goto dispatch_io_op;
+
+    ASSERT_UNREACHABLE();
 
 do_accept:
     ODS(L"do_accept:\n");
@@ -8789,10 +9110,10 @@ create_pxsocket(
     int nonblock = 1;
     PxSocket *s;
     SOCKET fd = INVALID_SOCKET;
-    char *host;
+    char *host = NULL;
+    int hostlen = 0;
     Context *c;
     Heap *old_heap = NULL;
-    Py_ssize_t hostlen;
     int rbuf_size;
     RBUF *rbuf;
 
@@ -9002,6 +9323,12 @@ create_pxsocket(
     if (!PyArg_ParseTupleAndKeywords(PxSocket_PARSE_ARGS))
         PxSocket_FATAL();
 
+    if (hostlen > MAX_DNS_NAME_LENGTH) {
+        PyErr_SetString(PyExc_ValueError, "name exceeds max DNS name length");
+        PxSocket_FATAL();
+    }
+    s->hostlen = hostlen;
+
     if (s->sock_family != AF_INET) {
         PyErr_SetString(PyExc_ValueError, "family must be AF_INET");
         PxSocket_FATAL();
@@ -9034,7 +9361,7 @@ create_pxsocket(
             memset(&s->ip[0], 0, 16);
             strncpy(&s->ip[0], host, 15);
             assert(s->ip[15] == '\0');
-            s->host = &(s->ip[0]);
+            //s->host = &(s->ip[0]);
 
             if (PxSocket_IS_CLIENT(s)) {
                 sin = &(s->remote_addr.in);
@@ -9057,8 +9384,15 @@ create_pxsocket(
             PxSocket_FATAL();
         }
     } else {
-        strncpy(s->host, host, hostlen);
-        assert(!s->ip);
+        if (s->host)
+            __debugbreak();
+        s->host = (char *)HeapAlloc(c->heap_handle, 0, s->hostlen);
+        if (!s->host) {
+            PyErr_NoMemory();
+            PxSocket_FATAL();
+        }
+        strncpy(s->host, host, s->hostlen);
+        assert(!*s->ip);
     }
 
 serverclient:
@@ -9442,6 +9776,7 @@ void PxSocket_IOLoop_OverlappedWSASend(PxSocket *s) { PxSocket_IOLoop(s); }
 void PxSocket_IOLoop_OverlappedWSARecv(PxSocket *s) { PxSocket_IOLoop(s); }
 void PxSocket_IOLoop_OverlappedTransmitFile(PxSocket *s) {PxSocket_IOLoop(s);}
 void PxSocket_IOLoop_OverlappedDisconnectEx(PxSocket *s) {PxSocket_IOLoop(s);}
+void PxSocket_IOLoop_OverlappedGetAddrInfoEx(PxSocket *s) {PxSocket_IOLoop(s);}
 
 void
 NTAPI
@@ -12146,4 +12481,4 @@ _PyAsync_ModInit(void)
 }
 #endif
 
-/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell:                                  */
+/* vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                  */

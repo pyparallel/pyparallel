@@ -24,6 +24,7 @@ from ctk.invariant import (
     PathInvariant,
     StringInvariant,
     DirectoryInvariant,
+    PortInvariant,
     NonEphemeralPortInvariant,
     ExistingDirectoryInvariant,
 )
@@ -313,6 +314,35 @@ class SimpleHttpGetClient(TCPClientCommand):
 
         import async
         client = async.client(ip, port)
+        protocol = HttpGet
+        async.register(transport=client, protocol=protocol)
+        async.run()
+
+class SimpleHttpGetClientWithDns(TCPClientCommand):
+    port = None
+    class PortArg(PortInvariant):
+        _help = 'port to connect to [default: %default]'
+        _default = 80
+
+    addr = None
+    class AddrArg(StringInvariant):
+        _help = 'host address to connect to [default: %default]'
+        _default = 'www.google.com'
+
+    def run(self):
+        hostname = self.options.addr
+        port = int(self.options.port)
+
+        self._out("Connecting to %s:%d..." % (hostname, port))
+
+        class HttpGet:
+            initial_bytes_to_send = b'GET / HTTP/1.0\r\n\r\n\r\n'
+            def data_received(self, transport, data):
+                #async.print(data)
+                async.debug(data)
+
+        import async
+        client = async.client(hostname, port)
         protocol = HttpGet
         async.register(transport=client, protocol=protocol)
         async.run()

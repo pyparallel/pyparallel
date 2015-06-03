@@ -618,6 +618,14 @@ typedef struct _PyParallelContext {
     TP_CALLBACK_ENVIRON tp_cbe;
     PTP_CALLBACK_ENVIRON ptp_cbe;
 
+    // Wait pool
+    Context *tpw_ctx;
+    PTP_POOL ptpw;
+    PTP_CLEANUP_GROUP ptpw_cg;
+    PTP_CLEANUP_GROUP_CANCEL_CALLBACK ptpw_cgcb;
+    TP_CALLBACK_ENVIRON tpw_cbe;
+    PTP_CALLBACK_ENVIRON ptpw_cbe;
+
     TP_WAIT        *tp_wait;
     TP_WAIT_RESULT  wait_result;
     PFILETIME       wait_timeout;
@@ -788,6 +796,8 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_NEXT_BYTES_STATIC          (1ULL << 35)
 #define Px_SOCKFLAGS_NEXT_BYTES_CALLABLE        (1ULL << 36)
 #define Px_SOCKFLAGS_SENDING_NEXT_BYTES         (1ULL << 37)
+#define Px_SOCKFLAGS_TUNNEL                     (1ULL << 38)
+#define Px_SOCKFLAGS_REVERSE_TUNNEL             (1ULL << 39)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -899,6 +909,11 @@ typedef struct _PxObject {
 #define PxSocket_IO_SENDMSG             (11)
 #define PxSocket_IO_RECVMSG             (12)
 #define PxSocket_IO_LISTEN              (13)
+#define PxSocket_IO_GETADDRINFOEX       (14)
+#define PxSocket_IO_READFILE            (15)
+#define PxSocket_IO_WRITEFILE           (16)
+#define PxSocket_IO_WAIT                (17)
+#define PxSocket_IO_TIMER               (18)
 
 #define PxSocket_SET_NEXT_OP(s, op)     \
     do {                                \
@@ -1027,6 +1042,7 @@ typedef struct _PxSocket {
     /* endpoint */
     char  ip[16];
     char *host;
+    int   hostlen;
     int   port;
 
     CRITICAL_SECTION cs;
@@ -1045,6 +1061,10 @@ typedef struct _PxSocket {
 
     FILETIME utc_start;
     FILETIME utc_stop;
+
+    TP_WAIT        *tp_wait;
+    TP_WAIT_RESULT  wait_result;
+    PFILETIME       wait_timeout;
 
     /* Total bytes sent/received */
     Py_ssize_t  total_bytes_sent;
@@ -1131,6 +1151,14 @@ typedef struct _PxSocket {
     OVERLAPPED overlapped_sendfile;
     OVERLAPPED overlapped_wsasend;
     OVERLAPPED overlapped_wsarecv;
+
+    OVERLAPPED overlapped_getaddrinfoex;
+    PADDRINFOEX   getaddrinfoex_results;
+    HANDLE        getaddrinfoex_handle;
+    HANDLE        getaddrinfoex_cancel;
+    int          *getaddrinfoex_results_addrlen;
+    sock_addr_t  *getaddrinfoex_results_addr;
+    int           next_io_op_after_getaddrinfoex;
 
     int   disconnectex_flags;
 
