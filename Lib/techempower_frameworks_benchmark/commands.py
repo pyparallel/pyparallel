@@ -76,6 +76,173 @@ class JsonSerialization(TCPServerCommand):
             except KeyboardInterrupt:
                 server.shutdown()
 
+class DbHttpServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    connect_string = None
+    class ConnectStringArg(StringInvariant):
+        _help = 'connect string to use for database [default: %default]'
+        _default = (
+            'Driver={SQL Server};'
+            'Server=cougar;'
+            'Database=hello_world;'
+            'Uid=benchmarkdbuser;'
+            'Pwd=B3nchmarkDBPass;'
+        )
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Serving HTTP on %s port %d ..." % (ip, port))
+
+        import async
+        from . import BaseHttpServer
+        BaseHttpServer.connect_string = self.options.connect_string
+        import pypyodbc
+        BaseHttpServer.odbc = pypyodbc
+
+        con = pypyodbc.connect(self.options.connect_string)
+        BaseHttpServer.connection = con
+        cur = con.cursor()
+        cur.execute(BaseHttpServer.db_sql, (1,))
+        cur.fetchall()
+        cur.close()
+        #con.close()
+
+        with chdir(root):
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=BaseHttpServer)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
+class DbOtherHttpServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    connect_string = None
+    class ConnectStringArg(StringInvariant):
+        _help = 'connect string to use for database [default: %default]'
+        _default = (
+            'Driver={SQL Server};'
+            'Server=cougar;'
+            'Database=hello_world;'
+            'Uid=benchmarkdbuser;'
+            'Pwd=B3nchmarkDBPass;'
+        )
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Serving HTTP on %s port %d ..." % (ip, port))
+
+        import async
+        from . import BaseHttpServer
+        BaseHttpServer.connect_string = self.options.connect_string
+        #import pypyodbc
+        #BaseHttpServer.odbc = pypyodbc
+
+        #con = pypyodbc.connect(self.options.connect_string)
+        #BaseHttpServer.connection = con
+        #cur = con.cursor()
+        #cur.execute(BaseHttpServer.db_sql, (1,))
+        #cur.fetchall()
+        #cur.close()
+        #con.close()
+
+        with chdir(root):
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=BaseHttpServer)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
+class DbPyodbcHttpServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    connect_string = None
+    class ConnectStringArg(StringInvariant):
+        _help = 'connect string to use for database [default: %default]'
+        _default = (
+            'Driver={ODBC Driver 11 for SQL Server};'
+            'Server=%s'
+            'Database=hello_world;'
+            'Uid=benchmarkdbuser;'
+            'Pwd=B3nchmarkDBPass;'
+        )
+
+    server = None
+    class ServerArg(StringInvariant):
+        _help = 'address of SQL Server instance'
+        _default = 'localhost'
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Serving HTTP on %s port %d ..." % (ip, port))
+
+        cs = self.options.connect_string % self.options.server
+        import async
+        from . import BaseHttpServer
+        BaseHttpServer.connect_string = cs
+        import pyodbc
+        async.register_dealloc(pyodbc.Connection)
+        async.register_dealloc(pyodbc.Cursor)
+        async.register_dealloc(pyodbc.Row)
+        #async.register_dealloc(pyodbc.CnxnInfo)
+
+        BaseHttpServer.odbc = pyodbc
+        # Force a hash.
+        dummy = id(BaseHttpServer.connect_string)
+
+        con = pyodbc.connect(cs)
+        #BaseHttpServer.connection = con
+        cur = con.cursor()
+        cur.execute(BaseHttpServer.db_sql, (1,))
+        cur.fetchall()
+        cur.close()
+        con.close()
+
+        with chdir(root):
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=BaseHttpServer)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
+
 class LowLatencyHttpServer(TCPServerCommand):
     port = None
     class PortArg(NonEphemeralPortInvariant):
