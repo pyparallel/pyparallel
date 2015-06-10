@@ -4647,7 +4647,8 @@ PyObject_Clone(PyObject *src, const char *errmsg)
         PyUnicode_CheckExact(src)       ||
         PyLong_CheckExact(src)          ||
         PyFloat_CheckExact(src)         ||
-        PyMethod_Check(src)
+        PyMethod_Check(src)             ||
+        PxSocket_Check(src)
     );
 
     if (!valid_type) {
@@ -4681,6 +4682,9 @@ PyObject_Clone(PyObject *src, const char *errmsg)
         result = (PyObject *)PyByteArray_FromObject(src);
     } else if (PyMethod_Check(src)) {
         result = (PyObject *)PyMethod_Clone(src);
+    } else if (PxSocket_Check(src)) {
+        result = (PyObject *)src;
+        goto end;
     } else {
         XXX_IMPLEMENT_ME();
     }
@@ -4690,6 +4694,7 @@ PyObject_Clone(PyObject *src, const char *errmsg)
             __debugbreak();
     }
 
+end:
     return result;
 }
 
