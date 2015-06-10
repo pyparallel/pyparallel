@@ -12091,7 +12091,8 @@ _async_transport(PyObject *self, PyObject *args)
     Py_RETURN_NONE;
 }
 
-static PyObject *_asyncmodule_obj;
+static PyObject *_asyncmodule_obj = NULL;
+static PyObject *_pyodbcmodule_obj = NULL;
 
 PyDoc_STRVAR(_async_refresh_memory_stats_doc, "xxx todo\n");
 PyObject *
@@ -12508,6 +12509,14 @@ struct PyModuleDef _asyncmodule = {
     NULL,
     NULL
 };
+
+PyObject *
+_pyodbc(void)
+{
+    if (!_pyodbcmodule_obj)
+        _pyodbcmodule_obj = PyImport_ImportModule("pyodbc");
+    return _pyodbcmodule_obj;
+}
 
 PyObject *
 _PyAsync_ModInit(void)
