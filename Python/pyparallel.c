@@ -4158,6 +4158,25 @@ _PxSocket_WaitCallback(
 }
 
 void
+PxSocket_InitWait(PxSocket *s)
+{
+    Context *c = s->ctx;
+    if (!s->tp_wait) {
+        PTP_WAIT_CALLBACK cb = _PxSocket_WaitCallback;
+        PTP_CALLBACK_ENVIRON cbe = (c->ptpw_cbe ? c->ptpw_cbe : c->ptp_cbe);
+        s->tp_wait = CreateThreadpoolWait(cb, c, cbe);
+        if (!s->tp_wait) {
+            DWORD err = GetLastError();
+            __debugbreak();
+            PyErr_SetFromWindowsErr(err);
+            PxSocket_FATAL();
+        }
+    }
+end:
+    return;
+}
+
+void
 NTAPI
 _PyParallel_IOCallback(
     PTP_CALLBACK_INSTANCE instance,
@@ -7334,17 +7353,8 @@ do_getaddrinfoex:
             PxSocket_FATAL();
         }
     }
-    if (!s->tp_wait) {
-        PTP_WAIT_CALLBACK cb = _PxSocket_WaitCallback;
-        PTP_CALLBACK_ENVIRON cbe = (c->ptpw_cbe ? c->ptpw_cbe : c->ptp_cbe);
-        s->tp_wait = CreateThreadpoolWait(cb, c, cbe);
-        if (!s->tp_wait) {
-            err = GetLastError();
-            __debugbreak();
-            PyErr_SetFromWindowsErr(0);
-            PxSocket_FATAL();
-        }
-    }
+    PxSocket_InitWait(s);
+
     SetThreadpoolWait(s->tp_wait,
                       s->getaddrinfoex_handle,
                       NULL); // s->wait_timeout);
