@@ -29,7 +29,7 @@ Server: %(server)s\r
 Date: %(date)s\r
 Accept-Ranges: bytes\r
 Content-Type: %(content_type)s\r\n%(content_length)s\r
-%(other_headers)s\r\n\r\n%(body)s"""
+%(other_headers)s%(rn1)s%(rn2)s%(body)s"""
 
 DEFAULT_CONTENT_TYPE = "text/html;charset=utf-8"
 DEFAULT_ERROR_CONTENT_TYPE = "text/html;charset=utf-8"

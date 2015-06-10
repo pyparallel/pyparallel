@@ -217,14 +217,6 @@ class Response:
         message = self.message
         content_type = self.content_type
 
-        if not self.content_length:
-            # 2 = account for the \r\n
-            self.content_length = len(body) + 2
-
-        content_length = ''
-        if self.content_length:
-            content_length = 'Content-Length: %d' % self.content_length
-
         connection = ''
         if not self.request.keep_alive:
             connection = 'Connection: close'
@@ -239,15 +231,32 @@ class Response:
         if self.content_range:
             self.other_headers.append(self.content_range)
 
-        bytes_body = None
-        if body and isinstance(body, bytes):
-            bytes_body = body
-            body = None
-
         if self.other_headers:
             other_headers = '\r\n'.join(self.other_headers)
+            rn1 = '\r\n'
         else:
+            rn1 = ''
             other_headers = ''
+
+        bytes_body = None
+        if body:
+            if isinstance(body, bytes):
+                bytes_body = body
+                body = None
+
+                if not self.content_length:
+                    self.content_length = len(bytes_body) #+ len(rn2)
+            elif not self.content_length:
+                bytes_body = body.encode('UTF-8', 'replace')
+                body = None
+                self.content_length = len(bytes_body) #+ len(rn2)
+
+        if self.content_length:
+            content_length = 'Content-Length: %d' % self.content_length
+            rn2 = '\r\n'
+        else:
+            content_length = 'Content-Length: 0'
+            rn2 = ''
 
         kwds = {
             'code': code,
@@ -257,7 +266,9 @@ class Response:
             'content_type': content_type,
             'content_length': content_length,
             'other_headers': other_headers,
-            'body': body if body else ''
+            'rn1': rn1,
+            'rn2': rn2,
+            'body': body if body else '',
         }
         response = (DEFAULT_RESPONSE % kwds).encode('UTF-8', 'replace')
 
