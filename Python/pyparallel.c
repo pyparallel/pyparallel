@@ -107,6 +107,8 @@ static MEMORYSTATUSEX _memory_status;
 
 void PxSocket_IOLoop(PxSocket *s);
 
+static PyObject *loaded_dynamic_modules;
+
 int
 PyPx_EnableTLSHeap(void)
 {
@@ -216,6 +218,25 @@ _PyParallel_MaybeFreeObject(void *vp)
         __debugbreak();
 
     HeapFree(ah, 0, o);
+}
+
+/* 1 = success, 0 = failure */
+int
+_PyParallel_LoadedDynamicModule(PyObject *mod, PyObject *name, PyObject *path)
+{
+    PyObject *t;
+    Py_GUARD();
+    if (!loaded_dynamic_modules) {
+        loaded_dynamic_modules = (PyObject *)PyList_New(0);
+        if (!loaded_dynamic_modules)
+            return 0;
+    }
+    t = PyTuple_Pack(3, mod, name, path);
+    if (!t)
+        return 0;
+    if (!PyList_Append(loaded_dynamic_modules, t))
+        return 1;
+    return 0;
 }
 
 static __inline

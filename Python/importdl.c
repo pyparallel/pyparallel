@@ -15,6 +15,11 @@
 #ifdef MS_WINDOWS
 extern dl_funcptr _PyImport_GetDynLoadWindows(const char *shortname,
                                               PyObject *pathname, FILE *fp);
+#ifdef WITH_PARALLEL
+extern int _PyParallel_LoadedDynamicModule(PyObject *m,
+                                           PyObject *name,
+                                           PyObject *path);
+#endif
 #else
 extern dl_funcptr _PyImport_GetDynLoadFunc(const char *shortname,
                                            const char *pathname, FILE *fp);
@@ -113,6 +118,11 @@ _PyImport_LoadDynamicModule(PyObject *name, PyObject *path, FILE *fp)
 
     if (_PyImport_FixupExtensionObject(m, name, path) < 0)
         goto error;
+
+#ifdef WITH_PARALLEL
+    if (!_PyParallel_LoadedDynamicModule(m, name, path))
+        goto error;
+#endif
     Py_DECREF(nameascii);
     return m;
 
