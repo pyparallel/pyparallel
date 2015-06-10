@@ -7802,7 +7802,7 @@ definitely_do_connection_made:
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
             PyErr_SetString(PyExc_RuntimeError,
-                            "data_received callback scheduled sendfile but "
+                            "connection_made() callback scheduled sendfile but "
                             "returned non-None data");
             PxSocket_EXCEPTION();
         }
