@@ -510,17 +510,17 @@ _PyParallel_DisableTLSHeap(void)
 #define _TMPBUF_SIZE 1024
 
 #ifdef _WIN64
-#define _tls_bitscan_fwd        _BitScanForward64
-#define _tls_bitscan_rev        _BitScanReverse64
-#define _tls_interlocked_or     _InterlockedOr64
-#define _tls_interlocked_and    _InterlockedAnd64
-#define _tls_popcnt             _Py_popcnt_u64
+#define _bitscan_fwd        _BitScanForward64
+#define _bitscan_rev        _BitScanReverse64
+#define _interlocked_or     _InterlockedOr64
+#define _interlocked_and    _InterlockedAnd64
+#define _popcnt             _Py_popcnt_u64
 #else
-#define _tls_bitscan_fwd        _BitScanForward
-#define _tls_bitscan_rev        _BitScanReverse
-#define _tls_interlocked_or     _InterlockedOr
-#define _tls_interlocked_and    _InterlockedAnd
-#define _tls_popcnt             _Py_popcnt_u32
+#define _bitscan_fwd        _BitScanForward
+#define _bitscan_rev        _BitScanReverse
+#define _interlocked_or     _InterlockedOr
+#define _interlocked_and    _InterlockedAnd
+#define _popcnt             _Py_popcnt_u32
 #endif
 
 static
