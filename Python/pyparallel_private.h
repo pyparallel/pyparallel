@@ -329,6 +329,8 @@ typedef struct _PxHeap {
 
 typedef struct _PyParallelHeap {
     _PxHeap_HEAD_EXTRA
+    Objects px_deallocs;
+    int     num_px_deallocs;
     size_t  mallocs;
     size_t  deallocs;
     size_t  mem_reallocs;

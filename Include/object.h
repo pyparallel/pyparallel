@@ -662,6 +662,10 @@ given type object has a specified feature.
 #define Py_TPFLAGS_HAVE_STACKLESS_EXTENSION 0
 #endif
 
+/* PyParallel will call tp_dealloc() against this type when
+   rewinding a heap. */
+#define Py_TPFLAGS_PX_DEALLOC (1L<<17)
+
 /* Objects support type attribute cache */
 #define Py_TPFLAGS_HAVE_VERSION_TAG   (1L<<18)
 #define Py_TPFLAGS_VALID_VERSION_TAG  (1L<<19)

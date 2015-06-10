@@ -640,12 +640,75 @@ _PyHeap_Reset(volatile Heap *h)
     h->deallocs = 0;
     h->mem_reallocs = 0;
     h->obj_reallocs = 0;
+    h->num_px_deallocs = 0;
+    h->px_deallocs.first = NULL;
+    h->px_deallocs.last = NULL;
     h->resizes = 0;
     h->frees = 0;
     h->alignment_mismatches = 0;
     h->bytes_wasted = 0;
 }
 
+PyObject *
+_PyParallel_RegisterDealloc(PyObject *tp_or_obj)
+{
+    PyObject *o = tp_or_obj;
+    if (PyType_Check(o)) {
+        if (Py_PXCTX())
+            Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
+        else
+            Py_TYPE(o)->tp_flags |= Py_TPFLAGS_PX_DEALLOC;
+    } else {
+        if (!Py_PXCTX()) {
+            PyErr_SetString(PyExc_ValueError,
+                            "not a type object and not in a parallel context");
+            return NULL;
+        }
+        Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
+    }
+    Py_RETURN_NONE;
+}
+
+void
+_PyHeap_DeallocObjects(Heap *h)
+{
+    Object *o;
+    Object *next;
+    PyObject *op;
+    destructor dealloc;
+    Objects *list = &h->px_deallocs;
+
+    if (!h->num_px_deallocs) {
+        if (list->first)
+            __debugbreak();
+        if (list->last)
+            __debugbreak();
+        return;
+    }
+
+    o = list->first;
+    while (h->num_px_deallocs--) {
+        op = o->op;
+        if (!Px_DEALLOC(o->op))
+            __debugbreak();
+
+        if (!Px_PTR_IN_HEAP(op, h))
+            __debugbreak();
+
+        dealloc = Py_TYPE(op)->tp_dealloc;
+        if (!dealloc)
+            __debugbreak();
+
+        next = o->next;
+        (*dealloc)(op);
+        if (!next)
+            break;
+        o = next;
+    }
+    if (h->num_px_deallocs)
+        __debugbreak();
+    return;
+}
 
 void
 _PxContext_Rewind(Context *c, Heap *snapshot)
@@ -687,6 +750,7 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
          * debugging. */
         h = c->h;
         while (distance--) {
+            _PyHeap_DeallocObjects(c->h);
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
             _PyHeap_Reset(c->h);
@@ -706,6 +770,8 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
     if (c->h->id != s->id)
         __debugbreak();
+
+    _PyHeap_DeallocObjects(c->h);
 
     /* Heap snapshot lines up with context's current heap, so we can now
      * memcpy the snapshot back over the active heap. */
@@ -2638,6 +2704,8 @@ Heap_Init(Context *c, size_t n, int page_size)
     s->heaps++;
     c->h = h;
     h->ctx = c;
+    h->px_deallocs.first = NULL;
+    h->px_deallocs.last = NULL;
     h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), 0, 0);
     assert(h->sle_next);
 #ifdef Py_DEBUG
@@ -3158,6 +3226,16 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     }
 
     o->op = n;
+
+    if (tp->tp_flags & Py_TPFLAGS_PX_DEALLOC) {
+        c->h->num_px_deallocs++;
+        append_object(&c->h->px_deallocs, o);
+        goto end;
+    }
+
+    /* Skip the remaining linked list stuff for now, it's not being used. */
+    goto end;
+
     append_object((is_varobj ? &c->varobjs : &c->objects), o);
 
     if (!c->ob_first) {
@@ -12168,6 +12246,14 @@ _async_refresh_rio_availability(PyObject *self, PyObject *o)
     Py_RETURN_NONE;
 }
 
+PyDoc_STRVAR(_async_register_dealloc_doc,
+             "call against type, or object when in parallel context");
+PyObject *
+_async_register_dealloc(PyObject *self, PyObject *o)
+{
+    return _PyParallel_RegisterDealloc(o);
+}
+
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
 #define _ASYNC_O(n) _ASYNC(n, METH_O)
@@ -12231,6 +12317,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
     _ASYNC_N(active_io_loops),
+    _ASYNC_O(register_dealloc),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_N(persisted_contexts),
     _ASYNC_N(enable_heap_override),
