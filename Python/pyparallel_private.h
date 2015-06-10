@@ -13,8 +13,11 @@ extern "C" {
 #include <Windows.h>
 //#include <ntddk.h>
 #include "pyparallel.h"
+#include "pyparallel_odbc.h"
 
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "odbc32.lib")
+#pragma comment(lib, "odbccp32.lib")
 
 #if defined(_MSC_VER) && _MSC_VER>1201
   /* Do not include addrinfo.h for MSVC7 or greater. 'addrinfo' and
@@ -800,6 +803,10 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_SENDING_NEXT_BYTES         (1ULL << 37)
 #define Px_SOCKFLAGS_TUNNEL                     (1ULL << 38)
 #define Px_SOCKFLAGS_REVERSE_TUNNEL             (1ULL << 39)
+#define Px_SOCKFLAGS_ODBC                       (1ULL << 40)
+#define Px_SOCKFLAGS_odbc                       (1ULL << 40)
+#define Px_SOCKFLAGS_CONNECTION_STRING          (1ULL << 41)
+#define Px_SOCKFLAGS_connection_string          (1ULL << 41)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -889,6 +896,12 @@ typedef struct _PxObject {
 #define PxSocket_IS_DISCONNECTED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_DISCONNECTED)
 
+#define PxSocket_IS_ODBC(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_ODBC)
+
+#define PxSocket_HAS_CONNECTION_STRING(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTION_STRING)
+
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
 #define PxSocket_CB_CONNECTION_MADE     (1)
@@ -916,6 +929,7 @@ typedef struct _PxObject {
 #define PxSocket_IO_WRITEFILE           (16)
 #define PxSocket_IO_WAIT                (17)
 #define PxSocket_IO_TIMER               (18)
+#define PxSocket_IO_DB_CONNECT          (19)
 
 #define PxSocket_SET_NEXT_OP(s, op)     \
     do {                                \
@@ -1098,6 +1112,11 @@ typedef struct _PxSocket {
     PyObject *next_bytes_to_send;
     PyObject *next_bytes_callable;
     WSABUF    next_bytes;
+    PyObject *odbc;
+    PyObject *connection_string;
+
+    HENV      henv;
+    HDBC      hdbc;
 
     int       max_sync_send_attempts;
     int       max_sync_recv_attempts;

@@ -54,6 +54,8 @@ int _PxBlockingCallsThreshold = 20;
 int _Py_CtrlCPressed = 0;
 int _Py_InstalledCtrlCHandler = 0;
 
+static int _PyParallel_AsyncODBCAvailable = 0;
+
 static int _PyParallel_RegisteredIOAvailable = 0;
 
 volatile long _PyParallel_SEH_EAV_InIoCallback = 0;
@@ -131,6 +133,11 @@ _PyParallel_IsFinalized(void)
     return _PyParallel_Finalized;
 }
 
+int
+_PyParallel_IsAsyncODBCAvailable(void)
+{
+    return _PyParallel_AsyncODBCAvailable;
+}
 
 void
 _PyParallel_SetDebugbreakOnNextException(void)
@@ -6941,9 +6948,36 @@ end:
     return result;
 }
 
+HENV *
+_PyParallel_GetDbEnvp(void)
+{
+    Context *c = ctx;
+    PxSocket *s;
+    HENV *p = NULL;
+
+    if (!c)
+        goto end;
+
+    s = (PxSocket *)c->io_obj;
+    if (!s)
+        goto end;
+
+    if (!PxSocket_Check(s))
+        goto end;
+
+    if (!s->henv)
+        goto end;
+
+    p = &s->henv;
+
+end:
+    return p;
+}
+
 int PxSocket_InitInitialBytes(PxSocket *s);
 int PxSocket_InitNextBytes(PxSocket *s);
 int PxSocket_LoadNextBytes(PxSocket *s);
+int PxSocket_InitODBC(PxSocket *s);
 
 /* Hybrid sync/async IO loop. */
 void
@@ -7101,6 +7135,9 @@ do_connect:
         PxSocket_FATAL();
 
     if (!PxSocket_InitNextBytes(s))
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitODBC(s))
         PxSocket_FATAL();
 
     if (0 && s->initial_bytes.len) {
@@ -7431,6 +7468,9 @@ do_accept:
         PxSocket_FATAL();
 
     if (!PxSocket_InitNextBytes(s))
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitODBC(s))
         PxSocket_FATAL();
 
     /*
@@ -10128,8 +10168,10 @@ _Py_IDENTIFIER(connection_closed);
 _Py_IDENTIFIER(exception_handler);
 _Py_IDENTIFIER(initial_bytes_to_send);
 _Py_IDENTIFIER(next_bytes_to_send);
+_Py_IDENTIFIER(connection_string);
 
 /* bools */
+_Py_IDENTIFIER(odbc);
 _Py_IDENTIFIER(lines_mode);
 _Py_IDENTIFIER(throughput);
 _Py_IDENTIFIER(concurrency);
@@ -10230,10 +10272,13 @@ PxSocket_InitProtocol(PxSocket *s)
     /* This is initialized in more detail during PxSocket_InitNextBytes. */
     _PxSocket_RESOLVE(next_bytes_to_send);
 
+    _PxSocket_RESOLVE(connection_string);
+
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
     _PxSocket_RESOLVE_BOOL(low_latency);
     _PxSocket_RESOLVE_BOOL(shutdown_send);
+    _PxSocket_RESOLVE_BOOL(odbc);
 
     _PxSocket_RESOLVE_INT(max_sync_send_attempts);
     _PxSocket_RESOLVE_INT(max_sync_recv_attempts);
@@ -10351,6 +10396,9 @@ PxSocket_SetProtocolType(PxSocket *s, PyObject *protocol_type)
 #define INVALID_NEXT_BYTES                                              \
     "next_bytes_to_send must be one of the following types: bytes, "    \
     "unicode or callable"
+
+#define INVALID_ODBC                                                    \
+    "odbc must be a boolean True/False value"
 
 /* 0 = failure (error will be set), 1 = no error occurred */
 int
@@ -10578,6 +10626,83 @@ PxSocket_LoadNextBytes(PxSocket *s)
     return 1;
 }
 
+/* 0 = failure (error will be set), 1 = no error occurred */
+int
+PxSocket_InitODBC(PxSocket *s)
+{
+    Context *c = s->ctx;
+    PyObject *o, *t = s->protocol;
+    PyObject *cs = NULL;
+    int is_static = 0;
+    Heap *snapshot = NULL;
+    RETCODE rc;
+
+    assert(t);
+    assert(!PyErr_Occurred());
+
+    o = s->odbc;
+    cs = s->connection_string;
+
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_ODBC;
+    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_CONNECTION_STRING;
+
+    if (!o || o == Py_None || o == Py_False) {
+        if (!cs || cs == Py_None)
+            return 1;
+    }
+
+    if (cs) {
+        if (!PyUnicode_Check(cs)) {
+            PyErr_SetString(PyExc_ValueError,
+                            "connection_string is not a string object");
+            return 0;
+        }
+        o = Py_True;
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CONNECTION_STRING;
+    }
+
+    if (o != Py_True) {
+        PyErr_SetString(PyExc_ValueError, INVALID_ODBC);
+        return 0;
+    }
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_ODBC;
+
+    if (PxSocket_IS_SERVERCLIENT(s)) {
+        s->henv = s->parent->henv;
+        if (!s->henv)
+            __debugbreak();
+    } else {
+        rc = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &s->henv);
+        if (!SQL_SUCCEEDED(rc))
+            __debugbreak();
+
+        rc = SQLSetEnvAttr(
+            s->henv,
+            SQL_ATTR_ODBC_VERSION,
+            (SQLPOINTER)SQL_OV_ODBC3_80,
+            SQL_IS_INTEGER
+        );
+        if (!SQL_SUCCEEDED(rc))
+            __debugbreak();
+    }
+
+    rc = SQLAllocHandle(SQL_HANDLE_DBC, s->henv, &s->hdbc);
+    if (!SQL_SUCCEEDED(rc))
+        __debugbreak();
+
+    rc = SQLSetConnectAttr(
+        s->hdbc,
+        SQL_ATTR_ASYNC_DBC_FUNCTIONS_ENABLE,
+        (SQLPOINTER)SQL_ASYNC_DBC_ENABLE_ON,
+        SQL_IS_INTEGER
+    );
+    if (!SQL_SUCCEEDED(rc))
+        __debugbreak();
+
+    PxSocket_InitWait(s);
+
+    return 1;
+}
 
 void
 PxSocket_InitExceptionHandler(PxSocket *s)
@@ -10941,6 +11066,9 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
         PxSocket_FATAL();
 
     if (!PxSocket_InitNextBytes(s))
+        PxSocket_FATAL();
+
+    if (!PxSocket_InitODBC(s))
         PxSocket_FATAL();
 
     px = c->px;
@@ -12348,6 +12476,8 @@ struct PyModuleDef _asyncmodule = {
 PyObject *
 _PyAsync_ModInit(void)
 {
+    SQLHENV henv = 0;
+    RETCODE rc;
     PyObject *m;
     PySocketModule_APIObject *socket_api;
 
@@ -12370,6 +12500,41 @@ _PyAsync_ModInit(void)
     if (!socket_api)
         return NULL;
     PySocketModule = *socket_api;
+
+    rc = SQLSetEnvAttr(
+        SQL_NULL_HANDLE,
+        SQL_ATTR_CONNECTION_POOLING,
+        (SQLPOINTER)SQL_CP_ONE_PER_HENV,
+        SQL_IS_INTEGER
+    );
+
+    if (!SQL_SUCCEEDED(rc)) {
+        __debugbreak();
+    }
+
+    rc = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &henv);
+    if (!SQL_SUCCEEDED(rc)) {
+        __debugbreak();
+    }
+
+    rc = SQLSetEnvAttr(
+        henv,
+        SQL_ATTR_ODBC_VERSION,
+        (SQLPOINTER)SQL_OV_ODBC3_80,
+        SQL_IS_INTEGER
+    );
+    if (!SQL_SUCCEEDED(rc)) {
+        _PyParallel_AsyncODBCAvailable = 0;
+        PyModule_AddIntConstant(m, "_async_odbc_available", 0);
+    } else {
+        _PyParallel_AsyncODBCAvailable = 1;
+        PyModule_AddIntConstant(m, "_async_odbc_available", 1);
+    }
+
+    SQLFreeHandle(SQL_HANDLE_ENV, henv);
+
+    if (PyModule_AddObject(m, "loaded_dynamic_modules", loaded_dynamic_modules))
+        return NULL;
 
     if (PyModule_AddIntConstant(m, "_bits", Px_INTPTR_BITS))
         return NULL;

@@ -567,6 +567,14 @@ class UpdateDiffs(PxCommand):
 #===============================================================================
 # System Info/Memory Commands
 #===============================================================================
+class IsAsyncOdbcAvailable(PxCommand):
+    def run(self):
+        import _async
+        if _async._async_odbc_available:
+            self._out('yes')
+        else:
+            self._out('no')
+
 class SystemStructureSizes(PxCommand):
     def run(self):
         out = self._out
