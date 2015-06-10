@@ -178,10 +178,10 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwitchInterval(void);
 
 #define Py_BEGIN_ALLOW_THREADS { \
                         PyThreadState *_save = NULL; \
-                        if (!Py_PXCTX()) _save = PyEval_SaveThread();
-#define Py_BLOCK_THREADS        PyEval_RestoreThread(_save);
-#define Py_UNBLOCK_THREADS      _save = PyEval_SaveThread();
-#define Py_END_ALLOW_THREADS    if (_save) PyEval_RestoreThread(_save); \
+                        if (!_PyParallel_GetActiveContext()) _save = PyEval_SaveThread();
+#define Py_BLOCK_THREADS        (_PyParallel_GetActiveContext() ? 0 : PyEval_RestoreThread(_save));
+#define Py_UNBLOCK_THREADS      (_PyParallel_GetActiveContext() ? 0 : (_save = PyEval_SaveThread()));
+#define Py_END_ALLOW_THREADS    (_PyParallel_GetActiveContext() ? 0 : (_save ? PyEval_RestoreThread(_save) : 0)); \
                  }
 
 #else /* !WITH_THREAD */
