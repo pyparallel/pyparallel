@@ -1603,14 +1603,14 @@ _PyGC_Dump(PyGC_Head *g)
 void
 PyObject_GC_Track(void *op)
 {
-    Px_VOID
+    Px_VOID();
     _PyObject_GC_TRACK(op);
 }
 
 void
 PyObject_GC_UnTrack(void *op)
 {
-    Px_VOID
+    Px_VOID();
     /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
      * call PyObject_GC_UnTrack twice on an object.
      */
@@ -1623,7 +1623,7 @@ _PyObject_GC_Malloc(size_t basicsize)
 {
     PyObject *op;
     PyGC_Head *g;
-    Px_RETURN((PyObject *)_PxMem_Malloc(basicsize))
+    Px_RETURN((PyObject *)_PxMem_Malloc(basicsize));
     if (basicsize > PY_SSIZE_T_MAX - sizeof(PyGC_Head))
         return PyErr_NoMemory();
     g = (PyGC_Head *)PyObject_MALLOC(
@@ -1649,7 +1649,7 @@ PyObject *
 _PyObject_GC_New(PyTypeObject *tp)
 {
     PyObject *op;
-    Px_RETURN(_PxObject_New(tp))
+    Px_RETURN(_PxObject_New(tp));
     op = _PyObject_GC_Malloc(_PyObject_SIZE(tp));
     if (op != NULL)
         op = PyObject_INIT(op, tp);
@@ -1661,7 +1661,7 @@ _PyObject_GC_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
 {
     PyVarObject *op;
     size_t size;
-    Px_RETURN(_PxObject_NewVar(tp, nitems))
+    Px_RETURN(_PxObject_NewVar(tp, nitems));
     size = _PyObject_VAR_SIZE(tp, nitems);
     op = (PyVarObject *) _PyObject_GC_Malloc(size);
     if (op != NULL)
@@ -1675,7 +1675,7 @@ _PyObject_GC_Resize(PyVarObject *op, Py_ssize_t nitems)
     PyGC_Head *g;
     size_t basicsize;
     PyPx_GUARD_OBJ(op);
-    Px_RETURN_OP(op, _PxObject_Resize(op, nitems))
+    Px_RETURN_OP(op, _PxObject_Resize(op, nitems));
 
     basicsize = _PyObject_VAR_SIZE(Py_TYPE(op), nitems);
     g = AS_GC(op);

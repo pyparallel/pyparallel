@@ -362,66 +362,73 @@ _px_bitpos_uint32(unsigned int f)
 
 #define PyPx_GUARD_OBJ(o)          \
     do {                           \
-    if (Py_PXCTX())                \
-        Px_GUARD_OBJ(o);           \
-    else                           \
-        Py_GUARD_OBJ(o);           \
-} while (0)
+        if (Py_PXCTX())            \
+            Px_GUARD_OBJ(o);       \
+        else                       \
+            Py_GUARD_OBJ(o);       \
+    } while (0)
 
 #define PyPx_GUARD_MEM(m)          \
     do {                           \
-    if (Py_PXCTX())                \
-        Px_GUARD_MEM(m);           \
-    else                           \
-        Py_GUARD_MEM(m);           \
+        if (Py_PXCTX())            \
+            Px_GUARD_MEM(m);       \
+        else                       \
+            Py_GUARD_MEM(m);       \
 } while (0)
-
 
 #define Px_BREAK()                 \
     if (Py_PXCTX())                \
         break
 
 #define Px_RETURN(arg)             \
-    if (Py_PXCTX())                \
-        return (arg);
+    do {                           \
+        if (Py_PXCTX())            \
+            return (arg);          \
+    } while (0)
 
-#define Px_VOID                    \
+#define Px_VOID()                  \
     if (Py_PXCTX())                \
-        return;
+        return
 
 #define Px_RETURN_VOID(arg)        \
-    if (Py_PXCTX()) {              \
-        (arg);                     \
-        return;                    \
-    }
+    do {                           \
+        if (Py_PXCTX()) {          \
+            (arg);                 \
+            return;                \
+        }                          \
+    } while (0)
 
-#define Px_RETURN_NULL             \
+#define Px_RETURN_NULL()           \
     if (Py_PXCTX())                \
-        return NULL;
+        return NULL
 
 #define Px_RETURN_OP(op, arg)      \
     if (Py_ISPX(op))               \
-        return (arg);
+        return (arg)
 
 #define Px_VOID_OP(op)             \
     if (Py_ISPX(op))               \
-        return;
+        return
 
 #define Px_RETURN_VOID_OP(op, arg) \
-    if (Py_ISPX(op)) {             \
-        (arg);                     \
-        return;                    \
-    }
+    do {                           \
+        if (Py_ISPX(op)) {         \
+            (arg);                 \
+            return;                \
+        }                          \
+    } while (0)
 
 #define Px_RETURN_NULL_OP(op)      \
     if (Py_ISPX(op))               \
-        return NULL;
+        return NULL
 
-#define Px_CLEARFREELIST           \
-    if (Py_PXCTX()) {              \
-        numfree = 0;               \
-        return ret;                \
-    }
+#define Px_CLEARFREELIST()         \
+    do {                           \
+        if (Py_PXCTX()) {          \
+            numfree = 0;           \
+            return ret;            \
+        }                          \
+    } while (0)
 
 #else /* WITH_PARALLEL */
 #define Py_GUARD()

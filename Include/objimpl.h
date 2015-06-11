@@ -233,7 +233,7 @@ static __inline
 PyObject *
 _PyObject_INIT(PyObject *op, PyTypeObject *tp)
 {
-    Px_RETURN(_PxObject_Init(op, tp))
+    Px_RETURN(_PxObject_Init(op, tp));
     Py_TYPE(op) = tp;
     _PyObject_InitHead(op);
     _Py_NewReference(op);
@@ -248,7 +248,7 @@ static __inline
 PyVarObject *
 _PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
 {
-    Px_RETURN(_PxObject_InitVar(op, tp, n))
+    Px_RETURN(_PxObject_InitVar(op, tp, n));
     Py_SIZE(op) = n;
     Py_TYPE(op) = tp;
     _PyObject_InitHead((PyObject *)op);
@@ -299,7 +299,7 @@ static __inline
 PyObject *
 _PyObject_NEW(PyTypeObject *tp)
 {
-    Px_RETURN(_PxObject_New(tp))
+    Px_RETURN(_PxObject_New(tp));
     return PyObject_Init((PyObject *)PyObject_MALLOC(_PyObject_SIZE(tp)), tp);
 }
 
@@ -308,7 +308,7 @@ PyVarObject *
 _PyObject_NEW_VAR(PyTypeObject *tp, Py_ssize_t n)
 {
     register PyObject *op;
-    Px_RETURN(_PxObject_NewVar(tp, n))
+    Px_RETURN(_PxObject_NewVar(tp, n));
     op = (PyObject *)PyObject_MALLOC(_PyObject_VAR_SIZE(tp, n));
     return (PyVarObject *)PyObject_InitVar((PyVarObject*)op, tp, n);
 }

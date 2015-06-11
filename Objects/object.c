@@ -76,7 +76,7 @@ static PyObject refchain = {
 void
 _Py_AddToAllObjects(PyObject *op, int force)
 {
-    Px_VOID
+    Px_VOID();
 #ifdef  Py_DEBUG
     if (!force) {
         /* If it's initialized memory, op must be in or out of
@@ -230,7 +230,7 @@ void
 Py_IncRef(PyObject *o)
 {
     Py_GUARD_OBJ(o);
-    Px_VOID_OP(o)
+    Px_VOID_OP(o);
     Py_XINCREF(o);
 }
 
@@ -238,7 +238,7 @@ void
 Py_DecRef(PyObject *o)
 {
     Py_GUARD_OBJ(o);
-    Px_VOID_OP(o)
+    Px_VOID_OP(o);
     Py_XDECREF(o);
 }
 
@@ -247,7 +247,7 @@ PyObject_Init(PyObject *op, PyTypeObject *tp)
 {
     if (op == NULL)
         return PyErr_NoMemory();
-    Px_RETURN(_PxObject_Init(op, tp))
+    Px_RETURN(_PxObject_Init(op, tp));
     Py_GUARD_MEM(op);
     /* Any changes should be reflected in PyObject_INIT (objimpl.h) */
     Py_TYPE(op) = tp;
@@ -261,7 +261,7 @@ PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
 {
     if (op == NULL)
         return (PyVarObject *) PyErr_NoMemory();
-    Px_RETURN(_PxObject_InitVar(op, tp, size))
+    Px_RETURN(_PxObject_InitVar(op, tp, size));
     Py_GUARD_MEM(op);
     /* Any changes should be reflected in PyObject_INIT_VAR */
     op->ob_size = size;
@@ -275,7 +275,7 @@ PyObject *
 _PyObject_New(PyTypeObject *tp)
 {
     PyObject *op;
-    Px_RETURN(_PxObject_New(tp))
+    Px_RETURN(_PxObject_New(tp));
     op = (PyObject *) PyObject_MALLOC(_PyObject_SIZE(tp));
     if (op == NULL)
         return PyErr_NoMemory();
@@ -287,7 +287,7 @@ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
 {
     PyVarObject *op;
     size_t size;
-    Px_RETURN(_PxObject_NewVar(tp, nitems))
+    Px_RETURN(_PxObject_NewVar(tp, nitems));
 
     size = _PyObject_VAR_SIZE(tp, nitems);
     op = (PyVarObject *) PyObject_MALLOC(size);
@@ -1829,7 +1829,7 @@ _Py_VerifyObjectHead(PyObject *op)
 void
 _Py_NewReference(PyObject *op)
 {
-    Px_RETURN_VOID(_Px_NewReference(op))
+    Px_RETURN_VOID(_Px_NewReference(op));
     Py_GUARD_OBJ(op);
     _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
@@ -1844,7 +1844,7 @@ _Py_ForgetReference(register PyObject *op)
 #ifdef SLOW_UNREF_CHECK
     register PyObject *p;
 #endif
-    Px_RETURN_VOID(_Px_ForgetReference(op))
+    Px_RETURN_VOID(_Px_ForgetReference(op));
     Py_GUARD_OBJ(op);
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
@@ -1877,7 +1877,7 @@ _Py_Dealloc(PyObject *op)
 {
     destructor dealloc;
     PyPx_GUARD_OBJ(op);
-    Px_RETURN_VOID(_Px_Dealloc(op))
+    Px_RETURN_VOID(_Px_Dealloc(op));
     dealloc = Py_TYPE(op)->tp_dealloc;
     _Py_ForgetReference(op);
     (*dealloc)(op);
@@ -1963,14 +1963,14 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject *) = PyObject_Size;
 void *
 PyMem_Malloc(size_t nbytes)
 {
-    Px_RETURN(_PxMem_Malloc(nbytes))
+    Px_RETURN(_PxMem_Malloc(nbytes));
     return PyMem_MALLOC(nbytes);
 }
 
 void *
 PyMem_Realloc(void *p, size_t nbytes)
 {
-    Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Px_RETURN(_PxMem_Realloc(p, nbytes));
     Py_GUARD_MEM(p);
     return PyMem_REALLOC(p, nbytes);
 }
@@ -1978,7 +1978,7 @@ PyMem_Realloc(void *p, size_t nbytes)
 void
 PyMem_Free(void *p)
 {
-    Px_RETURN_VOID(_PxMem_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p));
     if (p)
         Py_GUARD_MEM(p);
     PyMem_FREE(p);
@@ -2170,7 +2170,7 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
 void
 _Py_Dealloc(PyObject *op)
 {
-    Px_RETURN_VOID_OP(op, _Px_Dealloc(op))
+    Px_RETURN_VOID_OP(op, _Px_Dealloc(op));
     Py_GUARD_OBJ(op);
     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA
     (*Py_TYPE(op)->tp_dealloc)(op);
