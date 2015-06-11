@@ -301,13 +301,14 @@ static int pending_async_exc = 0;
 int
 PyEval_ThreadsInitialized(void)
 {
-    Py_GUARD();
+    Px_RETURN(0);
     return gil_created();
 }
 
 void
 PyEval_InitThreads(void)
 {
+    Px_VOID();
     if (gil_created())
         return;
     create_gil();
@@ -320,7 +321,7 @@ PyEval_InitThreads(void)
 void
 _PyEval_FiniThreads(void)
 {
-    Py_GUARD();
+    Px_VOID();
     if (!gil_created())
         return;
     destroy_gil();
@@ -330,7 +331,9 @@ _PyEval_FiniThreads(void)
 void
 PyEval_AcquireLock(void)
 {
-    PyThreadState *tstate = PyThreadState_GET();
+    PyThreadState *tstate;
+    Px_VOID();
+    tstate = PyThreadState_GET();
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
     Py_GUARD_AGAINST_PX_ONLY();
@@ -340,7 +343,7 @@ PyEval_AcquireLock(void)
 void
 PyEval_ReleaseLock(void)
 {
-    Py_GUARD();
+    Px_VOID();
     /* This function must succeed when the current thread state is NULL.
        We therefore avoid PyThreadState_GET() which dumps a fatal error
        in debug mode.
@@ -352,10 +355,10 @@ PyEval_ReleaseLock(void)
 void
 PyEval_AcquireThread(PyThreadState *tstate)
 {
+    Px_VOID();
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireThread: NULL new thread state");
     /* Check someone has called PyEval_InitThreads() to create the lock */
-    Py_GUARD_AGAINST_PX_ONLY();
     assert(gil_created());
     take_gil(tstate);
     if (PyThreadState_Swap(tstate) != NULL)
@@ -366,11 +369,11 @@ PyEval_AcquireThread(PyThreadState *tstate)
 void
 PyEval_ReleaseThread(PyThreadState *tstate)
 {
+    Px_VOID();
     if (tstate == NULL)
         Py_FatalError("PyEval_ReleaseThread: NULL thread state");
     if (PyThreadState_Swap(NULL) != tstate)
         Py_FatalError("PyEval_ReleaseThread: wrong thread state");
-    Py_GUARD_AGAINST_PX_ONLY();
     drop_gil(tstate);
 }
 
@@ -384,8 +387,10 @@ PyEval_ReInitThreads(void)
 {
     _Py_IDENTIFIER(_after_fork);
     PyObject *threading, *result;
-    PyThreadState *tstate = PyThreadState_GET();
-    Py_GUARD();
+    PyThreadState *tstate;
+    Px_VOID();
+
+    tstate = PyThreadState_GET();
 
     if (!gil_created())
         return;
@@ -423,6 +428,7 @@ static int pending_async_exc = 0;
 void
 _PyEval_SignalAsyncExc(void)
 {
+    Px_VOID();
     SIGNAL_ASYNC_EXC();
 }
 
@@ -434,16 +440,7 @@ PyThreadState *
 PyEval_SaveThread(void)
 {
     PyThreadState *tstate;
-    /* Inline Py_GUARD_AGAINST_PX_ONLY(); we can't use the macro as it has
-       a couple of extra assertions against tstate-> stuff. */
-    if (_PyParallel_GetActiveContext() != NULL) {
-        _PyParallel_ContextGuardFailure(
-            __FUNCTION__,
-            __FILE__,
-            __LINE__,
-            0
-        );
-    }
+    Px_RETURN_NULL();
     tstate = PyThreadState_Swap(NULL);
     if (tstate == NULL)
         Py_FatalError("PyEval_SaveThread: NULL tstate");
@@ -457,7 +454,7 @@ PyEval_SaveThread(void)
 void
 PyEval_RestoreThread(PyThreadState *tstate)
 {
-    Py_GUARD_AGAINST_PX_ONLY();
+    Px_VOID();
     if (tstate == NULL)
         Py_FatalError("PyEval_RestoreThread: NULL tstate");
 #ifdef WITH_THREAD
@@ -2346,7 +2343,12 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
         TARGET(IMPORT_NAME)
         {
             _Py_IDENTIFIER(__import__);
-            PREVENT_PARALLEL_IMPORT();
+            PyObject *old_f_globals = NULL;
+            if (Py_PXCTX()) {
+                old_f_globals = f->f_globals;
+                f->f_globals = f->f_locals;
+            }
+            //PREVENT_PARALLEL_IMPORT();
             w = GETITEM(names, oparg);
             x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
             if (x == NULL) {
@@ -2387,6 +2389,8 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
             READ_TIMESTAMP(intr1);
             Py_DECREF(w);
             SET_TOP(x);
+            if (old_f_globals)
+                f->f_globals = old_f_globals;
             if (x != NULL) DISPATCH();
             break;
         }
