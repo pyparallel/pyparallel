@@ -410,6 +410,7 @@ class RangedRequest:
 
 class HttpServer:
 
+    routes = None
     use_sendfile = True
     #throughput = True
     #low_latency = True
@@ -595,7 +596,14 @@ class HttpServer:
 
     def route(self, request):
         """Override in subclass if desired.  Return a callable."""
-        return None
+        if not self.routes:
+            return
+        try:
+            funcname = self.routes.longest_prefix_value(request.path)
+            if funcname:
+                return getattr(self, funcname)
+        except KeyError:
+            pass
 
     def dispatch(self, request):
         func = self.route(request)
