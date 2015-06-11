@@ -502,7 +502,11 @@ PyThreadState_Swap(PyThreadState *newts)
 PyObject *
 PyThreadState_GetDict(void)
 {
-    PyThreadState *tstate = PyThreadState_XGET();
+    PyThreadState *tstate;
+    
+    __debugbreak();
+
+    state = PyThreadState_XGET();
     if (tstate == NULL)
         return NULL;
 
@@ -648,6 +652,7 @@ _PyThread_CurrentFrames(void)
 static int
 PyThreadState_IsCurrent(PyThreadState *tstate)
 {
+    Px_VOID();
     /* Must be the tstate for this thread */
     assert(PyGILState_GetThisThreadState()==tstate);
     return tstate == _Py_atomic_load_relaxed(&_PyThreadState_Current);
@@ -659,6 +664,7 @@ PyThreadState_IsCurrent(PyThreadState *tstate)
 void
 _PyGILState_Init(PyInterpreterState *i, PyThreadState *t)
 {
+    Px_VOID();
     assert(i && t); /* must init with valid states */
     autoTLSkey = PyThread_create_key();
     if (autoTLSkey == -1)
@@ -673,6 +679,7 @@ _PyGILState_Init(PyInterpreterState *i, PyThreadState *t)
 void
 _PyGILState_Fini(void)
 {
+    Px_VOID();
     PyThread_delete_key(autoTLSkey);
     autoInterpreterState = NULL;
 }
@@ -684,7 +691,9 @@ _PyGILState_Fini(void)
 void
 _PyGILState_Reinit(void)
 {
-    PyThreadState *tstate = PyGILState_GetThisThreadState();
+    PyThreadState *tstate;
+    Px_VOID();
+    tstate = PyGILState_GetThisThreadState();
     PyThread_delete_key(autoTLSkey);
     if ((autoTLSkey = PyThread_create_key()) == -1)
         Py_FatalError("Could not allocate TLS entry");
@@ -703,6 +712,7 @@ _PyGILState_Reinit(void)
 static void
 _PyGILState_NoteThreadState(PyThreadState* tstate)
 {
+    Px_VOID();
     /* If autoTLSkey isn't initialized, this must be the very first
        threadstate created in Py_Initialize().  Don't do anything for now
        (we'll be back here when _PyGILState_Init is called). */
@@ -734,6 +744,7 @@ _PyGILState_NoteThreadState(PyThreadState* tstate)
 PyThreadState *
 PyGILState_GetThisThreadState(void)
 {
+    Px_RETURN_NULL();
     if (autoInterpreterState == NULL)
         return NULL;
     return (PyThreadState *)PyThread_get_key_value(autoTLSkey);
@@ -744,6 +755,7 @@ PyGILState_Ensure(void)
 {
     int current;
     PyThreadState *tcur;
+    Px_RETURN_NULL();
     /* Note that we do not auto-init Python here - apart from
        potential races with 2 threads auto-initializing, pep-311
        spells out other issues.  Embedders are expected to have
@@ -777,8 +789,9 @@ PyGILState_Ensure(void)
 void
 PyGILState_Release(PyGILState_STATE oldstate)
 {
-    PyThreadState *tcur = (PyThreadState *)PyThread_get_key_value(
-                                                            autoTLSkey);
+    PyThreadState *tcur;
+    Px_VOID();
+    tcur = (PyThreadState *)PyThread_get_key_value(autoTLSkey);
     if (tcur == NULL)
         Py_FatalError("auto-releasing thread-state, "
                       "but no thread-state for this thread");
