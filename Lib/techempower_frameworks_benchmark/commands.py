@@ -194,7 +194,7 @@ class DbPyodbcHttpServer(TCPServerCommand):
         _help = 'connect string to use for database [default: %default]'
         _default = (
             'Driver={ODBC Driver 11 for SQL Server};'
-            'Server=%s'
+            'Server=%s;'
             'Database=hello_world;'
             'Uid=benchmarkdbuser;'
             'Pwd=B3nchmarkDBPass;'
@@ -210,8 +210,6 @@ class DbPyodbcHttpServer(TCPServerCommand):
         port = int(self.options.port)
         root = self.options.root or os.getcwd()
 
-        self._out("Serving HTTP on %s port %d ..." % (ip, port))
-
         cs = self.options.connect_string % self.options.server
         import async
         from . import BaseHttpServer
@@ -226,6 +224,8 @@ class DbPyodbcHttpServer(TCPServerCommand):
         # Force a hash.
         dummy = id(BaseHttpServer.connect_string)
 
+        self._out("Attempting to connect to %s..." % cs)
+
         con = pyodbc.connect(cs)
         #BaseHttpServer.connection = con
         cur = con.cursor()
@@ -233,6 +233,8 @@ class DbPyodbcHttpServer(TCPServerCommand):
         cur.fetchall()
         cur.close()
         con.close()
+
+        self._out("Serving HTTP on %s port %d ..." % (ip, port))
 
         with chdir(root):
             server = async.server(ip, port)
