@@ -3230,6 +3230,7 @@ PyUnicode_Decode(const char *s,
     PyObject *buffer = NULL, *unicode;
     Py_buffer info;
     char lower[11];  /* Enough for any encoding shortcut */
+    int byteorder_n1 = -1;
 
     /* Shortcuts for common default encodings */
     if (_Py_normalize_encoding(encoding, lower, sizeof(lower))) {
@@ -3250,6 +3251,9 @@ PyUnicode_Decode(const char *s,
             return PyUnicode_DecodeUTF16(s, size, errors, 0);
         else if (strcmp(lower, "utf-32") == 0)
             return PyUnicode_DecodeUTF32(s, size, errors, 0);
+        /* Added for pyparallel/datrie (which needs utf-32-le). */
+        else if (strcmp(lower, "utf-32-le") == 0)
+            return PyUnicode_DecodeUTF32(s, size, errors, &byteorder_n1);
     }
 
     /* Decode via the codec registry */
