@@ -38,6 +38,14 @@ try:
 except ImportError:
     pass
 
+import inspect
+def register_module_deallocs(module):
+    isclass = inspect.isclass
+    attrs = [ getattr(module, name) for name in dir(module) ]
+    types = [ t for t in attrs if isclass(t) ]
+    for t in types:
+        _async.register_dealloc(t)
+
 class object:
     def __init__(self, **kwds):
         self.__dict__.update(kwds)
