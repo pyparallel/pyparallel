@@ -1131,7 +1131,8 @@ def add_files(db):
     # Add all .py files in Lib, except tkinter, test
     dirs = []
     pydirs = [
-        (root, "Lib",       hgfiles["Lib"],     default_feature),
+        (root, "Lib",       hgfiles["Lib"],      default_feature),
+        (root, "examples",  hgfiles["examples"], default_feature),
         (root, "Python",    hgfiles["Python"],  source),
         (root, "PCbuild",   hgfiles["PCbuild"], source),
         (root, "PC",        hgfiles["PC"],      source),
