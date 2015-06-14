@@ -1,2 +1,2 @@
 @echo off
-PCbuild\amd64\python_d %*
+%~dp0\PCbuild\amd64\python_d %*
