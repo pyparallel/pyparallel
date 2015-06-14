@@ -109,6 +109,25 @@ void PxSocket_IOLoop(PxSocket *s);
 
 static PyObject *loaded_dynamic_modules;
 
+void *
+_PyHeap_Malloc(
+    Context *c,
+    size_t n,
+    size_t align,
+    int no_heap_realloc
+);
+
+void *
+_PyHeap_Realloc(
+    Context *c,
+    void *p,
+    size_t n,
+    size_t align,
+    int no_heap_realloc
+);
+
+void _PyHeap_Free(Context *c, void *p);
+
 int
 PyPx_EnableTLSHeap(void)
 {
@@ -157,6 +176,62 @@ int
 _PyParallel_IsDebugbreakOnNextExceptionSet(void)
 {
     return _PyParallel_BreakOnNextException;
+}
+
+void *
+PyMem_RawMalloc(size_t size)
+{
+    Px_RETURN(_PyHeap_Malloc(ctx, size, 0, 0));
+    return malloc(size);
+}
+
+void *
+PyMem_RawRealloc(void *p, size_t size)
+{
+    Px_RETURN(_PyHeap_Realloc(ctx, p, size, 0, 0));
+    return realloc(p, size);
+}
+
+void *
+PyMem_RawCalloc(size_t size, size_t elsize)
+{
+    Px_RETURN(_PyHeap_Malloc(ctx, size*elsize, 0, 0));
+    return calloc(size, elsize);
+}
+
+void
+PyMem_RawFree(void *p)
+{
+    Px_RETURN_VOID(_PyHeap_Free(ctx, p));
+    free(p);
+}
+
+void *
+PyMem_RawAlignedMalloc(size_t size, size_t alignment)
+{
+    Px_RETURN(_PyHeap_Malloc(ctx, size, alignment, 0));
+    return _aligned_malloc(size, alignment);
+}
+
+void *
+PyMem_RawAlignedCalloc(size_t size, size_t elsize, size_t alignment)
+{
+    Px_RETURN(_PyHeap_Malloc(ctx, size*elsize, alignment, 0));
+    return _aligned_malloc(size*elsize, alignment);
+}
+
+void *
+PyMem_RawAlignedRealloc(void *p, size_t size, size_t alignment)
+{
+    Px_RETURN(_PyHeap_Realloc(ctx, p, size, alignment, 0));
+    return _aligned_realloc(p, size, alignment);
+}
+
+void
+PyMem_RawAlignedFree(void *p)
+{
+    Px_RETURN_VOID(_PyHeap_Free(ctx, p));
+    _aligned_free(p);
 }
 
 void
@@ -3036,7 +3111,21 @@ _PyTLSHeap_Realloc(void *p, size_t n)
 }
 
 void *
-_PyHeap_Realloc(Context *c, void *p, size_t n)
+_PyTLSHeap_AlignedRealloc(void *p, size_t n, size_t a)
+{
+    void *r = _PyTLSHeap_Malloc(n, 0);
+    if (!r)
+        return NULL;
+
+    if (p)
+        memcpy(r, p, n);
+
+    return r;
+}
+
+
+void *
+_PyHeap_Realloc(Context *c, void *p, size_t n, size_t a, int no_heap_realloc)
 {
     void  *r;
     Heap  *h;
@@ -3047,7 +3136,30 @@ _PyHeap_Realloc(Context *c, void *p, size_t n)
 
     h = c->h;
     s = &c->stats;
-    r = _PyHeap_Malloc(c, n, 0, 0);
+    r = _PyHeap_Malloc(c, n, a, no_heap_realloc);
+    if (!r)
+        return NULL;
+    if (!p)
+        return r;
+    h->mem_reallocs++;
+    s->mem_reallocs++;
+    memcpy(r, p, n);
+    return r;
+}
+
+void *
+_PyHeap_AlignedRealloc(Context *c, void *p, size_t n, size_t a)
+{
+    void  *r;
+    Heap  *h;
+    Stats *s;
+
+    if (Px_TLS_HEAP_ACTIVE)
+        return _PyTLSHeap_AlignedRealloc(p, n, a);
+
+    h = c->h;
+    s = &c->stats;
+    r = _PyHeap_Malloc(c, n, a, 0);
     if (!r)
         return NULL;
     if (!p)
@@ -3335,7 +3447,7 @@ _PxObject_Realloc(void *p, size_t nbytes)
         void *r;
         if (s & _SIG_PY)
             printf("\n_PxObject_Realloc(Py_PXCTX() && p = _SIG_PY)\n");
-        r = _PyHeap_Realloc(c, p, nbytes);
+        r = _PyHeap_Realloc(c, p, nbytes, 0, 0);
         return r;
     } else {
         if (s & _SIG_PX)
@@ -3373,7 +3485,7 @@ void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
     Px_GUARD();
-    return _PyHeap_Realloc(ctx, p, nbytes);
+    return _PyHeap_Realloc(ctx, p, nbytes, 0, 0);
 }
 
 void

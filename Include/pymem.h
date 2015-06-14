@@ -51,12 +51,22 @@ extern "C" {
 
 PyAPI_FUNC(void *) PyMem_Malloc(size_t);
 PyAPI_FUNC(void *) PyMem_Realloc(void *, size_t);
-PyAPI_FUNC(void) PyMem_Free(void *);
+PyAPI_FUNC(void)   PyMem_Free(void *);
+
+PyAPI_FUNC(void *) PyMem_RawMalloc(size_t);
+PyAPI_FUNC(void *) PyMem_RawRealloc(void *, size_t);
+PyAPI_FUNC(void *) PyMem_RawCalloc(size_t size, size_t elsize);
+PyAPI_FUNC(void)   PyMem_RawFree(void *);
+
+PyAPI_FUNC(void *) PyMem_RawAlignedMalloc(size_t size, size_t alignment);
+PyAPI_FUNC(void *) PyMem_RawAlignedCalloc(size_t size, size_t elsize, size_t);
+PyAPI_FUNC(void *) PyMem_RawAlignedRealloc(void *, size_t, size_t alignment);
+PyAPI_FUNC(void)   PyMem_RawAlignedFree(void *);
 
 #ifdef WITH_PARALLEL
 PyAPI_FUNC(void *) _PxMem_Malloc(size_t);
 PyAPI_FUNC(void *) _PxMem_Realloc(void *, size_t);
-PyAPI_FUNC(void) _PxMem_Free(void *);
+PyAPI_FUNC(void)   _PxMem_Free(void *);
 #endif
 
 /* Starting from Python 1.6, the wrappers Py_{Malloc,Realloc,Free} are
@@ -90,6 +100,10 @@ PyAPI_FUNC(void) _PxMem_Free(void *);
 #define PyMem_MALLOC(n) \
     (Py_PXCTX() ? _PxMem_Malloc((size_t)n) : _PyMem_MALLOC((size_t)n))
 
+#define PyMem_CALLOC(n, z)                                  \
+    (Py_PXCTX() ? _PxMem_Calloc((size_t)(n), (size_t)(z)) : \
+                  _PyMem_CALLOC((size_t)(n), (size_t)(z)))
+
 #define PyMem_REALLOC(p, n) \
     (Py_PXCTX() ? _PxMem_Realloc((p), (n)) : _PyMem_REALLOC((p), (n)))
 
@@ -99,21 +113,6 @@ PyAPI_FUNC(void) _PxMem_Free(void *);
 #define PyMem_REALLOC _PyMem_REALLOC
 #define PyMem_FREE    _PyMem_FREE
 #endif
-
-/* PyParallel XXX: the new memory API in 3.4 is going to require a lot of work
-   to bring PyParallel in line with it, given how many significant changes we
-   make in this area.  So, that's something on the todo list for later.
-
-   For now, we add in stubs for PyMem_Raw(Malloc|Realloc|Free), because I want
-   to pick up some fixes to myreadline.c, and the fixes involve changing the
-   PyMem_(MALLOC|REALLOC|FREE) calls in that file to the new PyMem_Raw ones.
-
-   I could just replace with the malloc/realloc/free literals, but eh, it'll
-   be one less thing generating merge conflicts down the track. */
-#define PyMem_RawMalloc(n)      malloc(n)
-#define PyMem_RawRealloc(p, n)  realloc(p, n)
-#define PyMem_RawFree(p)        free(p)
-
 
 /*
  * Type-oriented memory interface
