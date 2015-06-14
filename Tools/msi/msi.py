@@ -1138,6 +1138,7 @@ def add_files(db):
         (root, "Objects",   hgfiles["Objects"], source),
         (root, "Modules",   hgfiles["Modules"], source),
         (root, "Parser",    hgfiles["Parser"],  source),
+        (root, "contrib",   hgfiles["contrib"], source),
     ]
     while pydirs:
         # Commit every now and then, or else installer will complain
