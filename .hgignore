@@ -102,3 +102,5 @@ easy_install-3.3-script.py
 *.ipch
 *.psess
 *.vsp
+.eggs*
+*.git*

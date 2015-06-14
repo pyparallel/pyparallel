@@ -1,0 +1,104 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{A503B47E-D455-4806-947F-BFCA56EF0F9E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{28358B4E-0F4B-4728-8C08-1BAFB8C8566C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{37A2F692-0C97-11E5-9F3F-8863DFCA3C43}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(pyodbcDir)\src\buffer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\cnxninfo.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\connection.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\cursor.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\errors.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\getdata.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\params.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\pyodbccompat.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\pyodbcdbg.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\pyodbcmodule.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\row.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pyodbcDir)\src\sqlwchar.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(pyodbcDir)\src\buffer.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\cnxninfo.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\connection.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\cursor.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\dbspecific.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\errors.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\getdata.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\params.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\pyodbc.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\pyodbccompat.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\pyodbcmodule.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\resource.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\row.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\sqlwchar.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pyodbcDir)\src\wrapper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="$(pyodbcDir)\src\pyodbc.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
