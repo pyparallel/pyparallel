@@ -805,7 +805,7 @@ PyObject_Malloc(size_t nbytes)
     poolp pool;
     poolp next;
     uint size;
-    Px_RETURN(_PxMem_Malloc(nbytes))
+    Px_RETURN(_PxMem_Malloc(nbytes));
 
 #ifdef WITH_VALGRIND
     if (UNLIKELY(running_on_valgrind == -1))
@@ -1023,7 +1023,7 @@ PyObject_Free(void *p)
 #ifndef Py_USING_MEMORY_DEBUGGER
     uint arenaindex_temp;
 #endif
-    Px_RETURN_VOID(_PxMem_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p));
 
     if (p == NULL)      /* free(NULL) has no effect */
         return;
@@ -1259,7 +1259,7 @@ PyObject_Realloc(void *p, size_t nbytes)
         return PyObject_Malloc(nbytes);
 
     PyPx_GUARD_MEM(p);
-    Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Px_RETURN(_PxMem_Realloc(p, nbytes));
 
     /*
      * Limit ourselves to PY_SSIZE_T_MAX bytes to prevent security holes.
@@ -1483,19 +1483,19 @@ p[2*S+n+S: 2*S+n+2*S]
 void *
 _PyMem_DebugMalloc(size_t nbytes)
 {
-    Px_RETURN(_PxMem_Malloc(nbytes))
+    Px_RETURN(_PxMem_Malloc(nbytes));
     return _PyObject_DebugMallocApi(_PYMALLOC_MEM_ID, nbytes);
 }
 void *
 _PyMem_DebugRealloc(void *p, size_t nbytes)
 {
-    Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Px_RETURN(_PxMem_Realloc(p, nbytes));
     return _PyObject_DebugReallocApi(_PYMALLOC_MEM_ID, p, nbytes);
 }
 void
 _PyMem_DebugFree(void *p)
 {
-    Px_RETURN_VOID(_PxMem_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p));
     _PyObject_DebugFreeApi(_PYMALLOC_MEM_ID, p);
 }
 
@@ -1503,19 +1503,19 @@ _PyMem_DebugFree(void *p)
 void *
 _PyObject_DebugMalloc(size_t nbytes)
 {
-    Px_RETURN(_PxMem_Malloc(nbytes))
+    Px_RETURN(_PxMem_Malloc(nbytes));
     return _PyObject_DebugMallocApi(_PYMALLOC_OBJ_ID, nbytes);
 }
 void *
 _PyObject_DebugRealloc(void *p, size_t nbytes)
 {
-    Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Px_RETURN(_PxMem_Realloc(p, nbytes));
     return _PyObject_DebugReallocApi(_PYMALLOC_OBJ_ID, p, nbytes);
 }
 void
 _PyObject_DebugFree(void *p)
 {
-    Px_RETURN_VOID(_PxMem_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p));
     _PyObject_DebugFreeApi(_PYMALLOC_OBJ_ID, p);
 }
 void
@@ -1533,7 +1533,7 @@ _PyObject_DebugMallocApi(char id, size_t nbytes)
     uchar *p;           /* base address of malloc'ed block */
     uchar *tail;        /* p + 2*SST + nbytes == pointer to tail pad bytes */
     size_t total;       /* nbytes + 4*SST */
-    Px_RETURN(_PxMem_Malloc(nbytes))
+    Px_RETURN(_PxMem_Malloc(nbytes));
 
     bumpserialno();
     total = nbytes + 4*SST;
@@ -1575,7 +1575,7 @@ _PyObject_DebugFreeApi(char api, void *p)
     if (p == NULL)
         return;
 
-    Px_RETURN_VOID(_PxMem_Free(p))
+    Px_RETURN_VOID(_PxMem_Free(p));
 
     _PyObject_DebugCheckAddressApi(api, p);
     nbytes = read_size_t(q);
@@ -1598,7 +1598,7 @@ _PyObject_DebugReallocApi(char api, void *p, size_t nbytes)
         return _PyObject_DebugMallocApi(api, nbytes);
 
     PyPx_GUARD_MEM(p);
-    Px_RETURN(_PxMem_Realloc(p, nbytes))
+    Px_RETURN(_PxMem_Realloc(p, nbytes));
 
     _PyObject_DebugCheckAddressApi(api, p);
     bumpserialno();
@@ -1654,7 +1654,7 @@ _PyObject_DebugCheckAddressApi(char api, const void *p)
     const uchar *tail;
     int i;
     char id;
-    Px_VOID
+    Px_VOID();
 
     if (p == NULL) {
         msg = "didn't expect a NULL pointer";
