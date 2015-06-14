@@ -660,6 +660,9 @@ class HttpServer:
 
         return self.sendfile(request, path)
 
+    def do_CONNECT(self, request):
+        async.debug(request.data)
+
     def list_directory(self, request, path):
         #async.debug(repr(request))
         try:
