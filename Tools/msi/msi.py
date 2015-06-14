@@ -997,6 +997,9 @@ class PyDirectory(Directory):
         if not exists(pdbpath):
             pdbpath = join_path(self.absolute, pdbname)
 
+        if 'numpy' in pdbpath:
+            return
+
         if not exists(pdbpath):
             import pdb
             dbg = pdb.Pdb()
