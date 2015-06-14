@@ -1022,9 +1022,31 @@ _Py_DecRef(PyObject *op)
         }                                         \
     } while (0)
 
+#define Py_ODECREF(op)                                        \
+    do {                                                      \
+        if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
+        --((PyObject*)(op))->ob_refcnt != 0)                  \
+            _Py_CHECK_REFCNT(op)                              \
+        else                                                  \
+        _Py_Dealloc((PyObject *)(op));                        \
+    } while (0)
+
+
+/* Use when Py_PXCTX() won't work, e.g. thread shutdown. */
+#define Py_OCLEAR(op)                             \
+    do {                                          \
+        if (op) {                                 \
+            PyObject *_py_tmp = (PyObject *)(op); \
+            (op) = NULL;                          \
+            Py_ODECREF(_py_tmp);                  \
+        }                                         \
+    } while (0)
+
+
 /* Macros to use in case the object pointer may be NULL: */
-#define Py_XINCREF(op) do { if ((op) == NULL) ; else Py_INCREF(op); } while (0)
-#define Py_XDECREF(op) do { if ((op) == NULL) ; else Py_DECREF(op); } while (0)
+#define Py_XINCREF(op)  do { if ((op) == NULL) ; else Py_INCREF(op);  } while (0)
+#define Py_XDECREF(op)  do { if ((op) == NULL) ; else Py_DECREF(op);  } while (0)
+#define Py_OXDECREF(op) do { if ((op) == NULL) ; else Py_ODECREF(op); } while (0)
 
 /*
 These are provided as conveniences to Python runtime embedders, so that
@@ -1057,7 +1079,7 @@ PyAPI_DATA(PyObject) _Py_NoneStruct; /* Don't use this directly */
 /*
 Py_NotImplemented is a singleton used to signal that an operation is
 not implemented for a given type combination.
-*/  
+*/
 PyAPI_DATA(PyObject) _Py_NotImplementedStruct; /* Don't use this directly */
 #define Py_NotImplemented (&_Py_NotImplementedStruct)
 
