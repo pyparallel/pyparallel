@@ -96,6 +96,8 @@ if full_current_version is None:
     full_current_version = current_version
 
 extensions = [
+    'pyodbc.pyd',
+    'datrie.pyd',
     'pyexpat.pyd',
     'select.pyd',
     'unicodedata.pyd',
