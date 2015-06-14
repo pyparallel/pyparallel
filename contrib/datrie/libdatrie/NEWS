@@ -1,0 +1,111 @@
+libdatrie
+
+0.2.8 (2014-01-10)
+=====
+- Fix compiler warnings in test suites.
+- Fix edge-case error on alphabet set of size 255.
+  (Thanks Naoki Youshinaga for the report, test case, and analysis.)
+- Fail trie operations on non-alphabet inputs, rather than silently allowing
+  them to sneak in as false keys.
+  (Thanks Naoki Youshinaga for the suggestion.)
+- Improved documentation.
+
+0.2.7.1 (2013-10-22)
+=======
+- Bump library versioning to reflect API addition.
+  (Change missing in previous release)
+
+0.2.7 (2013-10-21)
+=====
+- Fix portability issue with non-GCC compilers.
+  [Thanks Gabi Daver for the report and fix (via Mikhail Korobov).]
+- Fix compiler warnings.
+- New utility API for comparing AlphaChar strings.
+- Add test suites.
+- Update doxygen doc generation.
+
+0.2.6 (2013-01-23)
+=====
+- New API trie_state_walkable_chars() for breadth-first traversal.
+- New class TrieIterator for callback-free enumeration.
+- Improved performance on key enumeration.
+- Improved AlphaMap range merging.
+- Bug fixes.
+[Many thanks to Mikhail Korobov for improvements in this version.]
+
+0.2.5 (2011-11-04)
+=====
+- Fix missing 'extern "C"' in header file. [Patch from Aurimas Černius]
+- Minor documentation fix.
+
+0.2.4 (2010-06-30)
+=====
+- Close file on saving trie. [Bug report from Xu Jiandong]
+- Add trie_store_if_absent() API which fails on adding duplicated key.
+  This is useful for preventing race condition in multi-thread applications.
+  [Suggestion from Dan Searle]
+- Add trie_fread() and trie_fwrite() APIs for reading/writing trie data in
+  an open file, allowing trie to be embeded as part of a bigger file.
+  [Suggestion from NIIBE Yutaka]
+
+0.2.3 (2010-02-27)
+=====
+- More robustness against corrupted trie files.
+- License clarification in individual source files.
+
+0.2.2 (2009-04-29)
+=====
+- Support building with linkers without symbol versioning supports,
+  including Mac, Cygwin, MinGW.
+- Support other iconv implementations than that's in glibc, for Mac and MinGW.
+
+0.2.1 (2009-04-05)
+=====
+- Fix errors in documentation
+- Symbol versioning to ease upgrade across SONAME
+- Minor cleanups
+
+0.2.0 (2009-03-24)
+=====
+- New APIs for performance: trie_state_copy(), trie_state_is_single()
+- Clean-ups
+
+0.1.99.2 (2008-12-15)
+========
+- More robust handling of alphabet ranges
+- Allow co-existence with libdatrie0
+
+0.1.99.1 (2008-12-12)
+========
+- Breaking ABI with libdatrie0
+- More capacity with 32-bit node index
+- Adjusted API for non-file trie usage
+- All data in one file, no more *.br and *.tl split
+- Drop SBTrie wrapper; all features are merged into Trie
+- Domain characters are now Unicode
+
+0.1.3 (2008-01-28)
+=====
+- Fix memory bug which can crash on some platforms, reportedly win32.
+  (shepmaster)
+- Fix symbols exporting, so it builds on Mac. (Vee Satayamas)
+- Remove excessive documentation for private API's.
+- Add the SBM file format documentation frequently asked for
+
+0.1.2 (2007-08-25)
+=====
+- Limited symbols export, to avoid name clashing
+- Improved error handling for edge cases
+- Fix crashes
+
+0.1.1 (2006-10-12)
+=====
+- Fix compiler warnings
+- Man page for trietool
+
+0.1.0 (2006-09-18)
+=====
+- Initial release
+- BASE-TAIL Double-array trie structure
+- Single-byte character map support
+

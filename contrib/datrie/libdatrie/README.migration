@@ -1,0 +1,182 @@
+MIGRATION FROM 0.1.X TO 0.2.X
+
+0.2.x breaks 0.1.x interoperability in many ways, to allow more use cases, and
+to provide more storage capacity.
+
+1. Binary Data Changes
+
+1.1 All Trie Data in Single File
+
+No more splitting of a trie into '{trie-name}.sbm', '{trie-name}.br' and
+'{trie-name}.tl'. All parts are now stored in a single file, '{trie-name}.tri'.
+
+Note, however, that a '{trie-name}.abm' (a renamed version of '{trie-name}.sbm'
+after Unicode support) is still needed on first creation. But once created,
+the '{trie-name}.tri' will incorporate the alphabet map data, and no
+'{trie-name}.abm' is required in later uses. It will even be ignored if exists.
+
+1.2 32-Bit Node Index
+
+To accommodate larger word lists, trie node indices are now 32 bits, instead of
+16 bits. This means 32,767 times capacity compared to the old format.
+Therefore, the data size are doubled in general when migrating from old format,
+but it can now hold exponentially more entries.
+
+In addition, the tail block lengths are now 16 bits, instead of 8 bits, making
+it possible to store longer suffixes, for dictionaries of extremely long words.
+
+1.3 No Backward Compatibility
+
+For simplicity of the code, it was decided not to read/write old format files.
+If you still prefer using the old format, just stay with the old version. If
+you like to gain more support from the new version, you can migrate your old
+data by first dumping your dictionary with 0.1.x trietool into text file and
+then creating the new dictionary with the dumped word list. Or if you already
+have the word list, that makes things a lot easier. Just create the dictionary
+with the new trietool.
+
+Data Migration Steps:
+
+  a. If you have the word list source, just skip to next step. Otherwise, you
+     can dump the old data with 0.1.x trietool:
+
+       $ trietool {trie-name} list > words.lst
+
+  b. Prepare '{trie-name}.abm', listing ranges of characters used in the word
+     list, in terms of Unicode values. For example, for an English and Thai
+     dictionary:
+
+       [0x0041,0x005a]
+       [0x0061,0x007a]
+       [0x0e01,0x0e3a]
+       [0x0e40,0x0e4e]
+
+  c. Generate new trie with 0.2.x trietool-0.2. For example:
+
+       $ trietool-0.2 {trie-name} add-list -e TIS-620 words.lst
+
+     In this example, the '-e TIS-620' indicates that the 'words.lst' file
+     contains TIS-620 encoded text, which is most likely for word lists dumped
+     from the old trie with 8-bit Thai character code as the key encoding.
+     Replace it with your old encoding as necessary, such as ISO-8859-1 or the
+     like. If '-e' option is omitted, current locale encoding is assumed.
+     See trietool-0.2 man page for details.
+
+2. API Changes
+
+2.1 Non-File Trie Usage
+
+In datrie 0.1.x, every trie was associated with a set of files. Now, this is
+not only reduced to a single file, but zero file is also possible. That is, a
+new trie can be created in memory, added words, removed words, queried words,
+and then disposed without writing data to any file. Meanwhile, saving to file
+is still possible.
+
+  Scenario 1: Loading trie from file, using it read-only.
+    1a. Open trie with trie_new_from_file(path).
+    1b. Use it.
+    1c. On exit:
+        - Close it with trie_free().
+
+  Scenario 2: Loading trie from file, updating file when finished.
+    2a. Open trie with trie_new_from_file(path).
+    2b. Use/update it.
+    2c. On exit:
+        - If trie_is_dirty(), then trie_save().
+        - Close it with trie_free().
+
+  Scenario 3: Create a new trie, saving it when finished.
+    3a. Prepare an alphabet map:
+        - Create new alphabet map with alpha_map_new().
+        - Add ranges with alpha_map_add_range().
+    3b. Create new trie with trie_new(alpha_map).
+    3c. Free the alphabet map with alpha_map_free().
+    3d. Use/update the trie.
+    3e. On exit:
+        - If trie_is_dirty(), then trie_save().
+        - Close the trie with trie_free().
+
+  Scenario 4: Create temporary trie, disposing it when finished.
+    4a. Prepare an alphabet map:
+        - Create new alphabet map with alpha_map_new().
+        - Add ranges with alpha_map_add_range().
+    4b. Create new trie with trie_new(alpha_map).
+    4c. Free the alphabet map with alpha_map_free().
+    4d. Use/update the trie.
+    4e. On exit:
+        - Close the trie with trie_free().
+
+2.2 No More SBTrie
+
+In datrie 0.1.x, SBTrie provided a wrapper to Trie implementation, converting
+between real character codes and trie internal codes. This was for compactness,
+as continuous character code range can cause more compact sparse table
+allocation, while the real alphabet set needs not be continuous. However, in
+datrie 0.2.x, this mapping feature has been merged into Trie class, to reduce
+call layers. So, there is no SBTrie any more. You can call Trie directly in the
+same way you called SBTrie in 0.1.x.
+
+2.3 Characters are Now Unicode
+
+datrie was previously planned to support multiple kinds of character encodings,
+with only single-byte encoding as the available implementation for the time
+being.
+
+However, as there have been many requests for Unicode support, it seems to be
+the most useful choice, into which all other encodings can be converted.
+
+Furthermore, as datrie is mostly used in program's critical path, having too
+many layers can contribute to being a bottleneck. So, only Unicode is accepted
+in this version. It's now the application's duty to convert its keys into
+Unicode before passing them to datrie. This should also allow any kind of
+possible caching.
+
+2.4 New Public APIs for Alphabet Map
+
+As AlphaMap (alphabet map) is now necessary for creating a new empty trie, the
+APIs for manipulating this data is now exposed to the public scope. See
+<datrie/alpha-map.h> for the details.
+
+2.5 Extensions to TrieState
+
+trie_state_copy()
+
+  As part of performance profiling, allocating and freeing TrieState is found
+  to eat up CPU time at some degree. So, reusing existing TrieState where
+  possible does help. This function is added for copying TrieState data, as a
+  better alternative than trie_state_clone().
+
+trie_state_is_single()
+
+  Sometimes, checking if a TrieState is a leaf state is too expensive for
+  program's critical path. It needs to check both whether the state is in a
+  non-branching path, that is, whether it is in a suffix node, and whether it
+  can be walked by a terminator. When a program only needs to check for the
+  former fact and not the latter, this method is at disposal.
+
+3. Changes to TrieTool
+
+3.1 Renaming
+
+To allow co-existence with 0.1.x trietool, 0.2.x trietool is named
+trietool-0.2.
+
+3.2 '*.abm' Instead of '*.sbm'
+
+As SBTrie has been eliminated in datrie 0.2.x, the corresponding '*.sbm'
+(single-byte map) input file is also obsoleted. It is now renamed to '*.abm'
+(alphabet map). Its format is also redefined to be Unicode-based. All alphabet
+character ranges are defined in Unicode.
+
+Besides, the '*.abm' file is required only once at trie creation time. It is
+not needed at deployment, as the alphabet map is already included in the single
+trie file.
+
+3.3 Encoding Conversion Support
+
+As datrie is now Unicode-based, conversion from other encodings can be useful.
+This is possible for word list operations, namely add-list and delete-list, by
+the additional '-e {enc}' or '--encoding {enc}' option. This option specifies
+the character encoding of the word list file. And trietool-0.2 will convert the
+contents to Unicode on-the-fly.
+

@@ -1,0 +1,47 @@
+DATRIE_0.2 {
+global:
+  alpha_map_new;
+  alpha_map_clone;
+  alpha_map_free;
+  alpha_map_add_range;
+  alpha_char_strlen;
+  trie_new;
+  trie_new_from_file;
+  trie_free;
+  trie_save;
+  trie_is_dirty;
+  trie_retrieve;
+  trie_store;
+  trie_delete;
+  trie_enumerate;
+  trie_root;
+  trie_state_clone;
+  trie_state_copy;
+  trie_state_free;
+  trie_state_rewind;
+  trie_state_walk;
+  trie_state_is_walkable;
+  trie_state_is_single;
+  trie_state_get_data;
+local: *;
+};
+
+DATRIE_0.2.4 {
+  trie_store_if_absent;
+  trie_fread;
+  trie_fwrite;
+} DATRIE_0.2;
+
+DATRIE_0.2.6 {
+  trie_state_walkable_chars;
+  trie_iterator_new;
+  trie_iterator_free;
+  trie_iterator_next;
+  trie_iterator_get_key;
+  trie_iterator_get_data;
+} DATRIE_0.2.4;
+
+DATRIE_0.2.7 {
+  alpha_char_strcmp;
+} DATRIE_0.2.6;
+

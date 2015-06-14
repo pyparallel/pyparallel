@@ -1,0 +1,123 @@
+.\"                                      Hey, EMACS: -*- nroff -*-
+.\" First parameter, NAME, should be all caps
+.\" Second parameter, SECTION, should be 1-8, maybe w/ subsection
+.\" other parameters are allowed: see man(7), man(1)
+.TH TRIETOOL-0.2 1 "DECEMBER 2008"
+.\" Please adjust this date whenever revising the manpage.
+.\"
+.\" Some roff macros, for reference:
+.\" .nh        disable hyphenation
+.\" .hy        enable hyphenation
+.\" .ad l      left justify
+.\" .ad b      justify to both left and right margins
+.\" .nf        disable filling
+.\" .fi        enable filling
+.\" .br        insert line break
+.\" .sp <n>    insert n+1 empty lines
+.\" for manpage-specific macros, see man(7)
+.SH NAME
+trietool-0.2 \- trie manipulation tool
+.SH SYNOPSIS
+\fBtrietool-0.2\fP [ \fIoptions\fP ] \fItrie command arg\fP ...
+.SH DESCRIPTION
+\fBtrietool-0.2\fP is the command-line tool for manipulating double-array trie 
+data.  It can be used to query, add and remove words in a trie.
+.P
+.SS The Trie
+The \fItrie\fP argument specifies the name of the trie to manipulate. 
+A trie is stored in a file with `.tri' extension. However, to create a new
+trie, one needs to prepare a file with `.abm' extension, describing the
+Unicode ranges of alphabet set of the trie.  The ABM defines a set of
+vectors that map Unicode characters into a continuous range of integers.
+The mapped integers will be used as internal alphabet for the trie. 
+Such mapping can improve the space allocation within the trie data, regardless 
+of non-continuity of the character set being used, as the mapped range is 
+always continuous.
+.P
+The ABM file is a plain text file, with each line listing a range of 32-bit 
+Unicodes to be added to the alphabet set, in the format:
+.IP
+[0xSSSS,0xTTTT]
+.P
+where `0xSSSS' and `0xTTTT' are hexadecimal values of starting and ending 
+character code for the range, respectively.
+.P
+For example, for a dictionary that contains only English words witout any 
+punctuations, one may prepare `\fItrie\fP.abm' as:
+.IP
+[0x0041,0x005a]
+.br
+[0x0061,0x007a]
+.P
+The first line lists the ASCII codes for A-Z, and the second for a-z.
+.P
+No more than 255 alphabets are allowed in a trie.
+.P
+The created `.tri' file will incorporate the ABM data.  So, the `.abm' file
+is not required after the first creation, and will be ignored.
+.SH COMMANDS
+Available commands are:
+.TP
+\fBadd\fP \fIword data\fP ...
+Add \fIword\fP to trie, associated with integer \fIdata\fP.  Arbitrary number of
+words-data pairs can be given.  Two arguments will be read at a time, the first 
+will be treated as \fIword\fP, and the second as \fIdata\fP.
+.TP
+\fBadd-list\fP [ \fIoptions\fP ] \fIlist-file\fP
+Add words with associated data listed in \fIlist-file\fP to trie.  The 
+\fIlist-file\fP must be a text file listing one word per line.  The associated
+data can be put after the word in the same line, separated with tab (`\\t')
+character.  If the data field is omitted, a default value (\-1) will be used
+instead.
+.TP
+.B " "
+\fIOptions\fP are available for this command:
+.RS
+.TP
+.B \-e, \-\-encoding \fIenc\fP
+Specify character encoding of the \fIlist-file\fP contents, such as `UTF-8'.
+If omitted, current locale codeset is assumed.
+.RE
+.TP
+\fBdelete\fP \fIword\fP ...
+Delete \fIword\fP from trie.  Arbitrary number of words to delete can be given.
+.TP
+\fBdelete-list\fP [ \fIoptions\fP ] \fIlist-file\fP
+Delete words listed in \fIlist-file\fP from trie.  The \fIlist-file\fP must be 
+a text file listing one word per line.
+.TP
+.B " "
+\fIOptions\fP are available for this command:
+.RS
+.TP
+.B \-e, \-\-encoding \fIenc\fP
+Specify character encoding of the \fIlist-file\fP contents, such as `UTF-8'.
+If omitted, current locale codeset is assumed.
+.RE
+.TP
+\fBquery\fP \fIword\fP
+Search for \fIword\fP in trie.  If \fIword\fP exists, its associated data
+is printed to standard output.  Otherwise, error message is printed to standard
+error, with nothing printed to standard output.
+.TP
+\fBlist\fP
+List all words in trie to standard output.  The output lists one word-data pair
+per line, separated with tab (`\\t') character, the format appropriate for
+being \fIlist-file\fP for the \fBadd-list\fP command.
+.SH OPTIONS
+This program follows the usual GNU command line syntax, with long
+options starting with two dashes (`\-\-').
+A summary of options is included below.
+.TP
+.B \-p, \-\-path \fIdir\fP
+Set trie directory to \fIdir\fP [default=`.']
+.TP
+.B \-h, \-\-help
+Show summary of options.
+.TP
+.B \-V, \-\-version
+Show version of program.
+.SH AUTHOR
+libdatrie was written by Theppitak Karoonboonyanan.
+.PP
+This manual page was written by Theppitak Karoonboonyanan <thep@linux.thai.net>.
