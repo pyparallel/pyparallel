@@ -1850,8 +1850,9 @@ def shutdown(handlerList=_handlerList):
             #else, swallow
 
 #Let's try and shutdown automatically on application exit...
-import atexit
-atexit.register(shutdown)
+# XXX PyParallel: let's not -- shutdown() causing crashes.
+#import atexit
+#atexit.register(shutdown)
 
 # Null handler
 
