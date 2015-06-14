@@ -902,6 +902,9 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
 
 #ifdef WITH_PARALLEL
 #ifdef MS_WINDOWS
+#ifndef SYSTEM_CACHE_ALIGNMENT_SIZE
+#define SYSTEM_CACHE_ALIGNMENT_SIZE 64
+#endif
 #define Py_TLS __declspec(thread)
 #define Py_CACHE_ALIGN __declspec(align(SYSTEM_CACHE_ALIGNMENT_SIZE))
 #else
