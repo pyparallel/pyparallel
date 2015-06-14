@@ -2451,6 +2451,10 @@ void _Py_PyAtExit(void (*func)(void))
 static void
 call_py_exitfuncs(void)
 {
+    /* Exit funcs and PyParallel aren't playing well.  Let's just not call any
+       of them for now. */
+    return;
+
     if (pyexitfunc == NULL)
         return;
 
