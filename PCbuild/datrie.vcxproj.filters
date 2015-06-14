@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{A0A13FB6-0EFA-11E5-98F6-8863DFCA3C40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{A0A13FB7-0EFA-11E5-9F28-8863DFCA3C40}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cython">
+      <UniqueIdentifier>{A0A13FBA-0EFA-11E5-933D-8863DFCA3C40}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(datrieDir)\src\cdatrie.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\src\datrie.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\src\stdio_ext.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\alpha-map.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\darray.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\dstring.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\fileutils.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\tail.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\trie-string.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(datrieDir)\libdatrie\datrie\trie.c">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\alpha-map-private.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\alpha-map.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\darray.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\dstring-private.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\dstring.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\fileutils.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\tail.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\trie-private.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\trie-string.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\trie.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\triedefs.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(datrieDir)\libdatrie\datrie\typedefs.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\contrib\datrie\src\datrie.pyx">
+      <Filter>Cython</Filter>
+    </None>
+  </ItemGroup>
+</Project>
