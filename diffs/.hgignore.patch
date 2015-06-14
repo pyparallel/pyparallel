@@ -10,7 +10,7 @@ diff --git a/.hgignore b/.hgignore
  PCbuild/x64-temp-*
  PCbuild/amd64
  BuildLog.htm
-@@ -89,3 +91,14 @@ Modules/_testembed
+@@ -89,3 +91,16 @@ Modules/_testembed
  .coverage
  coverage/
  htmlcov/
@@ -25,4 +25,5 @@ diff --git a/.hgignore b/.hgignore
 +*.ipch
 +*.psess
 +*.vsp
-\ No newline at end of file
++.eggs*
++*.git*
