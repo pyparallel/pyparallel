@@ -308,7 +308,8 @@ PyEval_ThreadsInitialized(void)
 void
 PyEval_InitThreads(void)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     if (gil_created())
         return;
     create_gil();
@@ -321,7 +322,8 @@ PyEval_InitThreads(void)
 void
 _PyEval_FiniThreads(void)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     if (!gil_created())
         return;
     destroy_gil();
@@ -332,7 +334,8 @@ void
 PyEval_AcquireLock(void)
 {
     PyThreadState *tstate;
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     tstate = PyThreadState_GET();
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
@@ -343,7 +346,8 @@ PyEval_AcquireLock(void)
 void
 PyEval_ReleaseLock(void)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     /* This function must succeed when the current thread state is NULL.
        We therefore avoid PyThreadState_GET() which dumps a fatal error
        in debug mode.
@@ -355,7 +359,8 @@ PyEval_ReleaseLock(void)
 void
 PyEval_AcquireThread(PyThreadState *tstate)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     if (tstate == NULL)
         Py_FatalError("PyEval_AcquireThread: NULL new thread state");
     /* Check someone has called PyEval_InitThreads() to create the lock */
@@ -369,7 +374,8 @@ PyEval_AcquireThread(PyThreadState *tstate)
 void
 PyEval_ReleaseThread(PyThreadState *tstate)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     if (tstate == NULL)
         Py_FatalError("PyEval_ReleaseThread: NULL thread state");
     if (PyThreadState_Swap(NULL) != tstate)
@@ -388,7 +394,8 @@ PyEval_ReInitThreads(void)
     _Py_IDENTIFIER(_after_fork);
     PyObject *threading, *result;
     PyThreadState *tstate;
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
 
     tstate = PyThreadState_GET();
 
@@ -440,7 +447,8 @@ PyThreadState *
 PyEval_SaveThread(void)
 {
     PyThreadState *tstate;
-    Px_RETURN_NULL();
+    if (_PyParallel_GetActiveContext())
+        return NULL;
     tstate = PyThreadState_Swap(NULL);
     if (tstate == NULL)
         Py_FatalError("PyEval_SaveThread: NULL tstate");
@@ -454,7 +462,8 @@ PyEval_SaveThread(void)
 void
 PyEval_RestoreThread(PyThreadState *tstate)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     if (tstate == NULL)
         Py_FatalError("PyEval_RestoreThread: NULL tstate");
 #ifdef WITH_THREAD

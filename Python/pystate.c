@@ -503,10 +503,9 @@ PyObject *
 PyThreadState_GetDict(void)
 {
     PyThreadState *tstate;
-    
-    __debugbreak();
+    /* XXX: This needs to be reviewed for PyParallel. */   
 
-    state = PyThreadState_XGET();
+    tstate = PyThreadState_XGET();
     if (tstate == NULL)
         return NULL;
 
@@ -652,7 +651,7 @@ _PyThread_CurrentFrames(void)
 static int
 PyThreadState_IsCurrent(PyThreadState *tstate)
 {
-    Px_VOID();
+    Px_RETURN(1);
     /* Must be the tstate for this thread */
     assert(PyGILState_GetThisThreadState()==tstate);
     return tstate == _Py_atomic_load_relaxed(&_PyThreadState_Current);
@@ -712,7 +711,9 @@ _PyGILState_Reinit(void)
 static void
 _PyGILState_NoteThreadState(PyThreadState* tstate)
 {
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
+
     /* If autoTLSkey isn't initialized, this must be the very first
        threadstate created in Py_Initialize().  Don't do anything for now
        (we'll be back here when _PyGILState_Init is called). */
@@ -744,7 +745,9 @@ _PyGILState_NoteThreadState(PyThreadState* tstate)
 PyThreadState *
 PyGILState_GetThisThreadState(void)
 {
-    Px_RETURN_NULL();
+    if (_PyParallel_GetActiveContext())
+        return _PyParallel_GetThreadState();
+
     if (autoInterpreterState == NULL)
         return NULL;
     return (PyThreadState *)PyThread_get_key_value(autoTLSkey);
@@ -755,7 +758,9 @@ PyGILState_Ensure(void)
 {
     int current;
     PyThreadState *tcur;
-    Px_RETURN_NULL();
+    if (_PyParallel_GetActiveContext())
+        return PyGILState_LOCKED;
+
     /* Note that we do not auto-init Python here - apart from
        potential races with 2 threads auto-initializing, pep-311
        spells out other issues.  Embedders are expected to have
@@ -790,7 +795,8 @@ void
 PyGILState_Release(PyGILState_STATE oldstate)
 {
     PyThreadState *tcur;
-    Px_VOID();
+    if (_PyParallel_GetActiveContext())
+        return;
     tcur = (PyThreadState *)PyThread_get_key_value(autoTLSkey);
     if (tcur == NULL)
         Py_FatalError("auto-releasing thread-state, "
