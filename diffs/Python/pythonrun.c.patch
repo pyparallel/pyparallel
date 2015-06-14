@@ -107,3 +107,14 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  
      fprintf(stderr, "Fatal Python error: %s\n", msg);
      fflush(stderr); /* it helps in Windows debug build */
+@@ -2405,6 +2452,10 @@ void _Py_PyAtExit(void (*func)(void))
+ static void
+ call_py_exitfuncs(void)
+ {
++    /* Exit funcs and PyParallel aren't playing well.  Let's just not call any
++       of them for now. */
++    return;
++
+     if (pyexitfunc == NULL)
+         return;
+ 

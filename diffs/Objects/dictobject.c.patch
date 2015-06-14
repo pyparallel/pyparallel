@@ -91,3 +91,13 @@ diff --git a/Objects/dictobject.c b/Objects/dictobject.c
      PyDict_Clear((PyObject *)mp);
      Py_RETURN_NONE;
  }
+@@ -2696,7 +2734,8 @@ PyDict_SetItemString(PyObject *v, const 
+     kv = PyUnicode_FromString(key);
+     if (kv == NULL)
+         return -1;
+-    PyUnicode_InternInPlace(&kv); /* XXX Should we really? */
++    // pyparallel: disable, appears to be causing crashes, review later.
++    //PyUnicode_InternInPlace(&kv); /* XXX Should we really? */
+     err = PyDict_SetItem(v, kv, item);
+     Py_DECREF(kv);
+     return err;

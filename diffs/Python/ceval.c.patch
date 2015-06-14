@@ -12,24 +12,40 @@ diff --git a/Python/ceval.c b/Python/ceval.c
  #else
  
  #error "Don't know how to implement timestamp counter for this architecture"
-@@ -297,6 +301,7 @@ static int pending_async_exc = 0;
+@@ -297,12 +301,15 @@ static int pending_async_exc = 0;
  int
  PyEval_ThreadsInitialized(void)
  {
-+    Py_GUARD();
++    Px_RETURN(0);
      return gil_created();
  }
  
-@@ -315,6 +320,7 @@ PyEval_InitThreads(void)
+ void
+ PyEval_InitThreads(void)
+ {
++    if (_PyParallel_GetActiveContext())
++        return;
+     if (gil_created())
+         return;
+     create_gil();
+@@ -315,6 +322,8 @@ PyEval_InitThreads(void)
  void
  _PyEval_FiniThreads(void)
  {
-+    Py_GUARD();
++    if (_PyParallel_GetActiveContext())
++        return;
      if (!gil_created())
          return;
      destroy_gil();
-@@ -327,12 +333,14 @@ PyEval_AcquireLock(void)
-     PyThreadState *tstate = PyThreadState_GET();
+@@ -324,15 +333,21 @@ void
+ void
+ PyEval_AcquireLock(void)
+ {
+-    PyThreadState *tstate = PyThreadState_GET();
++    PyThreadState *tstate;
++    if (_PyParallel_GetActiveContext())
++        return;
++    tstate = PyThreadState_GET();
      if (tstate == NULL)
          Py_FatalError("PyEval_AcquireLock: current thread state is NULL");
 +    Py_GUARD_AGAINST_PX_ONLY();
@@ -39,63 +55,72 @@ diff --git a/Python/ceval.c b/Python/ceval.c
  void
  PyEval_ReleaseLock(void)
  {
-+    Py_GUARD();
++    if (_PyParallel_GetActiveContext())
++        return;
      /* This function must succeed when the current thread state is NULL.
         We therefore avoid PyThreadState_GET() which dumps a fatal error
         in debug mode.
-@@ -347,6 +355,7 @@ PyEval_AcquireThread(PyThreadState *tsta
+@@ -344,6 +359,8 @@ PyEval_ReleaseLock(void)
+ void
+ PyEval_AcquireThread(PyThreadState *tstate)
+ {
++    if (_PyParallel_GetActiveContext())
++        return;
      if (tstate == NULL)
          Py_FatalError("PyEval_AcquireThread: NULL new thread state");
      /* Check someone has called PyEval_InitThreads() to create the lock */
-+    Py_GUARD_AGAINST_PX_ONLY();
-     assert(gil_created());
-     take_gil(tstate);
-     if (PyThreadState_Swap(tstate) != NULL)
-@@ -361,6 +370,7 @@ PyEval_ReleaseThread(PyThreadState *tsta
+@@ -357,6 +374,8 @@ PyEval_AcquireThread(PyThreadState *tsta
+ void
+ PyEval_ReleaseThread(PyThreadState *tstate)
+ {
++    if (_PyParallel_GetActiveContext())
++        return;
+     if (tstate == NULL)
          Py_FatalError("PyEval_ReleaseThread: NULL thread state");
      if (PyThreadState_Swap(NULL) != tstate)
-         Py_FatalError("PyEval_ReleaseThread: wrong thread state");
-+    Py_GUARD_AGAINST_PX_ONLY();
-     drop_gil(tstate);
- }
- 
-@@ -375,6 +385,7 @@ PyEval_ReInitThreads(void)
+@@ -374,7 +393,11 @@ PyEval_ReInitThreads(void)
+ {
      _Py_IDENTIFIER(_after_fork);
      PyObject *threading, *result;
-     PyThreadState *tstate = PyThreadState_GET();
-+    Py_GUARD();
+-    PyThreadState *tstate = PyThreadState_GET();
++    PyThreadState *tstate;
++    if (_PyParallel_GetActiveContext())
++        return;
++
++    tstate = PyThreadState_GET();
  
      if (!gil_created())
          return;
-@@ -422,7 +433,18 @@ void
+@@ -412,6 +435,7 @@ static int pending_async_exc = 0;
+ void
+ _PyEval_SignalAsyncExc(void)
+ {
++    Px_VOID();
+     SIGNAL_ASYNC_EXC();
+ }
+ 
+@@ -422,7 +446,10 @@ void
  PyThreadState *
  PyEval_SaveThread(void)
  {
 -    PyThreadState *tstate = PyThreadState_Swap(NULL);
 +    PyThreadState *tstate;
-+    /* Inline Py_GUARD_AGAINST_PX_ONLY(); we can't use the macro as it has
-+       a couple of extra assertions against tstate-> stuff. */
-+    if (_PyParallel_GetActiveContext() != NULL) {
-+        _PyParallel_ContextGuardFailure(
-+            __FUNCTION__,
-+            __FILE__,
-+            __LINE__,
-+            0
-+        );
-+    }
++    if (_PyParallel_GetActiveContext())
++        return NULL;
 +    tstate = PyThreadState_Swap(NULL);
      if (tstate == NULL)
          Py_FatalError("PyEval_SaveThread: NULL tstate");
  #ifdef WITH_THREAD
-@@ -435,6 +457,7 @@ PyEval_SaveThread(void)
+@@ -435,6 +462,8 @@ PyEval_SaveThread(void)
  void
  PyEval_RestoreThread(PyThreadState *tstate)
  {
-+    Py_GUARD_AGAINST_PX_ONLY();
++    if (_PyParallel_GetActiveContext())
++        return;
      if (tstate == NULL)
          Py_FatalError("PyEval_RestoreThread: NULL tstate");
  #ifdef WITH_THREAD
-@@ -651,6 +674,7 @@ int
+@@ -651,6 +680,7 @@ int
  Py_MakePendingCalls(void)
  {
      static int busy = 0;
@@ -103,7 +128,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (busy)
          return 0;
      busy = 1;
-@@ -689,12 +713,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
+@@ -689,12 +719,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
  int
  Py_GetRecursionLimit(void)
  {
@@ -118,7 +143,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      recursion_limit = new_limit;
      _Py_CheckRecursionLimit = recursion_limit;
  }
-@@ -1236,6 +1262,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1236,6 +1268,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
          assert(stack_pointer >= f->f_valuestack); /* else underflow */
          assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
  
@@ -134,7 +159,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          /* Do periodic things.  Doing this every time through
             the loop would add too much overhead, so we do it
             only every Nth instruction.  We also do it if
-@@ -1314,7 +1349,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1314,7 +1355,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
          }
  
          /* Extract opcode and argument */
@@ -145,7 +170,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          opcode = NEXTOP();
          oparg = 0;   /* allows oparg to be stored in a register because
              it doesn't have to be remembered across a full loop */
-@@ -2295,9 +2332,22 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2295,9 +2338,27 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
              PREDICT(POP_JUMP_IF_TRUE);
              DISPATCH();
  
@@ -164,11 +189,23 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          TARGET(IMPORT_NAME)
          {
              _Py_IDENTIFIER(__import__);
-+            PREVENT_PARALLEL_IMPORT();
++            PyObject *old_f_globals = NULL;
++            if (Py_PXCTX()) {
++                old_f_globals = f->f_globals;
++                f->f_globals = f->f_locals;
++            }
++            //PREVENT_PARALLEL_IMPORT();
              w = GETITEM(names, oparg);
              x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
              if (x == NULL) {
-@@ -2343,6 +2393,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2338,11 +2399,14 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+             READ_TIMESTAMP(intr1);
+             Py_DECREF(w);
+             SET_TOP(x);
++            if (old_f_globals)
++                f->f_globals = old_f_globals;
+             if (x != NULL) DISPATCH();
+             break;
          }
  
          TARGET(IMPORT_STAR)
@@ -176,7 +213,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
              v = POP();
              PyFrame_FastToLocals(f);
              if ((x = f->f_locals) == NULL) {
-@@ -2359,6 +2410,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2359,6 +2423,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
              break;
  
          TARGET(IMPORT_FROM)

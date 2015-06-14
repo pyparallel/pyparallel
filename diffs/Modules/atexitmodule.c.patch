@@ -1,0 +1,31 @@
+diff --git a/Modules/atexitmodule.c b/Modules/atexitmodule.c
+--- a/Modules/atexitmodule.c
++++ b/Modules/atexitmodule.c
+@@ -60,14 +60,14 @@ atexit_callfuncs(void)
+             continue;
+ 
+         r = PyObject_Call(cb->func, cb->args, cb->kwargs);
+-        Py_XDECREF(r);
++        Py_OXDECREF(r);
+         if (r == NULL) {
+             /* Maintain the last exception, but don't leak if there are
+                multiple exceptions. */
+             if (exc_type) {
+-                Py_DECREF(exc_type);
+-                Py_XDECREF(exc_value);
+-                Py_XDECREF(exc_tb);    
++                Py_ODECREF(exc_type);
++                Py_OXDECREF(exc_value);
++                Py_OXDECREF(exc_tb);    
+             }
+             PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+             if (!PyErr_ExceptionMatches(PyExc_SystemExit)) {
+@@ -103,7 +103,7 @@ static void
+ atexit_cleanup(PyObject *self)
+ {
+     PyObject *r = atexit_clear(self, NULL);
+-    Py_DECREF(r);
++    Py_ODECREF(r);
+ }
+ 
+ /* ===================================================================== */

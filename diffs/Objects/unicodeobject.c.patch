@@ -199,7 +199,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
          id->object = PyUnicode_DecodeUTF8Stateful(id->string,
                                                    strlen(id->string),
                                                    NULL, NULL);
-@@ -1837,14 +1930,16 @@ PyObject *
+@@ -1837,14 +1930,36 @@ PyObject *
          assert(!id->next);
          id->next = static_strings;
          static_strings = id;
@@ -217,13 +217,15 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 +    _Py_Identifier *tmp, *s;
 +    Py_GUARD();
 +    s = static_strings;
-     while (s) {
-         Py_CLEAR(s->object);
-         tmp = s->next;
-@@ -1854,6 +1949,40 @@ void
-     static_strings = NULL;
- }
- 
++    while (s) {
++        Py_OCLEAR(s->object);
++        tmp = s->next;
++        s->next = NULL;
++        s = tmp;
++    }
++    static_strings = NULL;
++}
++
 +#ifdef WITH_PARALLEL
 +/* Getting bizarre crashes when trying to install things like ipython/numpy,
 +   so try band-aid with SEH. */
@@ -235,15 +237,16 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 +    Py_GUARD();
 +    s = static_strings;
 +    __try {
-+        while (s) {
-+            Py_CLEAR(s->object);
-+            tmp = s->next;
-+            s->next = NULL;
-+            s = tmp;
-+        }
-+        static_strings = NULL;
+     while (s) {
+         Py_CLEAR(s->object);
+         tmp = s->next;
+@@ -1852,7 +1967,25 @@ void
+         s = tmp;
+     }
+     static_strings = NULL;
+-}
 +    } __except(EXCEPTION_EXECUTE_HANDLER) {
-+        __debugbreak();
++        //__debugbreak();
 +        OutputDebugStringA("PyParallel: PyUnicode: Exception in ClearStaticStrings");
 +        InterlockedIncrement(&_PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings);
 +    }
@@ -254,14 +257,35 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 +_PyUnicode_ClearStaticStrings(void)
 +{
 +    /* Switch this around when necessary (during debugging etc). */
-+    _PyUnicode_ClearStaticStrings_SEH();
++    /* Update: the Py_OCLEAR() fix above doesn't work, so, eh, no static string
++       cleanup for now. */
++
++    //_PyUnicode_ClearStaticStrings_SEH();
++    //__PyUnicode_ClearStaticStrings();
 +}
 +
-+
+ 
  /* Internal function, doesn't check maximum character */
  
- PyObject*
-@@ -3737,10 +3866,13 @@ PyUnicode_DecodeFSDefaultAndSize(const c
+@@ -3100,6 +3233,7 @@ PyUnicode_Decode(const char *s,
+     PyObject *buffer = NULL, *unicode;
+     Py_buffer info;
+     char lower[11];  /* Enough for any encoding shortcut */
++    int byteorder_n1 = -1;
+ 
+     /* Shortcuts for common default encodings */
+     if (_Py_normalize_encoding(encoding, lower, sizeof(lower))) {
+@@ -3120,6 +3254,9 @@ PyUnicode_Decode(const char *s,
+             return PyUnicode_DecodeUTF16(s, size, errors, 0);
+         else if (strcmp(lower, "utf-32") == 0)
+             return PyUnicode_DecodeUTF32(s, size, errors, 0);
++        /* Added for pyparallel/datrie (which needs utf-32-le). */
++        else if (strcmp(lower, "utf-32-le") == 0)
++            return PyUnicode_DecodeUTF32(s, size, errors, &byteorder_n1);
+     }
+ 
+     /* Decode via the codec registry */
+@@ -3737,10 +3874,13 @@ PyUnicode_DecodeFSDefaultAndSize(const c
  int
  _PyUnicode_HasNULChars(PyObject* s)
  {
@@ -278,7 +302,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      if (nul == NULL)
          return -1;
      return PyUnicode_Contains(s, nul);
-@@ -3884,6 +4016,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
+@@ -3884,6 +4024,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
  #endif
      wchar_t *w;
      wchar_t *wchar_end;
@@ -286,7 +310,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
  
      if (!PyUnicode_Check(unicode)) {
          PyErr_BadArgument();
-@@ -3904,9 +4037,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
+@@ -3904,9 +4045,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
                  if (*four_bytes > 0xFFFF)
                      ++num_surrogates;
              }
@@ -300,7 +324,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
              if (!_PyUnicode_WSTR(unicode)) {
                  PyErr_NoMemory();
                  return NULL;
-@@ -3939,8 +4075,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
+@@ -3939,8 +4083,12 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
  #endif
          }
          else {
@@ -313,7 +337,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
              if (!_PyUnicode_WSTR(unicode)) {
                  PyErr_NoMemory();
                  return NULL;
-@@ -3966,6 +4106,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
+@@ -3966,6 +4114,7 @@ PyUnicode_AsUnicodeAndSize(PyObject *uni
                  *w = 0;
  #else
                  /* sizeof(wchar_t) == 2 */
@@ -321,7 +345,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
                  PyObject_FREE(_PyUnicode_WSTR(unicode));
                  _PyUnicode_WSTR(unicode) = NULL;
                  Py_FatalError("Impossible unicode object state, wstr "
-@@ -14156,6 +14297,8 @@ int _PyUnicode_Init(void)
+@@ -14156,6 +14305,8 @@ int _PyUnicode_Init(void)
          0x2029, /* PARAGRAPH SEPARATOR */
      };
  
@@ -330,7 +354,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      /* Init the implementation */
      _Py_INCREF_UNICODE_EMPTY();
      if (!unicode_empty)
-@@ -14194,6 +14337,7 @@ int _PyUnicode_Init(void)
+@@ -14194,6 +14345,7 @@ int _PyUnicode_Init(void)
  int
  PyUnicode_ClearFreeList(void)
  {
@@ -338,15 +362,20 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      return 0;
  }
  
-@@ -14201,6 +14345,7 @@ void
+@@ -14201,15 +14353,80 @@ void
  _PyUnicode_Fini(void)
  {
      int i;
+-
+-    Py_CLEAR(unicode_empty);
 +    Py_GUARD();
++
++    Py_OCLEAR(unicode_empty);
  
-     Py_CLEAR(unicode_empty);
- 
-@@ -14210,6 +14355,70 @@ void
+     for (i = 0; i < 256; i++)
+-        Py_CLEAR(unicode_latin1[i]);
++        Py_OCLEAR(unicode_latin1[i]);
+     _PyUnicode_ClearStaticStrings();
      (void)PyUnicode_ClearFreeList();
  }
  
@@ -417,7 +446,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
  void
  PyUnicode_InternInPlace(PyObject **p)
  {
-@@ -14228,13 +14437,19 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14228,13 +14445,19 @@ PyUnicode_InternInPlace(PyObject **p)
          return;
      if (PyUnicode_CHECK_INTERNED(s))
          return;
@@ -443,7 +472,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      /* It might be that the GetItem call fails even
         though the key is present in the dictionary,
         namely when this happens during a stack overflow. */
-@@ -14258,7 +14473,8 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14258,7 +14481,8 @@ PyUnicode_InternInPlace(PyObject **p)
      PyThreadState_GET()->recursion_critical = 0;
      /* The two references in interned are not counted by refcnt.
         The deallocator will take care of this */
@@ -453,7 +482,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
  }
  
-@@ -14275,10 +14491,14 @@ PyUnicode_InternImmortal(PyObject **p)
+@@ -14275,10 +14499,14 @@ PyUnicode_InternImmortal(PyObject **p)
  PyObject *
  PyUnicode_InternFromString(const char *cp)
  {
@@ -470,7 +499,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      return s;
  }
  
-@@ -14289,6 +14509,7 @@ void
+@@ -14289,6 +14517,7 @@ void
      PyObject *s;
      Py_ssize_t i, n;
      Py_ssize_t immortal_size = 0, mortal_size = 0;
@@ -478,7 +507,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
  
      if (interned == NULL || !PyDict_Check(interned))
          return;
-@@ -14317,11 +14538,12 @@ void
+@@ -14317,11 +14546,12 @@ void
              /* XXX Shouldn't happen */
              break;
          case SSTATE_INTERNED_IMMORTAL:
@@ -493,7 +522,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
              mortal_size += PyUnicode_GET_LENGTH(s);
              break;
          default:
-@@ -14349,6 +14571,7 @@ typedef struct {
+@@ -14349,6 +14579,7 @@ typedef struct {
  static void
  unicodeiter_dealloc(unicodeiterobject *it)
  {
@@ -501,7 +530,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      _PyObject_GC_UNTRACK(it);
      Py_XDECREF(it->it_seq);
      PyObject_GC_Del(it);
-@@ -14357,6 +14580,7 @@ unicodeiter_dealloc(unicodeiterobject *i
+@@ -14357,6 +14588,7 @@ unicodeiter_dealloc(unicodeiterobject *i
  static int
  unicodeiter_traverse(unicodeiterobject *it, visitproc visit, void *arg)
  {

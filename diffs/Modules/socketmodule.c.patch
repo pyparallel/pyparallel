@@ -195,7 +195,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      if (fdobj != NULL && fdobj != Py_None) {
  #ifdef MS_WINDOWS
          /* recreate a socket that was duplicated */
-@@ -5496,16 +5585,46 @@ os_cleanup(void)
+@@ -5496,16 +5585,47 @@ os_cleanup(void)
      WSACleanup();
  }
  
@@ -232,6 +232,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
 +#ifdef WITH_PARALLEL
 +    SOCKET sock;
 +    DWORD  size;
++    GUID rio_func_table_guid = WSAID_MULTIPLE_RIO;
 +    ret = WSAStartup(MAKEWORD(2, 2), &wsadata);
 +#else
      ret = WSAStartup(0x0101, &WSAData);
@@ -244,7 +245,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      case WSASYSNOTREADY:
          PyErr_SetString(PyExc_ImportError,
                          "WSAStartup failed: network not ready");
-@@ -5521,6 +5640,27 @@ os_init(void)
+@@ -5521,6 +5641,52 @@ os_init(void)
          break;
      }
      return 0; /* Failure */
@@ -252,11 +253,16 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
 +#ifndef WITH_PARALLEL
 +    return 1; /* Success */
 +#else
-+    sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
++    //sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
++    sock = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_REGISTERED_IO);
 +    if (sock == INVALID_SOCKET) {
-+        PyErr_SetFromWindowsErr(0);
-+        return 0;
++        sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
++        if (sock == INVALID_SOCKET) {
++            PyErr_SetFromWindowsErr(0);
++            return 0;
++        }
 +    }
++
 +    _WSA_RESOLVE(_AcceptEx);
 +    _WSA_RESOLVE(_ConnectEx);
 +    _WSA_RESOLVE(_WSARecvMsg);
@@ -266,13 +272,33 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
 +    _WSA_RESOLVE(_TransmitPackets);
 +    _WSA_RESOLVE(_GetAcceptExSockaddrs);
 +
++/*
++#ifndef SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER
++#define SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER _WSAIORW(IOC_WS2,36)
++#endif
++*/
++
++    if (WSAIoctl(sock,
++                 SIO_GET_MULTIPLE_EXTENSION_FUNCTION_POINTER,
++                 &rio_func_table_guid,
++                 sizeof(GUID),
++                 (void  **)&_rio,
++                 sizeof(_rio),
++                 &size,
++                 NULL,
++                 NULL))
++    {
++        DWORD err = GetLastError();
++        __debugbreak();
++    }
++
 +    closesocket(sock);
 +    return 1; /* Success */
 +#endif /* !WITH_PARALLEL */
  }
  
  #endif /* MS_WINDOWS */
-@@ -5570,6 +5710,23 @@ PySocketModule_APIObject PySocketModuleA
+@@ -5570,6 +5736,23 @@ PySocketModule_APIObject PySocketModuleA
      &sock_type,
      NULL,
      NULL
@@ -296,7 +322,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  };
  
  
-@@ -5653,6 +5810,19 @@ PyInit__socket(void)
+@@ -5653,6 +5836,22 @@ PyInit__socket(void)
      Py_INCREF(has_ipv6);
      PyModule_AddObject(m, "has_ipv6", has_ipv6);
  
@@ -310,6 +336,9 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
 +    PySocketModuleAPI.TransmitFile = _TransmitFile;
 +    PySocketModuleAPI.TransmitPackets = _TransmitPackets;
 +    PySocketModuleAPI.GetAcceptExSockaddrs = _GetAcceptExSockaddrs;
++
++    memcpy(&PySocketModuleAPI.rio, &_rio, sizeof(_rio));
++ 
 +#endif /* MS_WINDOWS    */
 +#endif /* WITH_PARALLEL */
 +

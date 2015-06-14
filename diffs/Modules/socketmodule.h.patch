@@ -11,7 +11,7 @@ diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
  /* VC6 is shipped with old platform headers, and does not have MSTcpIP.h
   * Separate SDKs have all the functions we want, but older ones don't have
   * any version information.
-@@ -111,6 +114,28 @@ typedef int SOCKET_T;
+@@ -111,6 +114,32 @@ typedef int SOCKET_T;
  #       define SIZEOF_SOCKET_T SIZEOF_INT
  #endif
  
@@ -34,13 +34,17 @@ diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
 +const static GUID _TransmitFile_GUID = WSAID_TRANSMITFILE;
 +const static GUID _TransmitPackets_GUID = WSAID_TRANSMITPACKETS;
 +const static GUID _GetAcceptExSockaddrs_GUID = WSAID_GETACCEPTEXSOCKADDRS;
++
++static RIO_EXTENSION_FUNCTION_TABLE _rio = { 0, };
++const static GUID _rio_GUID = WSAID_MULTIPLE_RIO;
++
 +#endif /* MS_WINDOWS */
 +#endif /* WITH_PARALLEL */
 +
  #if SIZEOF_SOCKET_T <= SIZEOF_LONG
  #define PyLong_FromSocket_t(fd) PyLong_FromLong((SOCKET_T)(fd))
  #define PyLong_AsSocket_t(fd) (SOCKET_T)PyLong_AsLong(fd)
-@@ -165,6 +190,11 @@ typedef struct {
+@@ -165,6 +194,11 @@ typedef struct {
                                          sets a Python exception */
      double sock_timeout;                 /* Operation timeout in seconds;
                                          0.0 means non-blocking */
@@ -52,7 +56,7 @@ diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
  } PySocketSockObject;
  
  /* --- C API ----------------------------------------------------*/
-@@ -222,10 +252,46 @@ typedef struct {
+@@ -222,10 +256,50 @@ typedef struct {
      PyTypeObject *Sock_Type;
      PyObject *error;
      PyObject *timeout_error;
@@ -78,6 +82,8 @@ diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
 +    LPFN_TRANSMITFILE TransmitFile;
 +    LPFN_TRANSMITPACKETS TransmitPackets;
 +    LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs;
++
++    RIO_EXTENSION_FUNCTION_TABLE rio;
 +#else /* MS_WINDOWS */
 +    void (*null01)(void); /* LPFN_ACCEPTEX             */
 +    void (*null02)(void); /* LPFN_CONNECTEX            */
@@ -87,6 +93,8 @@ diff --git a/Modules/socketmodule.h b/Modules/socketmodule.h
 +    void (*null06)(void); /* LPFN_TRANSMITFILE         */
 +    void (*null07)(void); /* LPFN_TRANSMITPACKETS      */
 +    void (*null08)(void); /* LPFN_GETACCEPTEXSOCKADDRS */
++    // Erm, embedded the RIO struct is going to blow things up.
++    void (*null09)(void); /* RIO_EXTENSION_FUNCTION_TABLE */
 +#endif /* MS_WINDOWS */
 +#endif /* WITH_PARALLEL */
  } PySocketModule_APIObject;

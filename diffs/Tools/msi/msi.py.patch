@@ -32,7 +32,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  # See PC/make_versioninfo.c
  FIELD3 = 1000*int(micro) + 10*level + int(serial)
  current_version = "%s.%d" % (short_version, FIELD3)
-@@ -74,8 +89,8 @@ upgrade_code_snapshot='{92A24481-3ECB-40
+@@ -74,13 +89,15 @@ upgrade_code_snapshot='{92A24481-3ECB-40
  upgrade_code='{65E6DE48-A358-434D-AA4F-4AF72DB4718F}'
  upgrade_code_64='{6A965A0C-6EE6-4E3A-9983-3263F56311EC}'
  
@@ -43,7 +43,14 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  
  if full_current_version is None:
      full_current_version = current_version
-@@ -130,6 +145,17 @@ if level < 0xf:
+ 
+ extensions = [
++    'pyodbc.pyd',
++    'datrie.pyd',
+     'pyexpat.pyd',
+     'select.pyd',
+     'unicodedata.pyd',
+@@ -130,6 +147,17 @@ if level < 0xf:
          docfile += '%x%s' % (level, serial)
  docfile = 'python%s%s%s.chm' % (major, minor, docfile)
  
@@ -61,7 +68,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  # Build the mingw import library, libpythonXY.a
  # This requires 'nm' and 'dlltool' executables on your PATH
  def build_mingw_lib(lib_file, def_file, dll_file, mingw_lib):
-@@ -186,6 +212,9 @@ if msilib.pe_type(dll_path) != msilib.pe
+@@ -186,6 +214,9 @@ if msilib.pe_type(dll_path) != msilib.pe
  
  if msilib.Win64:
      upgrade_code = upgrade_code_64
@@ -71,7 +78,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  
  if snapshot:
      product_code = msilib.gen_uuid()
-@@ -232,13 +261,13 @@ def build_database():
+@@ -232,13 +263,13 @@ def build_database():
      # schema represents the installer 2.0 database schema.
      # sequence is the set of standard sequences
      # (ui/execute, admin/advt/install)
@@ -89,7 +96,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      # The default sequencing of the RemoveExistingProducts action causes
      # removal of files that got just installed. Place it after
      # InstallInitialize, so we first uninstall everything, but still roll
-@@ -253,7 +282,7 @@ def build_database():
+@@ -253,7 +284,7 @@ def build_database():
      # accordingly.
      add_data(db, "Property", [("UpgradeCode", uc),
                                ("WhichUsers", "ALL"),
@@ -98,7 +105,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
                               ])
      db.Commit()
      return db, msiname
-@@ -286,7 +315,7 @@ def remove_old_versions(db):
+@@ -286,7 +317,7 @@ def remove_old_versions(db):
                None, migrate_features, None, "REMOVEOLDSNAPSHOT")])
          props = "REMOVEOLDSNAPSHOT;REMOVEOLDVERSION"
  
@@ -107,7 +114,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      # Installer collects the product codes of the earlier releases in
      # these properties. In order to allow modification of the properties,
      # they must be declared as secure. See "SecureCustomProperties Property"
-@@ -409,10 +438,10 @@ def add_ui(db):
+@@ -409,10 +440,10 @@ def add_ui(db):
  
      # Fonts, see "TextStyle Table"
      add_data(db, "TextStyle",
@@ -122,7 +129,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
               ])
  
      compileargs = r'-Wi "[TARGETDIR]Lib\compileall.py" -f -x "bad_coding|badsyntax|site-packages|py2_|lib2to3\\tests|venv\\scripts" "[TARGETDIR]Lib"'
-@@ -423,7 +452,7 @@ def add_ui(db):
+@@ -423,7 +454,7 @@ def add_ui(db):
          # See "Custom Action Type 51",
          # "Custom Action Execution Scheduling Options"
          ("InitialTargetDir", 307, "TARGETDIR",
@@ -131,7 +138,15 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
          ("SetDLLDirToTarget", 307, "DLLDIR", "[TARGETDIR]"),
          ("SetDLLDirToSystem32", 307, "DLLDIR", SystemFolderName),
          ("SetLauncherDirToTarget", 307, "LAUNCHERDIR", "[TARGETDIR]"),
-@@ -858,7 +887,9 @@ def add_features(db):
+@@ -846,6 +877,7 @@ def add_features(db):
+     # Features that have no advertisement trigger (e.g. the test suite)
+     # must not support advertisement
+     global default_feature, tcltk, htmlfiles, tools, testsuite, ext_feature, private_crt, prepend_path
++    global source
+     default_feature = Feature(db, "DefaultFeature", "Python",
+                               "Python Interpreter and Libraries",
+                               1, directory = "TARGETDIR")
+@@ -858,17 +890,23 @@ def add_features(db):
      # We don't support advertisement of extensions
      ext_feature = Feature(db, "Extensions", "Register Extensions",
                            "Make this Python installation the default Python installation", 3,
@@ -139,10 +154,37 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
 +                         parent = default_feature, attributes=2|8,
 +                         # PyParallel: don't register as default Python.
 +                         level=2)
++    source = Feature(db, "Source", "Source",
++                     "Include all source code required to build and modify PyParallel", 5,
++                     parent=default_feature,
++                     attributes=2|8)
      if have_tcl:
-         tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 5,
+-        tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 5,
++        tcltk = Feature(db, "TclTk", "Tcl/Tk", "Tkinter, IDLE, pydoc", 7,
                      parent = default_feature, attributes=2)
-@@ -905,9 +936,10 @@ def generate_license():
+     htmlfiles = Feature(db, "Documentation", "Documentation",
+-                        "Python HTMLHelp File", 7, parent = default_feature)
++                        "Python HTMLHelp File", 9, parent = default_feature)
+     tools = Feature(db, "Tools", "Utility Scripts",
+-                    "Python utility scripts (Tools/)", 9,
++                    "Python utility scripts (Tools/)", 11,
+                     parent = default_feature, attributes=2)
+     testsuite = Feature(db, "Testsuite", "Test suite",
+-                        "Python test suite (Lib/test/)", 11,
++                        "Python test suite (Lib/test/)", 13,
+                         parent = default_feature, attributes=2|8)
+     # prepend_path is an additional feature which is to be off by default.
+     # Since the default level for the above features is 1, this needs to be
+@@ -876,7 +914,7 @@ def add_features(db):
+     prepend_path = Feature(db, "PrependPath", "Add python.exe to Path",
+                         "Prepend [TARGETDIR] to the system Path variable. "
+                         "This allows you to type 'python' into a command "
+-                        "prompt without needing the full path.", 13,
++                        "prompt without needing the full path.", 15,
+                         parent = default_feature, attributes=2|8,
+                         level=2)
+ 
+@@ -905,9 +943,10 @@ def generate_license():
      shutil.copyfileobj(open("crtlicense.txt"), out)
      for name, pat, file in (("bzip2","bzip2-*", "LICENSE"),
                        ("openssl", "openssl-*", "LICENSE"),
@@ -156,7 +198,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
          out.write("\nThis copy of Python includes a copy of %s, which is licensed under the following terms:\n\n" % name)
          dirs = glob.glob(srcdir+"/../"+pat)
          if not dirs:
-@@ -927,6 +959,46 @@ class PyDirectory(Directory):
+@@ -927,6 +966,49 @@ class PyDirectory(Directory):
              kw['componentflags'] = 2 #msidbComponentAttributesOptional
          Directory.__init__(self, *args, **kw)
  
@@ -191,6 +233,9 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
 +        if not exists(pdbpath):
 +            pdbpath = join_path(self.absolute, pdbname)
 +
++        if 'numpy' in pdbpath:
++            return
++
 +        if not exists(pdbpath):
 +            import pdb
 +            dbg = pdb.Pdb()
@@ -203,7 +248,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  def hgmanifest():
      # Fetch file list from Mercurial
      process = subprocess.Popen(['hg', 'manifest'], stdout=subprocess.PIPE)
-@@ -949,7 +1021,7 @@ def hgmanifest():
+@@ -949,7 +1031,7 @@ def hgmanifest():
  def add_files(db):
      installer = msilib.MakeInstaller()
      hgfiles = hgmanifest()
@@ -212,7 +257,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      tmpfiles = []
      # Add all executables, icons, text files into the TARGETDIR component
      root = PyDirectory(db, cab, None, srcdir, "TARGETDIR", "SourceDir")
-@@ -958,6 +1030,10 @@ def add_files(db):
+@@ -958,6 +1040,10 @@ def add_files(db):
          root.add_file("%s/w9xpopen.exe" % PCBUILD)
      root.add_file("README.txt", src="README")
      root.add_file("NEWS.txt", src="Misc/NEWS")
@@ -223,7 +268,22 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      generate_license()
      root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
      root.start_component("python.exe", keyfile="python.exe")
-@@ -1028,6 +1104,12 @@ def add_files(db):
+@@ -965,6 +1051,14 @@ def add_files(db):
+     root.start_component("pythonw.exe", keyfile="pythonw.exe")
+     root.add_file("%s/pythonw.exe" % PCBUILD)
+ 
++    # Include pyparallel.c and pyparallel_private.h in the top level directory;
++    # helpful when python.exe crashes, you launch JIT debugging with VS, which
++    # you'll then need to point at pyparallel.c.
++    root.add_file("pyparallel.c",
++                  src=os.path.abspath("../../Python/pyparallel.c"))
++    root.add_file("pyparallel_private.h",
++                  src=os.path.abspath("../../Python/pyparallel_private.h"))
++
+     # msidbComponentAttributesSharedDllRefCount = 8, see "Component Table"
+     dlldir = PyDirectory(db, cab, root, srcdir, "DLLDIR", ".")
+     launcherdir = PyDirectory(db, cab, root, srcdir, "LAUNCHERDIR", ".")
+@@ -1028,9 +1122,27 @@ def add_files(db):
          print("WARNING: _ctypes.pyd not found, ctypes will not be included")
          extensions.remove("_ctypes.pyd")
  
@@ -235,10 +295,31 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
 +
      # Add all .py files in Lib, except tkinter, test
      dirs = []
-     pydirs = [(root, "Lib", hgfiles["Lib"], default_feature)]
-@@ -1052,7 +1134,8 @@ def add_files(db):
+-    pydirs = [(root, "Lib", hgfiles["Lib"], default_feature)]
++    pydirs = [
++        (root, "Lib",       hgfiles["Lib"],     default_feature),
++        (root, "Python",    hgfiles["Python"],  source),
++        (root, "PCbuild",   hgfiles["PCbuild"], source),
++        (root, "PC",        hgfiles["PC"],      source),
++        (root, "diffs",     hgfiles["diffs"],   source),
++        (root, "Include",   hgfiles["Include"], source),
++        (root, "Grammar",   hgfiles["Grammar"], source),
++        (root, "Objects",   hgfiles["Objects"], source),
++        (root, "Modules",   hgfiles["Modules"], source),
++        (root, "Parser",    hgfiles["Parser"],  source),
++        (root, "contrib",   hgfiles["contrib"], source),
++    ]
+     while pydirs:
+         # Commit every now and then, or else installer will complain
+         db.Commit()
+@@ -1051,8 +1163,13 @@ def add_files(db):
+         dirs.append(lib)
          has_py = False
          for name, subdir in files.items():
++            if name.startswith('.'):
++                continue
++            if '~' in name:
++                continue
              if subdir is None:
 -                assert os.path.isfile(os.path.join(lib.absolute, name))
 +                abs_name = os.path.join(lib.absolute, name)
@@ -246,7 +327,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
                  if name == 'README':
                      lib.add_file("README.txt", src="README")
                  else:
-@@ -1289,7 +1372,7 @@ def add_registry(db):
+@@ -1289,7 +1406,7 @@ def add_registry(db):
      # Shortcuts, see "Shortcut Table"
      add_data(db, "Directory",
               [("ProgramMenuFolder", "TARGETDIR", "."),
@@ -255,7 +336,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      add_data(db, "RemoveFile",
               [("MenuDir", "TARGETDIR", None, "MenuDir", 2)])
      tcltkshortcuts = []
-@@ -1322,7 +1405,7 @@ def add_registry(db):
+@@ -1322,7 +1439,7 @@ def add_registry(db):
  def build_pdbzip():
      pdbexclude = ['kill_python.pdb', 'make_buildinfo.pdb',
                    'make_versioninfo.pdb']
@@ -264,7 +345,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      pdbzip = zipfile.ZipFile(path, 'w')
      for f in glob.glob1(os.path.join(srcdir, PCBUILD), "*.pdb"):
          if f not in pdbexclude and not f.endswith('_d.pdb'):
-@@ -1417,3 +1500,10 @@ if certname:
+@@ -1417,3 +1534,10 @@ if certname:
  
  if pdbzip:
      build_pdbzip()
