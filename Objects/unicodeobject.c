@@ -1942,7 +1942,7 @@ __PyUnicode_ClearStaticStrings(void)
     Py_GUARD();
     s = static_strings;
     while (s) {
-        Py_CLEAR(s->object);
+        Py_OCLEAR(s->object);
         tmp = s->next;
         s->next = NULL;
         s = tmp;
@@ -1969,7 +1969,7 @@ _PyUnicode_ClearStaticStrings_SEH()
         }
         static_strings = NULL;
     } __except(EXCEPTION_EXECUTE_HANDLER) {
-        __debugbreak();
+        //__debugbreak();
         OutputDebugStringA("PyParallel: PyUnicode: Exception in ClearStaticStrings");
         InterlockedIncrement(&_PyParallel_ExceptionIgnored_PyUnicode_ClearStaticStrings);
     }
@@ -1980,7 +1980,11 @@ void
 _PyUnicode_ClearStaticStrings(void)
 {
     /* Switch this around when necessary (during debugging etc). */
-    _PyUnicode_ClearStaticStrings_SEH();
+    /* Update: the Py_OCLEAR() fix above doesn't work, so, eh, no static string
+       cleanup for now. */
+
+    //_PyUnicode_ClearStaticStrings_SEH();
+    //__PyUnicode_ClearStaticStrings();
 }
 
 
@@ -14352,10 +14356,10 @@ _PyUnicode_Fini(void)
     int i;
     Py_GUARD();
 
-    Py_CLEAR(unicode_empty);
+    Py_OCLEAR(unicode_empty);
 
     for (i = 0; i < 256; i++)
-        Py_CLEAR(unicode_latin1[i]);
+        Py_OCLEAR(unicode_latin1[i]);
     _PyUnicode_ClearStaticStrings();
     (void)PyUnicode_ClearFreeList();
 }
