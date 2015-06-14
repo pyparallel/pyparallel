@@ -348,10 +348,10 @@ class SimpleHttpGetClientWithDns(TCPClientCommand):
         async.run()
 
 #===============================================================================
-# Demo Server
+# Examples Server
 #===============================================================================
-class DemoServer(TCPServerCommand):
-    _shortname_ = 'demo'
+class WikiServer(TCPServerCommand):
+    _shortname_ = 'wiki'
 
     port = None
     class PortArg(NonEphemeralPortInvariant):
@@ -367,15 +367,14 @@ class DemoServer(TCPServerCommand):
         ip = self.options.ip
         port = int(self.options.port)
 
-        self._out("Running demo server on %s port %d ..." % (ip, port))
-
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Time
-        async.register(transport=server, protocol=protocol)
-        async.run()
-
-
+        wikidir = join_path(dirname(__file__), '../../examples/wiki')
+        with chdir(wikidir):
+            import wiki
+            self._out("Running wiki server on %s port %d ..." % (ip, port))
+            import async
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=wiki.WikiServer)
+            async.run()
 
 #===============================================================================
 # Testing

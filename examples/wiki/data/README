@@ -1,0 +1,7 @@
+Download the following files from http://download.pyparallel.org into this
+directory.
+
+    enwiki-20150205-pages-articles.xml
+    titles.trie
+    titles_offsets.npy
+    ztitles.trie
