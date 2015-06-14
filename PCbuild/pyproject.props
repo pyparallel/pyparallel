@@ -5,7 +5,7 @@
     <OutDir>$(SolutionDir)</OutDir>
     <IntDir>$(SolutionDir)$(PlatformName)-temp-$(Configuration)\$(ProjectName)\</IntDir>
     <LinkIncremental>false</LinkIncremental>
-  </PropertyGroup>  
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='x64'">
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <_PropertySheetDisplayName>amd64</_PropertySheetDisplayName>
