@@ -10,6 +10,9 @@ extern "C" {
 #include "fileio.h"
 #include "frameobject.h"
 #include "structmember.h"
+#include <dbghelp.h>
+
+#pragma comment(lib, "dbghelp.lib")
 
 /* Toggle to 1 to assist with tracing PxSocket_IOLoop(). */
 #if 0
@@ -4400,10 +4403,64 @@ _async_seh_eav_in_io_callback(PyObject *self)
     return PyLong_FromLong(_PyParallel_SEH_EAV_InIoCallback);
 }
 
+LONG WINAPI
+_PyParallel_ExceptionFilter(EXCEPTION_POINTERS* exc)
+{
+    HANDLE h;
+    char *no_dump = getenv("PYPARALLEL_NO_MINIDUMP");
+    if (no_dump && strcmp(no_dump, "1") == 0)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    if (IsDebuggerPresent())
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    h = CreateFile(L"pyparallel.dmp",
+                   GENERIC_READ | GENERIC_WRITE,
+                   0,
+                   NULL,
+                   CREATE_ALWAYS,
+                   FILE_ATTRIBUTE_NORMAL,
+                   NULL);
+
+    if (h && h != INVALID_HANDLE_VALUE) {
+        MINIDUMP_EXCEPTION_INFORMATION mdei;
+        MINIDUMP_TYPE mdt;
+
+        mdei.ThreadId = GetCurrentThreadId();
+        mdei.ExceptionPointers = exc;
+        mdei.ClientPointers = FALSE;
+
+        mdt = (MINIDUMP_TYPE)(
+            MiniDumpWithPrivateReadWriteMemory      |
+            MiniDumpWithDataSegs                    |
+            MiniDumpWithHandleData                  |
+            MiniDumpWithFullMemoryInfo              |
+            MiniDumpWithThreadInfo                  |
+            MiniDumpWithUnloadedModules
+        );
+
+        MiniDumpWriteDump(GetCurrentProcess(),
+                          GetCurrentProcessId(),
+                          h,
+                          mdt,
+                          (exc != 0) ? &mdei: 0,
+                          0,
+                          NULL);
+
+        CloseHandle(h);
+        printf("Wrote dump file to pyparallel.dmp.\n");
+    } else {
+        printf("CreateFile(\"pyparallel.dmp\") failed: %u\n", GetLastError());
+    }
+
+    return EXCEPTION_EXECUTE_HANDLER;
+}
 
 void
 _PyParallel_Init(void)
 {
+    SetUnhandledExceptionFilter(_PyParallel_ExceptionFilter);
+
     _Py_sfence();
 
     if (Py_MainProcessId == -1) {
