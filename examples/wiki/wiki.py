@@ -12,6 +12,7 @@ import async
 import socket
 import datrie
 import string
+import urllib
 import numpy as np
 
 from collections import (
@@ -29,6 +30,7 @@ from numpy import (
 from async import (
     rdtsc,
 
+    sys_stats,
     socket_stats,
     memory_stats,
     context_stats,
@@ -115,14 +117,13 @@ uint64_11 = uint64(11)
 
 offsets = np.load(TITLES_OFFSETS_NPY_PATH)
 
-# Change this to True to use the full trie, otherwise, just load the smaller
-# one that only contains titles starting with 'Z'.
-use_full = False
-if not use_full:
+# Use the smaller one if the larger one doesn't exist.
+if not os.path.exists(TITLES_TRIE_PATH):
     TRIE_PATH = ZTITLES_TRIE_PATH
 else:
     TRIE_PATH = TITLES_TRIE_PATH
 
+print("About to load titles trie, this will take a while...")
 titles = datrie.Trie.load(TRIE_PATH)
 
 #===============================================================================
@@ -167,6 +168,23 @@ def json_serialization(request=None, obj=None):
     response.body = json.dumps(obj)
 
     return request
+
+def text_serialization(request=None, text=None):
+    transport = None
+    if not request:
+        request = Request(transport=None, data=None)
+    else:
+        transport = request.transport
+    if not text:
+        text = 'Hello, World!'
+    response = request.response
+    response.code = 200
+    response.message = 'OK'
+    response.content_type = 'text/plain; charset=UTF-8'
+    response.body = text
+
+    return request
+
 
 #===============================================================================
 # Offset Helpers
@@ -250,7 +268,6 @@ def exact_title(title):
 #===============================================================================
 # Classes
 #===============================================================================
-routes = datrie.Trie(string.ascii_lowercase + '/')
 class NotTrie(dict):
     def longest_prefix_value(self, path):
         p = path[1:]
@@ -265,6 +282,7 @@ class NotTrie(dict):
 #routes = NotTrie()
 
 class route:
+    routes = datrie.Trie(string.ascii_lowercase + '/')
     def __init__(self, func, *args, **kwds):
         self.func = func
         self.args = args
@@ -280,7 +298,7 @@ class route:
         if self.path[0] != '/':
             self.path = '/' + self.path
 
-        routes[self.path] = self.funcname
+        self.routes[self.path] = self.funcname
 
     def __get__(self, obj, objtype=None):
         if not obj:
@@ -308,6 +326,7 @@ class route:
         # Then pass a query string as **kwds if present.
         args = []
         if path:
+            path = urllib.parse.unquote(path)
             args.append(path)
         if request.fragment:
             args.append(fragment)
@@ -367,10 +386,12 @@ class WikiServer(HttpServer):
     @route
     def stats(self, request, *args, **kwds):
         stats = {
+            'system': dict(sys_stats()),
             'server': dict(socket_stats(request.transport.parent)),
             'memory': dict(memory_stats()),
             'contexts': dict(context_stats()),
             'elapsed': request.transport.elapsed(),
+            'thread': async.thread_seq_id(),
         }
         if args:
             name = args[0]
@@ -390,14 +411,24 @@ class WikiServer(HttpServer):
 
     @property
     def routes(self):
-        return routes
+        return route.routes
+
+    @route
+    def elapsed(self, request, *args, **kwds):
+        obj = { 'elapsed': request.transport.elapsed() }
+        return json_serialization(obj)
+
+    @route
+    def json(self, request, *args, **kwds):
+        return json_serialization(request, {'message': 'Hello, World!'})
+
+    @route
+    def plaintext(self, request, *args, **kwds):
+        return text_serialization(request, text='Hello, World!')
 
 #===============================================================================
 # Main
 #===============================================================================
-
-#import codecs
-#dummy = codecs.utf_32_le_decode(codecs.utf_32_le_encode('Zzz')[0])
 
 def main():
     server = async.server(IPADDR, PORT)
