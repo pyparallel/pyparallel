@@ -12658,6 +12658,9 @@ _PyAsync_ModInit(void)
         return NULL;
     PySocketModule = *socket_api;
 
+    _PyParallel_AsyncODBCAvailable = 0;
+    PyModule_AddIntConstant(m, "_async_odbc_available", 0);
+
     rc = SQLSetEnvAttr(
         SQL_NULL_HANDLE,
         SQL_ATTR_CONNECTION_POOLING,
@@ -12665,14 +12668,12 @@ _PyAsync_ModInit(void)
         SQL_IS_INTEGER
     );
 
-    if (!SQL_SUCCEEDED(rc)) {
-        __debugbreak();
-    }
+    if (!SQL_SUCCEEDED(rc))
+        goto add_loaded_dynamic_modules;
 
     rc = SQLAllocHandle(SQL_HANDLE_ENV, NULL, &henv);
-    if (!SQL_SUCCEEDED(rc)) {
-        __debugbreak();
-    }
+    if (!SQL_SUCCEEDED(rc))
+        goto add_loaded_dynamic_modules;
 
     rc = SQLSetEnvAttr(
         henv,
@@ -12680,15 +12681,15 @@ _PyAsync_ModInit(void)
         (SQLPOINTER)SQL_OV_ODBC3_80,
         SQL_IS_INTEGER
     );
-    if (!SQL_SUCCEEDED(rc)) {
-        _PyParallel_AsyncODBCAvailable = 0;
-        PyModule_AddIntConstant(m, "_async_odbc_available", 0);
-    } else {
+
+    if (SQL_SUCCEEDED(rc)) {
         _PyParallel_AsyncODBCAvailable = 1;
         PyModule_AddIntConstant(m, "_async_odbc_available", 1);
     }
 
     SQLFreeHandle(SQL_HANDLE_ENV, henv);
+
+add_loaded_dynamic_modules:
 
     if (PyModule_AddObject(m, "loaded_dynamic_modules", loaded_dynamic_modules))
         return NULL;
