@@ -49,6 +49,7 @@ from async.http.server import (
 
 from os.path import (
     join,
+    exists,
     abspath,
     dirname,
     normpath,
@@ -118,7 +119,7 @@ uint64_11 = uint64(11)
 offsets = np.load(TITLES_OFFSETS_NPY_PATH)
 
 # Use the smaller one if the larger one doesn't exist.
-if not os.path.exists(TITLES_TRIE_PATH):
+if not exists(TITLES_TRIE_PATH):
     TRIE_PATH = ZTITLES_TRIE_PATH
 else:
     TRIE_PATH = TITLES_TRIE_PATH
