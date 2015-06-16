@@ -19,10 +19,6 @@ from collections import (
     defaultdict,
 )
 
-from functools import (
-    partial,
-)
-
 from numpy import (
     uint64,
 )
@@ -42,6 +38,9 @@ from async import (
 )
 
 from async.http.server import (
+    router,
+    make_routes,
+
     Request,
     HttpServer,
     RangedRequest,
@@ -269,86 +268,11 @@ def exact_title(title):
 #===============================================================================
 # Classes
 #===============================================================================
-class NotTrie(dict):
-    def longest_prefix_value(self, path):
-        p = path[1:]
-        if not p:
-            return
-        ix = p.find('/')
-        if ix == -1:
-            return self.get(path)
-        key = path[:ix+1]
-        return self.get(key)
-
-#routes = NotTrie()
-
-class route:
-    routes = datrie.Trie(string.ascii_lowercase + '/')
-    def __init__(self, func, *args, **kwds):
-        self.func = func
-        self.args = args
-        self.kwds = kwds
-        self.path = None
-        self.funcname = func.__code__.co_name
-
-        if not args:
-            self.path = self.funcname
-        else:
-            self.path = args[0]
-
-        if self.path[0] != '/':
-            self.path = '/' + self.path
-
-        self.routes[self.path] = self.funcname
-
-    def __get__(self, obj, objtype=None):
-        if not obj:
-            return self.func
-        return partial(self, obj)
-
-    def __call__(self, *_args, **_kwds):
-        obj = _args[0]
-        request = _args[1]
-        # This will be the full path received, minus query string and fragment,
-        # e.g. '/offsets/Python'.
-        path = request.path[len(self.path):]
-
-        # In the case of '/offsets/Python', that'll leave us with '/Python',
-        # and we want to lop off the slash.  In the case of, say, '/stats',
-        # path will be empty.
-        if path and path[0] == '/':
-            if len(path) > 1:
-                path = path[1:]
-            else:
-                path = ''
-
-        # And that's it, the new path is passed to the callable as the second
-        # positional parameter.  If a fragment was present, pass that next.
-        # Then pass a query string as **kwds if present.
-        args = []
-        if path:
-            path = urllib.parse.unquote(path)
-            args.append(path)
-        if request.fragment:
-            args.append(fragment)
-
-        try:
-            result = self.func(obj, request, *args, **request.query)
-            return result
-        except TypeError:
-            try:
-                # Try without query string **kwds.
-                return self.func(obj, request, *args)
-            except TypeError:
-                # Try without fragment.
-                try:
-                    return self.func(obj, request, path)
-                except TypeError:
-                    # And finally, try without path.
-                    return self.func(obj, request)
-
+routes = make_routes()
+route = router(routes)
 
 class WikiServer(HttpServer):
+    routes = routes
 
     @route
     def wiki(self, request, name, **kwds):
@@ -409,10 +333,6 @@ class WikiServer(HttpServer):
     def title(self, request, name, *args, **kwds):
         items = titles.items(name)
         return json_serialization(request, items)
-
-    @property
-    def routes(self):
-        return route.routes
 
     @route
     def elapsed(self, request, *args, **kwds):
