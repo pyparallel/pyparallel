@@ -1,12 +1,21 @@
+#===============================================================================
+# Imports
+#===============================================================================
 import os
 import sys
 import time
 import html
 import json
 import async
+import string
 import urllib
+import inspect
 import mimetypes
 import posixpath
+
+from functools import (
+    partial,
+)
 
 is_pyparallel = False
 try:
@@ -42,6 +51,12 @@ extensions_map.update({
 url_unquote = urllib.parse.unquote
 html_escape = html.escape
 normpath = posixpath.normpath
+
+allowed_url_characters = (
+    string.ascii_letters +
+    string.digits +
+    '&#?/%_'
+)
 
 def keep_alive_check(f):
     def decorator(*args):
@@ -124,6 +139,187 @@ def date_time_string(timestamp=None):
         hh, mm, ss
     )
 
+#===============================================================================
+# Misc Helpers
+#===============================================================================
+class NotTrie(dict):
+    def longest_prefix_value(self, path):
+        p = path[1:]
+        if not p:
+            return
+        ix = p.find('/')
+        if ix == -1:
+            return self.get(path)
+        key = path[:ix+1]
+        return self.get(key)
+
+def make_routes(allowed=None):
+    if not allowed:
+        allowed = allowed_url_characters
+    try:
+        import datrie
+        make = lambda: datrie.Trie(allowed)
+    except ImportError:
+        make = lambda: NotTrie()
+
+    return make()
+
+def router(routes=None):
+    if routes is None:
+        routes = make_routes()
+    _routes = routes
+
+    class route:
+        routes = _routes
+        _func = None
+        _funcname = None
+        _path = None
+        def __init__(self, func_or_path):
+            if inspect.isfunction(func_or_path):
+                self.func = func_or_path
+            else:
+                self.path = func_or_path
+
+        @property
+        def path(self):
+            return self._path
+
+        @path.setter
+        def path(self, path):
+            if path[0] != '/':
+                path = '/' + self.path
+
+            self._path = path
+
+        @property
+        def func(self):
+            return self._func
+
+        @func.setter
+        def func(self, func):
+            self._func = func
+            self._funcname = func.__code__.co_name
+            if not self._path:
+                self._path = '/' + self._funcname
+
+            self.routes[self.path] = (self._funcname, self)
+
+        @property
+        def funcname(self):
+            return self._funcname
+
+        def __get__(self, obj, objtype=None):
+            if not obj:
+                return self.func
+            return partial(self, obj)
+
+        def __call__(self, *_args, **_kwds):
+            if not self.func:
+                func = _args[0]
+                self.func = func
+                return self
+
+            obj = _args[0]
+            request = _args[1]
+            # This will be the full path received, minus query string and
+            # fragment, e.g. '/offsets/Python'.
+            path = request.path[len(self.path):]
+
+            # In the case of '/offsets/Python', that'll leave us with '/Python',
+            # and we want to lop off the slash.  In the case of, say, '/stats',
+            # path will be empty.
+            if path and path[0] == '/':
+                if len(path) > 1:
+                    path = path[1:]
+                else:
+                    path = ''
+
+            # And that's it, the new path is passed to the callable as the
+            # second positional parameter.  If a fragment was present, pass
+            # that next.  Then pass a query string as **kwds if present.
+            args = []
+            if path:
+                path = urllib.parse.unquote(path)
+                args.append(path)
+            if request.fragment:
+                args.append(fragment)
+
+            try:
+                result = self.func(obj, request, *args, **request.query)
+                return result
+            except TypeError:
+                try:
+                    # Try without query string **kwds.
+                    return self.func(obj, request, *args)
+                except TypeError:
+                    # Try without fragment.
+                    try:
+                        return self.func(obj, request, path)
+                    except TypeError:
+                        # And finally, try without path.
+                        return self.func(obj, request)
+
+    def _decorator(*args, **kwds):
+        if args:
+            func = args[0]
+            if inspect.isfunction(func):
+                return route(func)
+            path = func
+
+        def _inner(f):
+            r = route(f)
+            r.path = path
+            return r
+
+    return _decorator
+
+def json_serialization(request=None, obj=None):
+    transport = None
+    if not request:
+        request = Request(transport=None, data=None)
+    else:
+        transport = request.transport
+    if not obj:
+        obj = {'message': 'Hello, World!'}
+    response = request.response
+    response.code = 200
+    response.message = 'OK'
+    response.content_type = 'application/json; charset=UTF-8'
+    response.body = json.dumps(obj)
+
+    return request
+
+def text_response(request=None, text=None):
+    transport = None
+    if not request:
+        request = Request(transport=None, data=None)
+    else:
+        transport = request.transport
+    if not text:
+        text = 'Hello, World!'
+    response = request.response
+    response.code = 200
+    response.message = 'OK'
+    response.content_type = 'text/plain; charset=UTF-8'
+    response.body = text
+
+    return request
+
+def html_response(request, text):
+    response = request.response
+    response.code = 200
+    response.message = 'OK'
+    response.content_type = 'text/html; charset=UTF-8'
+    response.body = text
+
+    return request
+
+def quote_html(html):
+    return html.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+#===============================================================================
+# Classes
+#===============================================================================
 class Options(dict):
     def __init__(self, values=dict()):
         assert isinstance(values, dict)
@@ -409,8 +605,8 @@ class RangedRequest:
         )
 
 class HttpServer:
-
     routes = None
+
     use_sendfile = True
     #throughput = True
     #low_latency = True
@@ -599,10 +795,11 @@ class HttpServer:
         if not self.routes:
             return
         try:
-            funcname = self.routes.longest_prefix_value(request.path)
-            if funcname:
-                return getattr(self, funcname)
-        except KeyError:
+            value = self.routes.longest_prefix_value(request.path)
+            if value:
+                (funcname, func) = value
+                return lambda r: func(self, r)
+        except (KeyError, AttributeError):
             pass
 
     def dispatch(self, request):
@@ -634,6 +831,9 @@ class HttpServer:
                     pass
 
         return func
+
+    def get_routes(self, request):
+        return json_serialization(request, self.routes.keys())
 
     def do_HEAD(self, request):
         return self.do_GET(request)
@@ -821,6 +1021,11 @@ class HttpServer:
         response.code = code
         response.message = message
         response.explain = r[1]
+
+    @classmethod
+    def merge(cls, other):
+        for (path, value) in other.routes.items():
+            cls.routes[path] = value
 
 def main():
     import socket
