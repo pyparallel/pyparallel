@@ -4431,12 +4431,15 @@ _PyParallel_ExceptionFilter(EXCEPTION_POINTERS* exc)
         mdei.ClientPointers = FALSE;
 
         mdt = (MINIDUMP_TYPE)(
-            MiniDumpWithPrivateReadWriteMemory      |
+            MiniDumpNormal                          |
             MiniDumpWithDataSegs                    |
+            MiniDumpWithCodeSegs                    |
             MiniDumpWithHandleData                  |
-            MiniDumpWithFullMemoryInfo              |
             MiniDumpWithThreadInfo                  |
-            MiniDumpWithUnloadedModules
+            MiniDumpWithFullMemoryInfo              |
+            MiniDumpWithProcessThreadData           |
+            MiniDumpWithUnloadedModules             |
+            MiniDumpWithPrivateReadWriteMemory
         );
 
         MiniDumpWriteDump(GetCurrentProcess(),
