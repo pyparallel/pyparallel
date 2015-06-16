@@ -376,6 +376,129 @@ class WikiServer(TCPServerCommand):
             async.register(transport=server, protocol=wiki.WikiServer)
             async.run()
 
+class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
+    _shortname_ = 'tefb'
+
+    port = None
+    _port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    database_server = None
+    class DatabaseServerArg(StringInvariant):
+        _help = (
+            'hostname or IP address of SQL Server instance to '
+            'connect to [default: %default]'
+        )
+        _default = 'localhost'
+
+    database_name = None
+    class DatabaseNameArg(StringInvariant):
+        _help = 'name of database [default: %default]'
+        _default = 'hello_world'
+
+    database_username = None
+    class DatabaseUsernameArg(StringInvariant):
+        _help = 'username of database user [default: %default]'
+        _default = 'benchmarkdbuser'
+
+    database_password = None
+    class DatabasePasswordArg(StringInvariant):
+        _help = 'password for database user [default: %default]'
+        _default = 'B3nchmarkDBPass'
+
+    database_driver = None
+    class DatabaseDriverArg(StringInvariant):
+        _help = 'driver name to use in connect string [default: %default]'
+        _default = 'SQL Server'
+
+    additional_connect_string_args = None
+    class AdditionalConnectStringArgsArg(StringInvariant):
+        _minlen = 0
+        _help = 'any additional args to append to connect string'
+        _default = ''
+
+    database_connect_string = None
+    class DatabaseConnectStringArg(StringInvariant):
+        _help = 'connect string to use [default: %default]'
+        _default = (
+            'Driver={%(database_driver)s};'
+            'Server=%(database_server)s;'
+            'Database=%(database_name)s;'
+            'Uid=%(database_username)s;'
+            'Pwd=%(database_password)s;'
+            '%(additional_connect_string_args)s'
+        )
+
+    test_only = None
+    class TestOnlyArg(BoolInvariant):
+        _help = 'verify the database can be connected to, then exit'
+        _default = False
+
+    wiki = None
+    class WikiArg(BoolInvariant):
+        _help = 'merges the wiki server into the http server protocol'
+        _default = False
+
+    def __getitem__(self, name):
+        return getattr(self, name)
+
+    def run(self):
+        ip = self.options.ip
+        port = self._port
+
+        #import pdb
+        #dbg = pdb.Pdb()
+        #dbg.set_trace()
+        #ipdb.set_trace()
+        connect_string = self.database_connect_string % self
+        # Force a hash.
+        #dummy = hash(connect_string)
+        self._out("Using connect string: %s" % connect_string)
+
+        tefbdir = join_path(dirname(__file__), '../../examples/tefb')
+        with chdir(tefbdir):
+            import tefb
+            import async
+            import pyodbc
+
+            async.register_dealloc(pyodbc.Connection)
+            async.register_dealloc(pyodbc.Cursor)
+            async.register_dealloc(pyodbc.Row)
+
+            protocol = tefb.TefbHttpServer
+            if self.options.wiki:
+                wikidir = tefbdir.replace('tefb', 'wiki')
+                with chdir(wikidir):
+                    import wiki
+                protocol.merge(wiki.WikiServer)
+            protocol.connect_string = connect_string
+            self._out("Testing database connectivity...")
+            con = pyodbc.connect(connect_string)
+            cur = con.cursor()
+            cur.execute(protocol.db_sql, (1,))
+            cur.fetchall()
+            cur.close()
+            con.close()
+            self._out("Database works.")
+            if self.options.test_only:
+                return
+
+            self._out("Running server on %s port %d ..." % (ip, port))
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=protocol)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
+
 #===============================================================================
 # Testing
 #===============================================================================
