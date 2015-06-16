@@ -131,6 +131,8 @@ class CommandLine:
                 v = getattr(i, '_' + f)
                 if v:
                     k[f] = v if not callable(v) else v()
+                elif v is not None:
+                    k[f] = v
 
             self.add_option(*args, **k)
 
