@@ -42,6 +42,7 @@ from async.http.server import (
 #===============================================================================
 randint = np.random.randint
 randints = lambda size: randint(0, high=10000, size=size)
+randints2d = lambda size: randint(0, high=10000, size=(2, size))
 
 #===============================================================================
 # Globals/Templates
@@ -157,7 +158,7 @@ route = router(routes)
 class TefbHttpServer(HttpServer):
     routes = routes
 
-    db_sql = 'select * from world where id = ?'
+    db_sql = 'select id, randomNumber from world where id = ?'
     update_sql = 'update world set randomNumber = ? where id = ?'
     fortune_sql = 'select * from fortune'
 
@@ -220,16 +221,15 @@ class TefbHttpServer(HttpServer):
         con = pyodbc.connect(self.connect_string)
         cur = con.cursor()
         #ids = [ randint(1, 10000) for _ in range(0, count) ]
-        ids = randints(count)
+        ints2d = randints2d(count)
         results = []
         updates = []
-        for npi in ids:
-            i = int(npi)
+        for npi in ints2d:
+            (i, rn) = (int(npi[0]), int(npi[1]))
             cur.execute(self.db_sql, i)
             o = cur.fetchall()
-            t = (o[0][0], i)
-            results.append(t)
-            updates.append({'id': t[0], 'randomNumber': t[1]})
+            results.append((rn, i))
+            updates.append({'id': i, 'randomNumber': rn})
 
         cur.executemany(self.update_sql, results)
         cur.commit()
