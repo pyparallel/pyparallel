@@ -8397,7 +8397,7 @@ send_completed:
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
             PyErr_SetString(PyExc_RuntimeError,
-                            "send_complete callback scheduled sendfile but "
+                            "send_complete() callback scheduled sendfile but "
                             "returned non-None data");
             PxSocket_EXCEPTION();
         }
@@ -8934,7 +8934,7 @@ do_data_received_callback:
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
             PyErr_SetString(PyExc_RuntimeError,
-                            "data_received callback scheduled sendfile but "
+                            "data_received() callback scheduled sendfile but "
                             "returned non-None data");
             PxSocket_EXCEPTION();
         }
