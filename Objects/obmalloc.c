@@ -1258,7 +1258,7 @@ PyObject_Realloc(void *p, size_t nbytes)
     if (p == NULL)
         return PyObject_Malloc(nbytes);
 
-    PyPx_GUARD_MEM(p);
+    //PyPx_GUARD_MEM(p);
     Px_RETURN(_PxMem_Realloc(p, nbytes));
 
     /*
