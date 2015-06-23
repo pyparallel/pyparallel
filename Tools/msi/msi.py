@@ -1000,12 +1000,18 @@ class PyDirectory(Directory):
         if 'numpy' in pdbpath:
             return
 
+        if 'debugger' in pdbpath:
+            return
+
+        if filename.startswith(('dbghelp', 'dbgeng')):
+            return
+
+        print "%s -> %s" % (filename, pdbname)
         if not exists(pdbpath):
             import pdb
             dbg = pdb.Pdb()
             dbg.set_trace()
 
-        print "%s -> %s" % (filename, pdbname)
         Directory.add_file(self, pdbname, **kw)
 
 
@@ -1044,9 +1050,9 @@ def add_files(db):
     root.add_file("tefb.bat", src="Tools/pyparallel/tefb.bat")
     root.add_file("px-http-server.bat", src="Tools/pyparallel/px-http-server.bat")
     root.add_file("python33-http-server.bat", src="Tools/pyparallel/python33-http-server.bat")
-    root.add_file("debugger.exe", src="debugger.exe")
-    root.add_file("dbghelp.dll", src="dbghelp.dll")
-    root.add_file("dbgeng.dll", src="dbgeng.dll")
+    #root.add_file("debugger.exe", src="debugger.exe")
+    #root.add_file("dbghelp.dll", src="dbghelp.dll")
+    #root.add_file("dbgeng.dll", src="dbgeng.dll")
     generate_license()
     root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
     root.start_component("python.exe", keyfile="python.exe")
