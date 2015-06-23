@@ -62,6 +62,7 @@ static int _PyParallel_AsyncODBCAvailable = 0;
 static int _PyParallel_RegisteredIOAvailable = 0;
 
 volatile long _PyParallel_SEH_EAV_InIoCallback = 0;
+volatile long _PyParallel_SEH_EAV_InWaitCallback = 0;
 volatile int _PyParallel_Finalized = 0;
 
 volatile long _PyParallel_EAV_In_PyErr_PrintEx;
@@ -4264,11 +4265,33 @@ _PxSocket_WaitCallback(
 
     ENTERED_CALLBACK();
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     EnterCriticalSection(&s->cs);
+    if (s->tp_wait_callback) {
+        (s->tp_wait_callback)(
+            instance,
+            s->wait_callback_context,
+            s->tp_wait,
+            s->wait_result
+        );
+        if (PyErr_Occurred())
+            PxSocket_FATAL();
+    }
     PxSocket_IOLoop(s);
+
+end:
     if (_PyParallel_Finalized)
         return;
-    LeaveCriticalSection(&s->cs);
+
+    __try {
+        if (s->ctx->io_obj == (PyObject *)s)
+            LeaveCriticalSection(&s->cs);
+    } __except(EXCEPTION_EXECUTE_HANDLER) {
+        InterlockedIncrement(&_PyParallel_SEH_EAV_InWaitCallback);
+    }
+
     return;
 }
 
@@ -4282,13 +4305,52 @@ PxSocket_InitWait(PxSocket *s)
         s->tp_wait = CreateThreadpoolWait(cb, c, cbe);
         if (!s->tp_wait) {
             DWORD err = GetLastError();
-            __debugbreak();
+            //__debugbreak();
             PyErr_SetFromWindowsErr(err);
             PxSocket_FATAL();
         }
     }
 end:
     return;
+}
+
+int _extract_socket(Context *c, PxSocket **s);
+
+/* 0 = failure, 1 = success */
+int _PyParallel_SetThreadpoolWait(
+    HANDLE event,
+    DWORD timeout_seconds,
+    PTP_WAIT_CALLBACK tp_wait_callback,
+    PVOID wait_callback_context
+)
+{
+    Context *c = ctx;
+    PxSocket *s = NULL;
+    int result = 0;
+
+    if (!_extract_socket(c, &s))
+        goto end;
+
+    _PyParallel_SecondsToRelativeThreadpoolWaitTime(
+        timeout_seconds,
+        &s->wait_timeout
+    );
+    s->wait_event = event;
+    s->tp_wait_callback = tp_wait_callback;
+    s->wait_callback_context = wait_callback_context;
+
+    PxSocket_InitWait(s);
+
+    SetThreadpoolWait(s->tp_wait,
+                      s->wait_event,
+                      &s->wait_timeout);
+
+    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED;
+
+    result = 1;
+end:
+    return result;
+
 }
 
 void
@@ -4401,6 +4463,14 @@ PyObject *
 _async_seh_eav_in_io_callback(PyObject *self)
 {
     return PyLong_FromLong(_PyParallel_SEH_EAV_InIoCallback);
+}
+
+PyDoc_STRVAR(_async_seh_eav_in_wait_callback_doc, "xxx todo\n");
+
+PyObject *
+_async_seh_eav_in_wait_callback(PyObject *self)
+{
+    return PyLong_FromLong(_PyParallel_SEH_EAV_InWaitCallback);
 }
 
 LONG WINAPI
@@ -12663,6 +12733,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(call_from_main_thread),
     _ASYNC_N(seh_eav_in_io_callback),
     _ASYNC_N(is_heap_override_active),
+    _ASYNC_N(seh_eav_in_wait_callback),
     _ASYNC_N(refresh_rio_availability),
     _ASYNC_N(debugbreak_on_next_exception),
     _ASYNC_V(call_from_main_thread_and_wait),

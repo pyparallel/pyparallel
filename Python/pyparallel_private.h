@@ -623,7 +623,9 @@ typedef struct _PyParallelContext {
     TP_CALLBACK_ENVIRON tp_cbe;
     PTP_CALLBACK_ENVIRON ptp_cbe;
 
-    // Wait pool
+    // Wait pool -- we keep this separate from the thread pool above such that
+    // we can set the max thread count much higher (as each thread can wait on
+    // 63 unique events).
     Context *tpw_ctx;
     PTP_POOL ptpw;
     PTP_CLEANUP_GROUP ptpw_cg;
@@ -631,9 +633,8 @@ typedef struct _PyParallelContext {
     TP_CALLBACK_ENVIRON tpw_cbe;
     PTP_CALLBACK_ENVIRON ptpw_cbe;
 
-    TP_WAIT        *tp_wait;
-    TP_WAIT_RESULT  wait_result;
-    PFILETIME       wait_timeout;
+    TP_WAIT         *tp_wait;
+    TP_WAIT_RESULT   wait_result;
 
     /* Link to PxState contexts list head. */
     LIST_ENTRY px_link;
@@ -1078,9 +1079,14 @@ typedef struct _PxSocket {
     FILETIME utc_start;
     FILETIME utc_stop;
 
-    TP_WAIT        *tp_wait;
-    TP_WAIT_RESULT  wait_result;
-    PFILETIME       wait_timeout;
+    TP_WAIT            *tp_wait;
+    PTP_WAIT_CALLBACK   tp_wait_callback;
+    TP_WAIT_RESULT      wait_result;
+    FILETIME            wait_timeout;
+    HANDLE              wait_event;
+    PVOID               wait_callback_context;
+    int                 wait_next_io_op;
+
 
     /* Total bytes sent/received */
     Py_ssize_t  total_bytes_sent;
