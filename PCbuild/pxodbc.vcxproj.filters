@@ -1,0 +1,113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{F503B47E-D455-4806-947F-BFCA56EF0F9E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Headers">
+      <UniqueIdentifier>{F8358B4E-0F4B-4728-8C08-1BAFB8C8566C}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{F7A2F692-0C97-11E5-9F3F-8863DFCA3C43}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="$(pxodbcDir)\src\buffer.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\cnxninfo.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\connection.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\cursor.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\errors.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\getdata.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\params.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\pxodbccompat.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\pxodbcdbg.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\pxodbcmodule.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\row.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\sqlwchar.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+    <ClCompile Include="$(pxodbcDir)\src\pxodbccapsule.cpp">
+      <Filter>Source</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="$(pxodbcDir)\src\buffer.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\cnxninfo.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\connection.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\cursor.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\dbspecific.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\errors.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\getdata.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\params.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\pxodbc.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\pxodbccapsule.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\pxodbccompat.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\pxodbcmodule.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\resource.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\row.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\sqlcapsule.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\sqlwchar.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="$(pxodbcDir)\src\wrapper.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="$(pxodbcDir)\src\pxodbc.rc">
+      <Filter>Resources</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
