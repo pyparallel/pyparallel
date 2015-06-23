@@ -411,6 +411,12 @@
     <ClInclude Include="..\Include\pyparallel.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\pyparallel_util.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\pyparallel_odbc.h">
+      <Filter>Include</Filter>
+    </ClInclude>        
     <ClInclude Include="..\Include\pxlist.h">
       <Filter>Include</Filter>
     </ClInclude>
