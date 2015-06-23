@@ -14,10 +14,12 @@ extern "C" {
 //#include <ntddk.h>
 #include "pyparallel.h"
 #include "pyparallel_odbc.h"
+#include "pyparallel_util.h"
+//#include "../contrib/pxodbc/src/pxodbccapsule.h"
 
 #pragma comment(lib, "ws2_32.lib")
-#pragma comment(lib, "odbc32.lib")
-#pragma comment(lib, "odbccp32.lib")
+//#pragma comment(lib, "odbc32.lib")
+//#pragma comment(lib, "odbccp32.lib")
 
 #if defined(_MSC_VER) && _MSC_VER>1201
   /* Do not include addrinfo.h for MSVC7 or greater. 'addrinfo' and
@@ -900,7 +902,7 @@ typedef struct _PxObject {
 #define PxSocket_IS_DISCONNECTED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_DISCONNECTED)
 
-#define PxSocket_IS_ODBC(s) \
+#define PxSocket_ODBC(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_ODBC)
 
 #define PxSocket_HAS_CONNECTION_STRING(s) \
@@ -1121,11 +1123,21 @@ typedef struct _PxSocket {
     PyObject *next_bytes_to_send;
     PyObject *next_bytes_callable;
     WSABUF    next_bytes;
-    PyObject *odbc;
-    PyObject *connection_string;
+    // Comment out the pxodbc related stuff for now.
+    //PyObject *odbc;
+    //PyObject *connection_string;
+    //PyObject *cnxn; // pxodbc.Connection
+    //PyObject *db_connection_made;
+    //PyObject *db_execute_complete;
+    //PyObject *db_fetch_complete;
+    /* Wait events. */
+    //HANDLE    db_connect_event;
+    //HANDLE    db_event;
 
     HENV      henv;
-    HDBC      hdbc;
+    //HDBC      hdbc;
+    //int       has_odbc;
+    //int       odbc_initialized;
 
     int       max_sync_send_attempts;
     int       max_sync_recv_attempts;
@@ -1685,6 +1697,7 @@ static PyTypeObject PxClientSocket_Type;
 static PyTypeObject PxServerSocket_Type;
 
 static PySocketModule_APIObject PySocketModule;
+//static PxOdbcModule_APIObject PxOdbcModule;
 
 #define PySocket_Type           PySocketModule.Sock_Type
 #define getsockaddrarg          PySocketModule.getsockaddrarg
