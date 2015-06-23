@@ -11815,6 +11815,8 @@ cleaned_up_children:
         CloseHandle(s->accepts_sem);
 
 //cleanup_threadpool:
+    /* XXX: this currently blocks -- I think I need to package it up and
+     * dispatch it to the main thread. */
     CloseThreadpoolCleanupGroupMembers(c->ptp_cg,
                                        FALSE, /* cancel pending callbacks */
                                        s);   /* I'm not sure if we need to
