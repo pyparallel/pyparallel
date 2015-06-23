@@ -1,7 +1,7 @@
 #ifndef PYPARALLEL_ODBC_H
 #define PYPARALLEL_ODBC_H
 
-#ifdef __cpplus
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -10,7 +10,7 @@ extern "C" {
 
 PyAPI_FUNC(HENV*) _PyParallel_GetDbEnvp(void);
 
-#ifdef __cpplus
+#ifdef __cplusplus
 }
 #endif
 
