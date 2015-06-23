@@ -10634,13 +10634,13 @@ PxSocket_InitProtocol(PxSocket *s)
     /* This is initialized in more detail during PxSocket_InitNextBytes. */
     _PxSocket_RESOLVE(next_bytes_to_send);
 
-    _PxSocket_RESOLVE(connection_string);
+    //_PxSocket_RESOLVE(connection_string);
 
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
     _PxSocket_RESOLVE_BOOL(low_latency);
     _PxSocket_RESOLVE_BOOL(shutdown_send);
-    _PxSocket_RESOLVE_BOOL(odbc);
+    //_PxSocket_RESOLVE_BOOL(odbc);
 
     _PxSocket_RESOLVE_INT(max_sync_send_attempts);
     _PxSocket_RESOLVE_INT(max_sync_recv_attempts);
