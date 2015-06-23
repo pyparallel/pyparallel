@@ -453,13 +453,7 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
         ip = self.options.ip
         port = self._port
 
-        #import pdb
-        #dbg = pdb.Pdb()
-        #dbg.set_trace()
-        #ipdb.set_trace()
         connect_string = self.database_connect_string % self
-        # Force a hash.
-        #dummy = hash(connect_string)
         self._out("Using connect string: %s" % connect_string)
 
         tefbdir = join_path(dirname(__file__), '../../examples/tefb')
