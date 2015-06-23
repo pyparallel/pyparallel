@@ -808,6 +808,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_odbc                       (1ULL << 40)
 #define Px_SOCKFLAGS_CONNECTION_STRING          (1ULL << 41)
 #define Px_SOCKFLAGS_connection_string          (1ULL << 41)
+#define Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED      (1ULL << 42)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -825,6 +826,8 @@ typedef struct _PxObject {
 #define PxSocket_IS_CONNECTED(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTED)
 #define PxSocket_IS_SENDFILE_SCHEDULED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDFILE_SCHEDULED)
+#define PxSocket_IS_OTHER_ASYNC_SCHEDULED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED)
 
 #define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
 

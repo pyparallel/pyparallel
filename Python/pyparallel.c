@@ -8050,12 +8050,22 @@ definitely_do_connection_made:
         }
     }
 
+    if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "connection_made() callback scheduled an async op"
+                            " but returned non-None data");
+            PxSocket_EXCEPTION();
+        }
+    }
+
     if (result == Py_None) {
         if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
             s->sendfile_snapshot = snapshot;
             snapshot = NULL;
             goto do_sendfile;
-        }
+        } else if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s))
+            goto end;
         PxContext_RollbackHeap(c, &snapshot);
         goto try_recv;
     }
@@ -8393,12 +8403,23 @@ send_completed:
         }
     }
 
+    if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "send_complete() callback scheduled an async op "
+                            "but returned non-None data");
+            PxSocket_EXCEPTION();
+        }
+    }
+
+
     if (result == Py_None) {
         if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
             s->sendfile_snapshot = snapshot;
             snapshot = NULL;
             goto do_sendfile;
-        }
+        } else if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s))
+            goto end;
         PxContext_RollbackHeap(c, &snapshot);
         goto try_recv;
     }
@@ -8919,12 +8940,22 @@ do_data_received_callback:
         }
     }
 
+    if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s)) {
+        if (result != Py_None) {
+            PyErr_SetString(PyExc_RuntimeError,
+                            "data_received() callback scheduled an async op"
+                            " but returned non-None data");
+            PxSocket_EXCEPTION();
+        }
+    }
+
     if (result == Py_None) {
         if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
             s->sendfile_snapshot = rbuf->snapshot;
             rbuf->snapshot = NULL;
             goto do_sendfile;
-        }
+        } else if (PxSocket_IS_OTHER_ASYNC_SCHEDULED(s))
+            goto end;
         PxContext_RollbackHeap(c, &rbuf->snapshot);
         if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED)
             goto do_disconnect;
