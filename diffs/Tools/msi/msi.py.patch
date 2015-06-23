@@ -198,7 +198,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
          out.write("\nThis copy of Python includes a copy of %s, which is licensed under the following terms:\n\n" % name)
          dirs = glob.glob(srcdir+"/../"+pat)
          if not dirs:
-@@ -927,6 +966,49 @@ class PyDirectory(Directory):
+@@ -927,6 +966,55 @@ class PyDirectory(Directory):
              kw['componentflags'] = 2 #msidbComponentAttributesOptional
          Directory.__init__(self, *args, **kw)
  
@@ -236,19 +236,25 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
 +        if 'numpy' in pdbpath:
 +            return
 +
++        if 'debugger' in pdbpath:
++            return
++
++        if filename.startswith(('dbghelp', 'dbgeng')):
++            return
++
++        print "%s -> %s" % (filename, pdbname)
 +        if not exists(pdbpath):
 +            import pdb
 +            dbg = pdb.Pdb()
 +            dbg.set_trace()
 +
-+        print "%s -> %s" % (filename, pdbname)
 +        Directory.add_file(self, pdbname, **kw)
 +
 +
  def hgmanifest():
      # Fetch file list from Mercurial
      process = subprocess.Popen(['hg', 'manifest'], stdout=subprocess.PIPE)
-@@ -949,7 +1031,7 @@ def hgmanifest():
+@@ -949,7 +1037,7 @@ def hgmanifest():
  def add_files(db):
      installer = msilib.MakeInstaller()
      hgfiles = hgmanifest()
@@ -257,7 +263,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      tmpfiles = []
      # Add all executables, icons, text files into the TARGETDIR component
      root = PyDirectory(db, cab, None, srcdir, "TARGETDIR", "SourceDir")
-@@ -958,6 +1040,10 @@ def add_files(db):
+@@ -958,6 +1046,13 @@ def add_files(db):
          root.add_file("%s/w9xpopen.exe" % PCBUILD)
      root.add_file("README.txt", src="README")
      root.add_file("NEWS.txt", src="Misc/NEWS")
@@ -265,10 +271,13 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
 +    root.add_file("tefb.bat", src="Tools/pyparallel/tefb.bat")
 +    root.add_file("px-http-server.bat", src="Tools/pyparallel/px-http-server.bat")
 +    root.add_file("python33-http-server.bat", src="Tools/pyparallel/python33-http-server.bat")
++    #root.add_file("debugger.exe", src="debugger.exe")
++    #root.add_file("dbghelp.dll", src="dbghelp.dll")
++    #root.add_file("dbgeng.dll", src="dbgeng.dll")
      generate_license()
      root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
      root.start_component("python.exe", keyfile="python.exe")
-@@ -965,6 +1051,14 @@ def add_files(db):
+@@ -965,6 +1060,14 @@ def add_files(db):
      root.start_component("pythonw.exe", keyfile="pythonw.exe")
      root.add_file("%s/pythonw.exe" % PCBUILD)
  
@@ -283,7 +292,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      # msidbComponentAttributesSharedDllRefCount = 8, see "Component Table"
      dlldir = PyDirectory(db, cab, root, srcdir, "DLLDIR", ".")
      launcherdir = PyDirectory(db, cab, root, srcdir, "LAUNCHERDIR", ".")
-@@ -1028,9 +1122,27 @@ def add_files(db):
+@@ -1028,9 +1131,28 @@ def add_files(db):
          print("WARNING: _ctypes.pyd not found, ctypes will not be included")
          extensions.remove("_ctypes.pyd")
  
@@ -297,7 +306,8 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      dirs = []
 -    pydirs = [(root, "Lib", hgfiles["Lib"], default_feature)]
 +    pydirs = [
-+        (root, "Lib",       hgfiles["Lib"],     default_feature),
++        (root, "Lib",       hgfiles["Lib"],      default_feature),
++        (root, "examples",  hgfiles["examples"], default_feature),
 +        (root, "Python",    hgfiles["Python"],  source),
 +        (root, "PCbuild",   hgfiles["PCbuild"], source),
 +        (root, "PC",        hgfiles["PC"],      source),
@@ -312,7 +322,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      while pydirs:
          # Commit every now and then, or else installer will complain
          db.Commit()
-@@ -1051,8 +1163,13 @@ def add_files(db):
+@@ -1051,8 +1173,13 @@ def add_files(db):
          dirs.append(lib)
          has_py = False
          for name, subdir in files.items():
@@ -327,7 +337,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
                  if name == 'README':
                      lib.add_file("README.txt", src="README")
                  else:
-@@ -1289,7 +1406,7 @@ def add_registry(db):
+@@ -1289,7 +1416,7 @@ def add_registry(db):
      # Shortcuts, see "Shortcut Table"
      add_data(db, "Directory",
               [("ProgramMenuFolder", "TARGETDIR", "."),
@@ -336,7 +346,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      add_data(db, "RemoveFile",
               [("MenuDir", "TARGETDIR", None, "MenuDir", 2)])
      tcltkshortcuts = []
-@@ -1322,7 +1439,7 @@ def add_registry(db):
+@@ -1322,7 +1449,7 @@ def add_registry(db):
  def build_pdbzip():
      pdbexclude = ['kill_python.pdb', 'make_buildinfo.pdb',
                    'make_versioninfo.pdb']
@@ -345,7 +355,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
      pdbzip = zipfile.ZipFile(path, 'w')
      for f in glob.glob1(os.path.join(srcdir, PCBUILD), "*.pdb"):
          if f not in pdbexclude and not f.endswith('_d.pdb'):
-@@ -1417,3 +1534,10 @@ if certname:
+@@ -1417,3 +1544,10 @@ if certname:
  
  if pdbzip:
      build_pdbzip()

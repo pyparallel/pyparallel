@@ -172,7 +172,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      if (p == NULL)
          return PyObject_Malloc(nbytes);
  
-+    PyPx_GUARD_MEM(p);
++    //PyPx_GUARD_MEM(p);
 +    Px_RETURN(_PxMem_Realloc(p, nbytes));
 +
      /*
