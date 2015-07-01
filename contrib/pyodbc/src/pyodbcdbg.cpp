@@ -46,7 +46,7 @@ void* _pyodbc_malloc(const char* filename, int lineno, size_t len)
 
     if (count == bufsize)
     {
-        allocs = (Allocation*)realloc(allocs, (bufsize + 20) * sizeof(Allocation));
+        allocs = (Allocation*)pyodbc_realloc(allocs, (bufsize + 20) * sizeof(Allocation));
         if (allocs == 0)
         {
             // Yes we just lost the original pointer, but we don't care since everything is about to fail.  This is a

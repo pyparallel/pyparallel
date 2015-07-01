@@ -183,7 +183,7 @@ public:
         }
         else
         {
-            char* tmp = (char*)realloc(buffer, (size_t)newSize);
+            char* tmp = (char*)pyodbc_realloc(buffer, (size_t)newSize);
             if (tmp == 0)
                 return false;
             buffer = tmp;
