@@ -193,7 +193,7 @@ class DbPyodbcHttpServer(TCPServerCommand):
     class ConnectStringArg(StringInvariant):
         _help = 'connect string to use for database [default: %default]'
         _default = (
-            'Driver={ODBC Driver 11 for SQL Server};'
+            'Driver={SQL Server};'
             'Server=%s;'
             'Database=hello_world;'
             'Uid=benchmarkdbuser;'
