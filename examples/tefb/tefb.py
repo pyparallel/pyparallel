@@ -1,10 +1,9 @@
 #===============================================================================
 # Imports
 #===============================================================================
+import sys
 import json
-import random
 import pyodbc
-import numpy as np
 
 import async
 
@@ -37,12 +36,31 @@ from async.http.server import (
     HttpServer,
 )
 
+# It can be a pain setting up the environment to load the debug version of
+# numpy, so, if we can't import it, just default to normal Python random.
+np = None
+if not sys.executable.endswith('_d.exe'):
+    try:
+        import numpy as np
+        randint = np.random.randint
+        randints = lambda size: randint(0, high=10000, size=size)
+        randints2d = lambda size: randint(0, high=10000, size=(2, size))
+        print("Using NumPy random facilities.")
+    except ImportError:
+        pass
+
+if not np:
+    import random
+    randint = random.randint
+    randints = lambda size: [ randint(1, 10000) for _ in range(0, size) ]
+    randints2d = lambda size: [
+        (x, y) for (x, y) in zip(randints(size), randints(size))
+    ]
+    print("Couldn't load NumPy; reverting to normal CPython random facilities.")
+
 #===============================================================================
 # Aliases
 #===============================================================================
-randint = np.random.randint
-randints = lambda size: randint(0, high=10000, size=size)
-randints2d = lambda size: randint(0, high=10000, size=(2, size))
 
 #===============================================================================
 # Globals/Templates
@@ -200,7 +218,6 @@ class TefbHttpServer(HttpServer):
 
         con = pyodbc.connect(self.connect_string)
         cur = con.cursor()
-        # ids = [ randint(1, 10000) for _ in range(0, count) ]
         ids = randints(count)
         results = []
         for npi in ids:
@@ -220,7 +237,6 @@ class TefbHttpServer(HttpServer):
 
         con = pyodbc.connect(self.connect_string)
         cur = con.cursor()
-        #ids = [ randint(1, 10000) for _ in range(0, count) ]
         ints2d = randints2d(count)
         results = []
         updates = []
