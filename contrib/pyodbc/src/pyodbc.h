@@ -132,14 +132,27 @@ static __inline
 void *
 pyodbc_malloc(size_t n)
 {
-    return PyObject_MALLOC(n);
+    return PyMem_Malloc(n);
+    //return PyMem_RawMalloc(n);
+    //return malloc(n);
 }
 
 static __inline
 void
 pyodbc_free(void *p)
 {
-    PyObject_FREE(p);
+    PyMem_Free(p);
+    //PyMem_RawFree(p);
+    //free(p);
+}
+
+static __inline
+void *
+pyodbc_realloc(void *p, size_t sz)
+{
+    return PyMem_Realloc(p, sz);
+    //return PyMem_RawRealloc(p, sz);
+    //return realloc(p, sz);
 }
 //#define pyodbc_malloc PyObject_MALLOC
 //#define pyodbc_free PyObject_FREE
