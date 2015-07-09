@@ -15,7 +15,7 @@ extern "C" {
 #include "pyparallel.h"
 #include "pyparallel_odbc.h"
 #include "pyparallel_util.h"
-//#include "../contrib/pxodbc/src/pxodbccapsule.h"
+#include "../contrib/pxodbc/src/pxodbccapsule.h"
 
 #pragma comment(lib, "ws2_32.lib")
 //#pragma comment(lib, "odbc32.lib")
@@ -1146,9 +1146,8 @@ typedef struct _PxSocket {
     PyObject *next_bytes_to_send;
     PyObject *next_bytes_callable;
     WSABUF    next_bytes;
-    // Comment out the pxodbc related stuff for now.
-    //PyObject *odbc;
-    //PyObject *connection_string;
+    PyObject *odbc;
+    PyObject *connection_string;
     //PyObject *cnxn; // pxodbc.Connection
     //PyObject *db_connection_made;
     //PyObject *db_execute_complete;
@@ -1160,7 +1159,7 @@ typedef struct _PxSocket {
     HENV      henv;
     //HDBC      hdbc;
     //int       has_odbc;
-    //int       odbc_initialized;
+    int       odbc_initialized;
 
     int       max_sync_send_attempts;
     int       max_sync_recv_attempts;
