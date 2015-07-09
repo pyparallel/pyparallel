@@ -167,6 +167,8 @@ _PyParallel_GetConnectionInfo(PyObject* pConnectionString, Connection* cnxn)
 
     if (!tls_cnxninfo_map) {
         tls_cnxninfo_map = new TlsCnxnInfoMap();
+        if (!tls_cnxninfo_map)
+            __debugbreak();
     }
     tcim = tls_cnxninfo_map;
     
