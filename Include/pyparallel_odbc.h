@@ -9,6 +9,7 @@ extern "C" {
 #include <sqlext.h>
 
 PyAPI_FUNC(HENV*) _PyParallel_GetDbEnvp(void);
+PyAPI_FUNC(void)  _PyParallel_RegisterPxOdbcCapsule(void *capsule);
 
 #ifdef __cplusplus
 }
