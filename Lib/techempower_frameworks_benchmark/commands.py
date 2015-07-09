@@ -24,6 +24,7 @@ from ctk.invariant import (
     PathInvariant,
     StringInvariant,
     DirectoryInvariant,
+    PositiveIntegerInvariant,
     NonEphemeralPortInvariant,
     ExistingDirectoryInvariant,
 )
@@ -87,8 +88,8 @@ class DbHttpServer(TCPServerCommand):
         _help = 'IP address to listen on [default: %default]'
         _default = IPADDR
 
-    connect_string = None
-    class ConnectStringArg(StringInvariant):
+    connection_string = None
+    class ConnectionStringArg(StringInvariant):
         _help = 'connect string to use for database [default: %default]'
         _default = (
             'Driver={SQL Server};'
@@ -107,11 +108,11 @@ class DbHttpServer(TCPServerCommand):
 
         import async
         from . import BaseHttpServer
-        BaseHttpServer.connect_string = self.options.connect_string
+        BaseHttpServer.connection_string = self.options.connection_string
         import pypyodbc
         BaseHttpServer.odbc = pypyodbc
 
-        con = pypyodbc.connect(self.options.connect_string)
+        con = pypyodbc.connect(self.options.connection_string)
         BaseHttpServer.connection = con
         cur = con.cursor()
         cur.execute(BaseHttpServer.db_sql, (1,))
@@ -138,8 +139,8 @@ class DbOtherHttpServer(TCPServerCommand):
         _help = 'IP address to listen on [default: %default]'
         _default = IPADDR
 
-    connect_string = None
-    class ConnectStringArg(StringInvariant):
+    connection_string = None
+    class ConnectionStringArg(StringInvariant):
         _help = 'connect string to use for database [default: %default]'
         _default = (
             'Driver={SQL Server};'
@@ -158,11 +159,11 @@ class DbOtherHttpServer(TCPServerCommand):
 
         import async
         from . import BaseHttpServer
-        BaseHttpServer.connect_string = self.options.connect_string
+        BaseHttpServer.connection_string = self.options.connection_string
         #import pypyodbc
         #BaseHttpServer.odbc = pypyodbc
 
-        #con = pypyodbc.connect(self.options.connect_string)
+        #con = pypyodbc.connect(self.options.connection_string)
         #BaseHttpServer.connection = con
         #cur = con.cursor()
         #cur.execute(BaseHttpServer.db_sql, (1,))
@@ -189,8 +190,8 @@ class DbPyodbcHttpServer(TCPServerCommand):
         _help = 'IP address to listen on [default: %default]'
         _default = IPADDR
 
-    connect_string = None
-    class ConnectStringArg(StringInvariant):
+    connection_string = None
+    class ConnectionStringArg(StringInvariant):
         _help = 'connect string to use for database [default: %default]'
         _default = (
             'Driver={SQL Server};'
@@ -210,19 +211,19 @@ class DbPyodbcHttpServer(TCPServerCommand):
         port = int(self.options.port)
         root = self.options.root or os.getcwd()
 
-        cs = self.options.connect_string % self.options.server
+        cs = self.options.connection_string % self.options.server
         import async
         from . import BaseHttpServer
-        BaseHttpServer.connect_string = cs
+        BaseHttpServer.connection_string = cs
         import pyodbc
         async.register_dealloc(pyodbc.Connection)
         async.register_dealloc(pyodbc.Cursor)
         async.register_dealloc(pyodbc.Row)
         #async.register_dealloc(pyodbc.CnxnInfo)
 
-        BaseHttpServer.odbc = pyodbc
+        #BaseHttpServer.odbc = pyodbc
         # Force a hash.
-        dummy = id(BaseHttpServer.connect_string)
+        dummy = hash(BaseHttpServer.connection_string)
 
         self._out("Attempting to connect to %s..." % cs)
 
@@ -243,6 +244,57 @@ class DbPyodbcHttpServer(TCPServerCommand):
                 async.run()
             except KeyboardInterrupt:
                 server.shutdown()
+
+class PyodbcMemLeakHelp(TCPServerCommand):
+    count = None
+    _count = None
+    class CountArg(PositiveIntegerInvariant):
+        _help = 'number of loops to perform'
+        _default = 50000
+
+    connection_string = None
+    class ConnectionStringArg(StringInvariant):
+        _help = 'connect string to use for database [default: %default]'
+        _default = (
+            'Driver={SQL Server};'
+            'Server=%s;'
+            'Database=hello_world;'
+            'Uid=benchmarkdbuser;'
+            'Pwd=B3nchmarkDBPass;'
+        )
+
+    server = None
+    class ServerArg(StringInvariant):
+        _help = 'address of SQL Server instance'
+        _default = 'localhost'
+
+    def run(self):
+        count = self._count
+        out = self._out
+        cs = self.options.connection_string % self.options.server
+        import os
+        import sys
+        import pyodbc
+        from ctk.util import progressbar
+        from . import BaseHttpServer
+        sql = BaseHttpServer.db_sql2
+        def wait_for_enter():
+            sys.stdin.read(1)
+        out("Press Enter when ready...")
+        wait_for_enter()
+        for i in progressbar(range(count), total=count, leave=True):
+            con = pyodbc.connect(cs)
+            cur = con.cursor()
+            cur.execute(sql)
+            cur.close()
+            con.close()
+
+        out("About to call gc.collect(), press Enter to continue.")
+        wait_for_enter()
+        import gc
+        gc.collect()
+        out("gc.collect() called, press Enter to exit.")
+        wait_for_enter()
 
 
 class LowLatencyHttpServer(TCPServerCommand):
@@ -432,10 +484,11 @@ class MutipleCheatingHttpServers(TCPServerCommand):
         port = int(self.options.port)
         root = self.options.root or os.getcwd()
 
-        self._out("Base Cheating:        Serving HTTP on %s port %d ..." % (ip, port))
-        self._out("Low Latency Cheating: Serving HTTP on %s port %d ..." % (ip, port+1))
-        self._out("Throughput Cheating:  Serving HTTP on %s port %d ..." % (ip, port+2))
-        self._out("Concurrency Cheating: Serving HTTP on %s port %d ..." % (ip, port+3))
+        o = self._out
+        o("Base Cheating:        Serving HTTP on %s port %d ..." % (ip, port))
+        o("Low Latency Cheating: Serving HTTP on %s port %d ..." % (ip, port+1))
+        o("Throughput Cheating:  Serving HTTP on %s port %d ..." % (ip, port+2))
+        o("Concurrency Cheating: Serving HTTP on %s port %d ..." % (ip, port+3))
 
         import async
         from . import (

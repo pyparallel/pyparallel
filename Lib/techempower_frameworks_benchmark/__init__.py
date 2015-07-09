@@ -37,7 +37,7 @@ randint = random.randint
 #===============================================================================
 # Globals/Templates
 #===============================================================================
-localhost_connect_string = (
+localhost_connection_string = (
     'Driver={SQL Server};'
     'Server=localhost;'
     'Database=hello_world;'
@@ -166,34 +166,35 @@ class Fortune:
         return cls.render(cls.fortunes)
 
     @classmethod
-    def render_db(cls, connect_string=None):
-        fortunes = cls.load_from_db(connect_string)
+    def render_db(cls, connection_string=None):
+        fortunes = cls.load_from_db(connection_string)
         return cls.render(fortunes)
 
     @classmethod
-    def load_from_db(cls, connect_string=None):
-        cs = connect_string or localhost_connect_string
+    def load_from_db(cls, connection_string=None):
+        cs = connection_string or localhost_connection_string
         con = pyodbc.connect(cs)
         cur = con.cursor()
         cur.execute(cls.sql)
         return cur.fetchall()
 
     @classmethod
-    def json_from_db(cls, connect_string=None):
-        results = Fortune.load_from_db(connect_string)
+    def json_from_db(cls, connection_string=None):
+        results = Fortune.load_from_db(connection_string)
         results = Fortune.prepare_fortunes(results)
         fortunes = { r[1]: r[0] for r in results }
         return json.dumps(fortunes)
 
 class BaseHttpServer(HttpServer):
     connection = None
-    #connect_string = None
+    #connection_string = None
     #odbc = None
 
     _id = None
     _randomNumber = None
 
     db_sql = 'select * from world where id = ?'
+    db_sql2 = 'select * from world where id = 1'
     update_sql = 'update world set randomNumber = ? where id = ?'
     fortune_sql = 'select * from fortune'
 
@@ -235,9 +236,19 @@ class BaseHttpServer(HttpServer):
         obj = { 'rdtsc': _timestamp() }
         json_serialization(request, obj)
 
+    def get_test(self, request):
+        con = pyodbc.connect(self.connection_string)
+        cur = con.cursor()
+        #cur.execute(self.db_sql, (1,))
+        #results = cur.fetchall()
+        #cur.close()
+        #cur.execute(self.db_sql2)
+        #cur.close()
+        return json_serialization(request, {'message': 'Test'})
+
     def get_db(self, request):
-        #async.debug(self.connect_string)
-        con = pyodbc.connect(self.connect_string)
+        #async.debug(self.connection_string)
+        con = pyodbc.connect(self.connection_string)
         cur = con.cursor()
         cur.execute(self.db_sql, (randint(1, 10000)))
         results = cur.fetchall()
@@ -255,7 +266,7 @@ class BaseHttpServer(HttpServer):
         elif count > 500:
             count = 500
 
-        con = pyodbc.connect(self.connect_string)
+        con = pyodbc.connect(self.connection_string)
         cur = con.cursor()
         ids = [ randint(1, 10000) for _ in range(0, count) ]
         results = []
@@ -273,7 +284,7 @@ class BaseHttpServer(HttpServer):
         elif count > 500:
             count = 500
 
-        con = pyodbc.connect(self.connect_string)
+        con = pyodbc.connect(self.connection_string)
         cur = con.cursor()
         ids = [ randint(1, 10000) for _ in range(0, count) ]
         results = []
@@ -290,14 +301,14 @@ class BaseHttpServer(HttpServer):
         return json_serialization(request, updates)
 
     def get_fortunejson(self):
-        #async.debug(self.connect_string)
-        results = Fortune.load_from_db(self.connect_string)
+        #async.debug(self.connection_string)
+        results = Fortune.load_from_db(self.connection_string)
         fortune = { r[1]: r[0] for r in results }
         fortune[0] = 'Begin.  The rest is easy.'
         return json_serialization(request, fortune)
 
     def get_fortunes(self, request):
-        return html_response(request, Fortune.render_db(self.connect_string))
+        return html_response(request, Fortune.render_db(self.connection_string))
 
     def get_fortunesraw(self, request):
         return html_response(request, Fortune.render_raw())
@@ -306,17 +317,17 @@ class BaseHttpServer(HttpServer):
         return html_response(request, Fortune.render_db())
 
     def get_fortunesjson(self, request):
-        results = Fortune.load_from_db(self.connect_string)
+        results = Fortune.load_from_db(self.connection_string)
         results = Fortune.prepare_fortunes(results)
         fortunes = { r[1]: r[0] for r in results }
         return json_serialization(request, fortunes)
 
     def _get_db2(self, request):
-        #async.debug(self.connect_string)
-        con = pyodbc.connect(self.connect_string)
+        #async.debug(self.connection_string)
+        con = pyodbc.connect(self.connection_string)
         return json_serialization(request, {'tmp': 'foo'})
 
-        con = self.odbc.connect(self.connect_string)
+        con = self.odbc.connect(self.connection_string)
         cur = con.cursor()
         cur.execute(self.db_sql, (randint(1, 10000)))
         results = cur.fetchall()
@@ -328,7 +339,7 @@ class BaseHttpServer(HttpServer):
 
 
     def _get_db(self, request):
-        #async.debug(self.connect_string)
+        #async.debug(self.connection_string)
         #cur = con.cursor()
         @call_from_main_thread_and_wait
         def _fetch(obj):
@@ -348,7 +359,7 @@ class BaseHttpServer(HttpServer):
 
     def _get_db3(self, request):
         import pypyodbc
-        con = pypyodbc.connect(self.connect_string)
+        con = pypyodbc.connect(self.connection_string)
         cur = con.cursor()
         cur.execute(self.db_sql, (randint(1, 10000),))
         results = cur.fetchall()
