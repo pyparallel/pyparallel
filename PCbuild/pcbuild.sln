@@ -78,6 +78,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pyodbc", "pyodbc.vcxproj", 
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "datrie", "datrie.vcxproj", "{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pxodbc", "pxodbc.vcxproj", "{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -862,6 +864,28 @@ Global
 		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|Win32.Build.0 = Release|Win32
 		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|x64.ActiveCfg = Release|x64
 		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|x64.Build.0 = Release|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|Win32.Build.0 = Debug|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|x64.ActiveCfg = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|x64.Build.0 = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|Win32.ActiveCfg = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|x64.ActiveCfg = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|x64.Build.0 = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|Win32.ActiveCfg = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|x64.ActiveCfg = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|x64.Build.0 = Debug|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|x64.Build.0 = PGInstrument|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|x64.Build.0 = PGUpdate|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|Win32.ActiveCfg = Release|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|Win32.Build.0 = Release|Win32
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|x64.ActiveCfg = Release|x64
+		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
