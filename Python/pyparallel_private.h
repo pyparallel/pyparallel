@@ -93,12 +93,34 @@ extern "C" {
 #define Px_DEFAULT_TLS_HEAP_SIZE (Px_PAGE_SIZE)
 #define Px_MAX_SEM (32768)
 
-#define Px_PTR_IN_HEAP(p, h) (!h ? 0 : (            \
-    (Px_PTR((p)) >= Px_PTR(((Heap *)(h))->base)) && \
-    (Px_PTR((p)) <= Px_PTR(                         \
-        Px_PTR((((Heap *)(h))->base)) +             \
-        Px_PTR((((Heap *)(h))->size))               \
-    ))                                              \
+#define Px_PTR_IN_HEAP(p, h)                                    \
+    (!p || !h ? __debugbreak(), 0 : (                           \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(h))->base)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(h))->base)) +                     \
+            Px_PTR((((Heap *)(h))->size))                       \
+        ))                                                      \
+    ))
+
+#define Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(p, h, s)                 \
+    (!p || !h || !s || (h->id != s->id) ? __debugbreak(), 0 : ( \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->base)) &&         \
+        (Px_PTR((p)) <= Px_PTR(((Heap *)(s))->next)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(s))->base)) +                     \
+            Px_PTR((((Heap *)(s))->size))                       \
+        ))                                                      \
+))
+
+
+#define Px_PTR_IN_HEAP_AFTER_SNAPSHOT(p, h, s)                  \
+    (!p || !h || !s || (h->id != s->id) ? __debugbreak(), 0 : ( \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->base)) &&         \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->next)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(s))->base)) +                     \
+            Px_PTR((((Heap *)(s))->size))                       \
+        ))                                                      \
 ))
 
 static __inline
