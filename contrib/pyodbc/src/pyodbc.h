@@ -101,6 +101,8 @@ inline void _strlwr(char* name)
 // Building an actual debug version of Python is so much of a pain that it never happens.  I'm providing release-build
 // versions of assertions.
 
+#define PYODBC_ASSERT 1
+
 #if defined(PYODBC_ASSERT) && defined(_MSC_VER)
   #include <crtdbg.h>
   inline void FailAssert(const char* szFile, size_t line, const char* szExpr)
@@ -132,6 +134,7 @@ static __inline
 void *
 pyodbc_malloc(size_t n)
 {
+    //return PyObject_MALLOC(n);
     return PyMem_Malloc(n);
     //return PyMem_RawMalloc(n);
     //return malloc(n);
@@ -141,6 +144,7 @@ static __inline
 void
 pyodbc_free(void *p)
 {
+    //PyObject_FREE(p);
     PyMem_Free(p);
     //PyMem_RawFree(p);
     //free(p);
@@ -150,6 +154,7 @@ static __inline
 void *
 pyodbc_realloc(void *p, size_t sz)
 {
+    //return PyObject_REALLOC(p, sz);
     return PyMem_Realloc(p, sz);
     //return PyMem_RawRealloc(p, sz);
     //return realloc(p, sz);
