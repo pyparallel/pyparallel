@@ -1009,7 +1009,7 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
         /* Now reverse through all the heaps and reset them as we go. */
         distance = c->h->id - s->id;
-        /* Third loop.  Stop before the last heap, which will be the snapshot. */
+        /* Third loop.  Stop before the last heap/snapshot. */
         while (distance--) {
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
