@@ -71,7 +71,7 @@ class HttpServer(TCPServerCommand):
     root = None
     class RootArg(ExistingDirectoryInvariant):
         _help = 'root path to serve documents from (defaults to current dir)'
-        _mandatory = False
+        _default = '.'
 
     ip = None
     class IpArg(StringInvariant):
@@ -473,6 +473,7 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
                     import wiki
                 protocol.merge(wiki.WikiServer)
             protocol.connect_string = connect_string
+            dummy = hash(connect_string)
             self._out("Testing database connectivity...")
             con = pyodbc.connect(connect_string)
             cur = con.cursor()
@@ -595,18 +596,15 @@ class UpdateDiffs(PxCommand):
     class BaseRevArg(StringInvariant):
         _help = 'base rev/tag to diff against [default: %default]'
         _default = 'v3.3.5'
-        _mandatory = False
 
     target_rev = None
     class TargetRevArg(StringInvariant):
         _help = 'target rev/tag to diff against [default: %default]'
         _default = '3.3-px'
-        _mandatory = False
 
     root = None
     class RootArg(DirectoryInvariant):
         _help = 'hg repository root'
-        _mandatory = False
 
     def run(self):
         import os
