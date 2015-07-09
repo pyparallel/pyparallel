@@ -750,6 +750,10 @@ _PyHeap_Reset(volatile Heap *h)
     h->next = Px_PTR_ADD(h->base, aligned_sizeof_heap);
     h->next_alignment = Px_GET_ALIGNMENT(h->next);
 
+    if (h->num_px_deallocs)
+        /* Should have been dealt with by the time we're called. */
+        __debugbreak();
+
     SecureZeroMemory(h->next, h->remaining);
 
     /* Eh, I can't be bothered figuring out the logic for calculating the
@@ -761,6 +765,7 @@ _PyHeap_Reset(volatile Heap *h)
     h->mem_reallocs = 0;
     h->obj_reallocs = 0;
     h->num_px_deallocs = 0;
+    h->px_deallocs_skipped = 0;
     h->px_deallocs.first = NULL;
     h->px_deallocs.last = NULL;
     h->resizes = 0;
@@ -772,45 +777,106 @@ _PyHeap_Reset(volatile Heap *h)
 PyObject *
 _PyParallel_RegisterDealloc(PyObject *tp_or_obj)
 {
+    Context *c = ctx;
     PyObject *o = tp_or_obj;
-    if (PyType_Check(o)) {
-        if (Py_PXCTX())
-            Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
-        else
-            Py_TYPE(o)->tp_flags |= Py_TPFLAGS_PX_DEALLOC;
-    } else {
-        if (!Py_PXCTX()) {
-            PyErr_SetString(PyExc_ValueError,
-                            "not a type object and not in a parallel context");
-            return NULL;
-        }
-        Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
+    PyTypeObject *tp = (PyTypeObject *)tp_or_obj;
+
+    if (ctx && Py_ISPY(tp_or_obj)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "attempt to register dealloc against main thread "
+                        "object from within parallel context");
+        return NULL;
     }
+
+    if (PyType_Check(tp)) {
+        /* This flag will be tested in init_object(). */
+        tp->tp_flags |= Py_TPFLAGS_PX_DEALLOC;
+        Py_RETURN_NONE;
+    }
+
+    if (!ctx) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "registering dealloc against a main thread instance "
+                        "object from within the main thread has no effect "
+                        "(did you accidentally call register_dealloc()"
+                        " against an instance object instead of a type"
+                        " object?)");
+        return NULL;
+    }
+
+    /* I'm not sure how useful this particular code path will be
+     * (registering dealloc in a parallel thread for an object
+     *  also created in a parallel thread). */
+
+    /* Actually, let's just disable it for now -- it's not currently being
+     * used, and I can't be bothered figuring out the pointer offset logic
+     * for deriving the Object (which is appended to the px_deallocs list)
+     * from the PyObject *. */
+    PyErr_SetString(PyExc_RuntimeError,
+                    "register_dealloc() called from parallel thread");
+    return NULL;
+
+    /*
+    Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
+    c->h->num_px_deallocs++;
+    append_object(&c->h->px_deallocs, _Px_O_PTR()o->px);
+    _register_dealloc(o);
+
     Py_RETURN_NONE;
+    */
 }
 
-void
-_PyHeap_DeallocObjects(Heap *h)
+/* Returns the number of individual deallocs called (0 if none).
+ * If h->id == s->id, then assert is_snapshot == 1. */
+unsigned int
+_PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
 {
+    Heap *s = snapshot;
     Object *o;
-    Object *next;
+    Object *prev;
     PyObject *op;
     destructor dealloc;
     Objects *list = &h->px_deallocs;
+    unsigned int count = 0, deallocs = 0, skipped = 0;
+
+    if (h->id == s->id) {
+        if (!is_snapshot)
+            __debugbreak();
+    } else {
+        if (is_snapshot)
+            __debugbreak();
+    }
 
     if (!h->num_px_deallocs) {
         if (list->first)
             __debugbreak();
         if (list->last)
             __debugbreak();
-        return;
+        return 0;
     }
 
-    o = list->first;
-    while (h->num_px_deallocs--) {
+    o = list->last;
+    deallocs = h->num_px_deallocs;
+    while (deallocs--) {
         op = o->op;
+
         if (!Px_DEALLOC(o->op))
             __debugbreak();
+
+        if (is_snapshot) {
+            if (Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s)) {
+                skipped++;
+                list->last = prev = o->prev;
+                if (!prev)
+                    break;
+                else
+                    continue;
+            } else {
+                /* Invariant test. */
+                if (!Px_PTR_IN_HEAP_AFTER_SNAPSHOT(op, h, s))
+                    __debugbreak();
+            }
+        }
 
         if (!Px_PTR_IN_HEAP(op, h))
             __debugbreak();
@@ -819,15 +885,25 @@ _PyHeap_DeallocObjects(Heap *h)
         if (!dealloc)
             __debugbreak();
 
-        next = o->next;
+        list->last = prev = o->prev;
+        ++count;
         (*dealloc)(op);
-        if (!next)
+        --h->num_px_deallocs;
+        if (!prev)
             break;
-        o = next;
+        o = prev;
     }
-    if (h->num_px_deallocs)
-        __debugbreak();
-    return;
+
+    h->px_deallocs_skipped = skipped;
+
+    if (h->num_px_deallocs) {
+        if (!is_snapshot)
+            __debugbreak();
+        h->num_px_deallocs -= skipped;
+        if (h->num_px_deallocs)
+            __debugbreak();
+    }
+    return count;
 }
 
 void
@@ -846,15 +922,53 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
     if (distance >= 1) {
         Heap *h;
+        int expected_deallocs = 0;
+        int actual_deallocs = 0;
+        int is_snapshot = 0;
+        int saw_snapshots = 0;
         assert(c->h->base != s->base);
 
-        /* Reverse through the heaps N times, where N is the difference in IDs
-         * between the current heap's ID and the snapshot heap's ID.  Then
-         * check that the pointers line up, then repeat the reversal, but
-         * reset each heap as we go along. */
+        /*
+         * We reverse through the heaps three times.  The first time verifies
+         * the linked lists are intact and we can get from the current heap to
+         * the snapshot's heap, and the distance is equivalent to the difference
+         * between the heap IDs.
+         *
+         * Second time reverses through the heaps again and calls the bulk
+         * dealloc method _PyHeap_DeallocObjects.
+         *
+         * Third time reverses through the heaps and resets them (which
+         * essentially just clears the block of memory allocated to that heap).
+         *
+         * The first loop could be ommitted as it's essentially just a
+         * relatively expensive invariant test.  However, we *do* need to do
+         * two separate reversals in the second and third cases -- that is, call
+         * all of the registered tp_deallocs() before any memory is zeroed out.
+         *
+         * This is important as a C extension providing a type that has been
+         * registered for dealloc may be a struct with pointers to other
+         * resources that have been dynamically allocated.  If the memory
+         * pointed to by such pointers is zero, it may result in other cleanup
+         * logic not being called.  (This was the case for pyodbc.)
+         */
+
         h = c->h;
-        while (distance--)
-            h = h->sle_prev;
+        expected_deallocs += h->num_px_deallocs;
+        /* First loop. */
+        do {
+            if (distance > 1)
+                _m_prefetchw(h->sle_prev);
+            is_snapshot = (h->id == s->id);
+            if (is_snapshot)
+                ++saw_snapshots;
+            expected_deallocs += h->num_px_deallocs;
+            if (!is_snapshot)
+                h = h->sle_prev;
+        } while (distance--);
+
+        /* Invariant test. */
+        if (saw_snapshots != 1)
+            __debugbreak();
 
         if (s->id != h->id) {
 #ifdef Py_DEBUG
@@ -864,25 +978,43 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 #endif
         }
 
-        /* Pointers line up, do the loop again but reset the heaps as we go. */
+        /* Pointers line up, do all of the deallocs if applicable. */
+        if (expected_deallocs) {
+            h = c->h;
+            distance = c->h->id - s->id;
+            /* Second loop. */
+            do {
+                if (distance >= 1)
+                    _m_prefetchw(h->sle_prev);
+                if (!h->num_px_deallocs)
+                    continue;
+                is_snapshot = (h->id == s->id);
+                actual_deallocs += _PyHeap_DeallocObjects(h, s, is_snapshot);
+                if (actual_deallocs == expected_deallocs)
+                    /* Fast-path exit: no need to continue reversing through
+                     * heaps if we've already done all deallocs. */
+                    break;
+            } while (h = h->sle_prev, distance--);
+
+            if (actual_deallocs != expected_deallocs) {
+                if (h->px_deallocs_skipped) {
+                    expected_deallocs -= h->px_deallocs_skipped;
+                    if (actual_deallocs != expected_deallocs)
+                        __debugbreak();
+                }
+            }
+        }
+
+        /* Now reverse through all the heaps and reset them as we go. */
         distance = c->h->id - s->id;
-        /* Grab a copy of c->h before we start messing with it; useful during
-         * debugging. */
-        h = c->h;
+        /* Third loop.  Stop before the last heap, which will be the snapshot. */
         while (distance--) {
-            _PyHeap_DeallocObjects(c->h);
             if (distance > 1)
                 _m_prefetchw(c->h->sle_prev);
             _PyHeap_Reset(c->h);
             _PyHeap_EnsureReset(c->h);
             c->h = c->h->sle_prev;
         }
-    } else if (c->h->allocated == s->allocated) {
-        /* Snapshot already matches position of current heap, nothing to
-         * rewind. */
-        assert(c->h->remaining == s->remaining);
-        assert(c->h->next == s->next);
-        return;
     }
 
     if (c->h->base != s->base)
@@ -891,11 +1023,19 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
     if (c->h->id != s->id)
         __debugbreak();
 
-    _PyHeap_DeallocObjects(c->h);
+    distance = c->h->id - s->id;
+    if (distance == 0) {
+        int deallocs;
+        /* Capture deallocs as it's useful when debugging. */
+        deallocs = _PyHeap_DeallocObjects(c->h, s, 1);
+    }
 
     /* Heap snapshot lines up with context's current heap, so we can now
      * memcpy the snapshot back over the active heap. */
     memcpy(c->h, s, sizeof(Heap));
+
+    /* And finally, reset the remaining active heap's memory. */
+    SecureZeroMemory(s->next, s->remaining);
 }
 
 void
@@ -3385,6 +3525,8 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     o->op = n;
 
     if (tp->tp_flags & Py_TPFLAGS_PX_DEALLOC) {
+        Py_PXFLAGS(n) |= Py_PXFLAGS_DEALLOC;
+        /* If you change this logic, check _PyParallel_RegisterDealloc(). */
         c->h->num_px_deallocs++;
         append_object(&c->h->px_deallocs, o);
         goto end;
