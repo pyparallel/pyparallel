@@ -862,6 +862,7 @@ class HttpServer:
 
     def do_CONNECT(self, request):
         async.debug(request.data)
+        return self.error(request, 501, "Unsupported method: CONNECT")
 
     def list_directory(self, request, path):
         #async.debug(repr(request))
