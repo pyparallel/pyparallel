@@ -362,13 +362,18 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      return 0;
  }
  
-@@ -14201,15 +14353,80 @@ void
+@@ -14201,15 +14353,88 @@ void
  _PyUnicode_Fini(void)
  {
      int i;
 -
 -    Py_CLEAR(unicode_empty);
 +    Py_GUARD();
++
++#ifdef WITH_PARALLEL
++    /* Ignore for now. */
++    return;
++#endif
 +
 +    Py_OCLEAR(unicode_empty);
  
@@ -389,6 +394,9 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 +    int failed;
 +
 +    Px_GUARD();
++
++    /* Disable interning as part of some leak debugging. */
++    return;
 +
 +    if (interned) {
 +        _PyParallel_EnableTLSHeap();
@@ -446,7 +454,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
  void
  PyUnicode_InternInPlace(PyObject **p)
  {
-@@ -14228,13 +14445,19 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14228,13 +14453,23 @@ PyUnicode_InternInPlace(PyObject **p)
          return;
      if (PyUnicode_CHECK_INTERNED(s))
          return;
@@ -456,6 +464,12 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 -            PyErr_Clear(); /* Don't leave an exception */
 +
 +#ifdef WITH_PARALLEL
++    /* xxx: don't intern when parallel for now */
++    if (Py_PXCTX())
+             return;
+-        }
+-    }
++
 +    Px_RETURN_VOID(_PyParallelUnicode_InternInPlace(p));
 +
 +    if (Py_ISPX(s))
@@ -465,14 +479,12 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
 +
 +    if (!interned)
 +        /* interned dict hasn't been initialized yet */
-             return;
--        }
--    }
++        return;
 +
      /* It might be that the GetItem call fails even
         though the key is present in the dictionary,
         namely when this happens during a stack overflow. */
-@@ -14258,7 +14481,8 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14258,13 +14493,16 @@ PyUnicode_InternInPlace(PyObject **p)
      PyThreadState_GET()->recursion_critical = 0;
      /* The two references in interned are not counted by refcnt.
         The deallocator will take care of this */
@@ -482,24 +494,33 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
  }
  
-@@ -14275,10 +14499,14 @@ PyUnicode_InternImmortal(PyObject **p)
+ void
+ PyUnicode_InternImmortal(PyObject **p)
+ {
++    if (Py_PXCTX())
++        return;
+     PyUnicode_InternInPlace(p);
+     if (PyUnicode_CHECK_INTERNED(*p) != SSTATE_INTERNED_IMMORTAL) {
+         _PyUnicode_STATE(*p).interned = SSTATE_INTERNED_IMMORTAL;
+@@ -14275,10 +14513,14 @@ PyUnicode_InternImmortal(PyObject **p)
  PyObject *
  PyUnicode_InternFromString(const char *cp)
  {
 -    PyObject *s = PyUnicode_FromString(cp);
-+    PyObject *s = NULL;
-+    _PyParallel_EnableTLSHeap();
-+    s = PyUnicode_FromString(cp);
-+    _PyParallel_DisableTLSHeap();
-     if (s == NULL)
+-    if (s == NULL)
 -        return NULL;
++    PyObject *s = NULL;
++    //_PyParallel_EnableTLSHeap();
++    s = PyUnicode_FromString(cp);
++    //_PyParallel_DisableTLSHeap();
++    if (s == NULL || Py_PXCTX())
 +        goto end;
      PyUnicode_InternInPlace(&s);
 +end:
      return s;
  }
  
-@@ -14289,6 +14517,7 @@ void
+@@ -14289,6 +14531,7 @@ void
      PyObject *s;
      Py_ssize_t i, n;
      Py_ssize_t immortal_size = 0, mortal_size = 0;
@@ -507,7 +528,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
  
      if (interned == NULL || !PyDict_Check(interned))
          return;
-@@ -14317,11 +14546,12 @@ void
+@@ -14317,11 +14560,12 @@ void
              /* XXX Shouldn't happen */
              break;
          case SSTATE_INTERNED_IMMORTAL:
@@ -522,7 +543,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
              mortal_size += PyUnicode_GET_LENGTH(s);
              break;
          default:
-@@ -14349,6 +14579,7 @@ typedef struct {
+@@ -14349,6 +14593,7 @@ typedef struct {
  static void
  unicodeiter_dealloc(unicodeiterobject *it)
  {
@@ -530,7 +551,7 @@ diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
      _PyObject_GC_UNTRACK(it);
      Py_XDECREF(it->it_seq);
      PyObject_GC_Del(it);
-@@ -14357,6 +14588,7 @@ unicodeiter_dealloc(unicodeiterobject *i
+@@ -14357,6 +14602,7 @@ unicodeiter_dealloc(unicodeiterobject *i
  static int
  unicodeiter_traverse(unicodeiterobject *it, visitproc visit, void *arg)
  {
