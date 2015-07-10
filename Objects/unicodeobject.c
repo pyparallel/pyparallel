@@ -14356,6 +14356,11 @@ _PyUnicode_Fini(void)
     int i;
     Py_GUARD();
 
+#ifdef WITH_PARALLEL
+    /* Ignore for now. */
+    return;
+#endif
+
     Py_OCLEAR(unicode_empty);
 
     for (i = 0; i < 256; i++)
@@ -14374,6 +14379,9 @@ _PyParallelUnicode_InternInPlace(PyObject **p)
     int failed;
 
     Px_GUARD();
+
+    /* Disable interning as part of some leak debugging. */
+    return;
 
     if (interned) {
         _PyParallel_EnableTLSHeap();
@@ -14448,6 +14456,10 @@ PyUnicode_InternInPlace(PyObject **p)
         return;
 
 #ifdef WITH_PARALLEL
+    /* xxx: don't intern when parallel for now */
+    if (Py_PXCTX())
+        return;
+
     Px_RETURN_VOID(_PyParallelUnicode_InternInPlace(p));
 
     if (Py_ISPX(s))
@@ -14490,6 +14502,8 @@ PyUnicode_InternInPlace(PyObject **p)
 void
 PyUnicode_InternImmortal(PyObject **p)
 {
+    if (Py_PXCTX())
+        return;
     PyUnicode_InternInPlace(p);
     if (PyUnicode_CHECK_INTERNED(*p) != SSTATE_INTERNED_IMMORTAL) {
         _PyUnicode_STATE(*p).interned = SSTATE_INTERNED_IMMORTAL;
@@ -14501,10 +14515,10 @@ PyObject *
 PyUnicode_InternFromString(const char *cp)
 {
     PyObject *s = NULL;
-    _PyParallel_EnableTLSHeap();
+    //_PyParallel_EnableTLSHeap();
     s = PyUnicode_FromString(cp);
-    _PyParallel_DisableTLSHeap();
-    if (s == NULL)
+    //_PyParallel_DisableTLSHeap();
+    if (s == NULL || Py_PXCTX())
         goto end;
     PyUnicode_InternInPlace(&s);
 end:
