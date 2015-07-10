@@ -630,6 +630,7 @@ typedef struct _PxContext {
 typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
     Stats     stats;
+    Stats     stats_snapshot;
 
     PyObject *waitobj;
     PyObject *waitobj_timeout;

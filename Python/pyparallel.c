@@ -708,6 +708,7 @@ void
 _PxContext_HeapSnapshot(Context *c, Heap *snapshot)
 {
     memcpy(snapshot, c->h, sizeof(Heap));
+    memcpy(&c->stats_snapshot, &c->stats, sizeof(Stats));
 }
 
 Heap *
@@ -1036,8 +1037,15 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
      * memcpy the snapshot back over the active heap. */
     memcpy(c->h, s, sizeof(Heap));
 
+    //if (c->stats.mallocs != c->stats.frees)
+    //    __debugbreak();
+
+    /* Copy the stats snapshot back to the context. */
+    memcpy(&c->stats, &c->stats_snapshot, sizeof(Stats));
+
     /* And finally, reset the remaining active heap's memory. */
     SecureZeroMemory(s->next, s->remaining);
+
 }
 
 void
@@ -1084,6 +1092,7 @@ PxSocket_ResetBuffers(PxSocket *s)
 void
 PxSocket_Reuse(PxSocket *s)
 {
+    Context *c = s->ctx;
     ULONGLONG flags;
     PxSocket old;
     memcpy(&old, s, sizeof(PxSocket));
@@ -1104,6 +1113,9 @@ PxSocket_Reuse(PxSocket *s)
     if (!s->startup_socket_snapshot)
         __debugbreak();
 
+    //if (!s->startup_context_stats_snapshot)
+    //    __debugbreak();
+
     if (!s->startup_socket_flags)
         __debugbreak();
 
@@ -1111,6 +1123,9 @@ PxSocket_Reuse(PxSocket *s)
 
     /* Copy the startup socket snapshot over the socket. */
     memcpy(s, s->startup_socket_snapshot, sizeof(PxSocket));
+
+    /* Ditto for stats. */
+    //memcpy(&c->stats, s->startup_context_stats_snapshot, sizeof(Stats));
 
     /* Copy the state of the critical section back. */
     memcpy(&old.cs, &s->cs, sizeof(CRITICAL_SECTION));
