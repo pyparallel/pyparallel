@@ -246,6 +246,16 @@ class BaseHttpServer(HttpServer):
         #cur.close()
         return json_serialization(request, {'message': 'Test'})
 
+    def get_test2(self, request):
+        con = pyodbc.connect(self.connection_string)
+        cur = con.cursor()
+        cur.execute(self.db_sql, (1,))
+        #results = cur.fetchall()
+        #cur.close()
+        #cur.execute(self.db_sql2)
+        #cur.close()
+        return json_serialization(request, {'message': 'Test'})
+
     def get_db(self, request):
         #async.debug(self.connection_string)
         con = pyodbc.connect(self.connection_string)
