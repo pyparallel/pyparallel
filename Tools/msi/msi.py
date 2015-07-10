@@ -97,6 +97,7 @@ if full_current_version is None:
 
 extensions = [
     'pyodbc.pyd',
+    'pxodbc.pyd',
     'datrie.pyd',
     'pyexpat.pyd',
     'select.pyd',
