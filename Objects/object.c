@@ -1845,6 +1845,8 @@ _Py_ForgetReference(register PyObject *op)
     register PyObject *p;
 #endif
     Px_RETURN_VOID(_Px_ForgetReference(op));
+    if (Py_WASPX(op))
+        return;
     Py_GUARD_OBJ(op);
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
@@ -1879,7 +1881,8 @@ _Py_Dealloc(PyObject *op)
     PyPx_GUARD_OBJ(op);
     Px_RETURN_VOID(_Px_Dealloc(op));
     dealloc = Py_TYPE(op)->tp_dealloc;
-    _Py_ForgetReference(op);
+    if (!Px_WASPX(op))
+        _Py_ForgetReference(op);
     (*dealloc)(op);
 }
 

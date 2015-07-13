@@ -481,6 +481,7 @@ typedef struct _PxState {
     PxListHead *incoming;
     PxListHead *finished;
     PxListHead *finished_sockets;
+    PxListHead *shutdown_server;
 
     PxListHead *work_ready;
 
@@ -516,6 +517,7 @@ typedef struct _PxState {
     /* List head */
     LIST_ENTRY contexts;
     CRITICAL_SECTION contexts_cs;
+    volatile long num_contexts;
 
     Context *ctx_first;
     Context *ctx_last;
@@ -535,8 +537,9 @@ typedef struct _PxState {
 
     long long contexts_created;
     long long contexts_destroyed;
-    long contexts_active;
-    long contexts_persisted;
+
+    volatile long contexts_active;
+    volatile long contexts_persisted;
 
     volatile long long io_stalls;
 
@@ -606,6 +609,8 @@ typedef struct _PxState {
     volatile long tls_heap_rollback_match;
 
 } PxState;
+
+int _PyParallel_InitPxState(PyThreadState *tstate, int destroy);
 
 #define _PxContext_HEAD_EXTRA       \
     __declspec(align(16))           \
@@ -835,6 +840,7 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_CONNECTION_STRING          (1ULL << 41)
 #define Px_SOCKFLAGS_connection_string          (1ULL << 41)
 #define Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED      (1ULL << 42)
+#define Px_SOCKFLAGS_CLEANED_UP                 (1ULL << 43)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -931,6 +937,9 @@ typedef struct _PxObject {
 
 #define PxSocket_HAS_CONNECTION_STRING(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CONNECTION_STRING)
+
+#define PxSocket_IS_CLEANED_UP(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLEANED_UP)
 
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
@@ -1047,6 +1056,7 @@ typedef struct _PxSocket {
     unsigned int this_cpuid;
     int ioloops;
 
+    PTP_WORK shutdown_server_tp_work;
     PTP_WORK preallocate_children_tp_work;
     PTP_TIMER slowloris_protection_tp_timer;
 
@@ -1067,6 +1077,7 @@ typedef struct _PxSocket {
     /* Start-up snapshots. */
     Heap     *startup_heap_snapshot;
     PxSocket *startup_socket_snapshot;
+    Stats    *startup_context_stats_snapshot;
     /* Ugh, we need to store the "socket flags set at startup" separately
      * because of our dodgy overloading of 'flags' with both static protocol
      * information (that will never change) like whether concurrency is set,
@@ -1074,6 +1085,8 @@ typedef struct _PxSocket {
      * scheduled".
      */
     ULONGLONG startup_socket_flags;
+
+    volatile int destroyed;
 
     int reused;
     int recycled;
@@ -1179,6 +1192,9 @@ typedef struct _PxSocket {
     volatile long memory_failures;
     volatile long negative_child_connect_time_count;
     volatile long num_times_sloworis_protection_triggered;
+
+    volatile long tp_cleanups;
+    volatile long tpw_cleanups;
 
     /* sendfile stuff */
     int    sendfile_flags;
@@ -1352,6 +1368,7 @@ typedef struct _PxSocket {
     int negative_accepts_to_post_count;
 
     BOOL shutting_down;
+    BOOL shutdown_immediate;
 
     /* Misc debug/helper stuff. */
     int break_on_iocp_enter;
@@ -1365,6 +1382,16 @@ void PxSocket_CallbackComplete(PxSocket *);
 void PxSocket_ErrbackComplete(PxSocket *);
 void PxSocketServer_LinkChild(PxSocket *child);
 void PxSocketServer_UnlinkChild(PxSocket *child);
+void PxSocketServer_Shutdown(PxSocket *s);
+void PxSocket_Cleanup(PxSocket *s);
+
+void
+CALLBACK
+PxSocketServer_ShutdownCallback(
+    PTP_CALLBACK_INSTANCE instance,
+    PVOID context,
+    PTP_WORK work
+);
 
 #define I2S(i) (_Py_CAST_BACK(i, PxSocket *, PyObject, slist_entry))
 
@@ -1472,12 +1499,10 @@ PxSocketClient_Callback(
     TP_IO *tp_io
 );
 
-void PxServerSocket_ClientClosed(PxSocket *s);
-
-
 void PxSocket_HandleException(Context *c, const char *syscall, int fatal);
 
 int PxSocket_LoadInitialBytes(PxSocket *s);
+
 
 __inline
 PyObject *
@@ -1713,6 +1738,51 @@ _try_write_lock(PyObject *obj)
 #define PxSocket_CLOSE(s) do {                                           \
     (void)closesocket((SOCKET)s->sock_fd);                               \
 } while (0)
+
+#define Px_CLOSE_HANDLE(h) do {                                         \
+    if (h) {                                                            \
+        CloseHandle(h);                                                 \
+        h = NULL;                                                       \
+    }                                                                   \
+} while (0)
+
+#define Px_CLOSE_SOCKET(s) do {                                         \
+    if (s) {                                                            \
+        closesocket(s);                                                 \
+        s = INVALID_SOCKET;                                             \
+    }                                                                   \
+} while (0)
+
+#define Px_CLOSE_THREADPOOL_WORK(w) do {                                \
+    if (w) {                                                            \
+        CloseThreadpoolWork(w);                                         \
+        w = NULL;                                                       \
+    }                                                                   \
+} while (0)
+
+#define Px_CLOSE_THREADPOOL_TIMER(t) do {                               \
+    if (t) {                                                            \
+        CloseThreadpoolTimer(t);                                        \
+        t = NULL;                                                       \
+    }                                                                   \
+} while (0)
+
+#define Px_FREE(p) do {                                                 \
+    if (p) {                                                            \
+        free(p);                                                        \
+        p = NULL;                                                       \
+    }                                                                   \
+} while (0)
+
+#define Px_HEAP_DESTROY(h) do {                                         \
+    if (h) {                                                            \
+        HeapDestroy(h);                                                 \
+        h = NULL;                                                       \
+    }                                                                   \
+} while (0)
+
+
+
 
 static PyTypeObject PxSocket_Type;
 static PyTypeObject PxSocketBuf_Type;

@@ -511,6 +511,9 @@ Py_Finalize(void)
 
 #ifdef WITH_PARALLEL
     _PyParallel_Finalize();
+    /* Finalization is the source of endless crashes, so let's just
+     * return for now. */
+    return;
 #endif
 
     /* The interpreter is still entirely intact at this point, and the

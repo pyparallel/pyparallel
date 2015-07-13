@@ -172,55 +172,18 @@ threadstate_getframe(PyThreadState *self)
 static PyThreadState *
 new_threadstate(PyInterpreterState *interp, int init)
 {
-    PyThreadState *tstate = (PyThreadState *)malloc(sizeof(PyThreadState));
+    PyThreadState *tstate;
+    Py_GUARD();
+    tstate = (PyThreadState *)malloc(sizeof(PyThreadState));
 
     if (_PyThreadState_GetFrame == NULL)
         _PyThreadState_GetFrame = threadstate_getframe;
 
-#ifdef WITH_PARALLEL
     if (tstate != NULL) {
-        if (!_PyParallel_CreatedNewThreadState(tstate)) {
-            free(tstate);
-            tstate = NULL;
-        }
-    }
-#endif
+        memset(tstate, 0, sizeof(PyThreadState));
 
-    if (tstate != NULL) {
         tstate->interp = interp;
-
-        tstate->frame = NULL;
-        tstate->recursion_depth = 0;
-        tstate->overflowed = 0;
-        tstate->recursion_critical = 0;
-        tstate->tracing = 0;
-        tstate->use_tracing = 0;
-        tstate->tick_counter = 0;
-        tstate->gilstate_counter = 0;
-        tstate->async_exc = NULL;
-#ifdef WITH_THREAD
         tstate->thread_id = PyThread_get_thread_ident();
-#else
-        tstate->thread_id = 0;
-#endif
-
-        tstate->dict = NULL;
-
-        tstate->curexc_type = NULL;
-        tstate->curexc_value = NULL;
-        tstate->curexc_traceback = NULL;
-
-        tstate->exc_type = NULL;
-        tstate->exc_value = NULL;
-        tstate->exc_traceback = NULL;
-
-        tstate->c_profilefunc = NULL;
-        tstate->c_tracefunc = NULL;
-        tstate->c_profileobj = NULL;
-        tstate->c_traceobj = NULL;
-
-        tstate->trash_delete_nesting = 0;
-        tstate->trash_delete_later = NULL;
 
         if (init)
             _PyThreadState_Init(tstate);
