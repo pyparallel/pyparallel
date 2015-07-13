@@ -11,23 +11,59 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      *p = interp->next;
      HEAD_UNLOCK();
      free(interp);
-@@ -173,6 +176,15 @@ new_threadstate(PyInterpreterState *inte
+@@ -168,46 +171,18 @@ threadstate_getframe(PyThreadState *self
+ static PyThreadState *
+ new_threadstate(PyInterpreterState *interp, int init)
+ {
+-    PyThreadState *tstate = (PyThreadState *)malloc(sizeof(PyThreadState));
++    PyThreadState *tstate;
++    Py_GUARD();
++    tstate = (PyThreadState *)malloc(sizeof(PyThreadState));
+ 
      if (_PyThreadState_GetFrame == NULL)
          _PyThreadState_GetFrame = threadstate_getframe;
  
-+#ifdef WITH_PARALLEL
-+    if (tstate != NULL) {
-+        if (!_PyParallel_CreatedNewThreadState(tstate)) {
-+            free(tstate);
-+            tstate = NULL;
-+        }
-+    }
-+#endif
-+
      if (tstate != NULL) {
++        memset(tstate, 0, sizeof(PyThreadState));
++
          tstate->interp = interp;
+-
+-        tstate->frame = NULL;
+-        tstate->recursion_depth = 0;
+-        tstate->overflowed = 0;
+-        tstate->recursion_critical = 0;
+-        tstate->tracing = 0;
+-        tstate->use_tracing = 0;
+-        tstate->tick_counter = 0;
+-        tstate->gilstate_counter = 0;
+-        tstate->async_exc = NULL;
+-#ifdef WITH_THREAD
+         tstate->thread_id = PyThread_get_thread_ident();
+-#else
+-        tstate->thread_id = 0;
+-#endif
+-
+-        tstate->dict = NULL;
+-
+-        tstate->curexc_type = NULL;
+-        tstate->curexc_value = NULL;
+-        tstate->curexc_traceback = NULL;
+-
+-        tstate->exc_type = NULL;
+-        tstate->exc_value = NULL;
+-        tstate->exc_traceback = NULL;
+-
+-        tstate->c_profilefunc = NULL;
+-        tstate->c_tracefunc = NULL;
+-        tstate->c_profileobj = NULL;
+-        tstate->c_traceobj = NULL;
+-
+-        tstate->trash_delete_nesting = 0;
+-        tstate->trash_delete_later = NULL;
  
-@@ -239,6 +251,10 @@ void
+         if (init)
+             _PyThreadState_Init(tstate);
+@@ -239,6 +214,10 @@ void
  #ifdef WITH_THREAD
      _PyGILState_NoteThreadState(tstate);
  #endif
@@ -38,7 +74,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
  }
  
  PyObject*
-@@ -324,6 +340,10 @@ PyThreadState_Clear(PyThreadState *tstat
+@@ -324,6 +303,10 @@ PyThreadState_Clear(PyThreadState *tstat
          fprintf(stderr,
            "PyThreadState_Clear: warning: thread still has a frame\n");
  
@@ -49,7 +85,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      Py_CLEAR(tstate->frame);
  
      Py_CLEAR(tstate->dict);
-@@ -356,6 +376,9 @@ tstate_delete_common(PyThreadState *tsta
+@@ -356,6 +339,9 @@ tstate_delete_common(PyThreadState *tsta
      interp = tstate->interp;
      if (interp == NULL)
          Py_FatalError("PyThreadState_Delete: NULL interp");
@@ -59,7 +95,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      HEAD_LOCK();
      for (p = &interp->tstate_head; ; p = &(*p)->next) {
          if (*p == NULL)
-@@ -417,20 +440,36 @@ PyThreadState_DeleteCurrent()
+@@ -417,20 +403,36 @@ PyThreadState_DeleteCurrent()
  PyThreadState *
  PyThreadState_Get(void)
  {
@@ -98,7 +134,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
  
      _Py_atomic_store_relaxed(&_PyThreadState_Current, newts);
      /* It should not be possible for more than one thread state
-@@ -461,14 +500,18 @@ PyThreadState_Swap(PyThreadState *newts)
+@@ -461,14 +463,18 @@ PyThreadState_Swap(PyThreadState *newts)
  PyObject *
  PyThreadState_GetDict(void)
  {
@@ -119,7 +155,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
          if (d == NULL)
              PyErr_Clear();
      }
-@@ -606,6 +649,7 @@ PyObject *
+@@ -606,6 +612,7 @@ PyObject *
  static int
  PyThreadState_IsCurrent(PyThreadState *tstate)
  {
@@ -127,7 +163,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      /* Must be the tstate for this thread */
      assert(PyGILState_GetThisThreadState()==tstate);
      return tstate == _Py_atomic_load_relaxed(&_PyThreadState_Current);
-@@ -617,6 +661,7 @@ PyThreadState_IsCurrent(PyThreadState *t
+@@ -617,6 +624,7 @@ PyThreadState_IsCurrent(PyThreadState *t
  void
  _PyGILState_Init(PyInterpreterState *i, PyThreadState *t)
  {
@@ -135,7 +171,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      assert(i && t); /* must init with valid states */
      autoTLSkey = PyThread_create_key();
      if (autoTLSkey == -1)
-@@ -631,6 +676,7 @@ void
+@@ -631,6 +639,7 @@ void
  void
  _PyGILState_Fini(void)
  {
@@ -143,7 +179,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      PyThread_delete_key(autoTLSkey);
      autoInterpreterState = NULL;
  }
-@@ -642,7 +688,9 @@ void
+@@ -642,7 +651,9 @@ void
  void
  _PyGILState_Reinit(void)
  {
@@ -154,7 +190,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      PyThread_delete_key(autoTLSkey);
      if ((autoTLSkey = PyThread_create_key()) == -1)
          Py_FatalError("Could not allocate TLS entry");
-@@ -661,6 +709,9 @@ void
+@@ -661,6 +672,9 @@ void
  static void
  _PyGILState_NoteThreadState(PyThreadState* tstate)
  {
@@ -164,7 +200,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      /* If autoTLSkey isn't initialized, this must be the very first
         threadstate created in Py_Initialize().  Don't do anything for now
         (we'll be back here when _PyGILState_Init is called). */
-@@ -692,6 +743,9 @@ static void
+@@ -692,6 +706,9 @@ static void
  PyThreadState *
  PyGILState_GetThisThreadState(void)
  {
@@ -174,7 +210,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      if (autoInterpreterState == NULL)
          return NULL;
      return (PyThreadState *)PyThread_get_key_value(autoTLSkey);
-@@ -702,6 +756,9 @@ PyGILState_Ensure(void)
+@@ -702,6 +719,9 @@ PyGILState_Ensure(void)
  {
      int current;
      PyThreadState *tcur;
@@ -184,7 +220,7 @@ diff --git a/Python/pystate.c b/Python/pystate.c
      /* Note that we do not auto-init Python here - apart from
         potential races with 2 threads auto-initializing, pep-311
         spells out other issues.  Embedders are expected to have
-@@ -735,8 +792,10 @@ PyGILState_Ensure(void)
+@@ -735,8 +755,10 @@ PyGILState_Ensure(void)
  void
  PyGILState_Release(PyGILState_STATE oldstate)
  {
