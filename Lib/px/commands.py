@@ -493,6 +493,35 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
             except KeyboardInterrupt:
                 server.shutdown()
 
+class PandasServer(TCPServerCommand):
+    _shortname_ = 'pd'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        pydatadir = join_path(dirname(__file__), '../../examples/pydata')
+        with chdir(pydatadir):
+            import pandas_test as pdt
+            # Prime all our methods.
+            pdt.df.to_html()
+            pdt.df.to_csv()
+            pdt.df.to_dict()
+            self._out("Running pandas server on %s port %d ..." % (ip, port))
+            import async
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=pdt.PandasHttpServer)
+            async.run()
 
 #===============================================================================
 # Testing
