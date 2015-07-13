@@ -6518,8 +6518,9 @@ _async_run(PyObject *self, PyObject *args)
             return NULL;
         Py_BEGIN_ALLOW_THREADS
         Py_END_ALLOW_THREADS
-
     }
+
+    Py_RETURN_NONE;
 
 
     /* Old approach */
