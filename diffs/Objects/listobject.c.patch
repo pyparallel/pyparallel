@@ -41,7 +41,25 @@ diff --git a/Objects/listobject.c b/Objects/listobject.c
      PyObject_GC_UnTrack(op);
      Py_TRASHCAN_SAFE_BEGIN(op)
      if (op->ob_item != NULL) {
-@@ -595,6 +605,15 @@ list_ass_slice(PyListObject *a, Py_ssize
+@@ -340,14 +350,16 @@ list_repr(PyListObject *v)
+     Py_ssize_t i;
+     PyObject *s = NULL;
+     _PyAccu acc;
+-    static PyObject *sep = NULL;
++    Py_TLS static PyObject *sep = NULL;
+ 
+     if (Py_SIZE(v) == 0) {
+         return PyUnicode_FromString("[]");
+     }
+ 
+     if (sep == NULL) {
++        PyPx_EnableTLSHeap();
+         sep = PyUnicode_FromString(", ");
++        PyPx_DisableTLSHeap();
+         if (sep == NULL)
+             return NULL;
+     }
+@@ -595,6 +607,15 @@ list_ass_slice(PyListObject *a, Py_ssize
      Py_ssize_t k;
      size_t s;
      int result = -1;            /* guilty until proved innocent */
@@ -57,7 +75,7 @@ diff --git a/Objects/listobject.c b/Objects/listobject.c
  #define b ((PyListObject *)v)
      if (v == NULL)
          n = 0;
-@@ -2446,6 +2465,15 @@ list_subscript(PyListObject* self, PyObj
+@@ -2446,6 +2467,15 @@ list_subscript(PyListObject* self, PyObj
  static int
  list_ass_subscript(PyListObject* self, PyObject* item, PyObject* value)
  {
