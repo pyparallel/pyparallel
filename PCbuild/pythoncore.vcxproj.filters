@@ -423,6 +423,9 @@
     <ClInclude Include="..\Include\namespaceobject.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\picohttpparser.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -937,6 +940,9 @@
     </ClCompile>
     <ClCompile Include="..\Objects\namespaceobject.c">
       <Filter>Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\picohttpparser.c">
+      <Filter>Python</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

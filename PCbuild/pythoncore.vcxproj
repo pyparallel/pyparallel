@@ -509,7 +509,10 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\patchlevel.h" />
     <ClInclude Include="..\Include\pgen.h" />
     <ClInclude Include="..\Include\pgenheaders.h" />
+    <ClInclude Include="..\Include\picohttpparser.h" />
     <ClInclude Include="..\Include\pyparallel.h" />
+    <ClInclude Include="..\Include\pyparallel_util.h" />
+    <ClInclude Include="..\Include\pyparallel_odbc.h" />
     <ClInclude Include="..\Include\pxlist.h" />
     <ClInclude Include="..\Include\py_curses.h" />
     <ClInclude Include="..\Include\pyarena.h" />
@@ -710,6 +713,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\PC\dl_nt.c" />
     <ClCompile Include="..\PC\getpathp.c" />
     <ClCompile Include="..\PC\msvcrtmodule.c" />
+    <ClCompile Include="..\Python\picohttpparser.c" />
     <ClCompile Include="..\Python\pyparallel.c" />
     <ClCompile Include="..\Python\pxlist.c" />
     <ClCompile Include="..\Python\random.c" />
