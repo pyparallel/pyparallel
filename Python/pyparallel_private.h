@@ -1086,7 +1086,7 @@ typedef struct _PxSocket {
      */
     ULONGLONG startup_socket_flags;
 
-    volatile int destroyed;
+    volatile int ready_for_dealloc;
 
     int reused;
     int recycled;
@@ -1257,18 +1257,18 @@ typedef struct _PxSocket {
     //__declspec(align(MEMORY_ALLOCATION_ALIGNMENT))
     PxListHead link_child;
 
-    int num_accepts_to_post;
+    volatile int num_accepts_to_post;
 
     /* Target number of posted AcceptEx() calls the server will try and
      * maintain.  Defaults to 2 * NCPU. */
-    int target_accepts_posted;
+    volatile int target_accepts_posted;
 
     /* How many times we submitted threadpool work for creating new client
      * sockets and posting accepts.  Won't necessarily correlate to how many
      * successful accepts we were able to post -- just that we submitted the
      * work to attempt posting.
      */
-    int total_accepts_attempted;
+    volatile int total_accepts_attempted;
 
     /* How many clients can we create (i.e. create contexts for and then post
      * accepts) in the space of a single percent of memory load?  This is
@@ -1299,7 +1299,8 @@ typedef struct _PxSocket {
     /* Doubly-linked list of all children. */
     LIST_ENTRY children;
     CRITICAL_SECTION children_cs;
-    int num_children_entries; /* compare to num_children, which is interlocked */
+    /* compare to num_children, which is interlocked */
+    volatile int num_children_entries;
 
     /* List entry to the above list for children, also private/owned by
      * server. */
