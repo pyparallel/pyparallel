@@ -690,21 +690,10 @@ PXSTATE(void)
     PxState *px;
     PyThreadState *pstate = get_main_thread_state();
     if (!pstate) {
-        OutputDebugString(L"_PyThreadState_Current == NULL!\n");
         if (Py_PXCTX())
             px = ctx->px;
     } else
         px = (PxState *)pstate->px;
-    if (!px) {
-        OutputDebugString(L"!px");
-    }
-    if ((Px_PTR(px) & 0x0000000800000000) == 0x0000000800000000) {
-        OutputDebugString(L"px -> 0x8..\n");
-    }
-    /*
-    assert(px);
-    assert((Px_PTR(px) & 0x0000000800000000) != 0x0000000800000000);
-    */
     return px;
 }
 
@@ -5422,7 +5411,8 @@ _async_rdtsc(void)
 long
 _is_active(void)
 {
-    return PXSTATE()->active;
+    PxState *px = PXSTATE();
+    return (px ? px->active : 0);
 }
 
 PyObject *
@@ -5445,19 +5435,22 @@ _async_is_active_ex(PyObject *self, PyObject *args)
 PyObject *
 _async_active_count(PyObject *self, PyObject *args)
 {
-    return PyLong_FromLong(PXSTATE()->active);
+    PxState *px = PXSTATE();
+    return PyLong_FromLong(px ? px->active : 0);
 }
 
 PyObject *
 _async_active_contexts(PyObject *self, PyObject *args)
 {
-    return PyLong_FromLong(PXSTATE()->contexts_active);
+    PxState *px = PXSTATE();
+    return PyLong_FromLong(px ? px->contexts_active : 0);
 }
 
 PyObject *
 _async_persisted_contexts(PyObject *self, PyObject *args)
 {
-    return PyLong_FromLong(PXSTATE()->contexts_persisted);
+    PxState *px = PXSTATE();
+    return PyLong_FromLong(px ? px->contexts_persisted : 0);
 }
 
 
@@ -5621,14 +5614,6 @@ _PxState_PurgeContexts(PxState *px)
 #endif
 #endif
 
-void
-_PyParallel_SchedulePyNoneDecref(long refs)
-{
-    PxState *px = PXSTATE();
-    assert(refs > 0);
-    InterlockedAdd(&(px->incoming_pynone_decrefs), refs);
-}
-
 /* This is one of the earliest functions written... before PyParallel was even
  * called PyParallel.  It's currently in for an overhaul, so there are chunks
  * commented out and whatnot as I'm refactoring the implementation. */
@@ -5689,19 +5674,7 @@ _async_run_once(PyObject *self, PyObject *args)
     }
     */
 
-    /* .oO(Heh.  What on earth was I exploring when I thought this would be
-     * necesssary....) */
     /*
-    if (px->incoming_pynone_decrefs) {
-        long r = InterlockedExchange(&(px->incoming_pynone_decrefs), 0);
-        assert(r >= 0);
-        if (r > 0) {
-            PyObject *o = Py_None;
-            assert((Py_REFCNT(o) - r) > 0);
-            o->ob_refcnt -= r;
-        }
-    }
-
     px->last_done_count = px->done;
     px->last_submitted_count = px->submitted;
 
@@ -12316,7 +12289,6 @@ end:
 PyObject *
 PxSocket_Register(PyObject *transport, PyObject *protocol_type)
 {
-    PxState *px = PXSTATE();
     PxSocket *s = (PxSocket *)transport;
     Context *c = s->ctx;
     PxListItem *item;
