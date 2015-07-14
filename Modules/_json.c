@@ -262,6 +262,7 @@ raise_errmsg(char *msg, PyObject *s, Py_ssize_t end)
     static PyObject *errmsg_fn = NULL;
     PyObject *pymsg;
     if (errmsg_fn == NULL) {
+        /* Ugh, this is going to bomb out for PyParallel. */
         PyObject *decoder = PyImport_ImportModule("json.decoder");
         if (decoder == NULL)
             return;
@@ -1298,25 +1299,31 @@ _encoded_const(PyObject *obj)
 {
     /* Return the JSON string representation of None, True, False */
     if (obj == Py_None) {
-        static PyObject *s_null = NULL;
+        Py_TLS static PyObject *s_null = NULL;
         if (s_null == NULL) {
+            PyPx_EnableTLSHeap();
             s_null = PyUnicode_InternFromString("null");
+            PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_null);
         return s_null;
     }
     else if (obj == Py_True) {
-        static PyObject *s_true = NULL;
+        Py_TLS static PyObject *s_true = NULL;
         if (s_true == NULL) {
+            PyPx_EnableTLSHeap();
             s_true = PyUnicode_InternFromString("true");
+            PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_true);
         return s_true;
     }
     else if (obj == Py_False) {
-        static PyObject *s_false = NULL;
+        Py_TLS static PyObject *s_false = NULL;
         if (s_false == NULL) {
+            PyPx_EnableTLSHeap();
             s_false = PyUnicode_InternFromString("false");
+            PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_false);
         return s_false;
@@ -1468,9 +1475,9 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
                         PyObject *dct, Py_ssize_t indent_level)
 {
     /* Encode Python dict dct a JSON term */
-    static PyObject *open_dict = NULL;
-    static PyObject *close_dict = NULL;
-    static PyObject *empty_dict = NULL;
+    Py_TLS static PyObject *open_dict = NULL;
+    Py_TLS static PyObject *close_dict = NULL;
+    Py_TLS static PyObject *empty_dict = NULL;
     PyObject *kstr = NULL;
     PyObject *ident = NULL;
     PyObject *it = NULL;
@@ -1480,9 +1487,11 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
     Py_ssize_t idx;
 
     if (open_dict == NULL || close_dict == NULL || empty_dict == NULL) {
+        PyPx_EnableTLSHeap();
         open_dict = PyUnicode_InternFromString("{");
         close_dict = PyUnicode_InternFromString("}");
         empty_dict = PyUnicode_InternFromString("{}");
+        PyPx_DisableTLSHeap();
         if (open_dict == NULL || close_dict == NULL || empty_dict == NULL)
             return -1;
     }
@@ -1647,17 +1656,19 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
                         PyObject *seq, Py_ssize_t indent_level)
 {
     /* Encode Python list seq to a JSON term */
-    static PyObject *open_array = NULL;
-    static PyObject *close_array = NULL;
-    static PyObject *empty_array = NULL;
+    Py_TLS static PyObject *open_array = NULL;
+    Py_TLS static PyObject *close_array = NULL;
+    Py_TLS static PyObject *empty_array = NULL;
     PyObject *ident = NULL;
     PyObject *s_fast = NULL;
     Py_ssize_t i;
 
     if (open_array == NULL || close_array == NULL || empty_array == NULL) {
+        PyPx_EnableTLSHeap();
         open_array = PyUnicode_InternFromString("[");
         close_array = PyUnicode_InternFromString("]");
         empty_array = PyUnicode_InternFromString("[]");
+        PyPx_DisableTLSHeap();
         if (open_array == NULL || close_array == NULL || empty_array == NULL)
             return -1;
     }

@@ -350,14 +350,16 @@ list_repr(PyListObject *v)
     Py_ssize_t i;
     PyObject *s = NULL;
     _PyAccu acc;
-    static PyObject *sep = NULL;
+    Py_TLS static PyObject *sep = NULL;
 
     if (Py_SIZE(v) == 0) {
         return PyUnicode_FromString("[]");
     }
 
     if (sep == NULL) {
+        PyPx_EnableTLSHeap();
         sep = PyUnicode_FromString(", ");
+        PyPx_DisableTLSHeap();
         if (sep == NULL)
             return NULL;
     }
