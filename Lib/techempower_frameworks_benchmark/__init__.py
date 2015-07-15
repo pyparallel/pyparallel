@@ -186,6 +186,8 @@ class Fortune:
         return json.dumps(fortunes)
 
 class BaseHttpServer(HttpServer):
+    #http11 = True
+
     connection = None
     #connection_string = None
     #odbc = None
@@ -398,7 +400,6 @@ class HttpServerThroughput(BaseHttpServer):
     max_sync_send_attempts = 1
     max_sync_recv_attempts = 1
 
-
 plaintext_http11_response = (
     'HTTP/1.1 200 OK\r\n'
     'Server: PyParallel Web Server v0.1\r\n'
@@ -428,3 +429,15 @@ class ThroughputCheatingHttpServer:
     throughput = True
     initial_bytes_to_send = plaintext_http11_response
     next_bytes_to_send = plaintext_http11_response
+
+class FastHttpServer:
+    http11 = True
+
+    def data_received(self, transport, data):
+        header = transport.http_header
+        async.debug(str(header))
+        return plaintext_http11_response
+
+
+
+

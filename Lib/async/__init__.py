@@ -370,7 +370,14 @@ def _tefb_json():
     import techempower_frameworks_benchmark as tefb
     server = _async.server('0.0.0.0', 8080)
     _async.register(transport=server, protocol=tefb.BaseHttpServer)
-    _async.run_once()
+    #_async.run_once()
+    return server
+
+def _t2():
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server('0.0.0.0', 8080)
+    _async.register(transport=server, protocol=tefb.FastHttpServer)
+    #_async.run_once()
     return server
 
 
