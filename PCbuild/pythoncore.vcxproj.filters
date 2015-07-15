@@ -416,7 +416,7 @@
     </ClInclude>
     <ClInclude Include="..\Include\pyparallel_odbc.h">
       <Filter>Include</Filter>
-    </ClInclude>        
+    </ClInclude>
     <ClInclude Include="..\Include\pxlist.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -424,6 +424,9 @@
       <Filter>Include</Filter>
     </ClInclude>
     <ClInclude Include="..\Include\picohttpparser.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\pyparallel_http.h">
       <Filter>Include</Filter>
     </ClInclude>
   </ItemGroup>
@@ -942,6 +945,9 @@
       <Filter>Objects</Filter>
     </ClCompile>
     <ClCompile Include="..\Python\picohttpparser.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\pyparallel_http.c">
       <Filter>Python</Filter>
     </ClCompile>
   </ItemGroup>

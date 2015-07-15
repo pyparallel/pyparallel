@@ -7737,6 +7737,147 @@ int PxSocket_InitNextBytes(PxSocket *s);
 int PxSocket_LoadNextBytes(PxSocket *s);
 //int PxSocket_InitODBC(PxSocket *s);
 
+PyObject *
+_PyParallel_CallObject(PyObject *func, PyObject *arg)
+{
+    /* Stolen from PyObject_Call(). */
+    ternaryfunc call;
+
+    if ((call = func->ob_type->tp_call) != NULL) {
+        PyObject *result;
+        result = (*call)(func, arg, NULL);
+        if (result == NULL && !PyErr_Occurred())
+            PyErr_SetString(
+                PyExc_SystemError,
+                "NULL result without error in PyObject_Call");
+        return result;
+    }
+    PyErr_Format(PyExc_TypeError, "'%.200s' object is not callable",
+                 func->ob_type->tp_name);
+    return NULL;
+}
+
+extern PyDictKeysObject *new_keys_object(Py_ssize_t size);
+
+#define MINIMUM_HTTP_HEADERS 8
+#define HTTP_HEADER_SIZE sizeof(struct phr_header)
+volatile long _PyParallel_HttpParserForcedHeapExtension = 0;
+
+PyObject *
+PxSocket_ParseHttpRequest(PxSocket *s)
+{
+    Context *c = s->ctx;
+    Heap *h = c->h;
+    Stats *t = &c->stats;
+    HttpRequest *r = &s->http.request;
+    WSABUF *w = &s->rbuf->w;
+    PyObject *d = r->dict;
+    PyObject *retval = NULL;
+    PyObject *key, *value;
+    size_t dict_size = 0;
+    int i = 0;
+
+    int result;
+
+    SecureZeroMemory(r, sizeof(HttpRequest));
+
+    /* We can leverage the fact we've already preallocated chunks of memory by
+     * dedicating all of the remaining amount to the header processing (which
+     * will only use as much as it needs). */
+restart:
+    r->bytes_allocated = h->remaining;
+    r->num_headers_allocated = r->bytes_allocated / HTTP_HEADER_SIZE;
+    if (r->num_headers_allocated < MINIMUM_HTTP_HEADERS) {
+        size_t old_remaining = h->remaining;
+        InterlockedIncrement(&_PyParallel_HttpParserForcedHeapExtension);
+        /* Force an extension. */
+        if (!_PyHeap_Init(c, 0))
+            return PyErr_NoMemory();
+
+        if (h->remaining <= old_remaining)
+            __debugbreak();
+
+        goto restart;
+    }
+
+    r->headers = h->next;
+    r->num_headers_used = r->num_headers_allocated;
+
+    result = phr_parse_request(
+        w->buf,
+        w->len,
+        &r->method,
+        &r->method_len,
+        &r->path,
+        &r->path_len,
+        &r->minor_version,
+        r->headers,
+        &r->num_headers_used,
+        r->last_len
+    );
+
+    if (result <= 0) {
+        retval = Py_None;
+        goto error;
+    }
+
+    r->header_len = result;
+    r->bytes_used = r->num_headers_used * HTTP_HEADER_SIZE;
+    if (r->bytes_used > r->bytes_allocated)
+        __debugbreak();
+
+    /* Manually adjust the heap/stats based on bytes used.  Make sure it aligns
+     * with whatever the logic in _PyHeap_Malloc() is doing. */
+    h->allocated += r->bytes_used;
+    t->allocated += r->bytes_used;
+
+    h->remaining -= r->bytes_used;
+    t->remaining -= r->bytes_used;
+
+    h->mallocs++;
+    t->mallocs++;
+
+    last_context_heap_malloc_addr = h->next;
+    h->next = Px_PTR_ADD(h->next, r->bytes_used);
+    h->next_alignment = Px_GET_ALIGNMENT(h->next);
+
+    assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
+
+    /* Enumerate the headers and add them to the headers_dict. */
+    dict_size = Px_NEXT_POWER_OF_2((int)r->num_headers_used * 2);
+    d = _PyDict_NewPresized(dict_size);
+    if (!d)
+        goto error;
+
+    for (i = 0; i < r->num_headers_used; i++) {
+        struct phr_header *ph = &r->headers[i];
+
+        key = _PyUnicode_FromASCII(ph->name, ph->name_len);
+        value = _PyUnicode_FromASCII(ph->value, ph->value_len);
+        PyDict_SetItem(d, key, value);
+    }
+
+    value = _PyUnicode_FromASCII(r->path, r->path_len);
+    PyDict_SetItemString(d, "path", value);
+
+    value = _PyUnicode_FromASCII(r->method, r->method_len);
+    PyDict_SetItemString(d, "method", value);
+
+    value = PyLong_FromLong(r->minor_version);
+    PyDict_SetItemString(d, "minor_version", value);
+
+    s->http_header = d;
+
+    retval = Py_None;
+    goto end;
+
+error:
+    SecureZeroMemory(r, sizeof(HttpRequest));
+    s->http_header = Py_None;
+end:
+    return retval;
+}
+
 /* Hybrid sync/async IO loop. */
 void
 PxSocket_IOLoop(PxSocket *s)
@@ -7780,6 +7921,7 @@ PxSocket_IOLoop(PxSocket *s)
     int hostname_len = 0;
     Py_TLS static ADDRINFOEX hints = { 0, };
     PADDRINFOEX aiex = NULL;
+    PyObject *error_occurred = NULL;
 
     /* AcceptEx stuff */
     DWORD sockaddr_len, local_addr_len, remote_addr_len;
@@ -9262,33 +9404,7 @@ overlapped_recv_callback:
 
 process_data_received:
     ODS(L"process_data_received:\n");
-    /*
-     * So, this is the point where we need to check the data we've received
-     * for the sole purpose of seeing if we need to a) receive more data, or
-     * b) invoke the protocol's (data|line)_received callback with the data.
-     *
-     * The former situation will occur when receive filters have been set on
-     * the protocol, such as 'lines_mode' (we keep recv'ing until we find a
-     * linebreak) or one of the 'expect_*' filters (expect_command, expect_
-     * regex etc).  Or any number of other filters that allow us to determine
-     * within C code (i.e. within this IO loop) whether or not we've received
-     * enough data (without the need to call back into Python).
-     *
-     * Now, with all that being said, none of that functionality is
-     * implemented yet, so the code below simply unsets the 'receive more'
-     * flag and continues on to 'do data received callback'.
-     *
-     * (Which is why the next two lines look pointless.)
-     *
-     * Actually... here is the place we could also put some pre-Python
-     * protocol helpers, like an HTTP request parser.
-     */
-    Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_RECV_MORE;
-
-    goto do_data_received_callback;
-
-do_data_received_callback:
-    ODS(L"do_data_received_callback:\n");
+    /* Do any pre-processing of data here prior to calling back into Python. */
 
     assert(s->num_bytes_just_received > 0);
     s->total_bytes_received += s->num_bytes_just_received;
@@ -9361,14 +9477,25 @@ do_data_received_callback:
     if (PxSocket_LINES_MODE_ACTIVE(s))
         goto do_lines_received_callback;
 
+    /* Intentional follow-on to do_data_received_callback. */
+
+do_data_received_callback:
+    ODS(L"do_data_received_callback:\n");
+
     assert(!rbuf->snapshot);
     rbuf->snapshot = PxContext_HeapSnapshot(c);
 
-    func = s->data_received;
-    assert(func);
+    if (PxSocket_IS_HTTP11(s)) {
+        //__debugbreak();
+        result = PxSocket_ParseHttpRequest(s);
+        if (!result)
+            PxSocket_EXCEPTION();
+        //PxSocket_CHECK_RESULT(result);
+    }
 
-    /* For now, num_rbufs should only ever be 1. */
-    assert(s->num_rbufs == 1);
+    /* We only use one at the moment. */
+    if (s->num_rbufs != 1)
+        __debugbreak();
     if (s->num_rbufs == 1) {
         PyObject *n;
         PyObject *o;
@@ -9384,22 +9511,19 @@ do_data_received_callback:
             //PxContext_RollbackHeap(c, &rbuf->snapshot);
             PxSocket_FATAL();
         }
-    } else {
-        XXX_IMPLEMENT_ME();
     }
+
+    func = s->data_received;
+    assert(func);
 
     if (PyErr_Occurred())
         __debugbreak();
 
-    result = PyObject_CallObject(func, args);
-    if (result)
-        assert(!PyErr_Occurred());
-    if (PyErr_Occurred())
-        assert(!result);
-    if (!result) {
-        //PxContext_RollbackHeap(c, &rbuf->snapshot);
+    //PxSocket_CALL(_PyParallel_CallObject(func, args));
+    //result = PyObject_CallObject(func, args);
+    result = _PyParallel_CallObject(func, args);
+    if (!result)
         PxSocket_EXCEPTION();
-    }
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
@@ -10204,6 +10328,9 @@ create_pxsocket(
         if (Px_SOCKFLAGS(parent) & Px_SOCKFLAGS_NEXT_BYTES_CALLABLE)
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_NEXT_BYTES_CALLABLE;
 
+        if (PxSocket_IS_HTTP11(parent))
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HTTP11;
+
         if (PxSocket_ODBC(parent)) {
             if (!parent->henv)
                 /* Should be set during PxSocketServer_InitODBC(). */
@@ -10336,7 +10463,8 @@ setnonblock:
         s->recvbuf_size = s->ctx->h->remaining - Px_PTR_ALIGN(sizeof(RBUF));
         /* If it gets below 512, break.  We want to keep the entire buffer
          * within the same page used by the heap. */
-        if (s->recvbuf_size < 512)
+        /* Eek... down to 480. */
+        if (s->recvbuf_size < 450)
             __debugbreak();
         //s->recvbuf_size = 512;
         s->sendbuf_size = 0;
@@ -10969,6 +11097,7 @@ _Py_IDENTIFIER(connection_string);
 
 /* bools */
 _Py_IDENTIFIER(odbc);
+_Py_IDENTIFIER(http11);
 _Py_IDENTIFIER(lines_mode);
 _Py_IDENTIFIER(throughput);
 _Py_IDENTIFIER(concurrency);
@@ -10979,6 +11108,8 @@ _Py_IDENTIFIER(shutdown_send);
 _Py_IDENTIFIER(max_sync_send_attempts);
 _Py_IDENTIFIER(max_sync_recv_attempts);
 
+/* misc */
+_Py_IDENTIFIER(http_header);
 
 /* 0 = failure, 1 = success */
 int
@@ -11077,6 +11208,7 @@ PxSocket_InitProtocol(PxSocket *s)
     _PxSocket_RESOLVE_BOOL(low_latency);
     _PxSocket_RESOLVE_BOOL(shutdown_send);
     _PxSocket_RESOLVE_BOOL(odbc);
+    _PxSocket_RESOLVE_BOOL(http11);
 
     _PxSocket_RESOLVE_INT(max_sync_send_attempts);
     _PxSocket_RESOLVE_INT(max_sync_recv_attempts);
@@ -12679,6 +12811,8 @@ static PyMemberDef PxSocketMembers[] = {
     _PXSOCKET_ATTR_ULLR(thread_seq_id_bitmap),
 
     _PXSOCKET_ATTR_O(protocol),
+
+    _PXSOCKET_ATTR_O(http_header),
     /*
     _PXSOCKET_ATTR_ULL(stopwatch_utc_start),
     _PXSOCKET_ATTR_ULL(stopwatch_utc_stop),
@@ -13348,6 +13482,17 @@ _PyAsync_ModInit(void)
 
     if (!PyType_Ready(&PyXList_Type) < 0)
         return NULL;
+
+    if (!PyType_Ready(&HttpHeader_Type) < 0)
+        return NULL;
+
+    /*
+    if (!PyType_Ready(&HttpRequest_Type) < 0)
+        return NULL;
+
+    if (!PyType_Ready(&HttpResponse_Type) < 0)
+        return NULL;
+    */
 
     m = PyModule_Create(&_asyncmodule);
     if (m == NULL)

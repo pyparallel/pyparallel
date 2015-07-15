@@ -16,6 +16,7 @@ extern "C" {
 #include "pyparallel_odbc.h"
 #include "pyparallel_util.h"
 #include "../contrib/pxodbc/src/pxodbccapsule.h"
+#include "pyparallel_http.h"
 
 #pragma comment(lib, "ws2_32.lib")
 //#pragma comment(lib, "odbc32.lib")
@@ -134,6 +135,19 @@ Px_GET_ALIGNMENT(void *p)
     while (!((c >> i) & 1))
         i++;
     return (1ULL << i);
+}
+
+static __inline
+unsigned int
+Px_NEXT_POWER_OF_2(const unsigned int i)
+{
+    unsigned int v = i-1;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    return i+1;
 }
 
 #define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
@@ -841,6 +855,8 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_connection_string          (1ULL << 41)
 #define Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED      (1ULL << 42)
 #define Px_SOCKFLAGS_CLEANED_UP                 (1ULL << 43)
+#define Px_SOCKFLAGS_HTTP11                     (1ULL << 44)
+#define Px_SOCKFLAGS_http11                     (1ULL << 44)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -940,6 +956,9 @@ typedef struct _PxObject {
 
 #define PxSocket_IS_CLEANED_UP(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLEANED_UP)
+
+#define PxSocket_IS_HTTP11(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HTTP11)
 
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
@@ -1162,6 +1181,7 @@ typedef struct _PxSocket {
     WSABUF    next_bytes;
     PyObject *odbc;
     PyObject *connection_string;
+    PyObject *http11;
     //PyObject *cnxn; // pxodbc.Connection
     //PyObject *db_connection_made;
     //PyObject *db_execute_complete;
@@ -1246,6 +1266,20 @@ typedef struct _PxSocket {
     int connect_time; /* seconds */
 
     DWORD connectex_sent_bytes;
+
+    /* HTTP header stuff */
+    union {
+        HttpRequest request;
+        HttpResponse response;
+    } http;
+    PyObject *http_header;
+    /*
+    union {
+        PyObject *header;
+        PyObject *request;
+        PyObject *response;
+    } pyhttp;
+    */
 
     /* Server-specific stuff. */
 
@@ -1726,6 +1760,32 @@ _try_write_lock(PyObject *obj)
     PxSocket_HandleError(c, op, n, WSAGetLastError());                   \
     goto end;                                                            \
 } while (0)
+
+/* Usage:
+ *      PxSocket_CALL(PyObject_CallObject(func, args));
+ */
+
+#define PxSocket_CALL(exp) {                \
+    result = exp;                           \
+    error_occurred = PyErr_Occurred();      \
+    if (result && !error_occurred)          \
+        __debugbreak();                     \
+    if (error_occurred && !result)          \
+        __debugbreak();                     \
+    if (!result)                            \
+        PxSocket_EXCEPTION();               \
+}
+
+#define PxSocket_CHECK_RESULT(result) {     \
+    error_occurred = PyErr_Occurred();      \
+    if (result && !error_occurred)          \
+        __debugbreak();                     \
+    if (error_occurred && !result)          \
+        __debugbreak();                     \
+    if (!result)                            \
+        PxSocket_EXCEPTION();               \
+}
+
 
 #define PxSocket2WSABUF(s) (_Py_CAST_FWD(s, LPWSABUF, PxSocket, len))
 

@@ -487,6 +487,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\genobject.h" />
     <ClInclude Include="..\Include\graminit.h" />
     <ClInclude Include="..\Include\grammar.h" />
+    <ClInclude Include="..\Include\pyparallel_http.h" />
     <ClInclude Include="..\Include\import.h" />
     <ClInclude Include="..\Include\intrcheck.h" />
     <ClInclude Include="..\Include\iterobject.h" />
@@ -713,6 +714,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\PC\dl_nt.c" />
     <ClCompile Include="..\PC\getpathp.c" />
     <ClCompile Include="..\PC\msvcrtmodule.c" />
+    <ClCompile Include="..\Python\pyparallel_http.c" />
     <ClCompile Include="..\Python\picohttpparser.c" />
     <ClCompile Include="..\Python\pyparallel.c" />
     <ClCompile Include="..\Python\pxlist.c" />
