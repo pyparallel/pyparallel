@@ -3855,6 +3855,55 @@ _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
 }
 */
 
+void
+PxState_UpdateGmtime(PxState *px)
+{
+    char buf[GMTIME_STRLEN];
+    time_t now = time(0);
+    struct tm *tm = gmtime(&now);
+    static const char *fmt = "%a, %d %b %Y %H:%M:%S GMT";
+
+    strftime(&buf[0], GMTIME_STRLEN, fmt, tm);
+    AcquireSRWLockExclusive(&px->gmtime_srwlock);
+    memcpy(&px->gmtime_buf[0], &buf[0], GMTIME_STRLEN);
+    ReleaseSRWLockExclusive(&px->gmtime_srwlock);
+}
+
+PyObject *
+PxState_GetGmtime(PxState *px)
+{
+    char buf[GMTIME_STRLEN];
+    PyObject *b = NULL;
+
+    AcquireSRWLockShared(&px->gmtime_srwlock);
+    memcpy(&buf[0], &px->gmtime_buf[0], GMTIME_STRLEN);
+    ReleaseSRWLockShared(&px->gmtime_srwlock);
+
+    b = _PyUnicode_FromASCII(buf, GMTIME_STRLEN-1);
+    return b;
+}
+
+void
+CALLBACK
+PxState_GmtimeTimerCallback(
+    _Inout_ PTP_CALLBACK_INSTANCE instance,
+    _Inout_opt_ PVOID context,
+    _Inout_ PTP_TIMER timer
+)
+{
+    PxState *px = (PxState *)context;
+    PxState_UpdateGmtime(px);
+}
+
+void
+_PxState_InitGmtimeTimer(PxState *px)
+{
+    FILETIME ft;
+    _PyParallel_SecondsToRelativeThreadpoolTimerTime(1, &ft);
+    SetThreadpoolTimer(px->ptp_timer_gmtime, &ft, 1000, 100);
+}
+
+
 /* 0 = failure, 1 = success */
 int
 _PyParallel_InitPxState(PyThreadState *tstate, int destroy)
@@ -3936,6 +3985,18 @@ _PyParallel_InitPxState(PyThreadState *tstate, int destroy)
     if (!px->ptp_cg)
         goto free_threadpool;
 
+    px->ptp_timer_gmtime = CreateThreadpoolTimer(
+        PxState_GmtimeTimerCallback,
+        px,
+        px->ptp_cbe
+    );
+    if (!px->ptp_timer_gmtime)
+        goto free_threadpool_cleanup_group;
+
+    InitializeSRWLock(&px->gmtime_srwlock);
+    PxState_UpdateGmtime(px);
+    _PxState_InitGmtimeTimer(px);
+
     _PxState_InitPxPages(px);
 
     InitializeCriticalSectionAndSpinCount(&(px->cs), PX_CS_SPINCOUNT);
@@ -3954,6 +4015,9 @@ _PyParallel_InitPxState(PyThreadState *tstate, int destroy)
     goto done;
 
 cleanup:
+    CloseThreadpoolTimer(px->ptp_timer_gmtime);
+
+free_threadpool_cleanup_group:
     CloseThreadpoolCleanupGroup(px->ptp_cg);
 
 free_threadpool:
@@ -4723,7 +4787,9 @@ _PyParallel_ExceptionFilter(EXCEPTION_POINTERS* exc)
                           NULL);
 
         CloseHandle(h);
-        printf("Wrote dump file to pyparallel.dmp.\n");
+        printf("Caught exception, wrote dump file to pyparallel.dmp.\n"
+               "`set PYPARALLEL_NO_MINIDUMP=1` to disable this functionality \n"
+               "(useful if you want to attach Visual Studio to debug).\n");
     } else {
         printf("CreateFile(\"pyparallel.dmp\") failed: %u\n", GetLastError());
     }
@@ -13326,6 +13392,23 @@ _async_register_dealloc(PyObject *self, PyObject *o)
     return _PyParallel_RegisterDealloc(o);
 }
 
+PyDoc_STRVAR(_async_gmtime_doc,
+             "returns a date timestamp suitable for HTTP headers");
+PyObject *
+_async_gmtime(PyObject *self, PyObject *o)
+{
+    PxState *px = PXSTATE();
+    if (!px) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "async.gmtime() called before any parallel contexts "
+                        "created");
+        return NULL;
+    }
+
+    return PxState_GetGmtime(px);
+}
+
+
 /*
 PyDoc_STRVAR(_async_db_connect_doc,
              "connect to the db asynchronously");
@@ -13380,6 +13463,7 @@ PyMethodDef _async_methods[] = {
     { "stdout", (PyCFunction)_async_stdout, METH_O, _async_stdout_doc },
     { "stderr", (PyCFunction)_async_stderr, METH_O, _async_stderr_doc },
     _ASYNC_O(_close),
+    _ASYNC_N(gmtime),
     _ASYNC_O(signal),
     _ASYNC_K(client),
     _ASYNC_K(server),

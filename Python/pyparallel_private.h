@@ -284,6 +284,9 @@ typedef struct _RBUF {
 
 #define usize_t unsigned size_t
 
+/* 29 = len('Tue, 15 Nov 2010 08:12:31 GMT') */
+#define GMTIME_STRLEN 29+1 /* 1 = '\0' */
+
 typedef struct _cpuinfo {
     struct _core {
         int logical;
@@ -527,6 +530,10 @@ typedef struct _PxState {
     PTP_CLEANUP_GROUP_CANCEL_CALLBACK ptp_cgcb;
     TP_CALLBACK_ENVIRON tp_cbe;
     PTP_CALLBACK_ENVIRON ptp_cbe;
+
+    PTP_TIMER ptp_timer_gmtime;
+    SRWLOCK   gmtime_srwlock;
+    char      gmtime_buf[GMTIME_STRLEN];
 
     /* List head */
     LIST_ENTRY contexts;
