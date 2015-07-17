@@ -25,6 +25,7 @@ from async import (
 )
 
 from async.http.server import (
+    date_time_string,
     Request,
     HttpServer,
 )
@@ -430,14 +431,69 @@ class ThroughputCheatingHttpServer:
     initial_bytes_to_send = plaintext_http11_response
     next_bytes_to_send = plaintext_http11_response
 
+http11_json_response_header = (
+    'HTTP/1.1 200 OK\r\n'
+    'Server: PyParallel Web Server v0.1\r\n'
+    'Date: Sat, 16 May 2015 15:21:34 GMT\r\n'
+    'Content-Type: application/json;charset=utf-8\r\n'
+    'Content-Length: '
+)
+
 class FastHttpServer:
     http11 = True
 
     def data_received(self, transport, data):
         header = transport.http_header
-        async.debug(str(header))
-        return plaintext_http11_response
+        header_json = json.dumps(header)
+        header_len = str(len(header_json))
+        buf = ''.join((
+            http11_json_response_header,
+            header_len,
+            '\r\n\r\n',
+            header_json,
+        ))
+        return buf
+
+class JsonHttpServer:
+    http11 = True
+
+    def data_received(self, transport, data):
+        j = json.dumps({ 'message': 'Hello, World!'})
+        return ''.join((
+            http11_json_response_header,
+            str(len(j)),
+            '\r\n\r\n',
+            j,
+        ))
+
+class JsonGmtimeHttpServer:
+    http11 = True
+
+    def data_received(self, transport, data):
+        j = json.dumps({ 'gmtime': async.gmtime()})
+        return ''.join((
+            http11_json_response_header,
+            str(len(j)),
+            '\r\n\r\n',
+            j,
+        ))
+
+class JsonGmtimeHttpServerSlow:
+    http11 = True
+
+    def data_received(self, transport, data):
+        j = json.dumps({ 'gmtime': date_time_string()})
+        return ''.join((
+            http11_json_response_header,
+            str(len(j)),
+            '\r\n\r\n',
+            j,
+        ))
 
 
+class ReturnDictHttpServer:
+    http11 = True
 
+    def json(self, transport, data):
+        return {}
 

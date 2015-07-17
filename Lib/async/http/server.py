@@ -139,6 +139,11 @@ def date_time_string(timestamp=None):
         hh, mm, ss
     )
 
+if is_pyparallel:
+    gmtime = _async.gmtime
+else:
+    gmtime = date_time_string
+
 #===============================================================================
 # Misc Helpers
 #===============================================================================
@@ -403,7 +408,7 @@ class Response:
         self._response = None
 
     def __bytes__(self):
-        self.date = date_time_string()
+        self.date = gmtime()
 
         body = self.body
         code = self.code

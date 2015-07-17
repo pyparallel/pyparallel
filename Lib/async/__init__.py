@@ -366,17 +366,38 @@ def memory_stats():
 #===============================================================================
 # Helpers during interactive testing/debugging
 #===============================================================================
-def _tefb_json():
+def _tefb_json(port=8080):
     import techempower_frameworks_benchmark as tefb
-    server = _async.server('0.0.0.0', 8080)
+    server = _async.server('0.0.0.0', port)
     _async.register(transport=server, protocol=tefb.BaseHttpServer)
     #_async.run_once()
     return server
 
-def _t2():
+def _t2(port=8080):
     import techempower_frameworks_benchmark as tefb
-    server = _async.server('0.0.0.0', 8080)
+    server = _async.server('0.0.0.0', port)
     _async.register(transport=server, protocol=tefb.FastHttpServer)
+    #_async.run_once()
+    return server
+
+def _j1(port=8080):
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server('0.0.0.0', port)
+    _async.register(transport=server, protocol=tefb.JsonHttpServer)
+    #_async.run_once()
+    return server
+
+def _j2(port=8080):
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server('0.0.0.0', port)
+    _async.register(transport=server, protocol=tefb.JsonGmtimeHttpServer)
+    #_async.run_once()
+    return server
+
+def _j3(port=8080):
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server('0.0.0.0', port)
+    _async.register(transport=server, protocol=tefb.JsonGmtimeHttpServerSlow)
     #_async.run_once()
     return server
 
