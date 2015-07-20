@@ -68,7 +68,7 @@ def call_from_main_thread(f):
         _async.call_from_main_thread(f, _args, _kwds)
     return decorator
 
-def synchronized(f):
+def critical_section(f):
     cs = _async.critical_section()
     def decorator(*_args, **_kwds):
         class _cs_wrap:
@@ -79,6 +79,41 @@ def synchronized(f):
         with _cs_wrap() as _cs:
             return f(*_args, **_kwds)
     return decorator
+
+def synchronized(o=None):
+    class _sync:
+        def __enter__(self):
+            if o:
+                _async.debug("write lock 1")
+                _async.write_lock(o)
+            _async.acquire_gil()
+        def __exit__(self, *exc):
+            if o:
+                _async.debug("write unlock 1")
+                _async.write_unlock(o)
+            _async.release_gil()
+    return _sync()
+
+def write_lock(o):
+    class _l:
+        def __enter__(self):
+            _async.debug("write lock 2")
+            _async.write_lock(o)
+        def __exit__(self, *exc):
+            _async.debug("write unlock 2")
+            _async.write_unlock(o)
+    return _l()
+
+def read_lock(o):
+    class _l:
+        def __enter__(self):
+            _async.debug("read lock 2")
+            _async.read_lock(o)
+        def __exit__(self, *exc):
+            _async.debug("read unlock 2")
+            _async.read_unlock(o)
+    return _l()
+
 
 def submit_work(func, args=None, kwds=None, callback=None, errback=None):
     _async.submit_work(func, args, kwds, callback, errback)
@@ -398,6 +433,13 @@ def _j3(port=8080):
     import techempower_frameworks_benchmark as tefb
     server = _async.server('0.0.0.0', port)
     _async.register(transport=server, protocol=tefb.JsonGmtimeHttpServerSlow)
+    #_async.run_once()
+    return server
+
+def _j4(port=8080):
+    import techempower_frameworks_benchmark as tefb
+    server = _async.server('0.0.0.0', port)
+    _async.register(transport=server, protocol=tefb.TestSync)
     #_async.run_once()
     return server
 
