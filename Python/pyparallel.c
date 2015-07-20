@@ -4024,9 +4024,14 @@ _PyParallel_InitPxState(PyThreadState *tstate, int destroy)
     if (!px->shutdown_server)
         goto free_work_ready;
 
+    px->free_contexts = PxList_New();
+    if (!px->free_contexts)
+        goto free_shutdown_server;
+    px->max_free_contexts = 1000;
+
     px->io_free_wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->io_free_wakeup)
-        goto free_shutdown_server;
+        goto free_free_contexts;
 
     px->wakeup = CreateEvent(NULL, FALSE, FALSE, NULL);
     if (!px->wakeup)
@@ -4038,6 +4043,7 @@ _PyParallel_InitPxState(PyThreadState *tstate, int destroy)
 
     px->ptp_cbe = &px->tp_cbe;
     InitializeThreadpoolEnvironment(px->ptp_cbe);
+    SetThreadpoolCallbackPriority(px->ptp_cbe, TP_CALLBACK_PRIORITY_LOW);
 
     px->ptp_cg = CreateThreadpoolCleanupGroup();
     if (!px->ptp_cg)
@@ -4086,6 +4092,9 @@ free_wakeup:
 
 free_io_wakeup:
     CloseHandle(px->io_free_wakeup);
+
+free_free_contexts:
+    PxList_FreeListHead(px->free_contexts);
 
 free_shutdown_server:
     PxList_FreeListHead(px->shutdown_server);

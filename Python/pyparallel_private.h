@@ -518,13 +518,6 @@ typedef struct _PxState {
 
     HANDLE      low_memory_resource_notification;
 
-    /*
-    PxListHead *free_contexts_4096;
-    PxListHead *free_contexts_8192;
-    PxListHead *free_contexts_16384;
-    short max_free_contexts;
-    */
-
     PTP_POOL ptp;
     PTP_CLEANUP_GROUP ptp_cg;
     PTP_CLEANUP_GROUP_CANCEL_CALLBACK ptp_cgcb;
@@ -540,15 +533,10 @@ typedef struct _PxState {
     CRITICAL_SECTION contexts_cs;
     volatile long num_contexts;
 
-    Context *ctx_first;
-    Context *ctx_last;
-    unsigned short ctx_minfree;
-    unsigned short ctx_curfree;
-    unsigned short ctx_maxfree;
-    unsigned short ctx_ttl;
+    PxListHead *free_contexts;
+    unsigned short max_free_contexts;
 
-    IOContext *ioctx_first;
-    IOContext *ioctx_last;
+    unsigned short ctx_ttl;
 
     HANDLE wakeup;
 
