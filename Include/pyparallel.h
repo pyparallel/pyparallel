@@ -46,7 +46,7 @@ extern "C" {
     (Py_PXFLAGS((o)) & Py_PXFLAGS_DEALLOC)              \
 )
 
-PyAPI_DATA(long) Py_MainThreadId;
+PyAPI_DATA(volatile long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
 

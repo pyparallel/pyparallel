@@ -35,6 +35,9 @@ Py_TLS Context *ctx = NULL;
 Py_TLS Context *tmp_ctx = NULL; /* A temp context to use for error handling
                                    if an exception occurs in a parallel ctx
                                    whilst trying to create a new context */
+Py_TLS Context *old_ctx = NULL; /* Used for storing the context temporarily
+                                   if a parallel thread attempts to become
+                                   the main thread. */
 Py_TLS TLS tls;
 Py_TLS PyThreadState *TSTATE;
 Py_TLS HANDLE heap_override;
@@ -50,7 +53,7 @@ Py_TLS static PyObject *_PyParallel_ThreadSeqIdObj = NULL;
 volatile long _PyParallel_NextThreadSeqId = 0;
 
 //Py_CACHE_ALIGN
-long Py_MainThreadId  = -1;
+volatile long Py_MainThreadId  = -1;
 long Py_MainProcessId = -1;
 long Py_ParallelContextsEnabled = -1;
 size_t _PxObjectSignature = -1;
@@ -447,6 +450,61 @@ AppendTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
     head->Blink = entry->Blink;
     entry->Blink->Flink = head;
     entry->Blink = end;
+}
+
+void
+_PyParallel_AcquireGIL(void)
+{
+    Context *c = ctx;
+    PyThreadState *pstate;
+    long this_thread_id = _Py_get_current_thread_id();
+
+    if (!ctx)
+        __debugbreak();
+
+    if (old_ctx)
+        __debugbreak();
+
+    old_ctx = ctx;
+    ctx = NULL;
+    pstate = c->pstate;
+    pstate->is_parallel_thread = 0;
+    pstate->px = NULL;
+    PyEval_AcquireThread(pstate);
+    /* We now hold the GIL.  Verify Py_MainThreadId matches our thread id. */
+    if (Py_MainThreadId != this_thread_id)
+        __debugbreak();
+    if (Py_PXCTX())
+        __debugbreak();
+    if (_PyParallel_GetActiveContext())
+        __debugbreak();
+}
+
+void
+_PyParallel_ReleaseGIL(void)
+{
+    Context *c = old_ctx;
+    PyThreadState *pstate;
+
+    if (ctx)
+        __debugbreak();
+
+    if (!old_ctx)
+        __debugbreak();
+
+    pstate = c->pstate;
+    Py_MainThreadId = 0;
+    PyEval_ReleaseThread(pstate);
+    /* No longer hold the GIL. */
+    ctx = old_ctx;
+    old_ctx = NULL;
+    pstate->is_parallel_thread = 1;
+    pstate->px = c;
+
+    if (!Py_PXCTX())
+        __debugbreak();
+    if (!_PyParallel_GetActiveContext())
+        __debugbreak();
 }
 
 /* 0 on error */
@@ -4802,7 +4860,7 @@ _PyParallel_Init(void)
 {
     SetUnhandledExceptionFilter(_PyParallel_ExceptionFilter);
 
-    _Py_sfence();
+    //_Py_sfence();
 
     if (Py_MainProcessId == -1) {
         if (Py_MainThreadId != -1)
@@ -4841,8 +4899,8 @@ _PyParallel_Init(void)
     );
 
     Py_ParallelContextsEnabled = 0;
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
 
     _PyParallel_NumCPUs = _cpu_count();
     if (!_PyParallel_NumCPUs)
@@ -4982,10 +5040,10 @@ _PyParallel_Finalize(void)
 void
 _PyParallel_ClearMainThreadId(void)
 {
-    _Py_sfence();
+    //_Py_sfence();
     Py_MainThreadId = 0;
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
     //TSTATE = NULL;
 }
 
@@ -5010,6 +5068,12 @@ _PyParallel_DestroyedGIL(void)
 void
 _PyParallel_JustAcquiredGIL(void)
 {
+    Py_MainThreadId = _Py_get_current_thread_id();
+}
+
+void
+_PyParallel_JustAcquiredGILOld(void)
+{
     char buf[128], *fmt;
 
     _Py_lfence();
@@ -5025,10 +5089,10 @@ _PyParallel_JustAcquiredGIL(void)
     if (Py_MainProcessId == -1)
         Py_FatalError("_PyParallel_JustAcquiredGIL: Py_MainProcessId == -1");
 
-    _Py_sfence();
+    //_Py_sfence();
     Py_MainThreadId = _Py_get_current_thread_id();
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
     //TSTATE = \
     //    (PyThreadState *)_Py_atomic_load_relaxed(&_PyThreadState_Current);
 }
@@ -5036,10 +5100,10 @@ _PyParallel_JustAcquiredGIL(void)
 void
 _PyParallel_SetMainProcessId(long id)
 {
-    _Py_sfence();
+    //_Py_sfence();
     Py_MainProcessId = id;
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
 }
 
 void
@@ -5057,19 +5121,19 @@ _PyParallel_RestoreMainProcessId(void)
 void
 _PyParallel_EnableParallelContexts(void)
 {
-    _Py_sfence();
+    //_Py_sfence();
     Py_ParallelContextsEnabled = 1;
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
 }
 
 void
 _PyParallel_DisableParallelContexts(void)
 {
-    _Py_sfence();
+    //_Py_sfence();
     Py_ParallelContextsEnabled = 0;
-    _Py_lfence();
-    _Py_clflush(&Py_MainThreadId);
+    //_Py_lfence();
+    //_Py_clflush(&Py_MainThreadId);
 }
 
 void
@@ -13409,6 +13473,54 @@ _async_gmtime(PyObject *self, PyObject *o)
 }
 
 
+PyDoc_STRVAR(_async_acquire_gil_doc,
+             "acquires the GIL if in a parallel context");
+
+PyObject *
+_async_acquire_gil(PyObject *self, PyObject *o)
+{
+    if (!ctx) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "async.acquire_gil() called outside of "
+                        "parallel context");
+        return NULL;
+    }
+    _PyParallel_AcquireGIL();
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(_async_release_gil_doc,
+             "releases the GIL previously acquired with async.acquire_gil()");
+
+PyObject *
+_async_release_gil(PyObject *self, PyObject *o)
+{
+    if (ctx) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "async.release_gil() called from within "
+                        "parallel context");
+        return NULL;
+    }
+
+    if (!old_ctx) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "async.release_gil() called without corresponding "
+                        "acquire_gil() call");
+        return NULL;
+    }
+    _PyParallel_ReleaseGIL();
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(_async_was_parallel_thread_doc, "xxx todo");
+
+PyObject *
+_async_was_parallel_thread(PyObject *self, PyObject *o)
+{
+    Py_INCREF((old_ctx ? Py_True : Py_False));
+    Py_RETURN_NONE;
+}
+
 /*
 PyDoc_STRVAR(_async_db_connect_doc,
              "connect to the db asynchronously");
@@ -13488,6 +13600,8 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(fileopener),
     _ASYNC_V(filecloser),
     _ASYNC_O(write_lock),
+    _ASYNC_N(acquire_gil),
+    _ASYNC_N(release_gil),
     _ASYNC_N(active_hogs),
     _ASYNC_V(submit_work),
     _ASYNC_V(submit_wait),
@@ -13510,6 +13624,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(register_dealloc),
     _ASYNC_N(is_parallel_thread),
     _ASYNC_N(persisted_contexts),
+    _ASYNC_N(was_parallel_thread),
     _ASYNC_N(enable_heap_override),
     _ASYNC_N(refresh_memory_stats),
     _ASYNC_N(disable_heap_override),
