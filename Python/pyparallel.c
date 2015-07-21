@@ -11,6 +11,7 @@ extern "C" {
 #include "frameobject.h"
 #include "structmember.h"
 #include <dbghelp.h>
+#include <VersionHelpers.h>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -13755,6 +13756,10 @@ _PyAsync_ModInit(void)
         if (!_json_dumps)
             return NULL;
     }
+
+    /* See if skipping the odbc stuff allows us to load on <= Win 7. */
+    if (!IsWindows8OrGreater())
+        goto add_loaded_dynamic_modules;
 
     if (_pxodbc() && pxodbc_registered) {
         SQLHENV henv = 0;
