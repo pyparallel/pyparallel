@@ -1,7 +1,7 @@
 diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.filters
 --- a/PCbuild/pythoncore.vcxproj.filters
 +++ b/PCbuild/pythoncore.vcxproj.filters
-@@ -408,6 +408,18 @@
+@@ -408,9 +408,27 @@
      <ClInclude Include="..\Python\ceval_gil.h">
        <Filter>Python</Filter>
      </ClInclude>
@@ -13,14 +13,23 @@ diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.fil
 +    </ClInclude>
 +    <ClInclude Include="..\Include\pyparallel_odbc.h">
 +      <Filter>Include</Filter>
-+    </ClInclude>        
++    </ClInclude>
 +    <ClInclude Include="..\Include\pxlist.h">
 +      <Filter>Include</Filter>
 +    </ClInclude>
      <ClInclude Include="..\Include\namespaceobject.h">
        <Filter>Include</Filter>
      </ClInclude>
-@@ -917,6 +929,12 @@
++    <ClInclude Include="..\Include\picohttpparser.h">
++      <Filter>Include</Filter>
++    </ClInclude>
++    <ClInclude Include="..\Include\pyparallel_http.h">
++      <Filter>Include</Filter>
++    </ClInclude>
+   </ItemGroup>
+   <ItemGroup>
+     <ClCompile Include="..\Modules\_bisectmodule.c">
+@@ -917,9 +935,21 @@
      <ClCompile Include="..\Modules\_winapi.c">
        <Filter>PC</Filter>
      </ClCompile>
@@ -33,3 +42,12 @@ diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.fil
      <ClCompile Include="..\Objects\namespaceobject.c">
        <Filter>Objects</Filter>
      </ClCompile>
++    <ClCompile Include="..\Python\picohttpparser.c">
++      <Filter>Python</Filter>
++    </ClCompile>
++    <ClCompile Include="..\Python\pyparallel_http.c">
++      <Filter>Python</Filter>
++    </ClCompile>
+   </ItemGroup>
+   <ItemGroup>
+     <ResourceCompile Include="..\PC\python_nt.rc">
