@@ -7967,6 +7967,10 @@ restart:
 
     /* Manually adjust the heap/stats based on bytes used.  Make sure it aligns
      * with whatever the logic in _PyHeap_Malloc() is doing. */
+
+    /* (We should really expose a new API that facilitates this heap interaction
+     * (that is, reserving the entire amount of allocated memory that is left,
+     * then committing the amount that we actually ended up using).) */
     h->allocated += r->bytes_used;
     t->allocated += r->bytes_used;
 
