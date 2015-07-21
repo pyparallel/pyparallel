@@ -123,6 +123,10 @@ void PxSocket_IOLoop(PxSocket *s);
 static PyObject *loaded_dynamic_modules;
 static PyObject *_pxodbcmodule_obj = NULL;
 
+static PyObject *_json_module = NULL;
+static PyObject *_json_loads = NULL;
+static PyObject *_json_dumps = NULL;
+
 static int pxodbc_registered = 0;
 
 void
@@ -13736,6 +13740,21 @@ _PyAsync_ModInit(void)
     if (!socket_api)
         return NULL;
     PySocketModule = *socket_api;
+
+    _json_module = PyImport_ImportModule("json");
+    if (!_json_module)
+        return NULL;
+    else {
+        PyObject *d = PyModule_GetDict(_json_module);
+
+        _json_loads = PyDict_GetItemString(d, "loads");
+        if (!_json_loads)
+            return NULL;
+
+        _json_dumps = PyDict_GetItemString(d, "dumps");
+        if (!_json_dumps)
+            return NULL;
+    }
 
     if (_pxodbc() && pxodbc_registered) {
         SQLHENV henv = 0;
