@@ -30,6 +30,7 @@ extern "C" {
 #define PX_CONTEXTS_CS_SPINCOUNT 1000
 #define CHILDREN_SPINCOUNT 4000
 
+#define _LINE(n) #n
 
 Py_CACHE_ALIGN
 Py_TLS Context *ctx = NULL;
@@ -52,6 +53,7 @@ Py_TLS static long _PyParallel_ThreadSeqId = 0;
 Py_TLS static PyObject *_PyParallel_ThreadSeqIdObj = NULL;
 
 volatile long _PyParallel_NextThreadSeqId = 0;
+volatile long _PyParallel_NextSocketSeqId = 0;
 
 //Py_CACHE_ALIGN
 volatile long Py_MainThreadId  = -1;
@@ -127,6 +129,9 @@ static PyObject *_pxodbcmodule_obj = NULL;
 static PyObject *_json_module = NULL;
 static PyObject *_json_loads = NULL;
 static PyObject *_json_dumps = NULL;
+
+static PyObject *_pyparallel_util_module = NULL;
+static PyObject *_pyparallel_util_get_methods_for_class = NULL;
 
 static int pxodbc_registered = 0;
 
@@ -1505,6 +1510,7 @@ PxSocket_NEW_SBUF(
 
     return 1;
 }
+
 
 static
 int
@@ -7924,15 +7930,17 @@ extern PyDictKeysObject *new_keys_object(Py_ssize_t size);
 #define HTTP_HEADER_SIZE sizeof(struct phr_header)
 volatile long _PyParallel_HttpParserForcedHeapExtension = 0;
 
+/* NULL on exception, Py_None on failure, PyObject * to data_received func on
+ * success. */
 PyObject *
 PxSocket_ParseHttpRequest(PxSocket *s)
 {
     Context *c = s->ctx;
     Heap *h = c->h;
     Stats *t = &c->stats;
-    HttpRequest *r = &s->http.request;
+    HttpRequest *r;
     WSABUF *w = &s->rbuf->w;
-    PyObject *d = r->dict;
+    PyObject *d;
     PyObject *retval = NULL;
     PyObject *key, *value;
     size_t dict_size = 0;
@@ -7940,7 +7948,10 @@ PxSocket_ParseHttpRequest(PxSocket *s)
 
     int result;
 
-    SecureZeroMemory(r, sizeof(HttpRequest));
+    r = (HttpRequest *)_PyHeap_Malloc(c, sizeof(HttpRequest), 0, 0);
+    if (!r)
+        return NULL;
+    s->http.request = r;
 
     /* We can leverage the fact we've already preallocated chunks of memory by
      * dedicating all of the remaining amount to the header processing (which
@@ -7961,7 +7972,7 @@ restart:
         goto restart;
     }
 
-    r->headers = h->next;
+    r->headers = (struct phr_header *)h->next;
     r->num_headers_used = r->num_headers_allocated;
 
     result = phr_parse_request(
@@ -8014,16 +8025,34 @@ restart:
     if (!d)
         goto error;
 
+    if (r->minor_version == 1)
+        s->keep_alive = 1;
+
     for (i = 0; i < r->num_headers_used; i++) {
         struct phr_header *ph = &r->headers[i];
 
         key = _PyUnicode_FromASCII(ph->name, ph->name_len);
         value = _PyUnicode_FromASCII(ph->value, ph->value_len);
         PyDict_SetItem(d, key, value);
+
+        if (!strncmp(ph->name, "Connection", ph->name_len)) {
+            if (!strncmp(ph->value, "close", ph->value_len)) {
+                s->keep_alive = 0;
+            }
+        }
     }
 
-    value = _PyUnicode_FromASCII(r->path, r->path_len);
+    /* Skip the starting '/'. */
+    value = _PyUnicode_FromASCII(&r->path[1], r->path_len-1);
     PyDict_SetItemString(d, "path", value);
+    if (r->path_len > 1 && s->methods) {
+        PyObject *func;
+        func = PyDict_GetItem(s->methods, value);
+        if (!func)
+            PyErr_Clear();
+        else
+            retval = func;
+    }
 
     value = _PyUnicode_FromASCII(r->method, r->method_len);
     PyDict_SetItemString(d, "method", value);
@@ -8033,14 +8062,172 @@ restart:
 
     s->http_header = d;
 
-    retval = Py_None;
+    if (!retval)
+        retval = Py_None;
     goto end;
 
 error:
-    SecureZeroMemory(r, sizeof(HttpRequest));
     s->http_header = Py_None;
 end:
     return retval;
+}
+
+static const char http11_json_response_header_begin[] = (
+    "HTTP/1.1 200 OK\r\n"
+    "Server: PyParallel\r\n"
+    "Date: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX\r\n"
+    /*     ^ 43 */
+    "Content-Type: application/json; charset=utf-8\r\n"
+    "Content-Length: "
+);
+
+static const char http11_plaintext_response_header_begin[] = (
+    "HTTP/1.1 200 OK\r\n"
+    "Server: PyParallel\r\n"
+    "Date: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX\r\n"
+    /*     ^ 43 */
+    "Content-Type: text/plain; charset=utf-8\r\n"
+    "Content-Length: "
+);
+
+static const char http11_header_connection_close[] = (
+    "Connection: close\r\n"
+);
+
+#define _DATE_IX 43
+
+PyObject *
+PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
+{
+    static const char *fmt = "%llu\r\n";
+    Context *c = s->ctx;
+    PxState *px = c->px;
+    PyObject *tuple = NULL;
+    PyObject *result;
+    PyBytesObject *bytes;
+    PyObject *header_bytes, *body_bytes;
+    char  gmtime[GMTIME_STRLEN];
+    char  content_length[20]; /* 20 == len(str(2 ** 64)) */
+    char *connection_close = NULL;
+    char *header;
+    char *body;
+    char *buf;
+    char *p;
+    BOOL single_buffer = TRUE;
+    Py_ssize_t header_size;
+    Py_ssize_t content_length_size;
+    Py_ssize_t body_size;
+    Py_ssize_t total_size;
+    Py_ssize_t total_header_size;
+    Py_ssize_t connection_close_size = 0;
+
+    SecureZeroMemory(&content_length[0], sizeof(content_length));
+
+    AcquireSRWLockShared(&px->gmtime_srwlock);
+    memcpy(&gmtime[0], &px->gmtime_buf[0], GMTIME_STRLEN);
+    ReleaseSRWLockShared(&px->gmtime_srwlock);
+
+    if (!s->keep_alive && !PxSocket_IS_CLOSE_SCHEDULED(s))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CLOSE_SCHEDULED;
+
+    if (PxSocket_IS_CLOSE_SCHEDULED(s)) {
+        connection_close = (char *)&http11_header_connection_close[0];
+        connection_close_size = sizeof(http11_header_connection_close)-1;
+    }
+
+    if (PyBytes_Check(o)) {
+        PyBytesObject *b = (PyBytesObject *)o;
+        body_size = ((PyVarObject *)b)->ob_size;
+        body = &b->ob_sval[0];
+        header = (char *)&http11_plaintext_response_header_begin[0];
+        header_size = sizeof(http11_plaintext_response_header_begin)-1;
+    } else {
+        PyObject *args = PyTuple_Pack(1, o);
+        PyObject *s = PyObject_Call(_json_dumps, args, NULL);
+        if (!s)
+            return NULL;
+
+        body = PyUnicode_AsUTF8AndSize(s, &body_size);
+        if (!body)
+            return NULL;
+
+        header = (char *)&http11_json_response_header_begin[0];
+        header_size = sizeof(http11_json_response_header_begin);
+    }
+
+    content_length_size = _snprintf(
+        &content_length[0],
+        sizeof(content_length),
+        fmt,
+        body_size
+    );
+
+    if (!content_length_size) {
+        PyErr_SetString(PyExc_RuntimeError, "snprintf() failed");
+        return NULL;
+    }
+
+    total_header_size = (
+        header_size +
+        content_length_size +
+        2 /* \r\n separators before body */
+    );
+
+    if (PxSocket_IS_CLOSE_SCHEDULED(s))
+        total_header_size += connection_close_size;
+
+    /* If the combined size of the header plus the body is under page size,
+     * then use a single buffer and copy the body to the end of it.  Otherwise,
+     * use two buffers. */
+    total_size = total_header_size + body_size;
+    if (total_size <= c->h->page_size) {
+        result = init_object(c, NULL, &PyBytes_Type, total_size);
+        if (!result)
+            return NULL;
+
+        header_bytes = body_bytes = result;
+        bytes = (PyBytesObject *)result;
+
+    } else {
+        single_buffer = FALSE;
+
+        header_bytes = init_object(c, NULL, &PyBytes_Type, total_header_size);
+        if (!header_bytes)
+            return NULL;
+
+        result = PyTuple_Pack(2, header_bytes, o);
+        if (!result)
+            return NULL;
+
+        bytes = (PyBytesObject *)header_bytes;
+    }
+
+    bytes = (PyBytesObject *)result;
+    buf = &bytes->ob_sval[0];
+
+    p = &buf[0];
+    memcpy(p, header, header_size);
+
+    p = &buf[_DATE_IX];
+    memcpy(p, &gmtime[0], GMTIME_STRLEN);
+
+    p = &buf[header_size];
+    memcpy(p, &content_length[0], content_length_size);
+
+    p += content_length_size;
+
+    if (PxSocket_IS_CLOSE_SCHEDULED(s)) {
+        memcpy(p, &connection_close[0], connection_close_size);
+        p += connection_close_size;
+    }
+
+    *p++ = '\r';
+    *p++ = '\n';
+
+    if (single_buffer)
+        memcpy(p, body, body_size);
+
+    return result;
 }
 
 /* Hybrid sync/async IO loop. */
@@ -8869,10 +9056,15 @@ definitely_do_connection_made:
 
 do_send:
     ODS(L"do_send:\n");
-    assert(sbuf);
 
     s->this_io_op = PxSocket_IO_SEND;
     c->io_result = NO_ERROR;
+
+    if (s->num_send_buffers > 1)
+        goto do_async_send;
+
+    if (!sbuf)
+        __debugbreak();
 
     if (!s->in_overlapped_callback)
         goto do_async_send;
@@ -9007,10 +9199,12 @@ do_async_send:
     /* There's some unavoidable code duplication between do_send: above and
      * do_async_send: below.  If you change one, check to see if you need to
      * change the other. */
-    assert(sbuf);
-    w = &sbuf->w;
 
-    s->send_id++;
+    if (!sbuf) {
+        if (s->num_send_buffers > 1)
+            goto do_wsasend;
+        __debugbreak();
+    }
 
     if (s->this_io_op != PxSocket_IO_SEND)
         __debugbreak();
@@ -9020,6 +9214,7 @@ do_async_send:
 
     //PxOverlapped_Reset(&sbuf->ol);
     PxOverlapped_Reset(&s->overlapped_wsasend);
+    /*
     if (!PxSocket_UpdateConnectTime(s)) {
         err = WSAGetLastError();
         if (err == WSAENOTSOCK)
@@ -9029,7 +9224,7 @@ do_async_send:
     }
     if (s->connect_time == -1)
         __debugbreak();
-    StartThreadpoolIo(s->tp_io);
+    */
 
     if (sbuf != s->sbuf) {
         if (sbuf != (SBUF *)s->rbuf)
@@ -9042,9 +9237,15 @@ do_async_send:
     if (!sbuf->w.buf || !sbuf->w.buf[0])
         __debugbreak();
 
+    s->send_buffers = &sbuf->w;
+    s->num_send_buffers = 1;
+
+do_wsasend:
+    s->send_id++;
+    StartThreadpoolIo(s->tp_io);
     err = WSASend(s->sock_fd,
-                  &sbuf->w,
-                  1,    /* number of buffers, currently always 1 */
+                  s->send_buffers,
+                  s->num_send_buffers,
                   NULL, /* number of bytes sent, must be null because we're
                            specifying an overlapped structure */
                   0,    /* flags (MSG_DONTROUTE, MSG_OOB, MSG_PARTIAL) */
@@ -9082,8 +9283,6 @@ overlapped_send_callback:
     ODS(L"overlapped_send_callback:\n");
     /* Entry point for an overlapped send. */
 
-    sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
-
     if (c->io_result != NO_ERROR) {
 #ifdef Py_DEBUG
         if (s->overlapped_wsasend.Internal == NO_ERROR)
@@ -9116,20 +9315,43 @@ overlapped_send_callback:
 
     s->num_bytes_just_sent = (DWORD)s->overlapped_wsasend.InternalHigh;
 
-    if (s->num_bytes_just_sent > 0) {
-        if (s->num_bytes_just_sent != sbuf->w.len)
-            /* Do we need to post multiple sends here? */
-            __debugbreak();
-    }
-
-    snapshot = sbuf->snapshot;
     if (snapshot)
-        PxContext_RollbackHeap(c, &sbuf->snapshot);
+        __debugbreak();
+
+    /* Support for multiple send buffers was added much later... which is why
+     * this is pretty hacky.  (The SBUF struct isn't suitable for multiple send
+     * buffers because WSASend() needs an array of LPWSABUFs, which we can't
+     * provide (without a new alloocation) if we're using sbuf->w.) */
+    if (s->num_send_buffers > 1) {
+        if (sbuf)
+            __debugbreak();
+
+        snapshot = s->send_snapshot;
+
+        if (snapshot)
+            PxContext_RollbackHeap(c, &s->send_snapshot);
+
+    } else {
+        sbuf = s->sbuf ? s->sbuf : (SBUF *)s->rbuf;
+        snapshot = sbuf->snapshot;
+
+        if (s->num_bytes_just_sent > 0) {
+            if (s->num_bytes_just_sent != sbuf->w.len)
+                /* Do we need to post multiple sends here? */
+                __debugbreak();
+        }
+
+        if (snapshot)
+            PxContext_RollbackHeap(c, &sbuf->snapshot);
+    }
 
     if (s->rbuf->snapshot == snapshot)
         s->rbuf->snapshot = NULL;
 
-    if (sbuf->snapshot)
+    if (s->num_send_buffers > 1 && s->send_snapshot)
+        __debugbreak();
+
+    if (sbuf && sbuf->snapshot)
         __debugbreak();
 
     if (s->rbuf->snapshot)
@@ -9559,7 +9781,7 @@ overlapped_recv_callback:
 
     s->num_bytes_just_received = (DWORD)s->overlapped_wsarecv.InternalHigh;
 
-    /* do_data_received_callback: expects rbuf to be clear. */
+    /* process_data_received: expects rbuf to be clear. */
     rbuf = NULL;
 
     if (s->num_bytes_just_received == 0)
@@ -9650,12 +9872,14 @@ do_data_received_callback:
     assert(!rbuf->snapshot);
     rbuf->snapshot = PxContext_HeapSnapshot(c);
 
+    func = NULL;
+
     if (PxSocket_IS_HTTP11(s)) {
-        //__debugbreak();
         result = PxSocket_ParseHttpRequest(s);
         if (!result)
             PxSocket_EXCEPTION();
-        //PxSocket_CHECK_RESULT(result);
+        if (result != Py_None)
+            func = result;
     }
 
     /* We only use one at the moment. */
@@ -9671,24 +9895,31 @@ do_data_received_callback:
         n = init_object(c, o, tp, s->num_bytes_just_received);
         assert(n == o);
         assert(Py_SIZE(bytes) == s->num_bytes_just_received);
-        args = PyTuple_Pack(2, s, o);
+        if (func)
+            args = PyTuple_Pack(3, s->protocol, s, o);
+        else
+            args = PyTuple_Pack(2, s, o);
         if (!args) {
             //PxContext_RollbackHeap(c, &rbuf->snapshot);
             PxSocket_FATAL();
         }
     }
 
-    func = s->data_received;
-    assert(func);
+    if (!func)
+        func = s->data_received;
 
     if (PyErr_Occurred())
         __debugbreak();
 
-    //PxSocket_CALL(_PyParallel_CallObject(func, args));
-    //result = PyObject_CallObject(func, args);
+    if (!func)
+        __debugbreak();
+
     result = _PyParallel_CallObject(func, args);
     if (!result)
         PxSocket_EXCEPTION();
+
+    if (PxSocket_IS_HTTP11(s))
+        result = PxSocket_ConvertToHttpResponse(s, result);
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
@@ -9725,6 +9956,55 @@ do_data_received_callback:
         goto do_recv;
     }
 
+    if (PyTuple_Check(result)) {
+        static const char fmt[] = (
+            "failed to convert item %d in tuple returned by "
+            "data_received() into a sendable object (bytes, "
+            "bytearray or unicode)"
+        );
+        char *err = NULL;
+        int errlen = sizeof(fmt) + 11; /* 11 = len(str(2 ** 32)) + 1 */
+        DWORD buffers_size;
+        s->num_send_buffers = PyTuple_GET_SIZE(result);
+        buffers_size = sizeof(WSABUF) * s->num_send_buffers;
+        s->send_buffers = (LPWSABUF)_PyHeap_Malloc(c, buffers_size, 0, 0);
+        s->total_send_size = 0;
+        if (!s->send_buffers) {
+            PyErr_NoMemory();
+            PxSocket_EXCEPTION();
+        }
+
+        for (i = 0; i < s->num_send_buffers; i++) {
+            PyObject *b = PyTuple_GET_ITEM(result, i);
+            w = &s->send_buffers[i];
+
+            if (PyObject2WSABUF(b, w)) {
+                s->total_send_size += w->len;
+                continue;
+            }
+
+            err = (char *)_PyHeap_Malloc(c, errlen, 0, 0);
+            if (!err) {
+                PyErr_NoMemory();
+                PxSocket_EXCEPTION();
+            }
+
+            if (!snprintf(err, errlen, &fmt[0], i)) {
+                PyErr_SetString(PyExc_RuntimeError,
+                                "snprintf() failed during error message "
+                                "generation @ " __FILE__ ":" _LINE(__LINE__));
+                PxSocket_EXCEPTION();
+            }
+        }
+
+        s->send_snapshot = rbuf->snapshot;
+        w = NULL;
+        sbuf = NULL;
+        rbuf = NULL;
+        snapshot = NULL;
+        goto do_send;
+    }
+
     w = &rbuf->w;
     sbuf = (SBUF *)rbuf;
     if (Px_PTR(result) == Px_PTR(bytes)) {
@@ -9741,6 +10021,9 @@ do_data_received_callback:
         sbuf->w.len = w->len;
         sbuf->w.buf = w->buf;
     }
+
+    s->num_send_buffers = 1;
+    s->send_buffers = &sbuf->w;
 
     w = NULL;
     rbuf = NULL;
@@ -10057,9 +10340,9 @@ PxSocket_HandleException(Context *c, const char *syscall, int fatal)
     if (fatal)
         goto error;
 
-    READ_LOCK(s);
+    //READ_LOCK(s);
     func = s->exception_handler;
-    READ_UNLOCK(s);
+    //READ_UNLOCK(s);
 
     if (!func)
         goto error;
@@ -10405,6 +10688,10 @@ create_pxsocket(
         s->reused_socket = 0;
         */
         s->recycled = 1;
+
+        s->send_id = 0;
+        s->recv_id = 0;
+
         goto create_socket;
 
     }
@@ -10466,6 +10753,7 @@ create_pxsocket(
         s->send_complete = parent->send_complete;
         s->connection_made = parent->connection_made;
         s->connection_closed = parent->connection_closed;
+        s->methods = parent->methods;
 
         /* xxx: eh, we should be able to just copy the exact value for flags.
          * (We can't, because it's being overloaded with different
@@ -10481,10 +10769,7 @@ create_pxsocket(
         if (PxSocket_LOW_LATENCY(parent))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_LOW_LATENCY;
 
-        if (s->data_received || s->lines_received)
-            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
-
-        if (s->next_bytes_to_send)
+        if (PxSocket_CAN_RECV(parent))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
         if (Px_SOCKFLAGS(parent) & Px_SOCKFLAGS_INITIAL_BYTES_CALLABLE)
@@ -10614,6 +10899,8 @@ create_socket:
     if (s->sock_fd == INVALID_SOCKET)
         PxSocket_WSAERROR("socket()");
 
+    s->sock_seq_id = InterlockedIncrement(&_PyParallel_NextSocketSeqId);
+
 setnonblock:
     fd = s->sock_fd;
     if (ioctlsocket(fd, FIONBIO, (ULONG *)&nonblock) == SOCKET_ERROR)
@@ -10628,8 +10915,8 @@ setnonblock:
         s->recvbuf_size = s->ctx->h->remaining - Px_PTR_ALIGN(sizeof(RBUF));
         /* If it gets below 512, break.  We want to keep the entire buffer
          * within the same page used by the heap. */
-        /* Eek... down to 480. */
-        if (s->recvbuf_size < 450)
+        /* Eek... down to 432. */
+        if (s->recvbuf_size < 400)
             __debugbreak();
         //s->recvbuf_size = 512;
         s->sendbuf_size = 0;
@@ -11276,6 +11563,8 @@ _Py_IDENTIFIER(max_sync_recv_attempts);
 /* misc */
 _Py_IDENTIFIER(http_header);
 
+int PxSocket_InitMethods(PxSocket *s);
+
 /* 0 = failure, 1 = success */
 int
 PxSocket_InitProtocol(PxSocket *s)
@@ -11383,6 +11672,9 @@ PxSocket_InitProtocol(PxSocket *s)
     if (s->data_received || s->lines_received)
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
+    if (PxSocket_IS_HTTP11(s))
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
     /* Having next_bytes_to_send set implies that we want to keep the
      * connection open, which currently requires us to toggle the CAN_RECV
      * flag. */
@@ -11402,6 +11694,9 @@ PxSocket_InitProtocol(PxSocket *s)
                         "no 'lines_mode' attribute");
         return 0;
     }
+
+    if (!PxSocket_InitMethods(s))
+        return 0;
 
     assert(!PyErr_Occurred());
 
@@ -11512,6 +11807,46 @@ PxSocket_InitProtocol(PxSocket *s)
     result = 1;
 end:
     return result;
+}
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_InitMethods(PxSocket *s)
+{
+    PyObject *f = _pyparallel_util_get_methods_for_class;
+    PyObject *methods, *pair, *dict, *name, *func, *args;
+    Py_ssize_t i, n;
+
+    args = PyTuple_Pack(1, s->protocol_type);
+
+    methods = PyObject_Call(f, args, NULL);
+    if (!methods)
+        return 0;
+
+    n = PyList_GET_SIZE(methods);
+    if (!n)
+        return 1;
+
+    dict = _PyDict_NewPresized(Px_NEXT_POWER_OF_2(n));
+    if (!dict)
+        return 0;
+
+    for (i = 0; i < n; i++) {
+        pair = PyList_GET_ITEM(methods, i);
+        if (!PyTuple_Check(pair))
+            __debugbreak();
+
+        name = PyTuple_GET_ITEM(pair, 0);
+        func = PyTuple_GET_ITEM(pair, 1);
+        if (!name || !func)
+            __debugbreak();
+
+        PyDict_SetItem(dict, name, func);
+    }
+
+    s->methods = dict;
+
+    return 1;
 }
 
 
@@ -13708,6 +14043,7 @@ PyObject *
 _PyAsync_ModInit(void)
 {
     PyObject *m;
+    PyObject *d = NULL;
     int dobreak = 0;
     PySocketModule_APIObject *socket_api;
 
@@ -13718,6 +14054,20 @@ _PyAsync_ModInit(void)
         return NULL;
 
     if (!PyType_Ready(&HttpHeader_Type) < 0)
+        return NULL;
+
+    _pyparallel_util_module = PyImport_ImportModule("_pyparallel_util");
+    if (!_pyparallel_util_module)
+        return NULL;
+
+    d = PyModule_GetDict(_pyparallel_util_module);
+    if (!d)
+        return NULL;
+
+    _pyparallel_util_get_methods_for_class = (
+        PyDict_GetItemString(d, "get_methods_for_class")
+    );
+    if (!_pyparallel_util_get_methods_for_class)
         return NULL;
 
     /*

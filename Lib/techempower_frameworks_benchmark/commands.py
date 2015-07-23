@@ -414,6 +414,41 @@ class CheatingPlaintextHttpServer(TCPServerCommand):
             except KeyboardInterrupt:
                 server.shutdown()
 
+class FastHttpServer(TCPServerCommand):
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+        root = self.options.root or os.getcwd()
+
+        self._out("Serving fast HTTP on %s port %d ..." % (ip, port))
+
+        import async
+        class HttpServer:
+            http11 = True
+            def json(self, transport, data):
+                return { 'message': 'Hello, World!' }
+
+            def plaintext(self, transport, data):
+                return b'Hello, World!'
+
+        with chdir(root):
+            server = async.server(ip, port)
+            async.register(transport=server, protocol=HttpServer)
+            try:
+                async.run()
+            except KeyboardInterrupt:
+                server.shutdown()
+
 
 class MultipleHttpServers(TCPServerCommand):
     port = None

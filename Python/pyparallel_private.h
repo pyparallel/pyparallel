@@ -147,7 +147,7 @@ Px_NEXT_POWER_OF_2(const unsigned int i)
     v |= v >> 4;
     v |= v >> 8;
     v |= v >> 16;
-    return i+1;
+    return v+1;
 }
 
 #define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
@@ -871,6 +871,9 @@ typedef struct _PxObject {
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDFILE_SCHEDULED)
 #define PxSocket_IS_OTHER_ASYNC_SCHEDULED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_OTHER_ASYNC_SCHEDULED)
+#define PxSocket_IS_CLOSE_SCHEDULED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLOSE_SCHEDULED)
+
 
 #define PxSocket_IS_PERSISTENT(s) (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_PERSISTENT)
 
@@ -991,6 +994,47 @@ typedef struct _PxObject {
         s->next_io_op = op;             \
     } while (0)
 
+typedef struct _PxSocketProfileRecord {
+    FILETIME        start_timestamp;    /* microsecond UTC */
+    FILETIME        elapsed;            /* microseconds */
+    ULONGLONG       bytes;
+    ULONGLONG       sock_seq_id;
+    ULONG           local_ipv4;
+    ULONG           remote_ipv4;
+    USHORT          local_port;
+    USHORT          remote_port;
+    USHORT          start_thread_seq_id;
+    USHORT          end_thread_seq_id;
+    BYTE            io_op;
+    BYTE            unused1;
+    ULONG           send_seq_id;
+    ULONG           recv_seq_id;
+    USHORT          heap_id;
+    ULONG           allocated;
+} PxSocketProfileRecord;
+
+/*
+np.dtype([
+    ('start_timestamp',         np.uint64),     #   8       8
+    ('elapsed',                 np.uint64),     #   8       16
+    ('bytes',                   np.uint64),     #   8       24
+    ('sock_seq_id',             np.uint64),     #   8       32
+    ('local_ipv4',              np.uint32),     #   4       36
+    ('remote_ipv4',             np.uint32),     #   4       40
+    ('local_port',              np.uint16),     #   2       42
+    ('remote_port',             np.uint16),     #   2       44
+    ('start_thread_seq_id',     np.uint16),     #   2       46
+    ('end_thread_seq_id',       np.uint16),     #   2       48
+    ('io_op',                   np.uint8),      #   1       49
+    ('unused1',                 np.uint8),      #   1       50
+    ('send_seq_id',             np.uint32),     #   4       54
+    ('recv_seq_id',             np.uint32),     #   4       58
+    ('heap_id',                 np.uint16),     #   2       60
+    ('allocated',               np.uint32),     #   4       64
+])
+*/
+
+
 typedef struct _PxSocketBuf PxSocketBuf;
 typedef struct _PxSocketBufList PxSocketBufList;
 
@@ -1049,6 +1093,7 @@ typedef struct _PxSocket {
     int sock_type;              /* Socket type, e.g., SOCK_STREAM */
     int sock_proto;             /* Protocol type, usually 0 */
     double sock_timeout;        /* Operation timeout in seconds; */
+    long sock_seq_id;
 
     struct addrinfo local_addrinfo;
     struct addrinfo remote_addrinfo;
@@ -1151,6 +1196,11 @@ typedef struct _PxSocket {
     /* Used by the parent's "children" list. */
     LIST_ENTRY child_link;
 
+    ULONGLONG total_send_size;
+    LPWSABUF send_buffers;
+    DWORD num_send_buffers;
+    Heap *send_snapshot;
+
     DWORD num_bytes_just_sent;
     DWORD num_bytes_just_received;
 
@@ -1177,6 +1227,9 @@ typedef struct _PxSocket {
     PyObject *odbc;
     PyObject *connection_string;
     PyObject *http11;
+
+    PyObject *methods;
+
     //PyObject *cnxn; // pxodbc.Connection
     //PyObject *db_connection_made;
     //PyObject *db_execute_complete;
@@ -1264,10 +1317,11 @@ typedef struct _PxSocket {
 
     /* HTTP header stuff */
     union {
-        HttpRequest request;
-        HttpResponse response;
+        HttpRequest *request;
+        HttpResponse *response;
     } http;
     PyObject *http_header;
+    int keep_alive;
     /*
     union {
         PyObject *header;

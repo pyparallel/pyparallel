@@ -490,10 +490,12 @@ class JsonGmtimeHttpServerSlow:
             j,
         ))
 
-
-class ReturnDictHttpServer:
+class MiniHttpServer:
     http11 = True
 
     def json(self, transport, data):
-        return {}
+        return { 'message': 'Hello, World!' }
+
+    def plaintext(self, transport, data):
+        return 'Hello, World!'
 
