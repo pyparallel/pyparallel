@@ -36,7 +36,13 @@ def get_methods_for_class(class_or_obj):
         cls = class_or_obj.__class__
     classname = cls.__name__
     def predicate(v):
-        return isfunction(v) and v.__qualname__.split('.')[0] == classname
+        if not isfunction(v):
+            return
+        qualname = v.__qualname__
+        ix2 = qualname.rfind('.')
+        ix1 = qualname.rfind('.', 0, ix2-1)
+        clsname = qualname[ix1+1:ix2]
+        return clsname == classname
     return inspect.getmembers(cls, predicate=predicate)
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :
