@@ -1301,9 +1301,9 @@ _encoded_const(PyObject *obj)
     if (obj == Py_None) {
         Py_TLS static PyObject *s_null = NULL;
         if (s_null == NULL) {
-            PyPx_EnableTLSHeap();
+            //PyPx_EnableTLSHeap();
             s_null = PyUnicode_InternFromString("null");
-            PyPx_DisableTLSHeap();
+            //PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_null);
         return s_null;
@@ -1311,9 +1311,9 @@ _encoded_const(PyObject *obj)
     else if (obj == Py_True) {
         Py_TLS static PyObject *s_true = NULL;
         if (s_true == NULL) {
-            PyPx_EnableTLSHeap();
+            //PyPx_EnableTLSHeap();
             s_true = PyUnicode_InternFromString("true");
-            PyPx_DisableTLSHeap();
+            //PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_true);
         return s_true;
@@ -1321,9 +1321,9 @@ _encoded_const(PyObject *obj)
     else if (obj == Py_False) {
         Py_TLS static PyObject *s_false = NULL;
         if (s_false == NULL) {
-            PyPx_EnableTLSHeap();
+            //PyPx_EnableTLSHeap();
             s_false = PyUnicode_InternFromString("false");
-            PyPx_DisableTLSHeap();
+            //PyPx_DisableTLSHeap();
         }
         Py_INCREF(s_false);
         return s_false;
@@ -1487,11 +1487,11 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
     Py_ssize_t idx;
 
     if (open_dict == NULL || close_dict == NULL || empty_dict == NULL) {
-        PyPx_EnableTLSHeap();
+        //PyPx_EnableTLSHeap();
         open_dict = PyUnicode_InternFromString("{");
         close_dict = PyUnicode_InternFromString("}");
         empty_dict = PyUnicode_InternFromString("{}");
-        PyPx_DisableTLSHeap();
+        //PyPx_DisableTLSHeap();
         if (open_dict == NULL || close_dict == NULL || empty_dict == NULL)
             return -1;
     }
@@ -1664,11 +1664,11 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
     Py_ssize_t i;
 
     if (open_array == NULL || close_array == NULL || empty_array == NULL) {
-        PyPx_EnableTLSHeap();
+        //PyPx_EnableTLSHeap();
         open_array = PyUnicode_InternFromString("[");
         close_array = PyUnicode_InternFromString("]");
         empty_array = PyUnicode_InternFromString("[]");
-        PyPx_DisableTLSHeap();
+        //PyPx_DisableTLSHeap();
         if (open_array == NULL || close_array == NULL || empty_array == NULL)
             return -1;
     }
