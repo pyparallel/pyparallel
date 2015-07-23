@@ -8099,6 +8099,81 @@ static const char http11_header_connection_close[] = (
 
 #define _DATE_IX 43
 
+/* Haven't done any testing to figure out what the tipping point is regarding
+ * memcpy'ing into a single buffer versus supplying two buffers.  We incur more
+ * cost in the former, whereas the kernel incurs the cost for the latter (in
+ * that it has to create two IRPs/MDLs for each buffer).  So... for now...
+ * let's take a wild guess. */
+#define PxSocket_DEFAULT_TIPPING_POINT (    \
+    Px_DEFAULT_HEAP_SIZE -                  \
+    Px_SIZEOF_HEAP       -                  \
+    100                                     \
+)
+volatile LONG _PxSocket_NumBuffersTippingPointForBodySize = (
+    PxSocket_DEFAULT_TIPPING_POINT
+);
+
+short
+PxSocket_SuggestNumBuffers(
+    PxSocket *s,
+    LONG header_size,
+    LONG body_size
+)
+{
+    Context *c = s->ctx;
+    PxState *px = c->px;
+    Heap *h = c->h;
+    LONG tipping_point = _PxSocket_NumBuffersTippingPointForBodySize;
+    PyTypeObject *tp = &PyBytes_Type;
+
+    /* Make sure we account for our ridiculous object overhead. */
+    LONGLONG total_header_size = _Px_SZ(_Px_VSZ(tp, header_size));
+    LONGLONG total_body_size   = _Px_SZ(_Px_VSZ(tp, body_size));
+    LONGLONG total_size        = total_header_size + total_body_size;
+
+    tipping_point -= total_header_size;
+    if (tipping_point <= 0)
+        /* Underflow safety check. */
+        tipping_point = PxSocket_DEFAULT_TIPPING_POINT;
+
+    if (h->size == Px_DEFAULT_HEAP_SIZE) {
+        if (total_size <= h->remaining)
+            /* We've got a normal sized heap, and there's enough memory left
+             * for both the header and the body, so use a single buffer. */
+            return 1;
+
+        if (total_header_size <= h->remaining)
+            /* Only the header fits in the remaining amount. */
+            return 2;
+
+        /* Neither the total size nor just the header fits in the amount of
+         * memory left.  Use tipping point to decide number of buffers. */
+        if (total_body_size > tipping_point)
+            return 2;
+        else
+            return 1;
+    } else {
+        /* We have a larger-than-default heap.  This can occur when we're
+         * re-using a previously allocated heap that was the result of a larger
+         * _PyHeap_Malloc() call (during some earlier callback).  In this case,
+         * we want to avoid the "total size is less than remaining" check above,
+         * because the total size could be, say, 80MB, and we've got 81MB
+         * remaining.  That'll result in an 80MB (minus header size) memcpy()
+         * of the body, which is unnecessary.  So, we only do the header size
+         * check, then the tipping point, as above. */
+        if (total_header_size <= h->remaining)
+            return 2;
+
+        if (total_body_size > tipping_point)
+            return 2;
+        else
+            return 1;
+    }
+
+    /* Unreachable. */
+    __debugbreak();
+}
+
 PyObject *
 PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
 {
@@ -8116,6 +8191,7 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
     char *body;
     char *buf;
     char *p;
+    short num_buffers;
     BOOL single_buffer = TRUE;
     Py_ssize_t header_size;
     Py_ssize_t content_length_size;
@@ -8179,11 +8255,9 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
     if (PxSocket_IS_CLOSE_SCHEDULED(s))
         total_header_size += connection_close_size;
 
-    /* If the combined size of the header plus the body is under page size,
-     * then use a single buffer and copy the body to the end of it.  Otherwise,
-     * use two buffers. */
     total_size = total_header_size + body_size;
-    if (total_size <= c->h->page_size) {
+    num_buffers = PxSocket_SuggestNumBuffers(s, total_header_size, body_size);
+    if (num_buffers == 1) {
         result = init_object(c, NULL, &PyBytes_Type, total_size);
         if (!result)
             return NULL;
@@ -8192,6 +8266,9 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         bytes = (PyBytesObject *)result;
 
     } else {
+        if (num_buffers != 2)
+            __debugbreak();
+
         single_buffer = FALSE;
 
         header_bytes = init_object(c, NULL, &PyBytes_Type, total_header_size);
