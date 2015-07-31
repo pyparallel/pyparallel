@@ -88,7 +88,7 @@ WIN32 is still required for the locale module.
 #define USE_SOCKET
 #endif
 
-#if !defined(WITH_PARALLEL) && !defined(DISABLE_PARALLEL) 
+#if !defined(WITH_PARALLEL) && !defined(DISABLE_PARALLEL)
 #define WITH_PARALLEL 1
 #define WITH_INTRINSICS 1
 #endif
