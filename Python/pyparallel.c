@@ -4876,7 +4876,7 @@ _PyParallel_ExceptionFilter(EXCEPTION_POINTERS* exc)
                           NULL);
 
         CloseHandle(h);
-        printf("Caught exception, wrote dump file to pyparallel.dmp.\n"
+        printf("\nCaught exception, wrote dump file to pyparallel.dmp.\n"
                "`set PYPARALLEL_NO_MINIDUMP=1` to disable this functionality \n"
                "(useful if you want to attach Visual Studio to debug).\n");
     } else {
