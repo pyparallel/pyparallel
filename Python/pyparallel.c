@@ -5435,9 +5435,11 @@ PyDoc_STRVAR(xlist_flush_doc, "XXX TODO\n");
 #define _XLIST_V(n) _XLIST(n, METH_VARARGS)
 #define _XLIST_K(n) _XLIST(n, METH_VARARGS | METH_KEYWORDS)
 static PyMethodDef xlist_methods[] = {
+    /*
     _XLIST_N(pop),
     _XLIST_O(push),
     _XLIST_N(flush),
+    */
     { NULL, NULL }
 };
 
