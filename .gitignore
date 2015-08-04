@@ -76,3 +76,4 @@ TAGS
 .coverage
 coverage/
 htmlcov/
+pyparallel.dmp
