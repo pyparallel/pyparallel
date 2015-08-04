@@ -782,6 +782,9 @@
     <ClCompile Include="..\Parser\tokenizer.c">
       <Filter>Parser</Filter>
     </ClCompile>
+    <ClCompile Include="..\PC\invalid_parameter_handler.c">
+      <Filter>PC</Filter>
+    </ClCompile>
     <ClCompile Include="..\PC\winreg.c">
       <Filter>PC</Filter>
     </ClCompile>

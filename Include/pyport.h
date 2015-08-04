@@ -388,40 +388,21 @@ typedef size_t Py_uhash_t;
  * stat() and fstat() fiddling *
  *******************************/
 
-/* We expect that stat and fstat exist on most systems.
- *  It's confirmed on Unix, Mac and Windows.
- *  If you don't have them, add
- *      #define DONT_HAVE_STAT
- * and/or
- *      #define DONT_HAVE_FSTAT
- * to your pyconfig.h. Python code beyond this should check HAVE_STAT and
- * HAVE_FSTAT instead.
- * Also
- *      #define HAVE_SYS_STAT_H
- * if <sys/stat.h> exists on your platform, and
- *      #define HAVE_STAT_H
- * if <stat.h> does.
- */
-#ifndef DONT_HAVE_STAT
-#define HAVE_STAT
-#endif
-
-#ifndef DONT_HAVE_FSTAT
-#define HAVE_FSTAT
-#endif
-
 #ifdef HAVE_SYS_STAT_H
-#if defined(PYOS_OS2) && defined(PYCC_GCC)
-#include <sys/types.h>
-#endif
 #include <sys/stat.h>
 #elif defined(HAVE_STAT_H)
 #include <stat.h>
 #endif
 
-#if defined(PYCC_VACPP)
-/* VisualAge C/C++ Failed to Define MountType Field in sys/stat.h */
-#define S_IFMT (S_IFDIR|S_IFCHR|S_IFREG)
+#ifndef S_IFMT
+ /* VisualAge C/C++ Failed to Define MountType Field in sys/stat.h */
+#define S_IFMT 0170000
+#endif
+
+#ifndef S_IFLNK
+ /* Windows doesn't define S_IFLNK but posixmodule.c maps
+ * IO_REPARSE_TAG_SYMLINK to S_IFLNK */
+#  define S_IFLNK 0120000
 #endif
 
 #ifndef S_ISREG
@@ -430,6 +411,10 @@ typedef size_t Py_uhash_t;
 
 #ifndef S_ISDIR
 #define S_ISDIR(x) (((x) & S_IFMT) == S_IFDIR)
+#endif
+
+#ifndef S_ISCHR
+#define S_ISCHR(x) (((x) & S_IFMT) == S_IFCHR)
 #endif
 
 
@@ -899,6 +884,40 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
 #define Py_VA_COPY(x, y) (x) = (y)
 #endif
 #endif
+
+ /*
+ * Convenient macros to deal with endianness of the platform. WORDS_BIGENDIAN is
+ * detected by configure and defined in pyconfig.h. The code in pyconfig.h
+ * also takes care of Apple's universal builds.
+ */
+
+#ifdef WORDS_BIGENDIAN
+#define PY_BIG_ENDIAN 1
+#define PY_LITTLE_ENDIAN 0
+#else
+#define PY_BIG_ENDIAN 0
+#define PY_LITTLE_ENDIAN 1
+#endif
+
+#ifdef Py_BUILD_CORE
+ /*
+ * Macros to protect CRT calls against instant termination when passed an
+ * invalid parameter (issue23524).
+ */
+#if defined _MSC_VER && _MSC_VER >= 1900
+
+extern _invalid_parameter_handler _Py_silent_invalid_parameter_handler;
+#define _Py_BEGIN_SUPPRESS_IPH { _invalid_parameter_handler _Py_old_handler = \
+    _set_thread_local_invalid_parameter_handler(_Py_silent_invalid_parameter_handler);
+#define _Py_END_SUPPRESS_IPH _set_thread_local_invalid_parameter_handler(_Py_old_handler); }
+
+#else
+
+#define _Py_BEGIN_SUPPRESS_IPH
+#define _Py_END_SUPPRESS_IPH
+
+#endif /* _MSC_VER >= 1900 */
+#endif /* Py_BUILD_CORE */
 
 #ifdef WITH_PARALLEL
 #ifdef MS_WINDOWS

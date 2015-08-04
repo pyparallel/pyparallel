@@ -36,7 +36,16 @@ PCbuild/*.ncb
 PCbuild/*.o
 PCbuild/*.pdb
 PCbuild/Win32-temp-*
+PCbuild/x64-temp-*
+PCbuild/Win32-pgi*
+PCbuild/x64-pgi*
+PCbuild/x64-pgo*
 PCbuild/amd64/
+PCbuild/pcbuild*sdf
+PCbuild/py*.iobj
+PCbuild/py*.ipdb
+PCbuild/*psess
+PCbuild/*vspx
 .purify
 Parser/pgen
 __pycache__

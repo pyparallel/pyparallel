@@ -497,5 +497,5 @@ class MiniHttpServer:
         return { 'message': 'Hello, World!' }
 
     def plaintext(self, transport, data):
-        return 'Hello, World!'
+        return b'Hello, World!'
 

@@ -427,14 +427,14 @@ static int
 find_env_config_value(FILE * env_file, const wchar_t * key, wchar_t * value)
 {
     int result = 0; /* meaning not found */
-    char buffer[MAXPATHLEN*2+1];  /* allow extra for key, '=', etc. */
+    char buffer[MAXPATHLEN * 2 + 1];  /* allow extra for key, '=', etc. */
 
     fseek(env_file, 0, SEEK_SET);
     while (!feof(env_file)) {
-        char * p = fgets(buffer, MAXPATHLEN*2, env_file);
-        wchar_t tmpbuffer[MAXPATHLEN*2+1];
+        char * p = fgets(buffer, MAXPATHLEN * 2, env_file);
+        wchar_t tmpbuffer[MAXPATHLEN * 2 + 1];
         PyObject * decoded;
-        int n;
+        size_t n;
 
         if (p == NULL)
             break;
@@ -449,14 +449,15 @@ find_env_config_value(FILE * env_file, const wchar_t * key, wchar_t * value)
         if (decoded != NULL) {
             Py_ssize_t k;
             k = PyUnicode_AsWideChar(decoded,
-                                     tmpbuffer, MAXPATHLEN * 2);
+                tmpbuffer, MAXPATHLEN * 2);
             Py_DECREF(decoded);
             if (k >= 0) {
-                wchar_t * tok = wcstok(tmpbuffer, L" \t\r\n");
+                wchar_t * context = NULL;
+                wchar_t * tok = wcstok_s(tmpbuffer, L" \t\r\n", &context);
                 if ((tok != NULL) && !wcscmp(tok, key)) {
-                    tok = wcstok(NULL, L" \t");
+                    tok = wcstok_s(NULL, L" \t", &context);
                     if ((tok != NULL) && !wcscmp(tok, L"=")) {
-                        tok = wcstok(NULL, L"\r\n");
+                        tok = wcstok_s(NULL, L"\r\n", &context);
                         if (tok != NULL) {
                             wcsncpy(value, tok, MAXPATHLEN);
                             result = 1;

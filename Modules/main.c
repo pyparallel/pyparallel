@@ -497,19 +497,19 @@ Py_Main(int argc, wchar_t **argv)
 #ifdef MS_WINDOWS
     if (!Py_IgnoreEnvironmentFlag && (wp = _wgetenv(L"PYTHONWARNINGS")) &&
         *wp != L'\0') {
-        wchar_t *buf, *warning;
+        wchar_t *buf, *warning, *context = NULL;
 
-        buf = (wchar_t *)malloc((wcslen(wp) + 1) * sizeof(wchar_t));
+        buf = (wchar_t *)PyMem_RawMalloc((wcslen(wp) + 1) * sizeof(wchar_t));
         if (buf == NULL)
             Py_FatalError(
-               "not enough memory to copy PYTHONWARNINGS");
+                "not enough memory to copy PYTHONWARNINGS");
         wcscpy(buf, wp);
-        for (warning = wcstok(buf, L",");
-             warning != NULL;
-             warning = wcstok(NULL, L",")) {
+        for (warning = wcstok_s(buf, L",", &context);
+        warning != NULL;
+            warning = wcstok_s(NULL, L",", &context)) {
             PySys_AddWarnOption(warning);
         }
-        free(buf);
+        PyMem_RawFree(buf);
     }
 #else
     if ((p = Py_GETENV("PYTHONWARNINGS")) && *p != '\0') {
@@ -710,7 +710,7 @@ Py_Main(int argc, wchar_t **argv)
                 char *cfilename_buffer;
                 const char *cfilename;
                 int err = errno;
-                cfilename_buffer = _Py_wchar2char(filename, NULL);
+                cfilename_buffer = Py_EncodeLocale(filename, NULL);
                 if (cfilename_buffer != NULL)
                     cfilename = cfilename_buffer;
                 else

@@ -3483,7 +3483,7 @@ PyUnicode_EncodeLocale(PyObject *unicode, const char *errors)
         /* locale encoding with surrogateescape */
         char *str;
 
-        str = _Py_wchar2char(wstr, &error_pos);
+        str = Py_EncodeLocale(wstr, &error_pos);
         if (str == NULL) {
             if (error_pos == (size_t)-1) {
                 PyErr_NoMemory();
@@ -3535,7 +3535,7 @@ encode_error:
 
     if (errmsg != NULL) {
         size_t errlen;
-        wstr = _Py_char2wchar(errmsg, &errlen);
+        wstr = Py_DecodeLocale(errmsg, &errlen);
         if (wstr != NULL) {
             reason = PyUnicode_FromWideChar(wstr, errlen);
             PyMem_Free(wstr);
@@ -3747,7 +3747,7 @@ PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t len,
 
     if (surrogateescape)
     {
-        wstr = _Py_char2wchar(str, &wlen);
+        wstr = Py_DecodeLocale(str, &wlen);
         if (wstr == NULL) {
             if (wlen == (size_t)-1)
                 PyErr_NoMemory();
@@ -3757,7 +3757,7 @@ PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t len,
         }
 
         unicode = PyUnicode_FromWideChar(wstr, wlen);
-        PyMem_Free(wstr);
+        PyMem_RawFree(wstr);
     }
     else {
 #ifndef HAVE_BROKEN_MBSTOWCS
@@ -3774,7 +3774,7 @@ PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t len,
             if (wlen > PY_SSIZE_T_MAX / sizeof(wchar_t) - 1)
                 return PyErr_NoMemory();
 
-            wstr = PyMem_Malloc((wlen+1) * sizeof(wchar_t));
+            wstr = PyMem_RawMalloc((wlen+1) * sizeof(wchar_t));
             if (!wstr)
                 return PyErr_NoMemory();
         }
@@ -3783,7 +3783,7 @@ PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t len,
         wlen2 = mbstowcs(wstr, str, wlen+1);
         if (wlen2 == (size_t)-1) {
             if (wstr != smallbuf)
-                PyMem_Free(wstr);
+                PyMem_RawFree(wstr);
             goto decode_error;
         }
 #ifdef HAVE_BROKEN_MBSTOWCS
@@ -3791,7 +3791,7 @@ PyUnicode_DecodeLocaleAndSize(const char *str, Py_ssize_t len,
 #endif
         unicode = PyUnicode_FromWideChar(wstr, wlen2);
         if (wstr != smallbuf)
-            PyMem_Free(wstr);
+            PyMem_RawFree(wstr);
     }
     return unicode;
 
@@ -3802,10 +3802,10 @@ decode_error:
     error_pos = mbstowcs_errorpos(str, len);
     if (errmsg != NULL) {
         size_t errlen;
-        wstr = _Py_char2wchar(errmsg, &errlen);
+        wstr = Py_DecodeLocale(errmsg, &errlen);
         if (wstr != NULL) {
             reason = PyUnicode_FromWideChar(wstr, errlen);
-            PyMem_Free(wstr);
+            PyMem_RawFree(wstr);
         } else
             errmsg = NULL;
     }
@@ -3878,9 +3878,9 @@ _PyUnicode_HasNULChars(PyObject* s)
     Py_TLS static PyObject *nul = NULL;
 
     if (nul == NULL) {
-        PyPx_EnableTLSHeap();
+        //PyPx_EnableTLSHeap();
         nul = PyUnicode_FromStringAndSize("\0", 1);
-        PyPx_DisableTLSHeap();
+        //PyPx_DisableTLSHeap();
     }
     if (nul == NULL)
         return -1;

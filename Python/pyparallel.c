@@ -5380,13 +5380,6 @@ end:
     return result;
 }
 
-PyObject *
-xlist_push(PyObject *obj, PyObject *src)
-{
-    __debugbreak();
-    return NULL;
-}
-
 /*
 PyObject *
 xlist_push(PyObject *obj, PyObject *src)
