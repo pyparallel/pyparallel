@@ -1,0 +1,3 @@
+[submodule "contrib/pxodbc"]
+	path = contrib/pxodbc
+	url = https://github.com/pyparallel/pxodbc
