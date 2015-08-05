@@ -1,5 +1,7 @@
 *.cover
 *.o
+*.obj
+*.dmp
 *.orig
 *.pyc
 *.pyd
@@ -38,6 +40,7 @@ PCbuild/*.pdb
 PCbuild/Win32-temp-*
 PCbuild/x64-temp-*
 PCbuild/Win32-pgi*
+PCbuild/Win32-pgo*
 PCbuild/x64-pgi*
 PCbuild/x64-pgo*
 PCbuild/amd64/
@@ -48,7 +51,7 @@ PCbuild/*psess
 PCbuild/*vspx
 .purify
 Parser/pgen
-__pycache__
+*__pycache__*
 autom4te.cache
 build/
 buildno
@@ -76,4 +79,7 @@ TAGS
 .coverage
 coverage/
 htmlcov/
-pyparallel.dmp
+.vs
+.hg
+Lib/distutils/command/*.exe
+Lib/distutils/command/*.pdb
