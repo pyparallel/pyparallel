@@ -13,7 +13,7 @@ PyParallel is, first and foremost, an experiment.  It is not currently suitable 
 
 PyParallel was created by an existing Python committer with the intention of eventually merging it back into the mainline.  It is not a hostile fork.  There are many details that still need to be ironed out.  It will need to prove itself as an independent project first before it could be considered for inclusion back in the main source tree.  We anticipate this being at least 5 years out, and think Python 4.x would be a more realistic target than Python 3.x.
 
-5 years sound like a long time, however, they will come and go, just like any other.  We may as well start the ball rolling now.  There's nothing wrong with slow and steady as long as you're heading in the right direction.  And it's not like we're getting any less cores per year.
+5 years sounds like a long time, however, it will come and go, just like any other.  We may as well start the ball rolling now.  There's nothing wrong with slow and steady as long as you're heading in the right direction.  And it's not like we're getting any less cores per year.
 
 Expectations need to be set reasonably, and we encourage the Python community toward biasing yes versus biasing no, with a view toward the long term benefits of such a project.  Early adopters and technical evaluators will need to have thick skin, a pioneering spirit and a hearty sense of adventure.  You will definitely hit a `__debugbreak()` or two if you're doing things right.  But hey, you'll be able to melt all your cores during the process, and that's kinda' fun.
 
@@ -48,7 +48,7 @@ The protocol callbacks are automatically executed in parallel.  This is achieved
 
 ### GIL Semantics Unchanged
 
-The semantic behavior of the "main thread" (the current thread holding the GIL) is unchanged.  Instead, we introduce the notion of a parallel thread (or parallel context), and parallel objects, which are `PyObjects` allocated from parallel contexts.  We provide an efficient way to detect if we're in a parallel thread via the `Py_PXCTX()` macro, as well as a way to detect if a `PyObject` was allocated from a parallel thread via `Py_ISPX(ob)`.  Using only these two facilities, we are able to intercept all thread-sensitive parts of the interpreter and redirect to our new parallel alternative if necessary.  (The GIL entry and exit macros, `Py_BEGIN_THREAD_STATE` and `Py_END_THREAD_STATE` respectively, also get ignored in parallel contexts.)
+The semantic behavior of the "main thread" (the current thread holding the GIL) is unchanged.  Instead, we introduce the notion of a parallel thread (or parallel context), and parallel objects, which are `PyObjects` allocated from parallel contexts.  We provide an efficient way to detect if we're in a parallel thread via the `Py_PXCTX()` macro, as well as a way to detect if a `PyObject` was allocated from a parallel thread via `Py_ISPX(ob)`.  Using only these two facilities, we are able to intercept all thread-sensitive parts of the interpreter and redirect to our new parallel alternative if necessary.  (The GIL entry and exit macros, `Py_BEGIN_ALLOW_THREADS` and `Py_END_ALLOW_THREADS` respectively, also get ignored in parallel contexts.)
 
 ### The One New Restriction: Don't Persist Parallel Objects
 
