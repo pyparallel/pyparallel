@@ -71,6 +71,7 @@ New syntax features:
 
 * :pep:`465`, a new matrix multiplication operator: ``a @ b``.
 * :pep:`492`, coroutines with async and await syntax.
+* :pep:`448`, additional unpacking generalizations.
 
 New library modules:
 
@@ -112,6 +113,10 @@ Significantly Improved Library Modules:
   do the right thing based on the types of the other inputs.  Two functions,
   :func:`gettempdirb` and :func:`gettempprefixb`, have been added to go along
   with this.  This behavior matches that of the :mod:`os` APIs.
+
+* :mod:`ssl` module gained support for Memory BIO, which decouples SSL
+  protocol handling from network IO.  (Contributed by Geert Jansen in
+  :issue:`21965`.)
 
 Security improvements:
 
@@ -201,6 +206,72 @@ called ``@``. (Mnemonic: ``@`` is ``*`` for mATrices.)
 .. seealso::
 
    :pep:`465` -- A dedicated infix operator for matrix multiplication
+
+
+PEP 448 - Additional Unpacking Generalizations
+----------------------------------------------
+
+This PEP proposes extended usages of the ``*`` iterable unpacking
+operator and ``**`` dictionary unpacking operators
+to allow unpacking in more positions, an arbitrary number of
+times, and in additional circumstances.  Specifically,
+in function calls, in comprehensions and generator expressions, and
+in displays.
+
+Function calls are proposed to support an arbitrary number of
+unpackings rather than just one::
+
+    >>> print(*[1], *[2], 3)
+    1 2 3
+    >>> dict(**{'x': 1}, y=2, **{'z': 3})
+    {'x': 1, 'y': 2, 'z': 3}
+
+Unpacking is proposed to be allowed inside tuple, list, set,
+and dictionary displays::
+
+    >>> *range(4), 4
+    (0, 1, 2, 3, 4)
+    >>> [*range(4), 4]
+    [0, 1, 2, 3, 4]
+    >>> {*range(4), 4}
+    {0, 1, 2, 3, 4}
+    >>> {'x': 1, **{'y': 2}}
+    {'x': 1, 'y': 2}
+
+In dictionaries, later values will always override earlier ones::
+
+    >>> {'x': 1, **{'x': 2}}
+    {'x': 2}
+
+    >>> {**{'x': 2}, 'x': 1}
+    {'x': 1}
+
+.. seealso::
+
+   :pep:`448` -- Additional Unpacking Generalizations
+
+
+PEP 484 - Type Hints
+--------------------
+
+This PEP introduces a provisional module to provide these standard
+definitions and tools, along with some conventions for situations
+where annotations are not available.
+
+For example, here is a simple function whose argument and return type
+are declared in the annotations::
+
+  def greeting(name: str) -> str:
+      return 'Hello ' + name
+
+The type system supports unions, generic types, and a special type
+named ``Any`` which is consistent with (i.e. assignable to and from) all
+types.
+
+.. seealso::
+
+   * :pep:`484` -- Type Hints
+   * :mod:`typing` module documentation
 
 
 PEP 471 - os.scandir() function -- a better and faster directory iterator
@@ -658,7 +729,7 @@ os.path
 
 * New :func:`~os.path.commonpath` function that extracts common path prefix.
   Unlike the :func:`~os.path.commonprefix` function, it always returns a valid
-  patch.  (Contributed by Rafik Draoui and Serhiy Storchaka in :issue:`10395`.)
+  path.  (Contributed by Rafik Draoui and Serhiy Storchaka in :issue:`10395`.)
 
 pickle
 ------
@@ -758,11 +829,16 @@ sndhdr
 ssl
 ---
 
-The :meth:`~ssl.SSLSocket.do_handshake`, :meth:`~ssl.SSLSocket.read`,
-:meth:`~ssl.SSLSocket.shutdown`, and :meth:`~ssl.SSLSocket.write` methods of
-:class:`ssl.SSLSocket` don't reset the socket timeout anymore each time bytes
-are received or sent. The socket timeout is now the maximum total duration of
-the method.
+* The :meth:`~ssl.SSLSocket.do_handshake`, :meth:`~ssl.SSLSocket.read`,
+  :meth:`~ssl.SSLSocket.shutdown`, and :meth:`~ssl.SSLSocket.write` methods of
+  :class:`ssl.SSLSocket` don't reset the socket timeout anymore each time bytes
+  are received or sent. The socket timeout is now the maximum total duration of
+  the method.
+
+* Memory BIO Support: new classes :class:`~ssl.SSLObject`,
+  :class:`~ssl.MemoryBIO`, and new
+  :meth:`SSLContext.wrap_bio <ssl.SSLContext.wrap_bio>` method.
+  (Contributed by Geert Jansen in :issue:`21965`.)
 
 socket
 ------

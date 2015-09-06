@@ -1986,21 +1986,22 @@ expression support in the :mod:`re` module).
         "They're Bill's Friends."
 
 
-.. method:: str.translate(map)
+.. method:: str.translate(table)
 
-   Return a copy of the *s* where all characters have been mapped through the
-   *map* which must be a dictionary of Unicode ordinals (integers) to Unicode
-   ordinals, strings or ``None``.  Unmapped characters are left untouched.
-   Characters mapped to ``None`` are deleted.
+   Return a copy of the string in which each character has been mapped through
+   the given translation table.  The table must be an object that implements
+   indexing via :meth:`__getitem__`, typically a :term:`mapping` or
+   :term:`sequence`.  When indexed by a Unicode ordinal (an integer), the
+   table object can do any of the following: return a Unicode ordinal or a
+   string, to map the character to one or more other characters; return
+   ``None``, to delete the character from the return string; or raise a
+   :exc:`LookupError` exception, to map the character to itself.
 
    You can use :meth:`str.maketrans` to create a translation map from
    character-to-character mappings in different formats.
 
-   .. note::
-
-      An even more flexible approach is to create a custom character mapping
-      codec using the :mod:`codecs` module (see :mod:`encodings.cp1251` for an
-      example).
+   See also the :mod:`codecs` module for a more flexible approach to custom
+   character mappings.
 
 
 .. method:: str.upper()
@@ -3560,10 +3561,10 @@ copying.
       Cast a memoryview to a new format or shape. *shape* defaults to
       ``[byte_length//new_itemsize]``, which means that the result view
       will be one-dimensional. The return value is a new memoryview, but
-      the buffer itself is not copied. Supported casts are 1D -> C-contiguous
+      the buffer itself is not copied. Supported casts are 1D -> C-:term:`contiguous`
       and C-contiguous -> 1D.
 
-      Both formats are restricted to single element native formats in
+      The destination format is restricted to a single element native format in
       :mod:`struct` syntax. One of the formats must be a byte format
       ('B', 'b' or 'c'). The byte length of the result must be the same
       as the original length.
@@ -3643,6 +3644,9 @@ copying.
          [[0, 1, 2], [3, 4, 5]]
 
       .. versionadded:: 3.3
+
+      .. versionchanged:: 3.5
+         The source format is no longer restricted when casting to a byte view.
 
    There are also several readonly attributes available:
 
@@ -3748,19 +3752,19 @@ copying.
 
    .. attribute:: c_contiguous
 
-      A bool indicating whether the memory is C-contiguous.
+      A bool indicating whether the memory is C-:term:`contiguous`.
 
       .. versionadded:: 3.3
 
    .. attribute:: f_contiguous
 
-      A bool indicating whether the memory is Fortran contiguous.
+      A bool indicating whether the memory is Fortran :term:`contiguous`.
 
       .. versionadded:: 3.3
 
    .. attribute:: contiguous
 
-      A bool indicating whether the memory is contiguous.
+      A bool indicating whether the memory is :term:`contiguous`.
 
       .. versionadded:: 3.3
 

@@ -96,8 +96,8 @@ a buffer, see :c:func:`PyObject_GetBuffer`.
       block of the exporter. For example, with negative :c:member:`~Py_buffer.strides`
       the value may point to the end of the memory block.
 
-      For contiguous arrays, the value points to the beginning of the memory
-      block.
+      For :term:`contiguous` arrays, the value points to the beginning of
+      the memory block.
 
    .. c:member:: void \*obj
 
@@ -133,15 +133,15 @@ a buffer, see :c:func:`PyObject_GetBuffer`.
       called on non-NULL :c:member:`~Py_buffer.format` values.
 
       Important exception: If a consumer requests a buffer without the
-      :c:macro:`PyBUF_FORMAT` flag, :c:member:`~Py_Buffer.format` will
+      :c:macro:`PyBUF_FORMAT` flag, :c:member:`~Py_buffer.format` will
       be set to  *NULL*,  but :c:member:`~Py_buffer.itemsize` still has
       the value for the original format.
 
-      If :c:member:`~Py_Buffer.shape` is present, the equality
+      If :c:member:`~Py_buffer.shape` is present, the equality
       ``product(shape) * itemsize == len`` still holds and the consumer
       can use :c:member:`~Py_buffer.itemsize` to navigate the buffer.
 
-      If :c:member:`~Py_Buffer.shape` is *NULL* as a result of a :c:macro:`PyBUF_SIMPLE`
+      If :c:member:`~Py_buffer.shape` is *NULL* as a result of a :c:macro:`PyBUF_SIMPLE`
       or a :c:macro:`PyBUF_WRITABLE` request, the consumer must disregard
       :c:member:`~Py_buffer.itemsize` and assume ``itemsize == 1``.
 
@@ -156,7 +156,7 @@ a buffer, see :c:func:`PyObject_GetBuffer`.
    .. c:member:: int ndim
 
       The number of dimensions the memory represents as an n-dimensional array.
-      If it is 0, :c:member:`~Py_Buffer.buf` points to a single item representing
+      If it is 0, :c:member:`~Py_buffer.buf` points to a single item representing
       a scalar. In this case, :c:member:`~Py_buffer.shape`, :c:member:`~Py_buffer.strides`
       and :c:member:`~Py_buffer.suboffsets` MUST be *NULL*.
 
@@ -281,11 +281,14 @@ of the flags below it.
 +-----------------------------+-------+---------+------------+
 
 
+.. index:: contiguous, C-contiguous, Fortran contiguous
+
 contiguity requests
 ~~~~~~~~~~~~~~~~~~~
 
-C or Fortran contiguity can be explicitly requested, with and without stride
-information. Without stride information, the buffer must be C-contiguous.
+C or Fortran :term:`contiguity <contiguous>` can be explicitly requested,
+with and without stride information. Without stride information, the buffer
+must be C-contiguous.
 
 .. tabularcolumns:: |p{0.35\linewidth}|l|l|l|l|
 
@@ -466,13 +469,13 @@ Buffer-related functions
 .. c:function:: int PyBuffer_IsContiguous(Py_buffer *view, char order)
 
    Return 1 if the memory defined by the *view* is C-style (*order* is
-   ``'C'``) or Fortran-style (*order* is ``'F'``) contiguous or either one
+   ``'C'``) or Fortran-style (*order* is ``'F'``) :term:`contiguous` or either one
    (*order* is ``'A'``).  Return 0 otherwise.
 
 
 .. c:function:: void PyBuffer_FillContiguousStrides(int ndim, Py_ssize_t *shape, Py_ssize_t *strides, Py_ssize_t itemsize, char order)
 
-   Fill the *strides* array with byte-strides of a contiguous (C-style if
+   Fill the *strides* array with byte-strides of a :term:`contiguous` (C-style if
    *order* is ``'C'`` or Fortran-style if *order* is ``'F'``) array of the
    given shape with the given number of bytes per element.
 

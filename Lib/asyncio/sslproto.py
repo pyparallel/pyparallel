@@ -1,11 +1,11 @@
 import collections
-import sys
 import warnings
 try:
     import ssl
 except ImportError:  # pragma: no cover
     ssl = None
 
+from . import compat
 from . import protocols
 from . import transports
 from .log import logger
@@ -317,7 +317,7 @@ class _SSLProtocolTransport(transports._FlowControlMixin,
     # On Python 3.3 and older, objects with a destructor part of a reference
     # cycle are never destroyed. It's not more the case on Python 3.4 thanks
     # to the PEP 442.
-    if sys.version_info >= (3, 4):
+    if compat.PY34:
         def __del__(self):
             if not self._closed:
                 warnings.warn("unclosed transport %r" % self, ResourceWarning)
@@ -613,7 +613,8 @@ class SSLProtocol(protocols.Protocol):
                 if data:
                     ssldata, offset = self._sslpipe.feed_appdata(data, offset)
                 elif offset:
-                    ssldata = self._sslpipe.do_handshake(self._on_handshake_complete)
+                    ssldata = self._sslpipe.do_handshake(
+                        self._on_handshake_complete)
                     offset = 1
                 else:
                     ssldata = self._sslpipe.shutdown(self._finalize)
@@ -637,9 +638,13 @@ class SSLProtocol(protocols.Protocol):
                 self._write_buffer_size -= len(data)
         except BaseException as exc:
             if self._in_handshake:
+                # BaseExceptions will be re-raised in _on_handshake_complete.
                 self._on_handshake_complete(exc)
             else:
                 self._fatal_error(exc, 'Fatal error on SSL transport')
+            if not isinstance(exc, Exception):
+                # BaseException
+                raise
 
     def _fatal_error(self, exc, message='Fatal error on transport'):
         # Should be called from exception handler only.

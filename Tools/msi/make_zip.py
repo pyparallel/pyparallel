@@ -1,4 +1,5 @@
 import argparse
+import py_compile
 import re
 import sys
 import shutil
@@ -81,9 +82,19 @@ def copy_to_layout(target, rel_sources):
             target.unlink()
 
         with ZipFile(str(target), 'w', ZIP_DEFLATED) as f:
-            for s, rel in rel_sources:
-                f.write(str(s), str(rel))
-                count += 1
+            with tempfile.TemporaryDirectory() as tmpdir:
+                for s, rel in rel_sources:
+                    if rel.suffix.lower() == '.py':
+                        pyc = Path(tmpdir) / rel.with_suffix('.pyc').name
+                        try:
+                            py_compile.compile(str(s), str(pyc), str(rel), doraise=True, optimize=2)
+                        except py_compile.PyCompileError:
+                            f.write(str(s), str(rel))
+                        else:
+                            f.write(str(pyc), str(rel.with_suffix('.pyc')))
+                    else:
+                        f.write(str(s), str(rel))
+                    count += 1
 
     else:
         for s, rel in rel_sources:

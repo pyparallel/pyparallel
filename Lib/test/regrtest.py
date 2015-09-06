@@ -796,10 +796,8 @@ def main(tests=None, **kwargs):
         for time, test in test_times[:10]:
             print("%s: %.1fs" % (test, time))
     if bad:
-        bad = sorted(set(bad) - set(environment_changed))
-        if bad:
-            print(count(len(bad), "test"), "failed:")
-            printlist(bad)
+        print(count(len(bad), "test"), "failed:")
+        printlist(bad)
     if environment_changed:
         print("{} altered the execution environment:".format(
                  count(len(environment_changed), "test")))
@@ -810,7 +808,7 @@ def main(tests=None, **kwargs):
 
     if ns.verbose2 and bad:
         print("Re-running failed tests in verbose mode")
-        for test in bad:
+        for test in bad[:]:
             print("Re-running test %r in verbose mode" % test)
             sys.stdout.flush()
             try:
@@ -821,6 +819,13 @@ def main(tests=None, **kwargs):
                 # print a newline separate from the ^C
                 print()
                 break
+            else:
+                if ok[0] in {PASSED, ENV_CHANGED, SKIPPED, RESOURCE_DENIED}:
+                    bad.remove(test)
+        else:
+            if bad:
+                print(count(len(bad), 'test'), "failed again:")
+                printlist(bad)
 
     if ns.single:
         if next_single_test:
