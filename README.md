@@ -9,7 +9,7 @@ The code changes  required to the interpreter are relatively unobtrusive, all ex
 
 # Disclaimer
 --
-PyParallel is, first and foremost, an experiment.  It is not currently suitable for production.  (*If you're interested in commercial or production support, [contact us](mailto:sales@continuum.io)*.)  It is a product of trial-and-error, intended to shape the discussions surrounding the next generation of Python.  We attempt to juggle the difficult task of setting the stage for Python to flourish over the next 25 years, without discarding all the progress we made in the last 25.
+PyParallel is, first and foremost, an experiment.  It is not currently suitable for production.  It is a product of trial-and-error, intended to shape the discussions surrounding the next generation of Python.  We attempt to juggle the difficult task of setting the stage for Python to flourish over the next 25 years, without discarding all the progress we made in the last 25.
 
 PyParallel was created by an existing Python committer with the intention of eventually merging it back into the mainline.  It is not a hostile fork.  There are many details that still need to be ironed out.  It will need to prove itself as an independent project first before it could be considered for inclusion back in the main source tree.  We anticipate this being at least 5 years out, and think Python 4.x would be a more realistic target than Python 3.x.
 
