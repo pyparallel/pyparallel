@@ -8231,7 +8231,7 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
             return NULL;
 
         header = (char *)&http11_json_response_header_begin[0];
-        header_size = sizeof(http11_json_response_header_begin);
+        header_size = sizeof(http11_json_response_header_begin)-1;
     }
 
     content_length_size = _snprintf(
