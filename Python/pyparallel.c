@@ -5781,6 +5781,8 @@ _PxState_PurgeContexts(PxState *px)
 #endif
 #endif
 
+void PxSocketServer_UnlinkChild(PxSocket *child);
+
 /* This is one of the earliest functions written... before PyParallel was even
  * called PyParallel.  It's currently in for an overhaul, so there are chunks
  * commented out and whatnot as I'm refactoring the implementation. */
@@ -5914,6 +5916,7 @@ start:
         do {
             c = (Context *)item->from;
             assert(PyExceptionClass_Check((PyObject *)item->p1));
+
             PyErr_Restore((PyObject *)item->p1,
                           (PyObject *)item->p2,
                           (PyObject *)item->p3);
@@ -5932,6 +5935,10 @@ start:
                         EXCEPTION_CONTINUE_SEARCH
                 ) {
                     ++_PyParallel_EAV_In_PyErr_PrintEx;
+                    PyErr_Restore((PyObject *)item->p1,
+                                  NULL,
+                                  NULL);
+                    PyErr_PrintEx(0);
                 }
 
                 PyErr_Clear();
@@ -5940,8 +5947,15 @@ start:
                     PxSocketServer_Shutdown(s);
                     item = PxList_SeverFromNext(item);
                     continue;
-                } else
+                } else if (PxSocket_IS_SERVERCLIENT(s)) {
+                    PxSocketServer_UnlinkChild(s);
+                    item = PxList_SeverFromNext(item);
+                    continue;
+                }
+                else {
+                    __debugbreak();
                     PxSocket_Cleanup(s);
+                }
             }
 
             item = PxList_Transfer(px->finished, item);
@@ -8093,11 +8107,27 @@ static const char http11_plaintext_response_header_begin[] = (
     "Content-Length: "
 );
 
+#define _DATE_IX 43
+
 static const char http11_header_connection_close[] = (
     "Connection: close\r\n"
 );
 
-#define _DATE_IX 43
+/* 404 and 500 don't get any other headers at the moment. */
+static const char http11_404_not_found_response[] = (
+    "HTTP/1.1 404 Not Found\r\n"
+    "Content-Length: 0\r\n"
+);
+
+static const char http11_500_internal_error_response[] = (
+    "HTTP/1.1 500 Internal Server Error\r\n"
+    "Connection: close\r\n"
+);
+
+static const char http11_501_not_implemented_response[] = (
+    "HTTP/1.1 500 Not Implemented\r\n"
+    "Content-Length: 0\r\n\r\n"
+);
 
 /* Haven't done any testing to figure out what the tipping point is regarding
  * memcpy'ing into a single buffer versus supplying two buffers.  We incur more
@@ -9453,6 +9483,16 @@ send_completed:
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_NEXT_BYTES)
         Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDING_NEXT_BYTES;
 
+    if (c->error->p1) {
+        PxListItem *item = c->error;
+        /* This will be set when an error occurred during data_received(),
+         * http11 is True, and our 500 response send completed. */
+        PyErr_Restore((PyObject *)item->p1,
+                      (PyObject *)item->p2,
+                      (PyObject *)item->p3);
+        PxSocket_FATAL();
+    }
+
     func = s->send_complete;
     if (!func)
         goto try_recv;
@@ -9915,7 +9955,7 @@ process_data_received:
                 PyErr_SetString(PyExc_ValueError,
                                 "failed to extract sendable object from "
                                 "next_bytes_to_send");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
 
         rbuf = NULL;
@@ -9991,12 +10031,43 @@ do_data_received_callback:
     if (PyErr_Occurred())
         __debugbreak();
 
-    if (!func)
-        __debugbreak();
+    if (!func && PxSocket_IS_HTTP11(s)) {
+        result = PyBytes_FromStringAndSize(
+            (char *)&http11_501_not_implemented_response[0],
+            sizeof(http11_501_not_implemented_response)-1
+        );
+        if (!result)
+            __debugbreak();
+        goto send_result;
+    }
 
     result = _PyParallel_CallObject(func, args);
-    if (!result)
-        PxSocket_EXCEPTION();
+    if (!result) {
+        if (PxSocket_IS_HTTP11(s)) {
+            PyObject *exc_type = NULL, *exc_value = NULL, *exc_tb = NULL;
+            PxListItem *item = c->error;
+
+            PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+            /*
+            PyErr_Fetch((PyObject **)&item->p1,
+                        (PyObject **)&item->p2,
+                        (PyObject **)&item->p3);
+             */
+            PyErr_Clear();
+            item->p1 = exc_type;
+            item->p2 = exc_value ? exc_value : NULL;
+            item->p2 = exc_tb ? exc_tb : NULL;
+
+            result = PyBytes_FromStringAndSize(
+                (char *)&http11_500_internal_error_response[0],
+                sizeof(http11_500_internal_error_response)-1
+            );
+            if (!result)
+                __debugbreak();
+            goto send_result;
+        } else
+            PxSocket_FATAL();
+    }
 
     if (PxSocket_IS_HTTP11(s))
         result = PxSocket_ConvertToHttpResponse(s, result);
@@ -10006,7 +10077,7 @@ do_data_received_callback:
             PyErr_SetString(PyExc_RuntimeError,
                             "data_received() callback scheduled sendfile but "
                             "returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
@@ -10015,10 +10086,11 @@ do_data_received_callback:
             PyErr_SetString(PyExc_RuntimeError,
                             "data_received() callback scheduled an async op"
                             " but returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
+send_result:
     if (result == Py_None) {
         if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
             s->sendfile_snapshot = rbuf->snapshot;
