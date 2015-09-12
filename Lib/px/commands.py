@@ -85,12 +85,12 @@ class HttpServer(TCPServerCommand):
 
         self._out("Serving HTTP on %s port %d ..." % (ip, port))
 
-        import async.http.server
+        import parallel.http.server
         with chdir(root):
-            server = async.server(ip, port)
-            protocol = async.http.server.HttpServer
-            async.register(transport=server, protocol=protocol)
-            async.run()
+            server = parallel.server(ip, port)
+            protocol = parallel.http.server.HttpServer
+            parallel.register(transport=server, protocol=protocol)
+            parallel.run()
 
 
 class ProductionHttpServer(TCPServerCommand):
@@ -113,11 +113,11 @@ class ChargenServer(TCPServerCommand):
 
         self._out("Running chargen on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Chargen
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.Chargen
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 class DisconnectServer(TCPServerCommand):
     port = None
@@ -136,11 +136,11 @@ class DisconnectServer(TCPServerCommand):
 
         self._out("Running disconnect on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Disconnect
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.Disconnect
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 class StaticQotdServer(TCPServerCommand):
     port = None
@@ -159,11 +159,11 @@ class StaticQotdServer(TCPServerCommand):
 
         self._out("Running static QOTD on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.StaticQotd
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.StaticQotd
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 class DynamicQotdServer(TCPServerCommand):
     port = None
@@ -182,11 +182,11 @@ class DynamicQotdServer(TCPServerCommand):
 
         self._out("Running dynamic QOTD on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.DynamicQotd
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.DynamicQotd
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 
 class DaytimeServer(TCPServerCommand):
@@ -208,11 +208,11 @@ class DaytimeServer(TCPServerCommand):
 
         self._out("Running daytime server on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Daytime
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.Daytime
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 class TimeServer(TCPServerCommand):
     port = None
@@ -231,11 +231,11 @@ class TimeServer(TCPServerCommand):
 
         self._out("Running time server on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Time
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.Time
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 class DiscardServer(TCPServerCommand):
     _shortname_ = 'disc'
@@ -256,11 +256,11 @@ class DiscardServer(TCPServerCommand):
 
         self._out("Running discard server on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
-        protocol = async.services.Discard
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        import parallel.services
+        server = parallel.server(ip, port)
+        protocol = parallel.services.Discard
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 
 class EchoServer(TCPServerCommand):
@@ -280,11 +280,11 @@ class EchoServer(TCPServerCommand):
 
         self._out("Running echo server on %s port %d ..." % (ip, port))
 
-        import async.services
-        server = async.server(ip, port)
+        import parallel.services
+        server = parallel.server(ip, port)
         protocol = Disconnect
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 #===============================================================================
 # Clients
@@ -309,14 +309,14 @@ class SimpleHttpGetClient(TCPClientCommand):
         class HttpGet:
             initial_bytes_to_send = b'GET /json HTTP/1.0\r\n\r\n\r\n'
             def data_received(self, transport, data):
-                #async.print(data)
-                async.debug(data)
+                #parallel.print(data)
+                parallel.debug(data)
 
-        import async
-        client = async.client(ip, port)
+        import parallel
+        client = parallel.client(ip, port)
         protocol = HttpGet
-        async.register(transport=client, protocol=protocol)
-        async.run()
+        parallel.register(transport=client, protocol=protocol)
+        parallel.run()
 
 class SimpleHttpGetClientWithDns(TCPClientCommand):
     port = None
@@ -338,14 +338,14 @@ class SimpleHttpGetClientWithDns(TCPClientCommand):
         class HttpGet:
             initial_bytes_to_send = b'GET / HTTP/1.0\r\n\r\n\r\n'
             def data_received(self, transport, data):
-                #async.print(data)
-                async.debug(data)
+                #parallel.print(data)
+                parallel.debug(data)
 
-        import async
-        client = async.client(hostname, port)
+        import parallel
+        client = parallel.client(hostname, port)
         protocol = HttpGet
-        async.register(transport=client, protocol=protocol)
-        async.run()
+        parallel.register(transport=client, protocol=protocol)
+        parallel.run()
 
 #===============================================================================
 # Examples Server
@@ -371,10 +371,10 @@ class WikiServer(TCPServerCommand):
         with chdir(wikidir):
             import wiki
             self._out("Running wiki server on %s port %d ..." % (ip, port))
-            import async
-            server = async.server(ip, port)
-            async.register(transport=server, protocol=wiki.WikiServer)
-            async.run()
+            import parallel
+            server = parallel.server(ip, port)
+            parallel.register(transport=server, protocol=wiki.WikiServer)
+            parallel.run()
 
 class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
     _shortname_ = 'tefb'
@@ -459,12 +459,12 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
         tefbdir = join_path(dirname(__file__), '../../examples/tefb')
         with chdir(tefbdir):
             import tefb
-            import async
+            import parallel
             import pyodbc
 
-            async.register_dealloc(pyodbc.Connection)
-            async.register_dealloc(pyodbc.Cursor)
-            async.register_dealloc(pyodbc.Row)
+            parallel.register_dealloc(pyodbc.Connection)
+            parallel.register_dealloc(pyodbc.Cursor)
+            parallel.register_dealloc(pyodbc.Row)
 
             protocol = tefb.TefbHttpServer
             if self.options.wiki:
@@ -486,10 +486,10 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
                 return
 
             self._out("Running server on %s port %d ..." % (ip, port))
-            server = async.server(ip, port)
-            async.register(transport=server, protocol=protocol)
+            server = parallel.server(ip, port)
+            parallel.register(transport=server, protocol=protocol)
             try:
-                async.run()
+                parallel.run()
             except KeyboardInterrupt:
                 server.shutdown()
 
@@ -518,10 +518,40 @@ class PandasServer(TCPServerCommand):
             pdt.df.to_csv()
             pdt.df.to_dict()
             self._out("Running pandas server on %s port %d ..." % (ip, port))
-            import async
-            server = async.server(ip, port)
-            async.register(transport=server, protocol=pdt.PandasHttpServer)
-            async.run()
+            import parallel
+            server = parallel.server(ip, port)
+            parallel.register(transport=server, protocol=pdt.PandasHttpServer)
+            parallel.run()
+
+class SqliteServer(TCPServerCommand):
+    _shortname_ = 'sq3'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        pydatadir = join_path(dirname(__file__), '../../examples/pydata')
+        with chdir(pydatadir):
+            import parallel
+            import sqlite_test as sqt
+            import sqlite3
+            parallel.register_dealloc(sqlite3.Connection)
+            parallel.register_dealloc(sqlite3.Cursor)
+            parallel.register_dealloc(sqlite3.Row)
+            server = parallel.server(ip, port)
+            self._out("Running sqlite3 server on %s port %d ..." % (ip, port))
+            parallel.register(transport=server, protocol=sqt.SqliteHttpServer)
+            parallel.run()
 
 #===============================================================================
 # Testing
@@ -555,20 +585,20 @@ class TestGenerator(TCPServerCommand):
             def initial_bytes_to_send(self):
                 return (', '.join(chr(i) for i in (1, 2, 3))).encode('utf-8')
 
-        import async
+        import parallel
         class GeneratorTest3:
             def yield_c(self):
                 for c in ('A', 'B', 'C'):
-                    async.debug(c)
+                    parallel.debug(c)
                     yield c
 
             def data_received(self, transport, data):
                 return (', '.join(c for c in self.yield_c())).encode('utf-8')
 
-        server = async.server(ip, port)
+        server = parallel.server(ip, port)
         protocol = GeneratorTest3
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 #===============================================================================
 # Primitives
@@ -591,26 +621,26 @@ class TestCallFromMainThreadAndWait(TCPServerCommand):
 
         self._out("Running test server on %s port %d ..." % (ip, port))
 
-        import async.http.server
+        import parallel.http.server
         with chdir(root):
-            server = async.server(ip, port)
-            protocol = async.http.server.HttpServer
-            async.register(transport=server, protocol=protocol)
-            async.run()
+            server = parallel.server(ip, port)
+            protocol = parallel.http.server.HttpServer
+            parallel.register(transport=server, protocol=protocol)
+            parallel.run()
 
-        class Protocol(async.http.server.HttpServer):
-            @async.call_from_main_thread_and_wait
+        class Protocol(parallel.http.server.HttpServer):
+            @parallel.call_from_main_thread_and_wait
             def _timestamp(self):
-                return async.rdtsc()
+                return parallel.rdtsc()
 
             def data_received(self, transport, data):
                 return b', '.join([chr(i) for i in (1, 2, 3)])
 
-        import async
-        server = async.server(ip, port)
+        import parallel
+        server = parallel.server(ip, port)
         protocol = GeneratorTest
-        async.register(transport=server, protocol=protocol)
-        async.run()
+        parallel.register(transport=server, protocol=protocol)
+        parallel.run()
 
 #===============================================================================
 # Dev Helpers
