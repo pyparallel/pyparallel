@@ -906,6 +906,9 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
     Objects *list = &h->px_deallocs;
     unsigned int count = 0, deallocs = 0, skipped = 0;
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     if (h->id == s->id) {
         if (!is_snapshot)
             __debugbreak();
@@ -973,6 +976,10 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
             /* Invariant broken. */
             __debugbreak();
     }
+
+    if (PyErr_Occurred())
+        __debugbreak();
+
     return count;
 }
 
@@ -8424,6 +8431,9 @@ PxSocket_IOLoop(PxSocket *s)
 
     ODS(L"PxSocket_IOLoop()\n");
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
 dispatch_io_op:
     if (s->next_io_op) {
         int op = s->next_io_op;
@@ -8824,6 +8834,9 @@ do_accept:
     if (!PxSocket_InitNextBytes(s))
         PxSocket_FATAL();
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     //if (!PxSocket_InitODBC(s))
     //    PxSocket_FATAL();
 
@@ -8886,6 +8899,8 @@ do_accept:
                 /* Overlapped accept initiated successfully, a completion
                  * packet will be posted when a new client connects. */
                 InterlockedIncrement(&s->parent->accepts_posted);
+                if (PyErr_Occurred())
+                    __debugbreak();
                 goto end;
 
             case WSAENOTSOCK:
@@ -8906,6 +8921,8 @@ do_accept:
 
 overlapped_acceptex_callback:
     ODS(L"do_acceptex_callback:\n");
+    if (PyErr_Occurred())
+        __debugbreak();
     if (!s->was_accepting)
         __debugbreak();
     InterlockedDecrement(&s->parent->accepts_posted);
@@ -8979,6 +8996,9 @@ overlapped_acceptex_callback:
     s->was_connected = 1;
     SetEvent(s->parent->client_connected);
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     goto start;
 
 overlapped_disconnectex_callback:
@@ -8995,6 +9015,9 @@ start:
     ODS(L"start:\n");
 
     assert(s->protocol);
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
 //maybe_shutdown_send_or_recv:
     if (!PxSocket_CAN_RECV(s)) {
@@ -9166,6 +9189,9 @@ definitely_do_connection_made:
 
 do_send:
     ODS(L"do_send:\n");
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
     s->this_io_op = PxSocket_IO_SEND;
     c->io_result = NO_ERROR;
@@ -9485,6 +9511,8 @@ send_completed:
 
     if (c->error->p1) {
         PxListItem *item = c->error;
+        if (!PxSocket_IS_HTTP11(s))
+            __debugbreak();
         /* This will be set when an error occurred during data_received(),
          * http11 is True, and our 500 response send completed. */
         PyErr_Restore((PyObject *)item->p1,
@@ -10069,6 +10097,9 @@ do_data_received_callback:
             PxSocket_FATAL();
     }
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     if (PxSocket_IS_HTTP11(s))
         result = PxSocket_ConvertToHttpResponse(s, result);
 
@@ -10297,6 +10328,8 @@ do_lines_received_callback:
     assert(0);
 
 end:
+    if (PyErr_Occurred())
+        __debugbreak();
     /* s may be null if PxSocket_RECYCLE() decided the socket didn't need
      * recycling... (Although I can't remember if s->wsa_error = NO_ERROR
      * was strictly necessary.) */
