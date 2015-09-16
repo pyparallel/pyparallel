@@ -41,8 +41,9 @@ list_resize(PyListObject *self, Py_ssize_t newsize)
 
 #ifdef WITH_PARALLEL
     if (Py_PXCTX() && Py_ISPY(self)) {
-        __debugbreak();
-        PyErr_SetString(PyExc_AssignmentError, "list_resize from px thread");
+        PyErr_SetString(PyExc_AssignmentError,
+                        "a parallel thread attempted to resize a list that "
+                        "was allocated from the main thread");
         return -1;
     }
 #endif
@@ -142,7 +143,7 @@ PyList_New(Py_ssize_t size)
     size_t nbytes;
 #ifdef SHOW_ALLOC_COUNT
     static int initialized = 0;
-    if (!initialized) {
+    if (!initialized && !Py_PXCTX()) {
         Py_AtExit(show_alloc);
         initialized = 1;
     }
@@ -238,6 +239,14 @@ PyList_SetItem(register PyObject *op, register Py_ssize_t i,
                         "list assignment index out of range");
         return -1;
     }
+#ifdef WITH_PARALLEL
+    if (Py_PXCTX() && Py_ISPY(op) && Py_ISPX(newitem)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "a parallel thread attempted to modify a list "
+                        "that was was allocated from the main thread");
+        return -1;
+    }
+#endif
     p = ((PyListObject *)op) -> ob_item + i;
     olditem = *p;
     *p = newitem;
@@ -259,6 +268,15 @@ ins1(PyListObject *self, Py_ssize_t where, PyObject *v)
             "cannot add more objects to list");
         return -1;
     }
+
+#ifdef WITH_PARALLEL
+    if (Py_PXCTX() && Py_ISPY(self) && Py_ISPX(v)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "a parallel thread attempted to modify a list "
+                        "that was was allocated from the main thread");
+        return -1;
+    }
+#endif
 
     if (list_resize(self, n+1) == -1)
         return -1;
@@ -299,6 +317,16 @@ app1(PyListObject *self, PyObject *v)
             "cannot add more objects to list");
         return -1;
     }
+
+#ifdef WITH_PARALLEL
+    if (Py_PXCTX() && Py_ISPY(self) && Py_ISPX(v)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "a parallel thread attempted to modify a list "
+                        "that was was allocated from the main thread");
+        return -1;
+    }
+#endif
+
 
     if (list_resize(self, n+1) == -1)
         return -1;
@@ -562,7 +590,9 @@ static int
 list_clear(PyListObject *a)
 {
     Py_ssize_t i;
-    PyObject **item = a->ob_item;
+    PyObject **item;
+    Py_GUARD();
+    item = a->ob_item;
     if (item != NULL) {
         /* Because XDECREF can recursively invoke operations on
            this list, we make it empty first. */
