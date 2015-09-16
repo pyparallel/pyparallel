@@ -591,7 +591,14 @@ list_clear(PyListObject *a)
 {
     Py_ssize_t i;
     PyObject **item;
-    Py_GUARD();
+#ifdef WITH_PARALLEL
+    if (Py_PXCTX() && Px_ISPY(a)) {
+        PyErr_SetString(PyExc_AssignmentError,
+                        "parallel thread attempted to clear a list "
+                        "allocated from the main thread");
+        return -1;
+    }
+#endif 
     item = a->ob_item;
     if (item != NULL) {
         /* Because XDECREF can recursively invoke operations on
@@ -639,7 +646,6 @@ list_ass_slice(PyListObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     int result = -1;            /* guilty until proved innocent */
 #ifdef WITH_PARALLEL
     if (Py_PXCTX() && Px_ISPY(a)) {
-        __debugbreak();
         PyErr_SetString(PyExc_AssignmentError,
                         "parallel thread attempted to assign to a slice "
                         "of a main thread list");
