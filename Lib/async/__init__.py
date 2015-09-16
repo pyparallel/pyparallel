@@ -45,11 +45,16 @@ try:
 except ImportError:
     pass
 
+
 import inspect
-def register_module_deallocs(module):
+def get_classes_in_module(module):
     isclass = inspect.isclass
     attrs = [ getattr(module, name) for name in dir(module) ]
     types = [ t for t in attrs if isclass(t) ]
+    return types
+
+def register_module_deallocs(module):
+    types = get_classes_in_module(module)
     for t in types:
         _async.register_dealloc(t)
 
