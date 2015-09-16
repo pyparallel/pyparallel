@@ -1125,7 +1125,7 @@ static int pysqlite_connection_set_isolation_level(pysqlite_Connection* self, Py
 {
     PyObject* res;
     PyObject* begin_statement;
-    static PyObject* begin_word;
+    PyObject* begin_word = NULL;
 
     Py_XDECREF(self->isolation_level);
 
