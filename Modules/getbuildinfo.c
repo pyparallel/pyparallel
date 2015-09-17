@@ -21,6 +21,61 @@
 #endif
 #endif
 
+#ifdef GITTAG
+
+const char *
+_Py_gitversion(void)
+{
+    return GITVERSION;
+}
+
+const char *
+_Py_gitidentifier(void)
+{
+    return GITTAG;
+}
+
+const char *
+_Py_version(void)
+{
+    return _Py_gitversion();
+}
+
+const char *
+_Py_identifier(void)
+{
+    return _Py_gitidentifier();
+}
+
+const char *
+_Py_hgversion(void)
+{
+    return _Py_gitversion();
+}
+
+const char *
+_Py_hgidentifier(void)
+{
+    return _Py_gitidentifier();
+}
+
+
+const char *
+Py_GetBuildInfo(void)
+{
+    static char buildinfo[50 + sizeof(GITVERSION) + sizeof(GITTAG)];
+    const char *revision = _Py_gitversion();
+    const char *sep = *revision ? ":" : "";
+    const char *gitid = _Py_gitidentifier();
+    if (!(*gitid))
+        gitid = "3.3-px";
+    PyOS_snprintf(buildinfo, sizeof(buildinfo),
+                  "%s%s%s, %.20s, %.9s", gitid, sep, revision,
+                  DATE, TIME);
+    return buildinfo;
+}
+
+#else /* GITTAG */
 /* XXX Only unix build process has been tested */
 #ifndef HGVERSION
 #define HGVERSION ""
@@ -66,3 +121,29 @@ _Py_hgidentifier(void)
         hgid = HGBRANCH;
     return hgid;
 }
+
+const char *
+_Py_version(void)
+{
+    return _Py_hgversion();
+}
+
+const char *
+_Py_identifier(void)
+{
+    return _Py_hgidentifier();
+}
+
+const char *
+_Py_gitversion(void)
+{
+    return _Py_hgversion();
+}
+
+const char *
+_Py_gitidentifier(void)
+{
+    return _Py_hgidentifier();
+}
+
+#endif /* !GITTAG */
