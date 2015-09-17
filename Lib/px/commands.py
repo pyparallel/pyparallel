@@ -652,6 +652,12 @@ class TestCallFromMainThreadAndWait(TCPServerCommand):
 # Dev Helpers
 #===============================================================================
 class UpdateDiffs(PxCommand):
+    def run(self):
+        raise CommandError(
+            'deprecated: use update-hg-diffs or update-git-diffs instead'
+        )
+
+class UpdateHgDiffs(PxCommand):
     """
     Diffs PyParallel against original v3.3.5 tag it was based upon and,
     for all modified files (i.e. we exclude new files), create a diff
@@ -729,6 +735,115 @@ class UpdateDiffs(PxCommand):
                 ' --ignore-blank-lines '
                 ' --ignore-space-change '
                 ' "%s" > "%s"' % (
+                    base_rev,
+                    path,
+                    patchpath,
+                )
+            )
+            #dbg.set_trace()
+            os.system(cmd)
+            st = os.stat(patchpath)
+            if st.st_size == 0:
+                os.unlink(patchpath)
+            else:
+                self._out("Updated %s." % patchpath.replace(root + '\\', ''))
+
+class UpdateGitDiffs(PxCommand):
+    """
+    Diffs PyParallel against original v3.3.5 tag it was based upon and,
+    for all modified files (i.e. we exclude new files), create a diff
+    and store it in diffs/<dirname>/<filename>.diff.
+    """
+    base_rev = None
+    class BaseRevArg(StringInvariant):
+        _help = 'base rev/tag to diff against [default: %default]'
+        _default = 'v3.3.5'
+
+    target_rev = None
+    class TargetRevArg(StringInvariant):
+        _help = 'target rev/tag to diff against [default: %default]'
+        _default = 'branches/3.3-px'
+
+    root = None
+    class RootArg(DirectoryInvariant):
+        _help = 'git repository root'
+
+    def run(self):
+        import os
+        from collections import defaultdict
+        from ctk.path import abspath, normpath, join_path, splitpath
+
+        import pdb
+        dbg = pdb.Pdb()
+        #dbg.set_trace()
+
+        root = self.options.root
+        if not root:
+            root = join_path(dirname(__file__), '../..')
+
+        if os.getcwd() != root:
+            os.chdir(root)
+
+        basedir = join_path(root, 'diffs')
+
+        base_rev = self.options.base_rev
+        target_rev = self.options.target_rev
+
+        #dbg.set_trace()
+
+        # This is super hacky.  Mimic c:\msysgit\git-cmd.bat.
+        git_root = 'c:\\msysgit'
+        git_bin = join_path(git_root, 'bin')
+        mingw_bin = join_path(git_root, 'mingw/bin')
+        git_cmd = join_path(git_root, 'cmd')
+
+        prepend_path = ';'.join((
+            git_bin,
+            mingw_bin,
+            git_cmd,
+        ))
+
+        existing_path = os.environ['PATH']
+        new_path = ';'.join((prepend_path, existing_path))
+        os.environ['PATH'] = new_path
+        os.environ['PLINK_PROTOCOL'] = 'ssh'
+        os.environ['TERM'] = 'msys'
+
+        cmd = (
+            'git diff --name-status %s %s > git-st.txt' % (
+                base_rev,
+                target_rev,
+            )
+        )
+        os.system(cmd)
+
+        with open('git-st.txt', 'r') as f:
+            data = f.read()
+
+        lines = data.splitlines()
+        d = defaultdict(list)
+        for line in lines:
+            (action, path) = line.split('\t', 1)
+            d[action].append(path)
+
+        isdir = os.path.isdir
+        for path in d['M']:
+            (base, filename) = splitpath(path)
+            if base:
+                diffdir = join_path(basedir, base)
+            else:
+                diffdir = basedir
+            if not isdir(diffdir):
+                os.makedirs(diffdir)
+
+            patchname = filename + '.patch'
+            patchpath = join_path(diffdir, patchname)
+            cmd = (
+                'git diff '
+                #' --ignore-all-space '
+                ' --ignore-blank-lines '
+                ' --ignore-space-change '
+                ' %s "%s" > "%s"' % (
                     base_rev,
                     path,
                     patchpath,
