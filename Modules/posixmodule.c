@@ -4679,7 +4679,7 @@ os.utime
     dir_fd: dir_fd(requires='futimensat') = None
     follow_symlinks: bool=True
 
-# "utime(path, times=None, *, ns=None, dir_fd=None, follow_symlinks=True)\n\
+# "utime(path, times=None, *[, ns], dir_fd=None, follow_symlinks=True)\n\
 
 Set the access and modified time of path.
 
@@ -4689,10 +4689,10 @@ On some platforms, path may also be specified as an open file descriptor.
 
 If times is not None, it must be a tuple (atime, mtime);
     atime and mtime should be expressed as float seconds since the epoch.
-If ns is not None, it must be a tuple (atime_ns, mtime_ns);
+If ns is specified, it must be a tuple (atime_ns, mtime_ns);
     atime_ns and mtime_ns should be expressed as integer nanoseconds
     since the epoch.
-If both times and ns are None, utime uses the current time.
+If times is None and ns is unspecified, utime uses the current time.
 Specifying tuples for both times and ns is an error.
 
 If dir_fd is not None, it should be a file descriptor open to a directory,
@@ -4710,7 +4710,7 @@ dir_fd and follow_symlinks may not be available on your platform.
 static PyObject *
 os_utime_impl(PyModuleDef *module, path_t *path, PyObject *times,
               PyObject *ns, int dir_fd, int follow_symlinks)
-/*[clinic end generated code: output=31f3434e560ba2f0 input=1f18c17d5941aa82]*/
+/*[clinic end generated code: output=31f3434e560ba2f0 input=081cdc54ca685385]*/
 {
 #ifdef MS_WINDOWS
     HANDLE hFile;
@@ -7021,7 +7021,7 @@ os_waitpid_impl(PyModuleDef *module, Py_intptr_t pid, int options)
         res = _cwait(&status, pid, options);
         Py_END_ALLOW_THREADS
     } while (res < 0 && errno == EINTR && !(async_err = PyErr_CheckSignals()));
-    if (res != 0)
+    if (res < 0)
         return (!async_err) ? posix_error() : NULL;
 
     /* shift the status left a byte so this is more like the POSIX waitpid */
@@ -7731,7 +7731,7 @@ os_open_impl(PyModuleDef *module, path_t *path, int flags, int mode,
     } while (fd < 0 && errno == EINTR && !(async_err = PyErr_CheckSignals()));
     _Py_END_SUPPRESS_IPH
 
-    if (fd == -1) {
+    if (fd < 0) {
         if (!async_err)
             PyErr_SetFromErrnoWithFilenameObject(PyExc_OSError, path->object);
         return -1;
@@ -8235,10 +8235,10 @@ os_write_impl(PyModuleDef *module, int fd, Py_buffer *data)
 
 #ifdef HAVE_SENDFILE
 PyDoc_STRVAR(posix_sendfile__doc__,
-"sendfile(out, in, offset, nbytes) -> byteswritten\n\
-sendfile(out, in, offset, nbytes, headers=None, trailers=None, flags=0)\n\
+"sendfile(out, in, offset, count) -> byteswritten\n\
+sendfile(out, in, offset, count[, headers][, trailers], flags=0)\n\
             -> byteswritten\n\
-Copy nbytes bytes from file descriptor in to file descriptor out.");
+Copy count bytes from file descriptor in to file descriptor out.");
 
 /* AC 3.5: don't bother converting, has optional group*/
 static PyObject *
@@ -8258,6 +8258,7 @@ posix_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     off_t sbytes;
     struct sf_hdtr sf;
     int flags = 0;
+    /* Beware that "in" clashes with Python's own "in" operator keyword */
     static char *keywords[] = {"out", "in",
                                 "offset", "count",
                                 "headers", "trailers", "flags", NULL};
@@ -8277,7 +8278,7 @@ posix_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (headers != NULL) {
         if (!PySequence_Check(headers)) {
             PyErr_SetString(PyExc_TypeError,
-                "sendfile() headers must be a sequence or None");
+                "sendfile() headers must be a sequence");
             return NULL;
         } else {
             Py_ssize_t i = 0; /* Avoid uninitialized warning */
@@ -8294,7 +8295,7 @@ posix_sendfile(PyObject *self, PyObject *args, PyObject *kwdict)
     if (trailers != NULL) {
         if (!PySequence_Check(trailers)) {
             PyErr_SetString(PyExc_TypeError,
-                "sendfile() trailers must be a sequence or None");
+                "sendfile() trailers must be a sequence");
             return NULL;
         } else {
             Py_ssize_t i = 0; /* Avoid uninitialized warning */

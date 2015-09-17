@@ -85,7 +85,7 @@ HAVE_WHEEL_GROUP = sys.platform.startswith('freebsd') and os.getgid() == 0
 # Tests creating TESTFN
 class FileTests(unittest.TestCase):
     def setUp(self):
-        if os.path.exists(support.TESTFN):
+        if os.path.lexists(support.TESTFN):
             os.unlink(support.TESTFN)
     tearDown = setUp
 
@@ -208,6 +208,19 @@ class FileTests(unittest.TestCase):
         self.assertRaises(FileNotFoundError, os.stat, support.TESTFN)
         with open(TESTFN2, 'r') as f:
             self.assertEqual(f.read(), "1")
+
+    def test_open_keywords(self):
+        f = os.open(path=__file__, flags=os.O_RDONLY, mode=0o777,
+            dir_fd=None)
+        os.close(f)
+
+    def test_symlink_keywords(self):
+        symlink = support.get_attribute(os, "symlink")
+        try:
+            symlink(src='target', dst=support.TESTFN,
+                target_is_directory=False, dir_fd=None)
+        except (NotImplementedError, OSError):
+            pass  # No OS support or unprivileged user
 
 
 # Test attributes on return values from os.*stat* family.
@@ -1773,7 +1786,7 @@ class Win32KillTests(unittest.TestCase):
             os.kill(proc.pid, signal.SIGINT)
             self.fail("subprocess did not stop on {}".format(name))
 
-    @unittest.skip("subprocesses aren't inheriting CTRL+C property")
+    @unittest.skip("subprocesses aren't inheriting Ctrl+C property")
     def test_CTRL_C_EVENT(self):
         from ctypes import wintypes
         import ctypes
@@ -1786,7 +1799,7 @@ class Win32KillTests(unittest.TestCase):
         SetConsoleCtrlHandler.restype = wintypes.BOOL
 
         # Calling this with NULL and FALSE causes the calling process to
-        # handle CTRL+C, rather than ignore it. This property is inherited
+        # handle Ctrl+C, rather than ignore it. This property is inherited
         # by subprocesses.
         SetConsoleCtrlHandler(NULL, 0)
 
@@ -2065,6 +2078,12 @@ class PidTests(unittest.TestCase):
         # We are the parent of our subprocess
         self.assertEqual(int(stdout), os.getpid())
 
+    def test_waitpid(self):
+        args = [sys.executable, '-c', 'pass']
+        pid = os.spawnv(os.P_NOWAIT, args[0], args)
+        status = os.waitpid(pid, 0)
+        self.assertEqual(status, (pid, 0))
+
 
 # The introduction of this TestCase caused at least two different errors on
 # *nix buildbots. Temporarily skip this to let the buildbots move along.
@@ -2312,6 +2331,14 @@ class TestSendfile(unittest.TestCase):
         with self.assertRaises(OSError) as cm:
             os.sendfile(self.sockno, self.fileno, -1, 4096)
         self.assertEqual(cm.exception.errno, errno.EINVAL)
+
+    def test_keywords(self):
+        # Keyword arguments should be supported
+        os.sendfile(out=self.sockno, offset=0, count=4096,
+            **{'in': self.fileno})
+        if self.SUPPORT_HEADERS_TRAILERS:
+            os.sendfile(self.sockno, self.fileno, offset=0, count=4096,
+                headers=(), trailers=(), flags=0)
 
     # --- headers / trailers tests
 

@@ -974,16 +974,16 @@ class TestShutil(unittest.TestCase):
         tmpdir2 = self.mkdtemp()
         # force shutil to create the directory
         os.rmdir(tmpdir2)
-        unittest.skipUnless(splitdrive(root_dir)[0] == splitdrive(tmpdir2)[0],
-                            "source and target should be on same drive")
+        # working with relative paths
+        work_dir = os.path.dirname(tmpdir2)
+        rel_base_name = os.path.join(os.path.basename(tmpdir2), 'archive')
 
-        base_name = os.path.join(tmpdir2, 'archive')
-
-        # working with relative paths to avoid tar warnings
-        make_archive(splitdrive(base_name)[1], 'gztar', root_dir, '.')
+        with support.change_cwd(work_dir):
+            base_name = os.path.abspath(rel_base_name)
+            tarball = make_archive(rel_base_name, 'gztar', root_dir, '.')
 
         # check if the compressed tarball was created
-        tarball = base_name + '.tar.gz'
+        self.assertEqual(tarball, base_name + '.tar.gz')
         self.assertTrue(os.path.isfile(tarball))
         self.assertTrue(tarfile.is_tarfile(tarball))
         with tarfile.open(tarball, 'r:gz') as tf:
@@ -992,9 +992,9 @@ class TestShutil(unittest.TestCase):
                                    './file1', './file2', './sub/file3'])
 
         # trying an uncompressed one
-        base_name = os.path.join(tmpdir2, 'archive')
-        make_archive(splitdrive(base_name)[1], 'tar', root_dir, '.')
-        tarball = base_name + '.tar'
+        with support.change_cwd(work_dir):
+            tarball = make_archive(rel_base_name, 'tar', root_dir, '.')
+        self.assertEqual(tarball, base_name + '.tar')
         self.assertTrue(os.path.isfile(tarball))
         self.assertTrue(tarfile.is_tarfile(tarball))
         with tarfile.open(tarball, 'r') as tf:
@@ -1028,10 +1028,10 @@ class TestShutil(unittest.TestCase):
     def test_tarfile_vs_tar(self):
         root_dir, base_dir = self._create_files()
         base_name = os.path.join(self.mkdtemp(), 'archive')
-        make_archive(base_name, 'gztar', root_dir, base_dir)
+        tarball = make_archive(base_name, 'gztar', root_dir, base_dir)
 
         # check if the compressed tarball was created
-        tarball = base_name + '.tar.gz'
+        self.assertEqual(tarball, base_name + '.tar.gz')
         self.assertTrue(os.path.isfile(tarball))
 
         # now create another tarball using `tar`
@@ -1045,13 +1045,14 @@ class TestShutil(unittest.TestCase):
         self.assertEqual(self._tarinfo(tarball), self._tarinfo(tarball2))
 
         # trying an uncompressed one
-        make_archive(base_name, 'tar', root_dir, base_dir)
-        tarball = base_name + '.tar'
+        tarball = make_archive(base_name, 'tar', root_dir, base_dir)
+        self.assertEqual(tarball, base_name + '.tar')
         self.assertTrue(os.path.isfile(tarball))
 
         # now for a dry_run
-        make_archive(base_name, 'tar', root_dir, base_dir, dry_run=True)
-        tarball = base_name + '.tar'
+        tarball = make_archive(base_name, 'tar', root_dir, base_dir,
+                               dry_run=True)
+        self.assertEqual(tarball, base_name + '.tar')
         self.assertTrue(os.path.isfile(tarball))
 
     @requires_zlib
@@ -1059,16 +1060,52 @@ class TestShutil(unittest.TestCase):
     def test_make_zipfile(self):
         # creating something to zip
         root_dir, base_dir = self._create_files()
-        base_name = os.path.join(self.mkdtemp(), 'archive')
-        res = make_archive(base_name, 'zip', root_dir, 'dist')
+
+        tmpdir2 = self.mkdtemp()
+        # force shutil to create the directory
+        os.rmdir(tmpdir2)
+        # working with relative paths
+        work_dir = os.path.dirname(tmpdir2)
+        rel_base_name = os.path.join(os.path.basename(tmpdir2), 'archive')
+
+        with support.change_cwd(work_dir):
+            base_name = os.path.abspath(rel_base_name)
+            res = make_archive(rel_base_name, 'zip', root_dir, base_dir)
 
         self.assertEqual(res, base_name + '.zip')
         self.assertTrue(os.path.isfile(res))
         self.assertTrue(zipfile.is_zipfile(res))
         with zipfile.ZipFile(res) as zf:
             self.assertCountEqual(zf.namelist(),
-                    ['dist/file1', 'dist/file2', 'dist/sub/file3'])
+                    ['dist/', 'dist/sub/', 'dist/sub2/',
+                     'dist/file1', 'dist/file2', 'dist/sub/file3'])
 
+    @requires_zlib
+    @unittest.skipUnless(ZIP_SUPPORT, 'Need zip support to run')
+    @unittest.skipUnless(find_executable('zip'),
+                         'Need the zip command to run')
+    def test_zipfile_vs_zip(self):
+        root_dir, base_dir = self._create_files()
+        base_name = os.path.join(self.mkdtemp(), 'archive')
+        archive = make_archive(base_name, 'zip', root_dir, base_dir)
+
+        # check if ZIP file  was created
+        self.assertEqual(archive, base_name + '.zip')
+        self.assertTrue(os.path.isfile(archive))
+
+        # now create another ZIP file using `zip`
+        archive2 = os.path.join(root_dir, 'archive2.zip')
+        zip_cmd = ['zip', '-q', '-r', 'archive2.zip', base_dir]
+        with support.change_cwd(root_dir):
+            spawn(zip_cmd)
+
+        self.assertTrue(os.path.isfile(archive2))
+        # let's compare both ZIP files
+        with zipfile.ZipFile(archive) as zf:
+            names = zf.namelist()
+        with zipfile.ZipFile(archive2) as zf:
+            names2 = zf.namelist()
+        self.assertEqual(sorted(names), sorted(names2))
 
     def test_make_archive(self):
         tmpdir = self.mkdtemp()
@@ -1181,11 +1218,9 @@ class TestShutil(unittest.TestCase):
             formats.append('xztar')
 
         root_dir, base_dir = self._create_files()
+        expected = rlistdir(root_dir)
+        expected.remove('outer')
         for format in formats:
-            expected = rlistdir(root_dir)
-            expected.remove('outer')
-            if format == 'zip':
-                expected.remove('dist/sub2/')
             base_name = os.path.join(self.mkdtemp(), 'archive')
             filename = make_archive(base_name, format, root_dir, base_dir)
 

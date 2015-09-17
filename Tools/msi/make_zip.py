@@ -3,6 +3,7 @@ import py_compile
 import re
 import sys
 import shutil
+import stat
 import os
 import tempfile
 
@@ -64,15 +65,18 @@ FULL_LAYOUT = [
     ('Tools/', 'Tools', '**/*', include_in_tools),
 ]
 
-if os.getenv('DOC_FILENAME'):
-    FULL_LAYOUT.append(('Doc/', 'Doc/build/htmlhelp', os.getenv('DOC_FILENAME'), None))
-
 EMBED_LAYOUT = [
     ('/', 'PCBuild/$arch', 'python*.exe', is_not_debug),
     ('/', 'PCBuild/$arch', '*.pyd', is_not_debug),
     ('/', 'PCBuild/$arch', '*.dll', is_not_debug),
     ('python35.zip', 'Lib', '**/*', include_in_lib),
 ]
+
+if os.getenv('DOC_FILENAME'):
+    FULL_LAYOUT.append(('Doc/', 'Doc/build/htmlhelp', os.getenv('DOC_FILENAME'), None))
+if os.getenv('VCREDIST_PATH'):
+    FULL_LAYOUT.append(('/', os.getenv('VCREDIST_PATH'), 'vcruntime*.dll', None))
+    EMBED_LAYOUT.append(('/', os.getenv('VCREDIST_PATH'), 'vcruntime*.dll', None))
 
 def copy_to_layout(target, rel_sources):
     count = 0
@@ -98,11 +102,16 @@ def copy_to_layout(target, rel_sources):
 
     else:
         for s, rel in rel_sources:
+            dest = target / rel
             try:
-                (target / rel).parent.mkdir(parents=True)
+                dest.parent.mkdir(parents=True)
             except FileExistsError:
                 pass
-            shutil.copy(str(s), str(target / rel))
+            if dest.is_file():
+                dest.chmod(stat.S_IWRITE)
+            shutil.copy(str(s), str(dest))
+            if dest.is_file():
+                dest.chmod(stat.S_IWRITE)
             count += 1
 
     return count

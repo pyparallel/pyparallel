@@ -10,7 +10,6 @@ extending/embedding,,:numargs,"if(!PyArg_ParseTuple(args, "":numargs""))"
 extending/extending,,:myfunction,"PyArg_ParseTuple(args, ""D:myfunction"", &c);"
 extending/extending,,:set,"if (PyArg_ParseTuple(args, ""O:set_callback"", &temp)) {"
 extending/newtypes,,:call,"if (!PyArg_ParseTuple(args, ""sss:call"", &arg1, &arg2, &arg3)) {"
-extending/windows,,:initspam,/export:initspam
 faq/programming,,:chr,">=4.0) or 1+f(xc,yc,x*x-y*y+xc,2.0*x*y+yc,k-1,f):f(xc,yc,x,y,k,f):chr("
 faq/programming,,::,for x in sequence[::-1]:
 faq/programming,,:reduce,"print((lambda Ru,Ro,Iu,Io,IM,Sx,Sy:reduce(lambda x,y:x+y,map(lambda y,"
@@ -288,6 +287,11 @@ library/xml.etree.elementtree,332,:character,"for char in actor.findall('role:ch
 library/zipapp,31,:main,"$ python -m zipapp myapp -m ""myapp:main"""
 library/zipapp,82,:fn,"argument should have the form ""pkg.mod:fn"", where ""pkg.mod"" is a"
 library/zipapp,155,:callable,"""pkg.module:callable"" and the archive will be run by importing"
-library/stdtypes,3767,::,>>> m[::2].tolist()
+library/stdtypes,,::,>>> m[::2].tolist()
 library/sys,1115,`,# ``wrapper`` creates a ``wrap(coro)`` coroutine:
 tutorial/venv,77,:c7b9645a6f35,"Python 3.4.3+ (3.4:c7b9645a6f35+, May 22 2015, 09:31:25)"
+whatsnew/3.5,965,:root,'WARNING:root:warning\n'
+whatsnew/3.5,965,:warning,'WARNING:root:warning\n'
+whatsnew/3.5,1292,::,>>> addr6 = ipaddress.IPv6Address('::1')
+whatsnew/3.5,1354,:root,ERROR:root:exception
+whatsnew/3.5,1354,:exception,ERROR:root:exception

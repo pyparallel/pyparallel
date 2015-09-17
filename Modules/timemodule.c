@@ -610,14 +610,15 @@ time_strftime(PyObject *self, PyObject *args)
 
 #if defined(MS_WINDOWS) && !defined(HAVE_WCSFTIME)
     /* check that the format string contains only valid directives */
-    for(outbuf = strchr(fmt, '%');
+    for (outbuf = strchr(fmt, '%');
         outbuf != NULL;
         outbuf = strchr(outbuf+2, '%'))
     {
-        if (outbuf[1]=='#')
+        if (outbuf[1] == '#')
             ++outbuf; /* not documented by python, */
-        if ((outbuf[1] == 'y') && buf.tm_year < 0)
-        {
+        if (outbuf[1] == '\0')
+            break;
+        if ((outbuf[1] == 'y') && buf.tm_year < 0) {
             PyErr_SetString(PyExc_ValueError,
                         "format %y requires year >= 1900 on Windows");
             Py_DECREF(format);
@@ -625,10 +626,12 @@ time_strftime(PyObject *self, PyObject *args)
         }
     }
 #elif (defined(_AIX) || defined(sun)) && defined(HAVE_WCSFTIME)
-    for(outbuf = wcschr(fmt, '%');
+    for (outbuf = wcschr(fmt, '%');
         outbuf != NULL;
         outbuf = wcschr(outbuf+2, '%'))
     {
+        if (outbuf[1] == L'\0')
+            break;
         /* Issue #19634: On AIX, wcsftime("y", (1899, 1, 1, 0, 0, 0, 0, 0, 0))
            returns "0/" instead of "99" */
         if (outbuf[1] == L'y' && buf.tm_year < 0) {
@@ -645,9 +648,6 @@ time_strftime(PyObject *self, PyObject *args)
      * will be ahead of time...
      */
     for (i = 1024; ; i += i) {
-#if defined _MSC_VER && _MSC_VER >= 1400 && defined(__STDC_SECURE_LIB__)
-        int err;
-#endif
         outbuf = (time_char *)PyMem_Malloc(i*sizeof(time_char));
         if (outbuf == NULL) {
             PyErr_NoMemory();
@@ -657,7 +657,12 @@ time_strftime(PyObject *self, PyObject *args)
         buflen = format_time(outbuf, i, fmt, &buf);
         _Py_END_SUPPRESS_IPH
 #if defined _MSC_VER && _MSC_VER >= 1400 && defined(__STDC_SECURE_LIB__)
-        err = errno;
+        /* VisualStudio .NET 2005 does this properly */
+        if (buflen == 0 && errno == EINVAL) {
+            PyErr_SetString(PyExc_ValueError, "Invalid format string");
+            PyMem_Free(outbuf);
+            break;
+        }
 #endif
         if (buflen > 0 || i >= 256 * fmtlen) {
             /* If the buffer is 256 times as long as the format,
@@ -675,13 +680,6 @@ time_strftime(PyObject *self, PyObject *args)
             break;
         }
         PyMem_Free(outbuf);
-#if defined _MSC_VER && _MSC_VER >= 1400 && defined(__STDC_SECURE_LIB__)
-        /* VisualStudio .NET 2005 does this properly */
-        if (buflen == 0 && err == EINVAL) {
-            PyErr_SetString(PyExc_ValueError, "Invalid format string");
-            break;
-        }
-#endif
     }
 #ifdef HAVE_WCSFTIME
     PyMem_Free(format);
