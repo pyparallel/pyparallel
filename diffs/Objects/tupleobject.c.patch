@@ -1,7 +1,8 @@
 diff --git a/Objects/tupleobject.c b/Objects/tupleobject.c
+index 123df8c..28be9a9 100644
 --- a/Objects/tupleobject.c
 +++ b/Objects/tupleobject.c
-@@ -20,8 +20,8 @@ static PyTupleObject *free_list[PyTuple_
+@@ -20,8 +20,8 @@ static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
  static int numfree[PyTuple_MAXSAVESIZE];
  #endif
  #ifdef COUNT_ALLOCS
@@ -59,7 +60,7 @@ diff --git a/Objects/tupleobject.c b/Objects/tupleobject.c
      return (PyObject *) op;
  }
  
-@@ -146,6 +154,20 @@ PyTuple_GetItem(register PyObject *op, r
+@@ -146,6 +154,20 @@ PyTuple_GetItem(register PyObject *op, register Py_ssize_t i)
      return ((PyTupleObject *)op) -> ob_item[i];
  }
  

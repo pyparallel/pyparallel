@@ -1,4 +1,5 @@
 diff --git a/Include/py_curses.h b/Include/py_curses.h
+index f2c08f6..9b0cca1 100644
 --- a/Include/py_curses.h
 +++ b/Include/py_curses.h
 @@ -103,8 +103,8 @@ static void **PyCurses_API;

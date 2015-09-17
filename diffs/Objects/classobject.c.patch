@@ -1,4 +1,5 @@
 diff --git a/Objects/classobject.c b/Objects/classobject.c
+index cdc9b1c..8d4ce94 100644
 --- a/Objects/classobject.c
 +++ b/Objects/classobject.c
 @@ -36,6 +36,34 @@ PyMethod_Self(PyObject *im)
@@ -36,7 +37,7 @@ diff --git a/Objects/classobject.c b/Objects/classobject.c
  /* Method objects are used for bound instance methods returned by
     instancename.methodname. ClassName.methodname returns an ordinary
     function.
-@@ -50,7 +78,7 @@ PyMethod_New(PyObject *func, PyObject *s
+@@ -50,7 +78,7 @@ PyMethod_New(PyObject *func, PyObject *self)
          return NULL;
      }
      im = free_list;
@@ -45,7 +46,7 @@ diff --git a/Objects/classobject.c b/Objects/classobject.c
          free_list = (PyMethodObject *)(im->im_self);
          PyObject_INIT(im, &PyMethod_Type);
          numfree--;
-@@ -166,6 +194,7 @@ method_new(PyTypeObject* type, PyObject*
+@@ -166,6 +194,7 @@ method_new(PyTypeObject* type, PyObject* args, PyObject *kw)
  static void
  method_dealloc(register PyMethodObject *im)
  {

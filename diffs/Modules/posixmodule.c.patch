@@ -1,7 +1,8 @@
 diff --git a/Modules/posixmodule.c b/Modules/posixmodule.c
+index 767a665..55e10ee 100644
 --- a/Modules/posixmodule.c
 +++ b/Modules/posixmodule.c
-@@ -973,7 +973,7 @@ int
+@@ -973,7 +973,7 @@ _PyVerify_fd(int fd)
      const int i1 = fd >> IOINFO_L2E;
      const int i2 = fd & ((1 << IOINFO_L2E) - 1);
  

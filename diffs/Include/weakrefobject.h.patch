@@ -1,0 +1,18 @@
+diff --git a/Include/weakrefobject.h b/Include/weakrefobject.h
+index 1705156..757042a 100644
+--- a/Include/weakrefobject.h
++++ b/Include/weakrefobject.h
+@@ -74,10 +74,11 @@ PyAPI_FUNC(void) _PyWeakref_ClearRef(PyWeakReference *self);
+    be able to "see" the target object even though it is supposed to be
+    unreachable.  See issue #16602. */
+ 
+-#define PyWeakref_GET_OBJECT(ref)                           \
++#define PyWeakref_GET_OBJECT(ref) (Py_PXCTX() ? Py_None :   \
+     (Py_REFCNT(((PyWeakReference *)(ref))->wr_object) > 0   \
+      ? ((PyWeakReference *)(ref))->wr_object                \
+-     : Py_None)
++     : Py_None)                                             \
++)
+ 
+ 
+ #ifdef __cplusplus

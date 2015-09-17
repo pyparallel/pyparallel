@@ -1,0 +1,13 @@
+diff --git a/Modules/_sqlite/connection.c b/Modules/_sqlite/connection.c
+index 8cf2d6a..8181c2b 100644
+--- a/Modules/_sqlite/connection.c
++++ b/Modules/_sqlite/connection.c
+@@ -1125,7 +1125,7 @@ static int pysqlite_connection_set_isolation_level(pysqlite_Connection* self, Py
+ {
+     PyObject* res;
+     PyObject* begin_statement;
+-    static PyObject* begin_word;
++    PyObject* begin_word = NULL;
+ 
+     Py_XDECREF(self->isolation_level);
+ 

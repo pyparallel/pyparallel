@@ -1,7 +1,8 @@
 diff --git a/Objects/exceptions.c b/Objects/exceptions.c
+index 6b04700..cd2c798 100644
 --- a/Objects/exceptions.c
 +++ b/Objects/exceptions.c
-@@ -2115,6 +2115,74 @@ SimpleExtendsException(PyExc_Exception, 
+@@ -2115,6 +2115,74 @@ SimpleExtendsException(PyExc_Exception, SystemError,
  SimpleExtendsException(PyExc_Exception, ReferenceError,
                         "Weak ref proxy used after referent went away.");
  
@@ -76,7 +77,7 @@ diff --git a/Objects/exceptions.c b/Objects/exceptions.c
  
  /*
   *    MemoryError extends Exception
-@@ -2423,6 +2491,18 @@ void
+@@ -2423,6 +2491,18 @@ _PyExc_Init(PyObject *bltinmod)
      PRE_INIT(BufferError)
      PRE_INIT(MemoryError)
      PRE_INIT(BufferError)
@@ -95,7 +96,7 @@ diff --git a/Objects/exceptions.c b/Objects/exceptions.c
      PRE_INIT(Warning)
      PRE_INIT(UserWarning)
      PRE_INIT(DeprecationWarning)
-@@ -2501,6 +2581,18 @@ void
+@@ -2501,6 +2581,18 @@ _PyExc_Init(PyObject *bltinmod)
      POST_INIT(BufferError)
      POST_INIT(MemoryError)
      POST_INIT(BufferError)

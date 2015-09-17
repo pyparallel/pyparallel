@@ -1,7 +1,8 @@
 diff --git a/Include/classobject.h b/Include/classobject.h
+index eeeb3e9..b488000 100644
 --- a/Include/classobject.h
 +++ b/Include/classobject.h
-@@ -24,6 +24,7 @@ PyAPI_FUNC(PyObject *) PyMethod_New(PyOb
+@@ -24,6 +24,7 @@ PyAPI_FUNC(PyObject *) PyMethod_New(PyObject *, PyObject *);
  
  PyAPI_FUNC(PyObject *) PyMethod_Function(PyObject *);
  PyAPI_FUNC(PyObject *) PyMethod_Self(PyObject *);

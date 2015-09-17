@@ -1,4 +1,5 @@
 diff --git a/Lib/logging/__init__.py b/Lib/logging/__init__.py
+index 9f436f3..b18262d 100644
 --- a/Lib/logging/__init__.py
 +++ b/Lib/logging/__init__.py
 @@ -1850,8 +1850,9 @@ def shutdown(handlerList=_handlerList):

@@ -1,7 +1,8 @@
 diff --git a/Include/dictobject.h b/Include/dictobject.h
+index d89aac8..86ca0b0 100644
 --- a/Include/dictobject.h
 +++ b/Include/dictobject.h
-@@ -39,7 +39,15 @@ PyAPI_DATA(PyTypeObject) PyDictValues_Ty
+@@ -39,7 +39,15 @@ PyAPI_DATA(PyTypeObject) PyDictValues_Type;
  
  #define PyDict_Check(op) \
                   PyType_FastSubclass(Py_TYPE(op), Py_TPFLAGS_DICT_SUBCLASS)

@@ -1,4 +1,5 @@
 diff --git a/Objects/longobject.c b/Objects/longobject.c
+index 4ae22ef..9aa2b17 100644
 --- a/Objects/longobject.c
 +++ b/Objects/longobject.c
 @@ -30,7 +30,7 @@

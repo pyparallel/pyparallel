@@ -1,4 +1,5 @@
 diff --git a/Python/ceval.c b/Python/ceval.c
+index 2b16191..b73ab62 100644
 --- a/Python/ceval.c
 +++ b/Python/ceval.c
 @@ -70,6 +70,10 @@ ppc_getcounter(uint64 *v)
@@ -37,7 +38,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (!gil_created())
          return;
      destroy_gil();
-@@ -324,15 +333,21 @@ void
+@@ -324,15 +333,21 @@ _PyEval_FiniThreads(void)
  void
  PyEval_AcquireLock(void)
  {
@@ -69,7 +70,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (tstate == NULL)
          Py_FatalError("PyEval_AcquireThread: NULL new thread state");
      /* Check someone has called PyEval_InitThreads() to create the lock */
-@@ -357,6 +374,8 @@ PyEval_AcquireThread(PyThreadState *tsta
+@@ -357,6 +374,8 @@ PyEval_AcquireThread(PyThreadState *tstate)
  void
  PyEval_ReleaseThread(PyThreadState *tstate)
  {
@@ -99,7 +100,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      SIGNAL_ASYNC_EXC();
  }
  
-@@ -422,7 +446,10 @@ void
+@@ -422,7 +446,10 @@ _PyEval_SignalAsyncExc(void)
  PyThreadState *
  PyEval_SaveThread(void)
  {
@@ -120,7 +121,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (tstate == NULL)
          Py_FatalError("PyEval_RestoreThread: NULL tstate");
  #ifdef WITH_THREAD
-@@ -651,6 +680,7 @@ int
+@@ -651,6 +679,7 @@ int
  Py_MakePendingCalls(void)
  {
      static int busy = 0;
@@ -128,7 +129,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      if (busy)
          return 0;
      busy = 1;
-@@ -689,12 +719,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT
+@@ -689,12 +718,14 @@ int _Py_CheckRecursionLimit = Py_DEFAULT_RECURSION_LIMIT;
  int
  Py_GetRecursionLimit(void)
  {
@@ -143,7 +144,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
      recursion_limit = new_limit;
      _Py_CheckRecursionLimit = recursion_limit;
  }
-@@ -1236,6 +1268,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1236,6 +1267,15 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
          assert(stack_pointer >= f->f_valuestack); /* else underflow */
          assert(STACK_LEVEL() <= co->co_stacksize);  /* else overflow */
  
@@ -159,7 +160,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          /* Do periodic things.  Doing this every time through
             the loop would add too much overhead, so we do it
             only every Nth instruction.  We also do it if
-@@ -1314,7 +1355,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -1314,7 +1354,9 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
          }
  
          /* Extract opcode and argument */
@@ -170,7 +171,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
          opcode = NEXTOP();
          oparg = 0;   /* allows oparg to be stored in a register because
              it doesn't have to be remembered across a full loop */
-@@ -2295,9 +2338,27 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2295,9 +2337,27 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
              PREDICT(POP_JUMP_IF_TRUE);
              DISPATCH();
  
@@ -198,7 +199,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
              w = GETITEM(names, oparg);
              x = _PyDict_GetItemId(f->f_builtins, &PyId___import__);
              if (x == NULL) {
-@@ -2338,11 +2399,14 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2338,11 +2398,14 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
              READ_TIMESTAMP(intr1);
              Py_DECREF(w);
              SET_TOP(x);
@@ -213,7 +214,7 @@ diff --git a/Python/ceval.c b/Python/ceval.c
              v = POP();
              PyFrame_FastToLocals(f);
              if ((x = f->f_locals) == NULL) {
-@@ -2359,6 +2423,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int
+@@ -2359,6 +2422,7 @@ PyEval_EvalFrameEx(PyFrameObject *f, int throwflag)
              break;
  
          TARGET(IMPORT_FROM)

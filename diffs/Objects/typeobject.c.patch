@@ -1,4 +1,5 @@
 diff --git a/Objects/typeobject.c b/Objects/typeobject.c
+index 8851fae..af56e40 100644
 --- a/Objects/typeobject.c
 +++ b/Objects/typeobject.c
 @@ -53,6 +53,7 @@ PyType_ClearCache(void)
@@ -17,7 +18,7 @@ diff --git a/Objects/typeobject.c b/Objects/typeobject.c
  
      if (PyType_HasFeature(type, Py_TPFLAGS_VALID_VERSION_TAG))
          return 1;
-@@ -640,6 +642,7 @@ type_get_doc(PyTypeObject *type, void *c
+@@ -640,6 +642,7 @@ type_get_doc(PyTypeObject *type, void *context)
  static int
  type_set_doc(PyTypeObject *type, PyObject *value, void *context)
  {
@@ -25,7 +26,7 @@ diff --git a/Objects/typeobject.c b/Objects/typeobject.c
      if (!check_set_special_type_attr(type, value, "__doc__"))
          return -1;
      PyType_Modified(type);
-@@ -772,7 +775,7 @@ PyType_GenericAlloc(PyTypeObject *type, 
+@@ -772,7 +775,7 @@ PyType_GenericAlloc(PyTypeObject *type, Py_ssize_t nitems)
      if (type->tp_itemsize == 0)
          PyObject_INIT(obj, type);
      else
@@ -34,7 +35,7 @@ diff --git a/Objects/typeobject.c b/Objects/typeobject.c
  
      if (PyType_IS_GC(type))
          _PyObject_GC_TRACK(obj);
-@@ -2568,6 +2571,8 @@ PyObject *
+@@ -2568,6 +2571,8 @@ _PyType_Lookup(PyTypeObject *type, PyObject *name)
      }
      Py_DECREF(mro);
  

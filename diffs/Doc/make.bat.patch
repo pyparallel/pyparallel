@@ -1,4 +1,5 @@
 diff --git a/Doc/make.bat b/Doc/make.bat
+index d6f7074..35a0842 100644
 --- a/Doc/make.bat
 +++ b/Doc/make.bat
 @@ -2,8 +2,11 @@

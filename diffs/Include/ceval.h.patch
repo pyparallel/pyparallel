@@ -1,7 +1,8 @@
 diff --git a/Include/ceval.h b/Include/ceval.h
+index 6811367..45e7ec0 100644
 --- a/Include/ceval.h
 +++ b/Include/ceval.h
-@@ -177,11 +177,11 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwi
+@@ -177,11 +177,11 @@ PyAPI_FUNC(unsigned long) _PyEval_GetSwitchInterval(void);
  #endif
  
  #define Py_BEGIN_ALLOW_THREADS { \

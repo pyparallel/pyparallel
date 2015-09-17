@@ -1,4 +1,5 @@
 diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
+index 5ed025d..b63891e 100644
 --- a/Tools/msi/msi.py
 +++ b/Tools/msi/msi.py
 @@ -31,7 +31,10 @@ MSVCR = "100"
@@ -32,7 +33,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  # See PC/make_versioninfo.c
  FIELD3 = 1000*int(micro) + 10*level + int(serial)
  current_version = "%s.%d" % (short_version, FIELD3)
-@@ -74,13 +89,16 @@ upgrade_code_snapshot='{92A24481-3ECB-40
+@@ -74,13 +89,16 @@ upgrade_code_snapshot='{92A24481-3ECB-40FC-8836-04B7966EC0D5}'
  upgrade_code='{65E6DE48-A358-434D-AA4F-4AF72DB4718F}'
  upgrade_code_64='{6A965A0C-6EE6-4E3A-9983-3263F56311EC}'
  
@@ -69,7 +70,7 @@ diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
  # Build the mingw import library, libpythonXY.a
  # This requires 'nm' and 'dlltool' executables on your PATH
  def build_mingw_lib(lib_file, def_file, dll_file, mingw_lib):
-@@ -186,6 +215,9 @@ if msilib.pe_type(dll_path) != msilib.pe
+@@ -186,6 +215,9 @@ if msilib.pe_type(dll_path) != msilib.pe_type("msisupport.dll"):
  
  if msilib.Win64:
      upgrade_code = upgrade_code_64

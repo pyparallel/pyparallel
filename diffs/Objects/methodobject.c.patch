@@ -1,4 +1,5 @@
 diff --git a/Objects/methodobject.c b/Objects/methodobject.c
+index f0685dd..8d08295 100644
 --- a/Objects/methodobject.c
 +++ b/Objects/methodobject.c
 @@ -17,7 +17,7 @@ PyObject *
@@ -10,7 +11,7 @@ diff --git a/Objects/methodobject.c b/Objects/methodobject.c
      if (op != NULL) {
          free_list = (PyCFunctionObject *)(op->m_self);
          PyObject_INIT(op, &PyCFunction_Type);
-@@ -121,6 +121,7 @@ PyCFunction_Call(PyObject *func, PyObjec
+@@ -121,6 +121,7 @@ PyCFunction_Call(PyObject *func, PyObject *arg, PyObject *kw)
  static void
  meth_dealloc(PyCFunctionObject *m)
  {

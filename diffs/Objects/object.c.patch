@@ -1,4 +1,5 @@
 diff --git a/Objects/object.c b/Objects/object.c
+index e079d51..05549d9 100644
 --- a/Objects/object.c
 +++ b/Objects/object.c
 @@ -8,6 +8,13 @@
@@ -26,7 +27,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      /* ignore the references to the dummy object of the dicts and sets
         because they are not reliable and not useful (now that the
         hash table code is well-tested) */
-@@ -38,7 +47,20 @@ Py_ssize_t
+@@ -38,7 +47,20 @@ _Py_GetRefTotal(void)
   * together via the _ob_prev and _ob_next members of a PyObject, which
   * exist only in a Py_TRACE_REFS build.
   */
@@ -47,7 +48,7 @@ diff --git a/Objects/object.c b/Objects/object.c
  
  /* Insert op at the front of the list of all objects.  If force is true,
   * op is added even if _ob_prev and _ob_next are non-NULL already.  If
-@@ -54,6 +76,7 @@ static PyObject refchain = {&refchain, &
+@@ -54,6 +76,7 @@ static PyObject refchain = {&refchain, &refchain};
  void
  _Py_AddToAllObjects(PyObject *op, int force)
  {
@@ -55,7 +56,7 @@ diff --git a/Objects/object.c b/Objects/object.c
  #ifdef  Py_DEBUG
      if (!force) {
          /* If it's initialized memory, op must be in or out of
-@@ -72,22 +95,23 @@ void
+@@ -72,22 +95,23 @@ _Py_AddToAllObjects(PyObject *op, int force)
  #endif  /* Py_TRACE_REFS */
  
  #ifdef COUNT_ALLOCS
@@ -118,7 +119,7 @@ diff --git a/Objects/object.c b/Objects/object.c
  
      PyOS_snprintf(buf, sizeof(buf),
                    "%s:%i object at %p has negative ref count "
-@@ -202,12 +229,16 @@ void
+@@ -202,12 +229,16 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
  void
  Py_IncRef(PyObject *o)
  {
@@ -135,7 +136,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      Py_XDECREF(o);
  }
  
-@@ -216,8 +247,11 @@ PyObject_Init(PyObject *op, PyTypeObject
+@@ -216,8 +247,11 @@ PyObject_Init(PyObject *op, PyTypeObject *tp)
  {
      if (op == NULL)
          return PyErr_NoMemory();
@@ -147,7 +148,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      _Py_NewReference(op);
      return op;
  }
-@@ -227,9 +261,12 @@ PyObject_InitVar(PyVarObject *op, PyType
+@@ -227,9 +261,12 @@ PyObject_InitVar(PyVarObject *op, PyTypeObject *tp, Py_ssize_t size)
  {
      if (op == NULL)
          return (PyVarObject *) PyErr_NoMemory();
@@ -210,7 +211,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      clearerr(fp); /* Clear any previous error condition */
      if (op == NULL) {
          Py_BEGIN_ALLOW_THREADS
-@@ -274,7 +328,7 @@ PyObject_Print(PyObject *op, FILE *fp, i
+@@ -274,7 +328,7 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
          Py_END_ALLOW_THREADS
      }
      else {
@@ -219,7 +220,7 @@ diff --git a/Objects/object.c b/Objects/object.c
              /* XXX(twouters) cast refcount to long until %zd is
                 universally available */
              Py_BEGIN_ALLOW_THREADS
-@@ -320,6 +374,11 @@ PyObject_Print(PyObject *op, FILE *fp, i
+@@ -320,6 +374,11 @@ PyObject_Print(PyObject *op, FILE *fp, int flags)
              ret = -1;
          }
      }
@@ -231,7 +232,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      return ret;
  }
  
-@@ -334,6 +393,7 @@ void
+@@ -334,6 +393,7 @@ _Py_BreakPoint(void)
  void
  _PyObject_Dump(PyObject* op)
  {
@@ -248,7 +249,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      if (PyType_Ready(&PyType_Type) < 0)
          Py_FatalError("Can't initialize type type");
  
-@@ -1734,16 +1796,44 @@ void
+@@ -1734,16 +1796,44 @@ _Py_ReadyTypes(void)
  
      if (PyType_Ready(&PySeqIter_Type) < 0)
          Py_FatalError("Can't initialize sequence iterator type");
@@ -293,7 +294,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      _Py_AddToAllObjects(op, 1);
      _Py_INC_TPALLOCS(op);
  }
-@@ -1754,6 +1844,10 @@ void
+@@ -1754,6 +1844,10 @@ _Py_ForgetReference(register PyObject *op)
  #ifdef SLOW_UNREF_CHECK
      register PyObject *p;
  #endif
@@ -304,7 +305,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      if (op->ob_refcnt < 0)
          Py_FatalError("UNREF negative refcnt");
      if (op == &refchain ||
-@@ -1783,7 +1877,11 @@ void
+@@ -1783,7 +1877,11 @@ _Py_ForgetReference(register PyObject *op)
  void
  _Py_Dealloc(PyObject *op)
  {
@@ -314,7 +315,7 @@ diff --git a/Objects/object.c b/Objects/object.c
 +    Px_RETURN_VOID(_Px_Dealloc(op));
 +    dealloc = Py_TYPE(op)->tp_dealloc;
 +    if (!Px_WASPX(op))
-     _Py_ForgetReference(op);
+         _Py_ForgetReference(op);
      (*dealloc)(op);
  }
 @@ -1795,6 +1893,7 @@ void
@@ -333,7 +334,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      fprintf(fp, "Remaining object addresses:\n");
      for (op = refchain._ob_next; op != &refchain; op = op->_ob_next)
          fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] %s\n", op,
-@@ -1823,6 +1923,12 @@ PyObject *
+@@ -1823,6 +1923,12 @@ _Py_GetObjects(PyObject *self, PyObject *args)
      int i, n;
      PyObject *t = NULL;
      PyObject *res, *op;
@@ -346,7 +347,7 @@ diff --git a/Objects/object.c b/Objects/object.c
  
      if (!PyArg_ParseTuple(args, "i|O", &n, &t))
          return NULL;
-@@ -1861,24 +1967,31 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject
+@@ -1861,24 +1966,31 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject *) = PyObject_Size;
  void *
  PyMem_Malloc(size_t nbytes)
  {
@@ -378,7 +379,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      _PyCFunction_DebugMallocStats(out);
      _PyDict_DebugMallocStats(out);
      _PyFloat_DebugMallocStats(out);
-@@ -1910,6 +2023,8 @@ Py_ReprEnter(PyObject *obj)
+@@ -1910,6 +2022,8 @@ Py_ReprEnter(PyObject *obj)
      PyObject *list;
      Py_ssize_t i;
  
@@ -387,7 +388,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      dict = PyThreadState_GetDict();
      if (dict == NULL)
          return 0;
-@@ -1938,6 +2053,8 @@ Py_ReprLeave(PyObject *obj)
+@@ -1938,6 +2052,8 @@ Py_ReprLeave(PyObject *obj)
      PyObject *list;
      Py_ssize_t i;
  
@@ -396,7 +397,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      dict = PyThreadState_GetDict();
      if (dict == NULL)
          return;
-@@ -1971,6 +2088,8 @@ PyObject *_PyTrash_delete_later = NULL;
+@@ -1971,6 +2087,8 @@ PyObject *_PyTrash_delete_later = NULL;
  void
  _PyTrash_deposit_object(PyObject *op)
  {
@@ -405,7 +406,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      assert(PyObject_IS_GC(op));
      assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
      assert(op->ob_refcnt == 0);
-@@ -1982,7 +2101,10 @@ void
+@@ -1982,7 +2100,10 @@ _PyTrash_deposit_object(PyObject *op)
  void
  _PyTrash_thread_deposit_object(PyObject *op)
  {
@@ -417,7 +418,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      assert(PyObject_IS_GC(op));
      assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
      assert(op->ob_refcnt == 0);
-@@ -1996,6 +2118,7 @@ void
+@@ -1996,6 +2117,7 @@ _PyTrash_thread_deposit_object(PyObject *op)
  void
  _PyTrash_destroy_chain(void)
  {
@@ -425,7 +426,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      while (_PyTrash_delete_later) {
          PyObject *op = _PyTrash_delete_later;
          destructor dealloc = Py_TYPE(op)->tp_dealloc;
-@@ -2020,7 +2143,9 @@ void
+@@ -2020,7 +2142,9 @@ _PyTrash_destroy_chain(void)
  void
  _PyTrash_thread_destroy_chain(void)
  {
@@ -436,7 +437,7 @@ diff --git a/Objects/object.c b/Objects/object.c
      while (tstate->trash_delete_later) {
          PyObject *op = tstate->trash_delete_later;
          destructor dealloc = Py_TYPE(op)->tp_dealloc;
-@@ -2049,6 +2174,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
+@@ -2049,6 +2173,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
  void
  _Py_Dealloc(PyObject *op)
  {
