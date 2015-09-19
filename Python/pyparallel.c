@@ -6,6 +6,7 @@ extern "C" {
 
 #include <fcntl.h>
 
+#include "statics.h"
 #include "pyparallel_private.h"
 #include "fileio.h"
 #include "frameobject.h"
@@ -14262,6 +14263,9 @@ _PyAsync_ModInit(void)
     if (!PyType_Ready(&HttpResponse_Type) < 0)
         return NULL;
     */
+
+    if (!statics.open_array)
+        __debugbreak();
 
     m = PyModule_Create(&_asyncmodule);
     if (m == NULL)

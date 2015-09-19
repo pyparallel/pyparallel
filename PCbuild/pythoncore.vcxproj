@@ -487,7 +487,6 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\genobject.h" />
     <ClInclude Include="..\Include\graminit.h" />
     <ClInclude Include="..\Include\grammar.h" />
-    <ClInclude Include="..\Include\pyparallel_http.h" />
     <ClInclude Include="..\Include\import.h" />
     <ClInclude Include="..\Include\intrcheck.h" />
     <ClInclude Include="..\Include\iterobject.h" />
@@ -510,11 +509,6 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\patchlevel.h" />
     <ClInclude Include="..\Include\pgen.h" />
     <ClInclude Include="..\Include\pgenheaders.h" />
-    <ClInclude Include="..\Include\picohttpparser.h" />
-    <ClInclude Include="..\Include\pyparallel.h" />
-    <ClInclude Include="..\Include\pyparallel_util.h" />
-    <ClInclude Include="..\Include\pyparallel_odbc.h" />
-    <ClInclude Include="..\Include\pxlist.h" />
     <ClInclude Include="..\Include\py_curses.h" />
     <ClInclude Include="..\Include\pyarena.h" />
     <ClInclude Include="..\Include\pycapsule.h" />
@@ -588,6 +582,13 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Python\condvar.h" />
     <ClInclude Include="..\Python\importdl.h" />
     <ClInclude Include="..\Python\thread_nt.h" />
+    <ClInclude Include="..\Include\picohttpparser.h" />
+    <ClInclude Include="..\Include\pyparallel.h" />
+    <ClInclude Include="..\Include\pyparallel_util.h" />
+    <ClInclude Include="..\Include\pyparallel_odbc.h" />
+    <ClInclude Include="..\Include\pyparallel_http.h" />
+    <ClInclude Include="..\Include\pxlist.h" />
+    <ClInclude Include="..\Include\statics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c" />
@@ -714,10 +715,6 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\PC\dl_nt.c" />
     <ClCompile Include="..\PC\getpathp.c" />
     <ClCompile Include="..\PC\msvcrtmodule.c" />
-    <ClCompile Include="..\Python\pyparallel_http.c" />
-    <ClCompile Include="..\Python\picohttpparser.c" />
-    <ClCompile Include="..\Python\pyparallel.c" />
-    <ClCompile Include="..\Python\pxlist.c" />
     <ClCompile Include="..\Python\random.c" />
     <ClCompile Include="..\Python\_warnings.c" />
     <ClCompile Include="..\Python\asdl.c" />
@@ -763,6 +760,11 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\Python\sysmodule.c" />
     <ClCompile Include="..\Python\thread.c" />
     <ClCompile Include="..\Python\traceback.c" />
+    <ClCompile Include="..\Python\pyparallel_http.c" />
+    <ClCompile Include="..\Python\picohttpparser.c" />
+    <ClCompile Include="..\Python\pyparallel.c" />
+    <ClCompile Include="..\Python\pxlist.c" />
+    <ClCompile Include="..\Python\statics.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\PC\python_nt.rc" />

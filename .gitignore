@@ -56,7 +56,6 @@ libpython*.so*
 platform
 pybuilddir.txt
 pyconfig.h
-python
 python.exe
 python-gdb.py
 python.exe-gdb.py

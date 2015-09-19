@@ -429,6 +429,9 @@
     <ClInclude Include="..\Include\pyparallel_http.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\statics.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -939,6 +942,9 @@
       <Filter>Python</Filter>
     </ClCompile>
     <ClCompile Include="..\Python\pxlist.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\statics.c">
       <Filter>Python</Filter>
     </ClCompile>
     <ClCompile Include="..\Objects\namespaceobject.c">
