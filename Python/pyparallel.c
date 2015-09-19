@@ -10329,8 +10329,6 @@ do_lines_received_callback:
     assert(0);
 
 end:
-    if (PyErr_Occurred())
-        __debugbreak();
     /* s may be null if PxSocket_RECYCLE() decided the socket didn't need
      * recycling... (Although I can't remember if s->wsa_error = NO_ERROR
      * was strictly necessary.) */
