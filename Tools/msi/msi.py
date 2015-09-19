@@ -1,6 +1,10 @@
-# NOTE: this needs to be run with a Visual Studio 2010 x64 command prompt and
+# NOTE: this needs to be run with a Visual Studio 2010 x86 command prompt and
 # a x86 Python 2.7 installation with pywin32 installed.  Run via:
 #   C:\Users\Trent\Home\src\pyparallel\Tools\msi>C:\Python27\python.exe msi.py
+# xxx: and it also appears you need to run it first from an x64 prompt so that
+# the msisupport.dll will build properly as x64, but then re-run as x86 to
+# actually build the installer.  (The installer bombs out when run as x64 as
+# it can't find a registry key, or something.  Haven't investigated in detail.)
 
 # Python MSI Generator
 # (C) 2003 Martin v. Loewis
