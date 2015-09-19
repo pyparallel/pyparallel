@@ -21,3 +21,14 @@
 # 3. This notice may not be removed or altered from any source distribution.
 
 from sqlite3.dbapi2 import *
+
+try:
+    import parallel
+    parallel.register_dealloc(PrepareProtocol)
+    parallel.register_dealloc(Connection)
+    parallel.register_dealloc(Statement)
+    parallel.register_dealloc(Cursor)
+    parallel.register_dealloc(Cache)
+    parallel.register_dealloc(Row)
+except ImportError:
+    pass

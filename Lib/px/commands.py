@@ -545,19 +545,28 @@ class SqliteServer(TCPServerCommand):
             import parallel
             import sqlite_test as sqt
             import sqlite3
-            parallel.register_dealloc(sqlite3.PrepareProtocol)
-            parallel.register_dealloc(sqlite3.Connection)
-            parallel.register_dealloc(sqlite3.Statement)
-            parallel.register_dealloc(sqlite3.Cursor)
-            parallel.register_dealloc(sqlite3.Cache)
-            parallel.register_dealloc(sqlite3.Row)
-            server = parallel.server(ip, port)
-            self._out("Running sqlite3 server on %s port %d ..." % (ip, port))
-            parallel.register(transport=server, protocol=sqt.SqliteHttpServer)
+
+            server1 = parallel.server(ip, port)
+            self._out("Running geo server on %s port %d ..." % (ip, port))
+            protocol = sqt.SqliteGeoHttpServer
+            parallel.register(transport=server1, protocol=protocol)
+
+            server2 = parallel.server(ip, port+1)
+            self._out("Running world server on %s port %d ..." % (ip, port+1))
+            protocol = sqt.SqliteWorldHttpServer
+            parallel.register(transport=server2, protocol=protocol)
+
+            server3 = parallel.server(ip, port+2)
+            self._out("Running fast server on %s port %d ..." % (ip, port+2))
+            protocol = sqt.Foo
+            parallel.register(transport=server3, protocol=protocol)
+
             try:
                 parallel.run()
             except KeyboardInterrupt:
-                server.shutdown()
+                server1.shutdown()
+                server2.shutdown()
+                server3.shutdown()
 
 #===============================================================================
 # Testing
