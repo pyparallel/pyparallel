@@ -1,2 +1,2 @@
-PCBUILD = "PCBuild\\amd64"
-#PCBUILD = "PCBuild\\x64-pgi"
+#PCBUILD = "PCBuild\\amd64"
+PCBUILD = "PCBuild\\x64-pgo"

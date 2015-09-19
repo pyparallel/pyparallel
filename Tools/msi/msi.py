@@ -1142,6 +1142,8 @@ def add_files(db):
     launchersrc = PCBUILD
     if launchersrc.lower() == 'pcbuild\\x64-pgo':
         launchersrc = 'PCBuild\\win32-pgo'
+        if not os.path.isfile(os.path.join(srcdir, launchersrc, "py.exe")):
+            launchersrc = 'PCbuild'
     if launchersrc.lower() == 'pcbuild\\amd64':
         launchersrc = 'PCBuild'
     launcher = os.path.join(srcdir, launchersrc, "py.exe")
