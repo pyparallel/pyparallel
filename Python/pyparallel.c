@@ -411,8 +411,10 @@ InsertHeadList(PLIST_ENTRY head, PLIST_ENTRY entry)
         __debugbreak();
     next->Blink = entry;
     head->Flink = entry;
+#ifdef Py_DEBUG
     CheckListEntry(entry);
     CheckListEntry(next);
+#endif
 }
 
 static __inline
@@ -425,7 +427,9 @@ RemoveHeadList(PLIST_ENTRY head)
     next = entry->Flink;
     head->Flink = next;
     next->Blink = head;
+#ifdef Py_DEBUG
     CheckListEntry(next);
+#endif
 
     entry->Flink = NULL;
     entry->Blink = NULL;
@@ -445,8 +449,10 @@ InsertTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
     entry->Blink = prev;
     prev->Flink = entry;
     head->Blink = entry;
+#ifdef Py_DEBUG
     CheckListEntry(entry);
     CheckListEntry(head);
+#endif
     return;
 }
 
@@ -469,6 +475,11 @@ _PyParallel_AcquireGIL(void)
     Context *c = ctx;
     PyThreadState *pstate;
     long this_thread_id = _Py_get_current_thread_id();
+
+    /* xxx todo: just realized this is going to have to mock a new tstate that
+     * can be used whilst it holds the GIL; the ctx->tstate one will simply be
+     * the tstate of the main thread that created us. */
+    __debugbreak();
 
     if (!ctx)
         __debugbreak();
@@ -11511,6 +11522,9 @@ PxSocket_IOCallback(
         __debugbreak();
     */
 
+    /* Test invariants. */
+
+#ifdef Py_DEBUG
     /* Would overlapped ever be null? */
     if (!ol)
         __debugbreak();
@@ -11577,6 +11591,7 @@ PxSocket_IOCallback(
                     __debugbreak();
         }
     }
+#endif /* Py_DEBUG */
 
     if (s->was_status_pending)
         __debugbreak();
@@ -11711,12 +11726,6 @@ PyParallel_IOCallback(
  * them via 'connection_lost', whilst 'connection_closed' is used to indicate
  * a clean connection close. */
 
-/* (Also, are we sure we want to be using _Py_IDENTIFIER here?  Not sure if
- *  there are some issues with the Py_TLS static stuff and the relationship
- *  between our server socket stuff (where the protocol is initialized at the
- *  listen socket level, then cloned in an ad-hoc fashion (in create_pxsocket)
- *  to the accept socket.)
- */
 _Py_IDENTIFIER(send_failed);
 _Py_IDENTIFIER(recv_failed);
 _Py_IDENTIFIER(send_shutdown);
