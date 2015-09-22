@@ -1,3 +1,6 @@
 [submodule "contrib/pxodbc"]
 	path = contrib/pxodbc
 	url = https://github.com/pyparallel/pxodbc
+[submodule "contrib/sqlite3"]
+	path = contrib/sqlite3
+	url = ssh://git@github.com/pyparallel/sqlite3
