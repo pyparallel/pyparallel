@@ -91,3 +91,7 @@ PCbuild/x64-temp-Debug/
 PCbuild/x64-temp-Release/
 PCbuild/x64-temp-pgi/
 dump.txt
+Lib/distutils/command/wininst-10.0-amd64.exe
+Lib/distutils/command/wininst-9.0-amd64.pdb
+PC/python3dll.obj
+
