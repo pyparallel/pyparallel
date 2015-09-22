@@ -1,4 +1,5 @@
 diff --git a/Modules/main.c b/Modules/main.c
+index 3cfc9c3..fe4befa 100644
 --- a/Modules/main.c
 +++ b/Modules/main.c
 @@ -337,6 +337,10 @@ Py_Main(int argc, wchar_t **argv)

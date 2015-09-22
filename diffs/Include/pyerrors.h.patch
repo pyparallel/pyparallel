@@ -1,7 +1,8 @@
 diff --git a/Include/pyerrors.h b/Include/pyerrors.h
+index e385123..f14affe 100644
 --- a/Include/pyerrors.h
 +++ b/Include/pyerrors.h
-@@ -190,6 +190,18 @@ PyAPI_DATA(PyObject *) PyExc_NotADirecto
+@@ -190,6 +190,18 @@ PyAPI_DATA(PyObject *) PyExc_NotADirectoryError;
  PyAPI_DATA(PyObject *) PyExc_PermissionError;
  PyAPI_DATA(PyObject *) PyExc_ProcessLookupError;
  PyAPI_DATA(PyObject *) PyExc_TimeoutError;

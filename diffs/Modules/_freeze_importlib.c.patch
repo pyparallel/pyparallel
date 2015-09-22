@@ -1,4 +1,5 @@
 diff --git a/Modules/_freeze_importlib.c b/Modules/_freeze_importlib.c
+index 8f07a89..6e8e482 100644
 --- a/Modules/_freeze_importlib.c
 +++ b/Modules/_freeze_importlib.c
 @@ -2,6 +2,11 @@

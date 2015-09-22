@@ -1,7 +1,8 @@
 diff --git a/Objects/sliceobject.c b/Objects/sliceobject.c
+index 1593335..532ef69 100644
 --- a/Objects/sliceobject.c
 +++ b/Objects/sliceobject.c
-@@ -89,6 +89,8 @@ static PySliceObject *slice_cache = NULL
+@@ -89,6 +89,8 @@ static PySliceObject *slice_cache = NULL;
  void PySlice_Fini(void)
  {
      PySliceObject *obj = slice_cache;
@@ -20,7 +21,7 @@ diff --git a/Objects/sliceobject.c b/Objects/sliceobject.c
          obj = slice_cache;
          slice_cache = NULL;
          _Py_NewReference((PyObject *)obj);
-@@ -277,6 +280,9 @@ Create a slice object.  This is used for
+@@ -277,6 +280,9 @@ Create a slice object.  This is used for extended slicing (e.g. a[0:10:2]).");
  static void
  slice_dealloc(PySliceObject *r)
  {

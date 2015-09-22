@@ -1,4 +1,5 @@
 diff --git a/Python/ceval_gil.h b/Python/ceval_gil.h
+index 2702d5c..404ff00 100644
 --- a/Python/ceval_gil.h
 +++ b/Python/ceval_gil.h
 @@ -145,6 +145,9 @@ static void create_gil(void)
@@ -21,7 +22,7 @@ diff --git a/Python/ceval_gil.h b/Python/ceval_gil.h
  }
  
  static void recreate_gil(void)
-@@ -181,6 +187,9 @@ static void drop_gil(PyThreadState *tsta
+@@ -181,6 +187,9 @@ static void drop_gil(PyThreadState *tstate)
          _Py_atomic_store_relaxed(&gil_last_holder, tstate);
      }
  
@@ -31,7 +32,7 @@ diff --git a/Python/ceval_gil.h b/Python/ceval_gil.h
      MUTEX_LOCK(gil_mutex);
      _Py_ANNOTATE_RWLOCK_RELEASED(&gil_locked, /*is_write=*/1);
      _Py_atomic_store_relaxed(&gil_locked, 0);
-@@ -236,6 +245,9 @@ static void take_gil(PyThreadState *tsta
+@@ -236,6 +245,9 @@ _ready:
      MUTEX_LOCK(switch_mutex);
  #endif
      /* We now hold the GIL */

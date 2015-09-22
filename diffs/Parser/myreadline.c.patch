@@ -1,4 +1,5 @@
 diff --git a/Parser/myreadline.c b/Parser/myreadline.c
+index 9f1fc1e..f9a57b0 100644
 --- a/Parser/myreadline.c
 +++ b/Parser/myreadline.c
 @@ -68,7 +68,7 @@ my_fgets(char *buf, int len, FILE *fp)
@@ -10,17 +11,21 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
              case WAIT_OBJECT_0:
                  ResetEvent(hInterruptEvent);
                  return 1; /* Interrupt */
-@@ -114,7 +114,8 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+@@ -113,9 +113,12 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
+ {
      size_t n;
      char *p, *pr;
++
      n = 100;
 -    if ((p = (char *)PyMem_MALLOC(n)) == NULL)
 +    p = (char *)PyMem_RawMalloc(n);
 +    if (p == NULL)
          return NULL;
++
      fflush(sys_stdout);
      if (prompt)
-@@ -124,7 +125,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+         fprintf(stderr, "%s", prompt);
+@@ -124,7 +128,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
      case 0: /* Normal case */
          break;
      case 1: /* Interrupt */
@@ -29,7 +34,7 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
          return NULL;
      case -1: /* EOF */
      case -2: /* Error */
-@@ -140,7 +141,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+@@ -140,7 +144,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
              PyErr_SetString(PyExc_OverflowError, "input line too long");
              return NULL;
          }
@@ -38,7 +43,7 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
          if (pr == NULL) {
              PyMem_FREE(p);
              PyErr_NoMemory();
-@@ -151,7 +152,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE
+@@ -151,7 +155,7 @@ PyOS_StdioReadline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
              break;
          n += strlen(p+n);
      }
@@ -47,7 +52,7 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
      if (pr == NULL) {
          PyMem_FREE(p);
          PyErr_NoMemory();
-@@ -174,7 +175,8 @@ char *(*PyOS_ReadlineFunctionPointer)(FI
+@@ -174,7 +178,8 @@ char *(*PyOS_ReadlineFunctionPointer)(FILE *, FILE *, char *);
  char *
  PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
  {
@@ -57,7 +62,7 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
  
      if (_PyOS_ReadlineTState == PyThreadState_GET()) {
          PyErr_SetString(PyExc_RuntimeError,
-@@ -198,6 +200,11 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+@@ -198,6 +203,11 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
  #endif
  
      _PyOS_ReadlineTState = PyThreadState_GET();
@@ -69,7 +74,7 @@ diff --git a/Parser/myreadline.c b/Parser/myreadline.c
      Py_BEGIN_ALLOW_THREADS
  #ifdef WITH_THREAD
      PyThread_acquire_lock(_PyOS_ReadlineLock, 1);
-@@ -219,7 +226,18 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys
+@@ -219,7 +229,18 @@ PyOS_Readline(FILE *sys_stdin, FILE *sys_stdout, char *prompt)
      PyThread_release_lock(_PyOS_ReadlineLock);
  #endif
  

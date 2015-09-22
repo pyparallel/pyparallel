@@ -1227,6 +1227,8 @@ typedef struct _PxSocket {
     PyObject *odbc;
     PyObject *connection_string;
     PyObject *http11;
+    PyObject *json_dumps;
+    PyObject *json_loads;
 
     PyObject *methods;
 

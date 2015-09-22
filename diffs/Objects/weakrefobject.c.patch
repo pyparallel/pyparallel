@@ -1,0 +1,44 @@
+diff --git a/Objects/weakrefobject.c b/Objects/weakrefobject.c
+index b49dcee..a74b5f0 100644
+--- a/Objects/weakrefobject.c
++++ b/Objects/weakrefobject.c
+@@ -52,6 +52,9 @@ clear_weakref(PyWeakReference *self)
+ {
+     PyObject *callback = self->wr_callback;
+ 
++    if (Py_PXCTX() || Py_ISPX(self))
++        return;
++
+     if (self->wr_object != Py_None) {
+         PyWeakReference **list = GET_WEAKREFS_LISTPTR(self->wr_object);
+ 
+@@ -90,6 +93,9 @@ _PyWeakref_ClearRef(PyWeakReference *self)
+ {
+     PyObject *callback;
+ 
++    if (Py_PXCTX() || Py_ISPX(self))
++        return;
++
+     assert(self != NULL);
+     assert(PyWeakref_Check(self));
+     /* Preserve and restore the callback around clear_weakref. */
+@@ -824,7 +830,8 @@ PyWeakref_NewProxy(PyObject *ob, PyObject *callback)
+                        to avoid violating the invariants of the list
+                        of weakrefs for ob. */
+                     Py_DECREF(result);
+-                    Py_INCREF(result = proxy);
++                    result = proxy;
++                    Py_INCREF(result);
+                     goto skip_insert;
+                 }
+                 prev = ref;
+@@ -879,6 +886,9 @@ PyObject_ClearWeakRefs(PyObject *object)
+ {
+     PyWeakReference **list;
+ 
++    if (Py_PXCTX() || Py_ISPX(object))
++        return;
++
+     if (object == NULL
+         || !PyType_SUPPORTS_WEAKREFS(Py_TYPE(object))
+         || object->ob_refcnt != 0) {

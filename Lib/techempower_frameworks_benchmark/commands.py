@@ -441,6 +441,9 @@ class FastHttpServer(TCPServerCommand):
             def plaintext(self, transport, data):
                 return b'Hello, World!'
 
+            def error(self, transport, data):
+                raise RuntimeError('exception')
+
         with chdir(root):
             server = async.server(ip, port)
             async.register(transport=server, protocol=HttpServer)

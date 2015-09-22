@@ -1,4 +1,5 @@
 diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
+index c261b68..47c6677 100644
 --- a/Objects/obmalloc.c
 +++ b/Objects/obmalloc.c
 @@ -238,6 +238,14 @@ static int running_on_valgrind = -1;
@@ -45,7 +46,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  
  /*
   * Pool table -- headed, circular, doubly-linked lists of partially used pools.
-@@ -525,6 +550,17 @@ static size_t ntimes_arena_allocated = 0
+@@ -525,6 +550,17 @@ static size_t ntimes_arena_allocated = 0;
  /* High water mark (max value ever seen) for narenas_currently_allocated. */
  static size_t narenas_highwater = 0;
  
@@ -112,7 +113,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      return arenaobj;
  }
  
-@@ -768,6 +806,7 @@ PyObject_Malloc(size_t nbytes)
+@@ -768,6 +805,7 @@ PyObject_Malloc(size_t nbytes)
      poolp pool;
      poolp next;
      uint size;
@@ -120,7 +121,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  
  #ifdef WITH_VALGRIND
      if (UNLIKELY(running_on_valgrind == -1))
-@@ -785,6 +824,8 @@ PyObject_Malloc(size_t nbytes)
+@@ -785,6 +823,8 @@ PyObject_Malloc(size_t nbytes)
      if (nbytes > PY_SSIZE_T_MAX)
          return NULL;
  
@@ -129,7 +130,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      /*
       * This implicitly redirects malloc(0).
       */
-@@ -901,6 +942,7 @@ PyObject_Malloc(size_t nbytes)
+@@ -901,6 +941,7 @@ PyObject_Malloc(size_t nbytes)
                   * and free list are already initialized.
                   */
                  bp = pool->freeblock;
@@ -137,7 +138,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
                  pool->freeblock = *(block **)bp;
                  UNLOCK();
                  return (void *)bp;
-@@ -958,7 +1000,15 @@ redirect:
+@@ -958,7 +999,15 @@ redirect:
       */
      if (nbytes == 0)
          nbytes = 1;
@@ -154,7 +155,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  }
  
  /* free */
-@@ -974,10 +1024,13 @@ PyObject_Free(void *p)
+@@ -974,10 +1023,13 @@ PyObject_Free(void *p)
  #ifndef Py_USING_MEMORY_DEBUGGER
      uint arenaindex_temp;
  #endif
@@ -168,7 +169,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  #ifdef WITH_VALGRIND
      if (UNLIKELY(running_on_valgrind > 0))
          goto redirect;
-@@ -1207,6 +1260,9 @@ PyObject_Realloc(void *p, size_t nbytes)
+@@ -1207,6 +1258,9 @@ PyObject_Realloc(void *p, size_t nbytes)
      if (p == NULL)
          return PyObject_Malloc(nbytes);
  
@@ -178,7 +179,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      /*
       * Limit ourselves to PY_SSIZE_T_MAX bytes to prevent security holes.
       * Most python internals blindly use a signed Py_ssize_t to track
-@@ -1283,20 +1339,33 @@ PyObject_Realloc(void *p, size_t nbytes)
+@@ -1283,20 +1337,33 @@ PyObject_Realloc(void *p, size_t nbytes)
  void *
  PyObject_Malloc(size_t n)
  {
@@ -212,7 +213,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  #endif /* WITH_PYMALLOC */
  
  #ifdef PYMALLOC_DEBUG
-@@ -1328,6 +1397,7 @@ static size_t serialno = 0;     /* incre
+@@ -1328,6 +1395,7 @@ static size_t serialno = 0;     /* incremented on each debug {m,re}alloc */
  static void
  bumpserialno(void)
  {
@@ -220,7 +221,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      ++serialno;
  }
  
-@@ -1370,6 +1440,7 @@ static int
+@@ -1370,6 +1438,7 @@ static int
  pool_is_in_list(const poolp target, poolp list)
  {
      poolp origlist = list;
@@ -228,7 +229,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      assert(target != NULL);
      if (list == NULL)
          return 0;
-@@ -1414,16 +1485,19 @@ p[2*S+n+S: 2*S+n+2*S]
+@@ -1414,16 +1483,19 @@ p[2*S+n+S: 2*S+n+2*S]
  void *
  _PyMem_DebugMalloc(size_t nbytes)
  {
@@ -248,7 +249,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      _PyObject_DebugFreeApi(_PYMALLOC_MEM_ID, p);
  }
  
-@@ -1431,21 +1505,25 @@ void
+@@ -1431,21 +1503,25 @@ _PyMem_DebugFree(void *p)
  void *
  _PyObject_DebugMalloc(size_t nbytes)
  {
@@ -274,7 +275,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      _PyObject_DebugCheckAddressApi(_PYMALLOC_OBJ_ID, p);
  }
  
-@@ -1457,6 +1535,7 @@ void *
+@@ -1457,6 +1533,7 @@ _PyObject_DebugMallocApi(char id, size_t nbytes)
      uchar *p;           /* base address of malloc'ed block */
      uchar *tail;        /* p + 2*SST + nbytes == pointer to tail pad bytes */
      size_t total;       /* nbytes + 4*SST */
@@ -282,7 +283,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  
      bumpserialno();
      total = nbytes + 4*SST;
-@@ -1497,6 +1576,9 @@ void
+@@ -1497,6 +1574,9 @@ _PyObject_DebugFreeApi(char api, void *p)
  
      if (p == NULL)
          return;
@@ -292,7 +293,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      _PyObject_DebugCheckAddressApi(api, p);
      nbytes = read_size_t(q);
      nbytes += 4*SST;
-@@ -1517,6 +1599,9 @@ void *
+@@ -1517,6 +1597,9 @@ _PyObject_DebugReallocApi(char api, void *p, size_t nbytes)
      if (p == NULL)
          return _PyObject_DebugMallocApi(api, nbytes);
  
@@ -302,7 +303,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      _PyObject_DebugCheckAddressApi(api, p);
      bumpserialno();
      original_nbytes = read_size_t(q - 2*SST);
-@@ -1571,6 +1656,7 @@ void *
+@@ -1571,6 +1654,7 @@ _PyObject_DebugCheckAddressApi(char api, const void *p)
      const uchar *tail;
      int i;
      char id;
@@ -310,7 +311,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  
      if (p == NULL) {
          msg = "didn't expect a NULL pointer";
-@@ -1623,6 +1709,7 @@ void
+@@ -1623,6 +1707,7 @@ _PyObject_DebugDumpAddress(const void *p)
      int i;
      int ok;
      char id;
@@ -318,7 +319,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
  
      fprintf(stderr, "Debug memory block at address p=%p:", p);
      if (p == NULL) {
-@@ -1737,7 +1824,7 @@ printone(FILE *out, const char* msg, siz
+@@ -1737,7 +1822,7 @@ printone(FILE *out, const char* msg, size_t value)
      k = 3;
      do {
          size_t nextvalue = value / 10;
@@ -327,7 +328,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
          value = nextvalue;
          buf[i--] = (char)(digit + '0');
          --k;
-@@ -1760,8 +1847,9 @@ void
+@@ -1760,8 +1845,9 @@ _PyDebugAllocatorStats(FILE *out,
  {
      char buf1[128];
      char buf2[128];
@@ -338,7 +339,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
                    num_blocks, block_name, sizeof_block);
      PyOS_snprintf(buf2, sizeof(buf2),
                    "%48s ", buf1);
-@@ -1804,6 +1892,8 @@ void
+@@ -1804,6 +1890,8 @@ _PyObject_DebugMallocStats(FILE *out)
      size_t total;
      char buf[128];
  
@@ -347,7 +348,7 @@ diff --git a/Objects/obmalloc.c b/Objects/obmalloc.c
      fprintf(out, "Small block threshold = %d, in %u size classes.\n",
              SMALL_REQUEST_THRESHOLD, numclasses);
  
-@@ -1920,10 +2010,69 @@ void
+@@ -1920,10 +2008,69 @@ _PyObject_DebugMallocStats(FILE *out)
  int
  Py_ADDRESS_IN_RANGE(void *P, poolp pool)
  {

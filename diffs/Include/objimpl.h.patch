@@ -1,7 +1,8 @@
 diff --git a/Include/objimpl.h b/Include/objimpl.h
+index c6b7df4..65e1e1c 100644
 --- a/Include/objimpl.h
 +++ b/Include/objimpl.h
-@@ -140,6 +140,22 @@ PyAPI_FUNC(void) _PyMem_DebugFree(void *
+@@ -140,6 +140,22 @@ PyAPI_FUNC(void) _PyMem_DebugFree(void *p);
  #define PyObject_Del            PyObject_Free
  #define PyObject_DEL            PyObject_FREE
  
@@ -24,16 +25,16 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  /*
   * Generic object allocator interface
   * ==================================
-@@ -152,6 +168,7 @@ PyAPI_FUNC(PyVarObject *) PyObject_InitV
+@@ -152,6 +168,7 @@ PyAPI_FUNC(PyVarObject *) PyObject_InitVar(PyVarObject *,
  PyAPI_FUNC(PyObject *) _PyObject_New(PyTypeObject *);
  PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
  
 +#ifndef WITH_PARALLEL
- #define PyObject_New(type, typeobj) \
+ #define PyObject_New(type, typeobj)                                  \
                  ( (type *) _PyObject_New(typeobj) )
- #define PyObject_NewVar(type, typeobj, n) \
-@@ -164,6 +181,89 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
- #define PyObject_INIT_VAR(op, typeobj, size) \
+ #define PyObject_NewVar(type, typeobj, n)                            \
+@@ -164,6 +181,89 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
+ #define PyObject_INIT_VAR(op, typeobj, size)                         \
      ( Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj)) )
  
 +#define _PyObject_InitHead(o)
@@ -122,17 +123,17 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
  
  /* _PyObject_VAR_SIZE returns the number of bytes (as size_t) allocated for a
-@@ -185,14 +285,37 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
+@@ -185,14 +285,37 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
          (nitems)*(typeobj)->tp_itemsize,        \
          SIZEOF_VOID_P)
  
 +#ifndef WITH_PARALLEL
- #define PyObject_NEW(type, typeobj) \
- ( (type *) PyObject_Init( \
+ #define PyObject_NEW(type, typeobj)                                        \
+ ( (type *) PyObject_Init(                                                  \
      (PyObject *) PyObject_MALLOC( _PyObject_SIZE(typeobj) ), (typeobj)) )
  
- #define PyObject_NEW_VAR(type, typeobj, n) \
- ( (type *) PyObject_InitVar( \
+ #define PyObject_NEW_VAR(type, typeobj, n)                                 \
+ ( (type *) PyObject_InitVar(                                               \
 -      (PyVarObject *) PyObject_MALLOC(_PyObject_VAR_SIZE((typeobj),(n)) ),\
 +      (PyVarObject *) PyObject_MALLOC(_PyObject_VAR_SIZE((typeobj),(n)) ), \
        (typeobj), (n)) )
@@ -161,7 +162,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  
  /* This example code implements an object constructor with a custom
     allocator, where PyObject_New is inlined, and shows the important
-@@ -230,6 +353,9 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewV
+@@ -230,6 +353,9 @@ PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
  /* C equivalent of gc.collect(). */
  PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
  
@@ -171,7 +172,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  /* Test if a type has a GC head */
  #define PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
  
-@@ -237,9 +363,29 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void
+@@ -237,9 +363,29 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
  #define PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
      (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
  
@@ -284,14 +285,14 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #endif /* Py_LIMITED_API */
  
  PyAPI_FUNC(PyObject *) _PyObject_GC_Malloc(size_t);
-@@ -304,17 +512,28 @@ PyAPI_FUNC(void) PyObject_GC_Track(void 
+@@ -304,17 +512,28 @@ PyAPI_FUNC(void) PyObject_GC_Track(void *);
  PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
  PyAPI_FUNC(void) PyObject_GC_Del(void *);
  
 +#ifndef WITH_PARALLEL
- #define PyObject_GC_New(type, typeobj) \
+ #define PyObject_GC_New(type, typeobj)                             \
                  ( (type *) _PyObject_GC_New(typeobj) )
- #define PyObject_GC_NewVar(type, typeobj, n) \
+ #define PyObject_GC_NewVar(type, typeobj, n)                       \
                  ( (type *) _PyObject_GC_NewVar((typeobj), (n)) )
 +#else /* !WITH_PARALLEL */
  
@@ -313,7 +314,7 @@ diff --git a/Include/objimpl.h b/Include/objimpl.h
  #define Py_VISIT(op)                                                    \
      do {                                                                \
          if (op) {                                                       \
-@@ -323,7 +542,17 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *)
+@@ -323,7 +542,17 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
                  return vret;                                            \
          }                                                               \
      } while (0)

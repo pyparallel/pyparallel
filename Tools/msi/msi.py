@@ -1,3 +1,11 @@
+# NOTE: this needs to be run with a Visual Studio 2010 x86 command prompt and
+# a x86 Python 2.7 installation with pywin32 installed.  Run via:
+#   C:\Users\Trent\Home\src\pyparallel\Tools\msi>C:\Python27\python.exe msi.py
+# xxx: and it also appears you need to run it first from an x64 prompt so that
+# the msisupport.dll will build properly as x64, but then re-run as x86 to
+# actually build the installer.  (The installer bombs out when run as x64 as
+# it can't find a registry key, or something.  Haven't investigated in detail.)
+
 # Python MSI Generator
 # (C) 2003 Martin v. Loewis
 # See "FOO" in comments refers to MSDN sections with the title FOO.
@@ -61,24 +69,25 @@ for l in lines:
     if name == 'PY_MINOR_VERSION': minor = value
     if name == 'PY_MICRO_VERSION': micro = value
     if name == 'PY_RELEASE_LEVEL': level = levels[value]
-    if name == 'PY_RELEASE_SERIAL': serial = value
 
 short_version = major+"."+minor
 
-# PyParallel: we're making installers far more frequently now (after every few
-# commits), so use the hg repo serial revision as our serial number (ensures
-# the installer .msi gets a unique version).
-from subprocess import check_output
-hgsum = check_output('hg sum')
-# First line of output will look something like this:
-#   'parent: 94329:2ce4e90fd470 tip'
-#            ^^^^^
-#            We want that bit.
-serial = hgsum.splitlines()[0].split(' ')[1].split(':')[0]
+serial_header = srcdir + '/Include/serial.h'
+
+def load_serial():
+    with open(serial_header, 'r') as f:
+        return f.read().replace('#define PY_RELEASE_SERIAL', '').strip()
+
+def update_serial():
+    serial = str(int(load_serial())+1)
+    with open(serial_header, 'w') as f:
+        f.write(' '.join(('#define PY_RELEASE_SERIAL ', serial)))
+
+serial = load_serial()
 
 # See PC/make_versioninfo.c
-FIELD3 = 1000*int(micro) + 10*level + int(serial)
-current_version = "%s.%d" % (short_version, FIELD3)
+#FIELD3 = 1000*int(micro) + 10*level + int(serial)
+current_version = "%s.%s" % (short_version, serial)
 
 # This should never change. The UpgradeCode of this package can be
 # used in the Upgrade table of future packages to make the future
@@ -1032,12 +1041,64 @@ def hgmanifest():
         d[components[0]] = None
     return result
 
+def gitmanifest():
+    # Lazy copy & paste of git environment initialization code from
+    # Lib/px/commands.py.
+    from os.path import (
+        join,
+        abspath,
+        normpath,
+    )
+    def join_path(*args):
+        return abspath(normpath(join(*args)))
+
+    git_root = 'c:\\msysgit'
+    git_bin = join_path(git_root, 'bin')
+    mingw_bin = join_path(git_root, 'mingw/bin')
+    git_cmd = join_path(git_root, 'cmd')
+
+    prepend_path = ';'.join((
+        git_bin,
+        mingw_bin,
+        git_cmd,
+    ))
+
+    existing_path = os.environ['PATH']
+    new_path = ';'.join((prepend_path, existing_path))
+    os.environ['PATH'] = new_path
+    os.environ['PLINK_PROTOCOL'] = 'ssh'
+    os.environ['TERM'] = 'msys'
+
+    cwd = os.getcwd()
+    os.chdir('../..')
+    cmd = 'git ls > Tools/msi/manifest.txt'
+    os.system(cmd)
+    os.chdir(cwd)
+    with open('manifest.txt', 'r') as f:
+        lines = f.readlines()
+
+    # Create nested directories for file tree
+    result = {}
+    for line in lines:
+        # -1 = remove trailing \n
+        components = line[:-1].split('/')
+        d = result
+        while len(components) > 1:
+            d1 = d.setdefault(components[0], {})
+            d = d1
+            del components[0]
+        d[components[0]] = None
+
+    return result
+
+def manifest():
+    return gitmanifest()
 
 # See "File Table", "Component Table", "Directory Table",
 # "FeatureComponents Table"
 def add_files(db):
     installer = msilib.MakeInstaller()
-    hgfiles = hgmanifest()
+    files = manifest()
     cab = CAB("pyparallel")
     tmpfiles = []
     # Add all executables, icons, text files into the TARGETDIR component
@@ -1045,7 +1106,7 @@ def add_files(db):
     default_feature.set_current()
     if not msilib.Win64:
         root.add_file("%s/w9xpopen.exe" % PCBUILD)
-    root.add_file("README.txt", src="README")
+    root.add_file("README.txt", src="README.original")
     root.add_file("NEWS.txt", src="Misc/NEWS")
     root.add_file("px.bat", src="Tools/pyparallel/px.bat")
     root.add_file("tefb.bat", src="Tools/pyparallel/tefb.bat")
@@ -1081,6 +1142,8 @@ def add_files(db):
     launchersrc = PCBUILD
     if launchersrc.lower() == 'pcbuild\\x64-pgo':
         launchersrc = 'PCBuild\\win32-pgo'
+        if not os.path.isfile(os.path.join(srcdir, launchersrc, "py.exe")):
+            launchersrc = 'PCbuild'
     if launchersrc.lower() == 'pcbuild\\amd64':
         launchersrc = 'PCBuild'
     launcher = os.path.join(srcdir, launchersrc, "py.exe")
@@ -1141,18 +1204,18 @@ def add_files(db):
     # Add all .py files in Lib, except tkinter, test
     dirs = []
     pydirs = [
-        (root, "Lib",       hgfiles["Lib"],      default_feature),
-        (root, "examples",  hgfiles["examples"], default_feature),
-        (root, "Python",    hgfiles["Python"],  source),
-        (root, "PCbuild",   hgfiles["PCbuild"], source),
-        (root, "PC",        hgfiles["PC"],      source),
-        (root, "diffs",     hgfiles["diffs"],   source),
-        (root, "Include",   hgfiles["Include"], source),
-        (root, "Grammar",   hgfiles["Grammar"], source),
-        (root, "Objects",   hgfiles["Objects"], source),
-        (root, "Modules",   hgfiles["Modules"], source),
-        (root, "Parser",    hgfiles["Parser"],  source),
-        (root, "contrib",   hgfiles["contrib"], source),
+        (root, "Lib",       files["Lib"],      default_feature),
+        (root, "examples",  files["examples"], default_feature),
+        (root, "Python",    files["Python"],  source),
+        (root, "PCbuild",   files["PCbuild"], source),
+        (root, "PC",        files["PC"],      source),
+        (root, "diffs",     files["diffs"],   source),
+        (root, "Include",   files["Include"], source),
+        (root, "Grammar",   files["Grammar"], source),
+        (root, "Objects",   files["Objects"], source),
+        (root, "Modules",   files["Modules"], source),
+        (root, "Parser",    files["Parser"],  source),
+        (root, "contrib",   files["contrib"], source),
     ]
     while pydirs:
         # Commit every now and then, or else installer will complain
@@ -1550,5 +1613,7 @@ if zipmsi:
     cmd = 'zip -0 %s.zip %s' % (msiname, msiname)
     print 'Running: %s' % cmd
     os.system(cmd)
+
+#update_serial()
 
 # vim:set tw=0:

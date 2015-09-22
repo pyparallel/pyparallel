@@ -1,4 +1,5 @@
 diff --git a/Objects/setobject.c b/Objects/setobject.c
+index ea5a24c..dd99b3d 100644
 --- a/Objects/setobject.c
 +++ b/Objects/setobject.c
 @@ -555,6 +555,7 @@ set_dealloc(PySetObject *so)
@@ -9,7 +10,7 @@ diff --git a/Objects/setobject.c b/Objects/setobject.c
      PyObject_GC_UnTrack(so);
      Py_TRASHCAN_SAFE_BEGIN(so)
      if (so->weakreflist != NULL)
-@@ -1033,7 +1034,7 @@ make_new_set(PyTypeObject *type, PyObjec
+@@ -1033,7 +1034,7 @@ make_new_set(PyTypeObject *type, PyObject *iterable)
      }
  
      /* create PySetObject structure */

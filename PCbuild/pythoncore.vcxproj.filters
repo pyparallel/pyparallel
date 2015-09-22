@@ -429,6 +429,18 @@
     <ClInclude Include="..\Include\pyparallel_http.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\statics.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\ultrajson.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Python\ujson_version.h">
+      <Filter>Include</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Python\ujson_py_defines.h">
+      <Filter>Include</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -944,6 +956,9 @@
     <ClCompile Include="..\Python\pxlist.c">
       <Filter>Python</Filter>
     </ClCompile>
+    <ClCompile Include="..\Python\statics.c">
+      <Filter>Python</Filter>
+    </ClCompile>
     <ClCompile Include="..\Objects\namespaceobject.c">
       <Filter>Objects</Filter>
     </ClCompile>
@@ -951,6 +966,21 @@
       <Filter>Python</Filter>
     </ClCompile>
     <ClCompile Include="..\Python\pyparallel_http.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\JSONtoObj.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\objToJSON.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\ujson.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\ultrajsondec.c">
+      <Filter>Python</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Python\ultrajsonenc.c">
       <Filter>Python</Filter>
     </ClCompile>
   </ItemGroup>

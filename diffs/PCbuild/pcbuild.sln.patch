@@ -1,13 +1,16 @@
 diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
+index d6a022f..1c4b7b9 100644
 --- a/PCbuild/pcbuild.sln
 +++ b/PCbuild/pcbuild.sln
-@@ -74,10 +74,18 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C9
+@@ -74,10 +74,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pywlauncher", "pywlauncher.
  EndProject
  Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "_freeze_importlib", "_freeze_importlib.vcxproj", "{19C0C13F-47CA-4432-AFF3-799A296A4DDC}"
  EndProject
 +Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pyodbc", "pyodbc.vcxproj", "{D6C8B019-117C-455C-8EBC-1C9B6D9EC325}"
 +EndProject
 +Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "datrie", "datrie.vcxproj", "{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}"
++EndProject
++Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pxodbc", "pxodbc.vcxproj", "{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}"
 +EndProject
  Global
  	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -20,7 +23,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		PGInstrument|Win32 = PGInstrument|Win32
  		PGInstrument|x64 = PGInstrument|x64
  		PGUpdate|Win32 = PGUpdate|Win32
-@@ -90,6 +98,13 @@ Global
+@@ -90,6 +100,13 @@ Global
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.Debug|Win32.Build.0 = Debug|Win32
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.Debug|x64.ActiveCfg = Debug|x64
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.Debug|x64.Build.0 = Debug|x64
@@ -34,7 +37,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{B11D750F-CD1F-4A96-85CE-E69A5C5259F9}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -105,7 +120,12 @@ Global
+@@ -105,7 +122,12 @@ Global
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.Debug|Win32.ActiveCfg = Debug|Win32
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.Debug|Win32.Build.0 = Debug|Win32
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.Debug|x64.ActiveCfg = Debug|Win32
@@ -48,7 +51,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.PGInstrument|Win32.ActiveCfg = Release|Win32
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.PGInstrument|Win32.Build.0 = Release|Win32
  		{F0E0541E-F17D-430B-97C4-93ADF0DD284E}.PGInstrument|x64.ActiveCfg = Release|Win32
-@@ -122,6 +142,14 @@ Global
+@@ -122,6 +144,14 @@ Global
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.Debug|Win32.Build.0 = Debug|Win32
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.Debug|x64.ActiveCfg = Debug|x64
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.Debug|x64.Build.0 = Debug|x64
@@ -63,7 +66,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{CF7AC3D1-E2DF-41D2-BEA6-1E2556CDEA26}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -138,6 +166,12 @@ Global
+@@ -138,6 +168,12 @@ Global
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Debug|Win32.Build.0 = Debug|Win32
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Debug|x64.ActiveCfg = Debug|x64
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.Debug|x64.Build.0 = Debug|x64
@@ -76,7 +79,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{F4229CC3-873C-49AE-9729-DD308ED4CD4A}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -153,7 +187,12 @@ Global
+@@ -153,7 +189,12 @@ Global
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|Win32.ActiveCfg = Debug|Win32
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|Win32.Build.0 = Debug|Win32
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.Debug|x64.ActiveCfg = Debug|x64
@@ -90,7 +93,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{E9E0A1F6-0009-4E8C-B8F8-1B8F5D49A058}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -169,7 +208,12 @@ Global
+@@ -169,7 +210,12 @@ Global
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|Win32.ActiveCfg = Release|Win32
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|Win32.Build.0 = Release|Win32
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.Debug|x64.ActiveCfg = Release|Win32
@@ -104,7 +107,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|Win32.ActiveCfg = Release|Win32
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|Win32.Build.0 = Release|Win32
  		{C73F0EC1-358B-4177-940F-0846AC8B04CD}.PGInstrument|x64.ActiveCfg = Release|Win32
-@@ -185,7 +229,12 @@ Global
+@@ -185,7 +231,12 @@ Global
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|Win32.ActiveCfg = Debug|Win32
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|Win32.Build.0 = Debug|Win32
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.Debug|x64.ActiveCfg = Debug|x64
@@ -118,7 +121,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{28B5D777-DDF2-4B6B-B34F-31D938813856}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -202,6 +251,12 @@ Global
+@@ -202,6 +253,12 @@ Global
  		{0E9791DB-593A-465F-98BC-681011311617}.Debug|Win32.Build.0 = Debug|Win32
  		{0E9791DB-593A-465F-98BC-681011311617}.Debug|x64.ActiveCfg = Debug|x64
  		{0E9791DB-593A-465F-98BC-681011311617}.Debug|x64.Build.0 = Debug|x64
@@ -131,7 +134,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{0E9791DB-593A-465F-98BC-681011311617}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{0E9791DB-593A-465F-98BC-681011311617}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{0E9791DB-593A-465F-98BC-681011311617}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -218,6 +273,12 @@ Global
+@@ -218,6 +275,12 @@ Global
  		{0E9791DB-593A-465F-98BC-681011311618}.Debug|Win32.Build.0 = Debug|Win32
  		{0E9791DB-593A-465F-98BC-681011311618}.Debug|x64.ActiveCfg = Debug|x64
  		{0E9791DB-593A-465F-98BC-681011311618}.Debug|x64.Build.0 = Debug|x64
@@ -144,7 +147,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{0E9791DB-593A-465F-98BC-681011311618}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{0E9791DB-593A-465F-98BC-681011311618}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{0E9791DB-593A-465F-98BC-681011311618}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -234,6 +295,12 @@ Global
+@@ -234,6 +297,12 @@ Global
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.Debug|Win32.Build.0 = Debug|Win32
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.Debug|x64.ActiveCfg = Debug|x64
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.Debug|x64.Build.0 = Debug|x64
@@ -157,7 +160,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{9EC7190A-249F-4180-A900-548FDCF3055F}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -250,6 +317,12 @@ Global
+@@ -250,6 +319,12 @@ Global
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.Debug|Win32.Build.0 = Debug|Win32
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.Debug|x64.ActiveCfg = Debug|x64
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.Debug|x64.Build.0 = Debug|x64
@@ -170,7 +173,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{17E1E049-C309-4D79-843F-AE483C264AEA}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -265,7 +338,12 @@ Global
+@@ -265,7 +340,12 @@ Global
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|Win32.ActiveCfg = Debug|Win32
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|Win32.Build.0 = Debug|Win32
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.Debug|x64.ActiveCfg = Debug|x64
@@ -184,7 +187,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{31FFC478-7B4A-43E8-9954-8D03E2187E9C}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -282,6 +360,12 @@ Global
+@@ -282,6 +362,12 @@ Global
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|Win32.Build.0 = Debug|Win32
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|x64.ActiveCfg = Debug|x64
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.Debug|x64.Build.0 = Debug|x64
@@ -197,7 +200,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{86937F53-C189-40EF-8CE8-8759D8E7D480}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -298,6 +382,12 @@ Global
+@@ -298,6 +384,12 @@ Global
  		{13CECB97-4119-4316-9D42-8534019A5A44}.Debug|Win32.Build.0 = Debug|Win32
  		{13CECB97-4119-4316-9D42-8534019A5A44}.Debug|x64.ActiveCfg = Debug|x64
  		{13CECB97-4119-4316-9D42-8534019A5A44}.Debug|x64.Build.0 = Debug|x64
@@ -210,7 +213,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{13CECB97-4119-4316-9D42-8534019A5A44}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{13CECB97-4119-4316-9D42-8534019A5A44}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{13CECB97-4119-4316-9D42-8534019A5A44}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -314,6 +404,12 @@ Global
+@@ -314,6 +406,12 @@ Global
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.Debug|Win32.Build.0 = Debug|Win32
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.Debug|x64.ActiveCfg = Debug|x64
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.Debug|x64.Build.0 = Debug|x64
@@ -223,7 +226,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{C6E20F84-3247-4AD6-B051-B073268F73BA}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -330,6 +426,12 @@ Global
+@@ -330,6 +428,12 @@ Global
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Debug|Win32.Build.0 = Debug|Win32
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Debug|x64.ActiveCfg = Debug|x64
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.Debug|x64.Build.0 = Debug|x64
@@ -236,7 +239,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{6901D91C-6E48-4BB7-9FEC-700C8131DF1D}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -346,6 +448,12 @@ Global
+@@ -346,6 +450,12 @@ Global
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|Win32.Build.0 = Debug|Win32
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|x64.ActiveCfg = Debug|x64
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.Debug|x64.Build.0 = Debug|x64
@@ -249,7 +252,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{4946ECAC-2E69-4BF8-A90A-F5136F5094DF}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -362,6 +470,12 @@ Global
+@@ -362,6 +472,12 @@ Global
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|Win32.Build.0 = Debug|Win32
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|x64.ActiveCfg = Debug|x64
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.Debug|x64.Build.0 = Debug|x64
@@ -262,7 +265,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{73FCD2BD-F133-46B7-8EC1-144CD82A59D5}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -378,6 +492,12 @@ Global
+@@ -378,6 +494,12 @@ Global
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.Debug|Win32.Build.0 = Debug|Win32
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.Debug|x64.ActiveCfg = Debug|x64
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.Debug|x64.Build.0 = Debug|x64
@@ -275,7 +278,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{18CAE28C-B454-46C1-87A0-493D91D97F03}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -394,6 +514,12 @@ Global
+@@ -394,6 +516,12 @@ Global
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.Debug|Win32.Build.0 = Debug|Win32
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.Debug|x64.ActiveCfg = Debug|x64
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.Debug|x64.Build.0 = Debug|x64
@@ -288,7 +291,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{F9D71780-F393-11E0-BE50-0800200C9A66}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -410,6 +536,13 @@ Global
+@@ -410,6 +538,13 @@ Global
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.Debug|Win32.Build.0 = Debug|Win32
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.Debug|x64.ActiveCfg = Debug|x64
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.Debug|x64.Build.0 = Debug|x64
@@ -302,7 +305,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{ECC7CEAC-A5E5-458E-BB9E-2413CC847881}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -426,6 +559,12 @@ Global
+@@ -426,6 +561,12 @@ Global
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Debug|Win32.Build.0 = Debug|Win32
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Debug|x64.ActiveCfg = Debug|x64
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Debug|x64.Build.0 = Debug|x64
@@ -315,7 +318,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -440,6 +579,11 @@ Global
+@@ -440,6 +581,11 @@ Global
  		{D06B6426-4762-44CC-8BAD-D79052507F2F}.Release|x64.Build.0 = Release|x64
  		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Debug|Win32.ActiveCfg = Release|Win32
  		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.Debug|x64.ActiveCfg = Release|x64
@@ -327,7 +330,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGInstrument|Win32.ActiveCfg = Release|Win32
  		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGInstrument|x64.ActiveCfg = Release|x64
  		{EB1C19C1-1F18-421E-9735-CAEE69DC6A3C}.PGUpdate|Win32.ActiveCfg = Release|Win32
-@@ -450,6 +594,12 @@ Global
+@@ -450,6 +596,12 @@ Global
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|Win32.Build.0 = Debug|Win32
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|x64.ActiveCfg = Debug|x64
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.Debug|x64.Build.0 = Debug|x64
@@ -340,7 +343,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{447F05A8-F581-4CAC-A466-5AC7936E207E}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -466,6 +616,12 @@ Global
+@@ -466,6 +618,12 @@ Global
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.Debug|Win32.Build.0 = Debug|Win32
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.Debug|x64.ActiveCfg = Debug|x64
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.Debug|x64.Build.0 = Debug|x64
@@ -353,7 +356,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{A1A295E5-463C-437F-81CA-1F32367685DA}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -482,6 +638,12 @@ Global
+@@ -482,6 +640,12 @@ Global
  		{9E48B300-37D1-11DD-8C41-005056C00008}.Debug|Win32.Build.0 = Debug|Win32
  		{9E48B300-37D1-11DD-8C41-005056C00008}.Debug|x64.ActiveCfg = Debug|x64
  		{9E48B300-37D1-11DD-8C41-005056C00008}.Debug|x64.Build.0 = Debug|x64
@@ -366,7 +369,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{9E48B300-37D1-11DD-8C41-005056C00008}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{9E48B300-37D1-11DD-8C41-005056C00008}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{9E48B300-37D1-11DD-8C41-005056C00008}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -498,6 +660,12 @@ Global
+@@ -498,6 +662,12 @@ Global
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|Win32.Build.0 = Debug|Win32
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|x64.ActiveCfg = Debug|x64
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.Debug|x64.Build.0 = Debug|x64
@@ -379,7 +382,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{E5B04CC0-EB4C-42AB-B4DC-18EF95F864B0}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -514,6 +682,12 @@ Global
+@@ -514,6 +684,12 @@ Global
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Debug|Win32.Build.0 = Debug|Win32
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Debug|x64.ActiveCfg = Debug|x64
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Debug|x64.Build.0 = Debug|x64
@@ -392,7 +395,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.PGInstrument|Win32.ActiveCfg = Release|Win32
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.PGInstrument|Win32.Build.0 = Release|Win32
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.PGInstrument|x64.ActiveCfg = Release|x64
-@@ -526,9 +700,13 @@ Global
+@@ -526,9 +702,13 @@ Global
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Release|Win32.Build.0 = Release|Win32
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Release|x64.ActiveCfg = Release|x64
  		{6DE10744-E396-40A5-B4E2-1B69AA7C8D31}.Release|x64.Build.0 = Release|x64
@@ -409,7 +412,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{885D4898-D08D-4091-9C40-C700CFE3FC5A}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{885D4898-D08D-4091-9C40-C700CFE3FC5A}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{885D4898-D08D-4091-9C40-C700CFE3FC5A}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -543,6 +721,10 @@ Global
+@@ -543,6 +723,10 @@ Global
  		{885D4898-D08D-4091-9C40-C700CFE3FC5A}.Release|x64.Build.0 = Release|x64
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Debug|Win32.ActiveCfg = Release|Win32
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Debug|x64.ActiveCfg = Release|x64
@@ -420,7 +423,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -552,13 +734,18 @@ Global
+@@ -552,13 +736,18 @@ Global
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGUpdate|x64.ActiveCfg = Release|x64
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.PGUpdate|x64.Build.0 = Release|x64
  		{F749B822-B489-4CA5-A3AD-CE078F5F338A}.Release|Win32.ActiveCfg = Release|Win32
@@ -440,7 +443,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{A2697BD3-28C1-4AEC-9106-8B748639FD16}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{A2697BD3-28C1-4AEC-9106-8B748639FD16}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{A2697BD3-28C1-4AEC-9106-8B748639FD16}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
-@@ -575,6 +762,12 @@ Global
+@@ -575,6 +764,12 @@ Global
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.Debug|Win32.Build.0 = Debug|Win32
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.Debug|x64.ActiveCfg = Debug|x64
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.Debug|x64.Build.0 = Debug|x64
@@ -453,7 +456,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{7B2727B5-5A3F-40EE-A866-43A13CD31446}.PGInstrument|x64.ActiveCfg = PGInstrument|Win32
-@@ -591,6 +784,12 @@ Global
+@@ -591,6 +786,12 @@ Global
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.Debug|Win32.Build.0 = Debug|Win32
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.Debug|x64.ActiveCfg = Debug|x64
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.Debug|x64.Build.0 = Debug|x64
@@ -466,7 +469,7 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.PGInstrument|x64.ActiveCfg = PGInstrument|Win32
-@@ -604,13 +803,65 @@ Global
+@@ -604,13 +805,87 @@ Global
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.Release|x64.ActiveCfg = Release|Win32
  		{1D4B18D3-7C12-4ECB-9179-8531FF876CE6}.Release|x64.Build.0 = Release|Win32
  		{19C0C13F-47CA-4432-AFF3-799A296A4DDC}.Debug|Win32.ActiveCfg = Debug|Win32
@@ -529,6 +532,28 @@ diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
 +		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|Win32.Build.0 = Release|Win32
 +		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|x64.ActiveCfg = Release|x64
 +		{A0A118A6-0EFA-11E5-B5EA-8863DFCA3C40}.Release|x64.Build.0 = Release|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|Win32.ActiveCfg = Debug|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|Win32.Build.0 = Debug|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|x64.ActiveCfg = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Debug|x64.Build.0 = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|Win32.ActiveCfg = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|x64.ActiveCfg = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugMinimal|x64.Build.0 = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|Win32.ActiveCfg = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|x64.ActiveCfg = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.DebugPythonCoreOnly|x64.Build.0 = Debug|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|Win32.ActiveCfg = PGInstrument|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|Win32.Build.0 = PGInstrument|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|x64.ActiveCfg = PGInstrument|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGInstrument|x64.Build.0 = PGInstrument|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|Win32.ActiveCfg = PGUpdate|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|Win32.Build.0 = PGUpdate|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|x64.ActiveCfg = PGUpdate|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.PGUpdate|x64.Build.0 = PGUpdate|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|Win32.ActiveCfg = Release|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|Win32.Build.0 = Release|Win32
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|x64.ActiveCfg = Release|x64
++		{F6C8B019-117C-455C-8EBC-1C9B6D9EC325}.Release|x64.Build.0 = Release|x64
  	EndGlobalSection
  	GlobalSection(SolutionProperties) = preSolution
  		HideSolutionNode = FALSE

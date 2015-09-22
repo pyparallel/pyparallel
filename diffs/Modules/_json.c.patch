@@ -1,4 +1,5 @@
 diff --git a/Modules/_json.c b/Modules/_json.c
+index 9166680..6d01679 100644
 --- a/Modules/_json.c
 +++ b/Modules/_json.c
 @@ -81,9 +81,11 @@ static PyObject *
@@ -14,7 +15,7 @@ diff --git a/Modules/_json.c b/Modules/_json.c
          if (sep == NULL)
              return NULL;
      }
-@@ -260,6 +262,7 @@ raise_errmsg(char *msg, PyObject *s, Py_
+@@ -260,6 +262,7 @@ raise_errmsg(char *msg, PyObject *s, Py_ssize_t end)
      static PyObject *errmsg_fn = NULL;
      PyObject *pymsg;
      if (errmsg_fn == NULL) {
@@ -22,7 +23,7 @@ diff --git a/Modules/_json.c b/Modules/_json.c
          PyObject *decoder = PyImport_ImportModule("json.decoder");
          if (decoder == NULL)
              return;
-@@ -1296,25 +1299,31 @@ static PyObject *
+@@ -1296,25 +1299,31 @@ _encoded_const(PyObject *obj)
  {
      /* Return the JSON string representation of None, True, False */
      if (obj == Py_None) {
@@ -57,7 +58,7 @@ diff --git a/Modules/_json.c b/Modules/_json.c
          }
          Py_INCREF(s_false);
          return s_false;
-@@ -1466,9 +1475,9 @@ encoder_listencode_dict(PyEncoderObject 
+@@ -1466,9 +1475,9 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
                          PyObject *dct, Py_ssize_t indent_level)
  {
      /* Encode Python dict dct a JSON term */
@@ -70,7 +71,7 @@ diff --git a/Modules/_json.c b/Modules/_json.c
      PyObject *kstr = NULL;
      PyObject *ident = NULL;
      PyObject *it = NULL;
-@@ -1478,9 +1487,11 @@ encoder_listencode_dict(PyEncoderObject 
+@@ -1478,9 +1487,11 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
      Py_ssize_t idx;
  
      if (open_dict == NULL || close_dict == NULL || empty_dict == NULL) {
@@ -82,7 +83,7 @@ diff --git a/Modules/_json.c b/Modules/_json.c
          if (open_dict == NULL || close_dict == NULL || empty_dict == NULL)
              return -1;
      }
-@@ -1645,17 +1656,19 @@ encoder_listencode_list(PyEncoderObject 
+@@ -1645,17 +1656,19 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
                          PyObject *seq, Py_ssize_t indent_level)
  {
      /* Encode Python list seq to a JSON term */

@@ -16,6 +16,8 @@
 #include "marshal.h"
 #include "osdefs.h"
 
+#include "statics.h"
+
 #ifdef HAVE_SIGNAL_H
 #include <signal.h>
 #endif
@@ -333,6 +335,9 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
     /* Init Unicode implementation; relies on the codec registry */
     if (_PyUnicode_Init() < 0)
         Py_FatalError("Py_Initialize: can't initialize unicode");
+
+    if (!_init_statics())
+        Py_FatalError("Py_Initialize: can't initialize statics");
 
     bimod = _PyBuiltin_Init();
     if (bimod == NULL)

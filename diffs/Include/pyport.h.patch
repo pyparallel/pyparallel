@@ -1,4 +1,5 @@
 diff --git a/Include/pyport.h b/Include/pyport.h
+index a5edea9..5909ce0 100644
 --- a/Include/pyport.h
 +++ b/Include/pyport.h
 @@ -152,8 +152,19 @@ Used in:  PY_LONG_LONG
@@ -36,7 +37,7 @@ diff --git a/Include/pyport.h b/Include/pyport.h
  /* ignore warnings if the compiler decides not to inline a function */
  #pragma warning(disable: 4710)
  /* fastest possible local call under MSVC */
-@@ -881,4 +900,20 @@ extern pid_t forkpty(int *, char *, stru
+@@ -881,4 +900,20 @@ extern pid_t forkpty(int *, char *, struct termios *, struct winsize *);
  #endif
  #endif
  

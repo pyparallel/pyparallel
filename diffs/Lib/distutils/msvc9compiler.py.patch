@@ -1,4 +1,5 @@
 diff --git a/Lib/distutils/msvc9compiler.py b/Lib/distutils/msvc9compiler.py
+index b3f6ce1..2481bc1 100644
 --- a/Lib/distutils/msvc9compiler.py
 +++ b/Lib/distutils/msvc9compiler.py
 @@ -413,10 +413,14 @@ class MSVCCompiler(CCompiler) :

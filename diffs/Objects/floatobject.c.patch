@@ -1,4 +1,5 @@
 diff --git a/Objects/floatobject.c b/Objects/floatobject.c
+index a08a852..0be0e6e 100644
 --- a/Objects/floatobject.c
 +++ b/Objects/floatobject.c
 @@ -114,8 +114,11 @@ PyFloat_GetInfo(void)

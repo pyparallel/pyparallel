@@ -1,9 +1,10 @@
 diff --git a/Include/pymem.h b/Include/pymem.h
+index 10b5bea..56f4725 100644
 --- a/Include/pymem.h
 +++ b/Include/pymem.h
 @@ -53,15 +53,31 @@ PyAPI_FUNC(void *) PyMem_Malloc(size_t);
  PyAPI_FUNC(void *) PyMem_Realloc(void *, size_t);
- PyAPI_FUNC(void) PyMem_Free(void *);
+ PyAPI_FUNC(void)   PyMem_Free(void *);
  
 +PyAPI_FUNC(void *) PyMem_RawMalloc(size_t);
 +PyAPI_FUNC(void *) PyMem_RawRealloc(void *, size_t);

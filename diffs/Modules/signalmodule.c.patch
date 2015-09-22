@@ -1,4 +1,5 @@
 diff --git a/Modules/signalmodule.c b/Modules/signalmodule.c
+index 704c9f5..28d2c20 100644
 --- a/Modules/signalmodule.c
 +++ b/Modules/signalmodule.c
 @@ -1318,6 +1318,11 @@ PyErr_CheckSignals(void)

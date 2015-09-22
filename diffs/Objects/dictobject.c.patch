@@ -1,4 +1,5 @@
 diff --git a/Objects/dictobject.c b/Objects/dictobject.c
+index 7aa5ea8..7db5c17 100644
 --- a/Objects/dictobject.c
 +++ b/Objects/dictobject.c
 @@ -247,6 +247,9 @@ PyDict_ClearFreeList(void)
@@ -21,7 +22,7 @@ diff --git a/Objects/dictobject.c b/Objects/dictobject.c
          mp = free_list[--numfree];
          assert (mp != NULL);
          assert (Py_TYPE(mp) == &PyDict_Type);
-@@ -825,7 +829,16 @@ insertdict(PyDictObject *mp, PyObject *k
+@@ -825,7 +829,16 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
      if (old_value != NULL) {
          assert(ep->me_key != NULL && ep->me_key != dummy);
          *value_addr = value;
@@ -38,7 +39,7 @@ diff --git a/Objects/dictobject.c b/Objects/dictobject.c
      }
      else {
          if (ep->me_key == NULL) {
-@@ -918,6 +931,15 @@ dictresize(PyDictObject *mp, Py_ssize_t 
+@@ -918,6 +931,15 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
      PyObject **oldvalues;
      Py_ssize_t i, oldsize;
  
@@ -75,7 +76,7 @@ diff --git a/Objects/dictobject.c b/Objects/dictobject.c
      PyObject_GC_UnTrack(mp);
      Py_TRASHCAN_SAFE_BEGIN(mp)
      if (values != NULL) {
-@@ -2258,6 +2287,15 @@ dict_setdefault(register PyDictObject *m
+@@ -2258,6 +2287,15 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
  static PyObject *
  dict_clear(register PyDictObject *mp)
  {
@@ -91,7 +92,7 @@ diff --git a/Objects/dictobject.c b/Objects/dictobject.c
      PyDict_Clear((PyObject *)mp);
      Py_RETURN_NONE;
  }
-@@ -2696,7 +2734,8 @@ PyDict_SetItemString(PyObject *v, const 
+@@ -2696,7 +2734,8 @@ PyDict_SetItemString(PyObject *v, const char *key, PyObject *item)
      kv = PyUnicode_FromString(key);
      if (kv == NULL)
          return -1;

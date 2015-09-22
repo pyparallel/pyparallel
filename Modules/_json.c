@@ -1,6 +1,7 @@
 #include "Python.h"
 #include "structmember.h"
 #include "accu.h"
+#include "statics.h"
 
 #if PY_VERSION_HEX < 0x02060000 && !defined(Py_TYPE)
 #define Py_TYPE(ob)     (((PyObject*)(ob))->ob_type)
@@ -26,6 +27,8 @@ typedef int Py_ssize_t;
 #define PyScanner_CheckExact(op) (Py_TYPE(op) == &PyScannerType)
 #define PyEncoder_Check(op) PyObject_TypeCheck(op, &PyEncoderType)
 #define PyEncoder_CheckExact(op) (Py_TYPE(op) == &PyEncoderType)
+
+static PyObject *errmsg_fn;
 
 static PyTypeObject PyScannerType;
 static PyTypeObject PyEncoderType;
@@ -81,15 +84,7 @@ static PyObject *
 join_list_unicode(PyObject *lst)
 {
     /* return u''.join(lst) */
-    Py_TLS static PyObject *sep = NULL;
-    if (sep == NULL) {
-        PyPx_EnableTLSHeap();
-        sep = PyUnicode_FromStringAndSize("", 0);
-        PyPx_DisableTLSHeap();
-        if (sep == NULL)
-            return NULL;
-    }
-    return PyUnicode_Join(sep, lst);
+    return PyUnicode_Join(statics.sep, lst);
 }
 
 /* Forward decls */
@@ -140,6 +135,24 @@ encoder_encode_float(PyEncoderObject *s, PyObject *obj);
 
 #define S_CHAR(c) (c >= ' ' && c <= '~' && c != '\\' && c != '"')
 #define IS_WHITESPACE(c) (((c) == ' ') || ((c) == '\t') || ((c) == '\n') || ((c) == '\r'))
+
+/* Dodgy hack. */
+static
+PyObject *
+py_init_errmsg(PyObject *obj)
+{
+    Py_GUARD();
+
+    if (errmsg_fn)
+        Py_CLEAR(errmsg_fn);
+
+    errmsg_fn = obj;
+    Py_INCREF(errmsg_fn);
+
+    Py_RETURN_NONE;
+}
+
+PyDoc_STRVAR(pydoc_init_errmsg, "initializes the error handler\n");
 
 static int
 _convertPyInt_AsSsize_t(PyObject *o, Py_ssize_t *size_ptr)
@@ -259,18 +272,9 @@ raise_errmsg(char *msg, PyObject *s, Py_ssize_t end)
 {
     /* Use the Python function json.decoder.errmsg to raise a nice
     looking ValueError exception */
-    static PyObject *errmsg_fn = NULL;
     PyObject *pymsg;
-    if (errmsg_fn == NULL) {
-        /* Ugh, this is going to bomb out for PyParallel. */
-        PyObject *decoder = PyImport_ImportModule("json.decoder");
-        if (decoder == NULL)
-            return;
-        errmsg_fn = PyObject_GetAttrString(decoder, "errmsg");
-        Py_DECREF(decoder);
-        if (errmsg_fn == NULL)
-            return;
-    }
+    if (!errmsg_fn)
+        Py_FatalError("oops, json module forgot to call _json._init_errmsg()");
     pymsg = PyObject_CallFunction(errmsg_fn, "(zOO&)", msg, s, _convertPyInt_FromSsize_t, &end);
     if (pymsg) {
         PyErr_SetObject(PyExc_ValueError, pymsg);
@@ -1298,36 +1302,12 @@ static PyObject *
 _encoded_const(PyObject *obj)
 {
     /* Return the JSON string representation of None, True, False */
-    if (obj == Py_None) {
-        Py_TLS static PyObject *s_null = NULL;
-        if (s_null == NULL) {
-            //PyPx_EnableTLSHeap();
-            s_null = PyUnicode_InternFromString("null");
-            //PyPx_DisableTLSHeap();
-        }
-        Py_INCREF(s_null);
-        return s_null;
-    }
-    else if (obj == Py_True) {
-        Py_TLS static PyObject *s_true = NULL;
-        if (s_true == NULL) {
-            //PyPx_EnableTLSHeap();
-            s_true = PyUnicode_InternFromString("true");
-            //PyPx_DisableTLSHeap();
-        }
-        Py_INCREF(s_true);
-        return s_true;
-    }
-    else if (obj == Py_False) {
-        Py_TLS static PyObject *s_false = NULL;
-        if (s_false == NULL) {
-            //PyPx_EnableTLSHeap();
-            s_false = PyUnicode_InternFromString("false");
-            //PyPx_DisableTLSHeap();
-        }
-        Py_INCREF(s_false);
-        return s_false;
-    }
+    if (obj == Py_None)
+        return statics.s_null;
+    else if (obj == Py_True)
+        return statics.s_true;
+    else if (obj == Py_False)
+        return statics.s_false;
     else {
         PyErr_SetString(PyExc_ValueError, "not a const");
         return NULL;
@@ -1345,13 +1325,13 @@ encoder_encode_float(PyEncoderObject *s, PyObject *obj)
             return NULL;
         }
         if (i > 0) {
-            return PyUnicode_FromString("Infinity");
+            return statics.infinity;
         }
         else if (i < 0) {
-            return PyUnicode_FromString("-Infinity");
+            return statics.neg_infinity;
         }
         else {
-            return PyUnicode_FromString("NaN");
+            return statics.nan;
         }
     }
     /* Use a better float format here? */
@@ -1475,9 +1455,6 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
                         PyObject *dct, Py_ssize_t indent_level)
 {
     /* Encode Python dict dct a JSON term */
-    Py_TLS static PyObject *open_dict = NULL;
-    Py_TLS static PyObject *close_dict = NULL;
-    Py_TLS static PyObject *empty_dict = NULL;
     PyObject *kstr = NULL;
     PyObject *ident = NULL;
     PyObject *it = NULL;
@@ -1486,17 +1463,8 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
     int skipkeys;
     Py_ssize_t idx;
 
-    if (open_dict == NULL || close_dict == NULL || empty_dict == NULL) {
-        //PyPx_EnableTLSHeap();
-        open_dict = PyUnicode_InternFromString("{");
-        close_dict = PyUnicode_InternFromString("}");
-        empty_dict = PyUnicode_InternFromString("{}");
-        //PyPx_DisableTLSHeap();
-        if (open_dict == NULL || close_dict == NULL || empty_dict == NULL)
-            return -1;
-    }
     if (Py_SIZE(dct) == 0)
-        return _PyAccu_Accumulate(acc, empty_dict);
+        return _PyAccu_Accumulate(acc, statics.empty_dict);
 
     if (s->markers != Py_None) {
         int has_key;
@@ -1514,7 +1482,7 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
         }
     }
 
-    if (_PyAccu_Accumulate(acc, open_dict))
+    if (_PyAccu_Accumulate(acc, statics.open_dict))
         goto bail;
 
     if (s->indent != Py_None) {
@@ -1638,7 +1606,7 @@ encoder_listencode_dict(PyEncoderObject *s, _PyAccu *acc,
 
         yield '\n' + (' ' * (_indent * _current_indent_level))
     }*/
-    if (_PyAccu_Accumulate(acc, close_dict))
+    if (_PyAccu_Accumulate(acc, statics.close_dict))
         goto bail;
     return 0;
 
@@ -1656,29 +1624,17 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
                         PyObject *seq, Py_ssize_t indent_level)
 {
     /* Encode Python list seq to a JSON term */
-    Py_TLS static PyObject *open_array = NULL;
-    Py_TLS static PyObject *close_array = NULL;
-    Py_TLS static PyObject *empty_array = NULL;
     PyObject *ident = NULL;
     PyObject *s_fast = NULL;
     Py_ssize_t i;
 
-    if (open_array == NULL || close_array == NULL || empty_array == NULL) {
-        //PyPx_EnableTLSHeap();
-        open_array = PyUnicode_InternFromString("[");
-        close_array = PyUnicode_InternFromString("]");
-        empty_array = PyUnicode_InternFromString("[]");
-        //PyPx_DisableTLSHeap();
-        if (open_array == NULL || close_array == NULL || empty_array == NULL)
-            return -1;
-    }
     ident = NULL;
     s_fast = PySequence_Fast(seq, "_iterencode_list needs a sequence");
     if (s_fast == NULL)
         return -1;
     if (PySequence_Fast_GET_SIZE(s_fast) == 0) {
         Py_DECREF(s_fast);
-        return _PyAccu_Accumulate(acc, empty_array);
+        return _PyAccu_Accumulate(acc, statics.empty_array);
     }
 
     if (s->markers != Py_None) {
@@ -1697,7 +1653,7 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
         }
     }
 
-    if (_PyAccu_Accumulate(acc, open_array))
+    if (_PyAccu_Accumulate(acc, statics.open_array))
         goto bail;
     if (s->indent != Py_None) {
         /* TODO: DOES NOT RUN */
@@ -1729,7 +1685,7 @@ encoder_listencode_list(PyEncoderObject *s, _PyAccu *acc,
 
         yield '\n' + (' ' * (_indent * _current_indent_level))
     }*/
-    if (_PyAccu_Accumulate(acc, close_array))
+    if (_PyAccu_Accumulate(acc, statics.close_array))
         goto bail;
     Py_DECREF(s_fast);
     return 0;
@@ -1837,6 +1793,11 @@ static PyMethodDef speedups_methods[] = {
         (PyCFunction)py_scanstring,
         METH_VARARGS,
         pydoc_scanstring},
+    /* Dodgy hack to allow us to resolve errmsg from json.decode. */
+    {"_init_errmsg",
+        (PyCFunction)py_init_errmsg,
+        METH_O,
+        pydoc_init_errmsg},
     {NULL, NULL, 0, NULL}
 };
 

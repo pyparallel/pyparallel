@@ -175,13 +175,6 @@ typedef struct _Py_Identifier {
     PyObject *object;
 } _Py_Identifier;
 
-/*
-#ifndef WITH_PARALLEL
-#define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
-#else
-#define _Py_static_string(varname, value)  Py_TLS static _Py_Identifier varname = { 0, value, 0 }
-#endif
-*/
 #define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
 
 #define _Py_IDENTIFIER(varname) _Py_static_string(PyId_##varname, #varname)

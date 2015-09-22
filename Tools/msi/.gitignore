@@ -1,0 +1,5 @@
+*.msi
+msisupport.exp
+LICENSE.txt
+manifest.txt
+*.zip

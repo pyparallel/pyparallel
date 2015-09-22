@@ -6,6 +6,7 @@ extern "C" {
 
 #include <fcntl.h>
 
+#include "statics.h"
 #include "pyparallel_private.h"
 #include "fileio.h"
 #include "frameobject.h"
@@ -129,6 +130,11 @@ static PyObject *_pxodbcmodule_obj = NULL;
 static PyObject *_json_module = NULL;
 static PyObject *_json_loads = NULL;
 static PyObject *_json_dumps = NULL;
+
+static PyObject *_ujson_module = NULL;
+static PyObject *_ujson_loads = NULL;
+static PyObject *_ujson_dumps = NULL;
+extern PyObject* PyInit_ujson(void);
 
 static PyObject *_pyparallel_util_module = NULL;
 static PyObject *_pyparallel_util_get_methods_for_class = NULL;
@@ -410,8 +416,10 @@ InsertHeadList(PLIST_ENTRY head, PLIST_ENTRY entry)
         __debugbreak();
     next->Blink = entry;
     head->Flink = entry;
+#ifdef Py_DEBUG
     CheckListEntry(entry);
     CheckListEntry(next);
+#endif
 }
 
 static __inline
@@ -424,7 +432,9 @@ RemoveHeadList(PLIST_ENTRY head)
     next = entry->Flink;
     head->Flink = next;
     next->Blink = head;
+#ifdef Py_DEBUG
     CheckListEntry(next);
+#endif
 
     entry->Flink = NULL;
     entry->Blink = NULL;
@@ -444,8 +454,10 @@ InsertTailList(PLIST_ENTRY head, PLIST_ENTRY entry)
     entry->Blink = prev;
     prev->Flink = entry;
     head->Blink = entry;
+#ifdef Py_DEBUG
     CheckListEntry(entry);
     CheckListEntry(head);
+#endif
     return;
 }
 
@@ -468,6 +480,11 @@ _PyParallel_AcquireGIL(void)
     Context *c = ctx;
     PyThreadState *pstate;
     long this_thread_id = _Py_get_current_thread_id();
+
+    /* xxx todo: just realized this is going to have to mock a new tstate that
+     * can be used whilst it holds the GIL; the ctx->tstate one will simply be
+     * the tstate of the main thread that created us. */
+    __debugbreak();
 
     if (!ctx)
         __debugbreak();
@@ -906,6 +923,9 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
     Objects *list = &h->px_deallocs;
     unsigned int count = 0, deallocs = 0, skipped = 0;
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     if (h->id == s->id) {
         if (!is_snapshot)
             __debugbreak();
@@ -973,6 +993,10 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
             /* Invariant broken. */
             __debugbreak();
     }
+
+    if (PyErr_Occurred())
+        __debugbreak();
+
     return count;
 }
 
@@ -5776,6 +5800,8 @@ _PxState_PurgeContexts(PxState *px)
 #endif
 #endif
 
+void PxSocketServer_UnlinkChild(PxSocket *child);
+
 /* This is one of the earliest functions written... before PyParallel was even
  * called PyParallel.  It's currently in for an overhaul, so there are chunks
  * commented out and whatnot as I'm refactoring the implementation. */
@@ -5909,6 +5935,7 @@ start:
         do {
             c = (Context *)item->from;
             assert(PyExceptionClass_Check((PyObject *)item->p1));
+
             PyErr_Restore((PyObject *)item->p1,
                           (PyObject *)item->p2,
                           (PyObject *)item->p3);
@@ -5927,6 +5954,10 @@ start:
                         EXCEPTION_CONTINUE_SEARCH
                 ) {
                     ++_PyParallel_EAV_In_PyErr_PrintEx;
+                    PyErr_Restore((PyObject *)item->p1,
+                                  NULL,
+                                  NULL);
+                    PyErr_PrintEx(0);
                 }
 
                 PyErr_Clear();
@@ -5935,8 +5966,15 @@ start:
                     PxSocketServer_Shutdown(s);
                     item = PxList_SeverFromNext(item);
                     continue;
-                } else
+                } else if (PxSocket_IS_SERVERCLIENT(s)) {
+                    PxSocketServer_UnlinkChild(s);
+                    item = PxList_SeverFromNext(item);
+                    continue;
+                }
+                else {
+                    __debugbreak();
                     PxSocket_Cleanup(s);
+                }
             }
 
             item = PxList_Transfer(px->finished, item);
@@ -8088,11 +8126,27 @@ static const char http11_plaintext_response_header_begin[] = (
     "Content-Length: "
 );
 
+#define _DATE_IX 43
+
 static const char http11_header_connection_close[] = (
     "Connection: close\r\n"
 );
 
-#define _DATE_IX 43
+/* 404 and 500 don't get any other headers at the moment. */
+static const char http11_404_not_found_response[] = (
+    "HTTP/1.1 404 Not Found\r\n"
+    "Content-Length: 0\r\n"
+);
+
+static const char http11_500_internal_error_response[] = (
+    "HTTP/1.1 500 Internal Server Error\r\n"
+    "Connection: close\r\n"
+);
+
+static const char http11_501_not_implemented_response[] = (
+    "HTTP/1.1 500 Not Implemented\r\n"
+    "Content-Length: 0\r\n\r\n"
+);
 
 /* Haven't done any testing to figure out what the tipping point is regarding
  * memcpy'ing into a single buffer versus supplying two buffers.  We incur more
@@ -8217,16 +8271,16 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         header_size = sizeof(http11_plaintext_response_header_begin)-1;
     } else {
         PyObject *args = PyTuple_Pack(1, o);
-        PyObject *s = PyObject_Call(_json_dumps, args, NULL);
-        if (!s)
+        PyObject *json = PyObject_Call(s->json_dumps, args, NULL);
+        if (!json)
             return NULL;
 
-        body = PyUnicode_AsUTF8AndSize(s, &body_size);
+        body = PyUnicode_AsUTF8AndSize(json, &body_size);
         if (!body)
             return NULL;
 
         header = (char *)&http11_json_response_header_begin[0];
-        header_size = sizeof(http11_json_response_header_begin);
+        header_size = sizeof(http11_json_response_header_begin)-1;
     }
 
     content_length_size = _snprintf(
@@ -8388,6 +8442,9 @@ PxSocket_IOLoop(PxSocket *s)
     s->ioloops++;
 
     ODS(L"PxSocket_IOLoop()\n");
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
 dispatch_io_op:
     if (s->next_io_op) {
@@ -8789,6 +8846,9 @@ do_accept:
     if (!PxSocket_InitNextBytes(s))
         PxSocket_FATAL();
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     //if (!PxSocket_InitODBC(s))
     //    PxSocket_FATAL();
 
@@ -8851,6 +8911,8 @@ do_accept:
                 /* Overlapped accept initiated successfully, a completion
                  * packet will be posted when a new client connects. */
                 InterlockedIncrement(&s->parent->accepts_posted);
+                if (PyErr_Occurred())
+                    __debugbreak();
                 goto end;
 
             case WSAENOTSOCK:
@@ -8871,6 +8933,8 @@ do_accept:
 
 overlapped_acceptex_callback:
     ODS(L"do_acceptex_callback:\n");
+    if (PyErr_Occurred())
+        __debugbreak();
     if (!s->was_accepting)
         __debugbreak();
     InterlockedDecrement(&s->parent->accepts_posted);
@@ -8944,6 +9008,9 @@ overlapped_acceptex_callback:
     s->was_connected = 1;
     SetEvent(s->parent->client_connected);
 
+    if (PyErr_Occurred())
+        __debugbreak();
+
     goto start;
 
 overlapped_disconnectex_callback:
@@ -8960,6 +9027,9 @@ start:
     ODS(L"start:\n");
 
     assert(s->protocol);
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
 //maybe_shutdown_send_or_recv:
     if (!PxSocket_CAN_RECV(s)) {
@@ -9131,6 +9201,9 @@ definitely_do_connection_made:
 
 do_send:
     ODS(L"do_send:\n");
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
     s->this_io_op = PxSocket_IO_SEND;
     c->io_result = NO_ERROR;
@@ -9447,6 +9520,18 @@ send_completed:
 
     if (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SENDING_NEXT_BYTES)
         Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SENDING_NEXT_BYTES;
+
+    if (c->error->p1) {
+        PxListItem *item = c->error;
+        if (!PxSocket_IS_HTTP11(s))
+            __debugbreak();
+        /* This will be set when an error occurred during data_received(),
+         * http11 is True, and our 500 response send completed. */
+        PyErr_Restore((PyObject *)item->p1,
+                      (PyObject *)item->p2,
+                      (PyObject *)item->p3);
+        PxSocket_FATAL();
+    }
 
     func = s->send_complete;
     if (!func)
@@ -9910,7 +9995,7 @@ process_data_received:
                 PyErr_SetString(PyExc_ValueError,
                                 "failed to extract sendable object from "
                                 "next_bytes_to_send");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
 
         rbuf = NULL;
@@ -9986,12 +10071,46 @@ do_data_received_callback:
     if (PyErr_Occurred())
         __debugbreak();
 
-    if (!func)
-        __debugbreak();
+    if (!func && PxSocket_IS_HTTP11(s)) {
+        result = PyBytes_FromStringAndSize(
+            (char *)&http11_501_not_implemented_response[0],
+            sizeof(http11_501_not_implemented_response)-1
+        );
+        if (!result)
+            __debugbreak();
+        goto send_result;
+    }
 
     result = _PyParallel_CallObject(func, args);
-    if (!result)
-        PxSocket_EXCEPTION();
+    if (!result) {
+        if (PxSocket_IS_HTTP11(s)) {
+            PyObject *exc_type = NULL, *exc_value = NULL, *exc_tb = NULL;
+            PxListItem *item = c->error;
+
+            PyErr_Fetch(&exc_type, &exc_value, &exc_tb);
+            /*
+            PyErr_Fetch((PyObject **)&item->p1,
+                        (PyObject **)&item->p2,
+                        (PyObject **)&item->p3);
+             */
+            PyErr_Clear();
+            item->p1 = exc_type;
+            item->p2 = exc_value ? exc_value : NULL;
+            item->p2 = exc_tb ? exc_tb : NULL;
+
+            result = PyBytes_FromStringAndSize(
+                (char *)&http11_500_internal_error_response[0],
+                sizeof(http11_500_internal_error_response)-1
+            );
+            if (!result)
+                __debugbreak();
+            goto send_result;
+        } else
+            PxSocket_FATAL();
+    }
+
+    if (PyErr_Occurred())
+        __debugbreak();
 
     if (PxSocket_IS_HTTP11(s))
         result = PxSocket_ConvertToHttpResponse(s, result);
@@ -10001,7 +10120,7 @@ do_data_received_callback:
             PyErr_SetString(PyExc_RuntimeError,
                             "data_received() callback scheduled sendfile but "
                             "returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
@@ -10010,10 +10129,11 @@ do_data_received_callback:
             PyErr_SetString(PyExc_RuntimeError,
                             "data_received() callback scheduled an async op"
                             " but returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
+send_result:
     if (result == Py_None) {
         if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
             s->sendfile_snapshot = rbuf->snapshot;
@@ -10829,6 +10949,8 @@ create_pxsocket(
         s->connection_made = parent->connection_made;
         s->connection_closed = parent->connection_closed;
         s->methods = parent->methods;
+        s->json_dumps = parent->json_dumps;
+        s->json_loads = parent->json_loads;
 
         /* xxx: eh, we should be able to just copy the exact value for flags.
          * (We can't, because it's being overloaded with different
@@ -11402,6 +11524,9 @@ PxSocket_IOCallback(
         __debugbreak();
     */
 
+    /* Test invariants. */
+
+#ifdef Py_DEBUG
     /* Would overlapped ever be null? */
     if (!ol)
         __debugbreak();
@@ -11468,6 +11593,7 @@ PxSocket_IOCallback(
                     __debugbreak();
         }
     }
+#endif /* Py_DEBUG */
 
     if (s->was_status_pending)
         __debugbreak();
@@ -11602,12 +11728,6 @@ PyParallel_IOCallback(
  * them via 'connection_lost', whilst 'connection_closed' is used to indicate
  * a clean connection close. */
 
-/* (Also, are we sure we want to be using _Py_IDENTIFIER here?  Not sure if
- *  there are some issues with the Py_TLS static stuff and the relationship
- *  between our server socket stuff (where the protocol is initialized at the
- *  listen socket level, then cloned in an ad-hoc fashion (in create_pxsocket)
- *  to the accept socket.)
- */
 _Py_IDENTIFIER(send_failed);
 _Py_IDENTIFIER(recv_failed);
 _Py_IDENTIFIER(send_shutdown);
@@ -11621,6 +11741,8 @@ _Py_IDENTIFIER(exception_handler);
 _Py_IDENTIFIER(initial_bytes_to_send);
 _Py_IDENTIFIER(next_bytes_to_send);
 _Py_IDENTIFIER(connection_string);
+_Py_IDENTIFIER(json_dumps);
+_Py_IDENTIFIER(json_loads);
 
 /* bools */
 _Py_IDENTIFIER(odbc);
@@ -11732,6 +11854,9 @@ PxSocket_InitProtocol(PxSocket *s)
 
     _PxSocket_RESOLVE(connection_string);
 
+    _PxSocket_RESOLVE(json_dumps);
+    _PxSocket_RESOLVE(json_loads);
+
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
     _PxSocket_RESOLVE_BOOL(low_latency);
@@ -11747,8 +11872,15 @@ PxSocket_InitProtocol(PxSocket *s)
     if (s->data_received || s->lines_received)
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
-    if (PxSocket_IS_HTTP11(s))
+    if (PxSocket_IS_HTTP11(s)) {
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
+        if (!s->json_dumps)
+            s->json_dumps = _ujson_dumps;
+
+        if (!s->json_loads)
+            s->json_loads = _ujson_loads;
+    }
 
     /* Having next_bytes_to_send set implies that we want to keep the
      * connection open, which currently requires us to toggle the CAN_RECV
@@ -13998,6 +14130,49 @@ _async_db_connect(PyObject *self, PyObject *o)
 }
 */
 
+PyObject *
+_async__init_ujson(void)
+{
+    PyObject *d, *modules, *name;
+    //__debugbreak();
+
+    if (_ujson_module)
+        goto end;
+
+    _ujson_module = PyInit_ujson();
+    if (!_ujson_module)
+        return NULL;
+
+    d = PyModule_GetDict(_ujson_module);
+
+    _ujson_loads = PyDict_GetItemString(d, "loads");
+    if (!_ujson_loads)
+        return NULL;
+
+    _ujson_dumps = PyDict_GetItemString(d, "dumps");
+    if (!_ujson_dumps)
+        return NULL;
+
+    name = PyUnicode_FromString("ujson");
+    if (!name)
+        return NULL;
+
+    modules = PyImport_GetModuleDict();
+    if (!modules)
+        __debugbreak();
+
+    if (PyDict_SetItem(modules, name, _ujson_module) < 0)
+        return NULL;
+
+    Py_INCREF(_ujson_module);
+    Py_INCREF(_ujson_loads);
+    Py_INCREF(_ujson_dumps);
+
+end:
+    return _ujson_module;
+}
+
+PyDoc_STRVAR(_async__init_ujson_doc, "init ujson");
 
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
@@ -14045,6 +14220,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(fileopener),
     _ASYNC_V(filecloser),
     _ASYNC_O(write_lock),
+    _ASYNC_N(_init_ujson),
     _ASYNC_N(acquire_gil),
     _ASYNC_N(release_gil),
     _ASYNC_N(active_hogs),
@@ -14114,6 +14290,7 @@ _pxodbc(void)
     return _pxodbcmodule_obj;
 }
 
+
 PyObject *
 _PyAsync_ModInit(void)
 {
@@ -14153,6 +14330,9 @@ _PyAsync_ModInit(void)
         return NULL;
     */
 
+    if (!statics.open_array)
+        __debugbreak();
+
     m = PyModule_Create(&_asyncmodule);
     if (m == NULL)
         return NULL;
@@ -14180,6 +14360,11 @@ _PyAsync_ModInit(void)
         _json_dumps = PyDict_GetItemString(d, "dumps");
         if (!_json_dumps)
             return NULL;
+    }
+
+    if (!_async__init_ujson()) {
+        PyErr_PrintEx(0);
+        return NULL;
     }
 
     /* See if skipping the odbc stuff allows us to load on <= Win 7. */

@@ -1,7 +1,10 @@
 diff --git a/Lib/idlelib/PyShell.py b/Lib/idlelib/PyShell.py
+old mode 100755
+new mode 100644
+index 2e5ebb2..5015039
 --- a/Lib/idlelib/PyShell.py
 +++ b/Lib/idlelib/PyShell.py
-@@ -828,7 +828,7 @@ class ModifiedInterpreter(InteractiveInt
+@@ -828,7 +828,7 @@ class ModifiedInterpreter(InteractiveInterpreter):
  
  class PyShell(OutputWindow):
  

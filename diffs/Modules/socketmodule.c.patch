@@ -1,4 +1,5 @@
 diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
+index 32b4eba..b754fc4 100644
 --- a/Modules/socketmodule.c
 +++ b/Modules/socketmodule.c
 @@ -302,6 +302,14 @@ typedef size_t socklen_t;
@@ -36,7 +37,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  
      s->errorhandler = &set_error;
  #ifdef SOCK_NONBLOCK
-@@ -1775,7 +1783,7 @@ getsockaddrarg(PySocketSockObject *s, Py
+@@ -1775,7 +1783,7 @@ getsockaddrarg(PySocketSockObject *s, PyObject *args,
     Return 1 if the family is known, 0 otherwise.  The length is returned
     through len_ret. */
  
@@ -45,7 +46,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  getsockaddrlen(PySocketSockObject *s, socklen_t *len_ret)
  {
      switch (s->sock_family) {
-@@ -2066,6 +2074,68 @@ Wait for an incoming connection.  Return
+@@ -2066,6 +2074,68 @@ Wait for an incoming connection.  Return a new socket file descriptor\n\
  representing the connection, and the address of the client.\n\
  For IP sockets, the address info is a pair (hostaddr, port).");
  
@@ -114,7 +115,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  /* s.setblocking(flag) method.  Argument:
     False -- non-blocking mode; same as settimeout(0)
     True -- blocking mode; same as settimeout(None)
-@@ -2568,6 +2638,9 @@ sock_listen(PySocketSockObject *s, PyObj
+@@ -2568,6 +2637,9 @@ sock_listen(PySocketSockObject *s, PyObject *arg)
      Py_END_ALLOW_THREADS
      if (res < 0)
          return s->errorhandler();
@@ -124,7 +125,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      Py_INCREF(Py_None);
      return Py_None;
  }
-@@ -3875,6 +3948,12 @@ static PyMethodDef sock_methods[] = {
+@@ -3875,6 +3947,12 @@ static PyMethodDef sock_methods[] = {
      {"sendmsg",           (PyCFunction)sock_sendmsg, METH_VARARGS,
                        sendmsg_doc},
  #endif
@@ -137,17 +138,17 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      {NULL,                      NULL}           /* sentinel */
  };
  
-@@ -3884,6 +3963,9 @@ static PyMemberDef sock_memberlist[] = {
-        {"type", T_INT, offsetof(PySocketSockObject, sock_type), READONLY, "the socket type"},
-        {"proto", T_INT, offsetof(PySocketSockObject, sock_proto), READONLY, "the socket protocol"},
-        {"timeout", T_DOUBLE, offsetof(PySocketSockObject, sock_timeout), READONLY, "the socket timeout"},
+@@ -3884,6 +3962,9 @@ static PyMemberDef sock_memberlist[] = {
+     {"type", T_INT, offsetof(PySocketSockObject, sock_type), READONLY, "the socket type"},
+     {"proto", T_INT, offsetof(PySocketSockObject, sock_proto), READONLY, "the socket protocol"},
+     {"timeout", T_DOUBLE, offsetof(PySocketSockObject, sock_timeout), READONLY, "the socket timeout"},
 +#ifdef WITH_PARALLEL
 +    {"backlog", T_INT, offsetof(PySocketSockObject, sock_backlog), READONLY, "the backlog specified to listen(n)"},
 +#endif
         {0},
  };
  
-@@ -3896,7 +3978,8 @@ sock_dealloc(PySocketSockObject *s)
+@@ -3896,7 +3977,8 @@ sock_dealloc(PySocketSockObject *s)
      if (s->sock_fd != -1) {
          PyObject *exc, *val, *tb;
          Py_ssize_t old_refcount = Py_REFCNT(s);
@@ -157,32 +158,30 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
          PyErr_Fetch(&exc, &val, &tb);
          if (PyErr_WarnFormat(PyExc_ResourceWarning, 1,
                               "unclosed %R", s))
-@@ -3938,15 +4021,15 @@ sock_repr(PySocketSockObject *s)
+@@ -3938,15 +4020,15 @@ sock_repr(PySocketSockObject *s)
  static PyObject *
  sock_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
  {
 -    PyObject *new;
--
++    PyObject *n;
+ 
 -    new = type->tp_alloc(type, 0);
 -    if (new != NULL) {
 -        ((PySocketSockObject *)new)->sock_fd = -1;
 -        ((PySocketSockObject *)new)->sock_timeout = -1.0;
 -        ((PySocketSockObject *)new)->errorhandler = &set_error;
--    }
--    return new;
-+    PyObject *n;
-+
 +    n = type->tp_alloc(type, 0);
 +    if (n != NULL) {
 +        ((PySocketSockObject *)n)->sock_fd = -1;
 +        ((PySocketSockObject *)n)->sock_timeout = -1.0;
 +        ((PySocketSockObject *)n)->errorhandler = &set_error;
-+    }
+     }
+-    return new;
 +    return n;
  }
  
  
-@@ -3967,6 +4050,12 @@ sock_initobj(PyObject *self, PyObject *a
+@@ -3967,6 +4049,12 @@ sock_initobj(PyObject *self, PyObject *args, PyObject *kwds)
                                       &family, &type, &proto, &fdobj))
          return -1;
  
@@ -195,7 +194,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      if (fdobj != NULL && fdobj != Py_None) {
  #ifdef MS_WINDOWS
          /* recreate a socket that was duplicated */
-@@ -5496,16 +5585,47 @@ os_cleanup(void)
+@@ -5496,16 +5584,47 @@ os_cleanup(void)
      WSACleanup();
  }
  
@@ -245,7 +244,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
      case WSASYSNOTREADY:
          PyErr_SetString(PyExc_ImportError,
                          "WSAStartup failed: network not ready");
-@@ -5521,6 +5641,52 @@ os_init(void)
+@@ -5521,6 +5640,52 @@ os_init(void)
          break;
      }
      return 0; /* Failure */
@@ -298,7 +297,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  }
  
  #endif /* MS_WINDOWS */
-@@ -5570,6 +5736,23 @@ PySocketModule_APIObject PySocketModuleA
+@@ -5570,6 +5735,23 @@ PySocketModule_APIObject PySocketModuleAPI =
      &sock_type,
      NULL,
      NULL
@@ -322,7 +321,7 @@ diff --git a/Modules/socketmodule.c b/Modules/socketmodule.c
  };
  
  
-@@ -5653,6 +5836,22 @@ PyInit__socket(void)
+@@ -5653,6 +5835,22 @@ PyInit__socket(void)
      Py_INCREF(has_ipv6);
      PyModule_AddObject(m, "has_ipv6", has_ipv6);
  

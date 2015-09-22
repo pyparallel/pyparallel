@@ -1,4 +1,5 @@
 diff --git a/Modules/_ctypes/malloc_closure.c b/Modules/_ctypes/malloc_closure.c
+index 248c6a6..69a09a8 100644
 --- a/Modules/_ctypes/malloc_closure.c
 +++ b/Modules/_ctypes/malloc_closure.c
 @@ -27,8 +27,8 @@ typedef union _tagITEM {

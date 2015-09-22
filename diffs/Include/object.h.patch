@@ -1,7 +1,8 @@
 diff --git a/Include/object.h b/Include/object.h
+index cdeb06c..7089f08 100644
 --- a/Include/object.h
 +++ b/Include/object.h
-@@ -51,7 +51,7 @@ A standard interface exists for objects 
+@@ -51,7 +51,7 @@ A standard interface exists for objects that contain an array of items
  whose size is determined when the object is allocated.
  */
  
@@ -10,7 +11,7 @@ diff --git a/Include/object.h b/Include/object.h
  #if defined(Py_DEBUG) && !defined(Py_TRACE_REFS)
  #define Py_TRACE_REFS
  #endif
-@@ -65,6 +65,7 @@ whose size is determined when the object
+@@ -65,6 +65,7 @@ whose size is determined when the object is allocated.
  #error Py_LIMITED_API is incompatible with Py_DEBUG, Py_TRACE_REFS, and Py_REF_DEBUG
  #endif
  
@@ -18,7 +19,7 @@ diff --git a/Include/object.h b/Include/object.h
  #ifdef Py_TRACE_REFS
  /* Define pointers to support a doubly-linked list of all live heap objects. */
  #define _PyObject_HEAD_EXTRA            \
-@@ -73,10 +74,39 @@ whose size is determined when the object
+@@ -73,10 +74,39 @@ whose size is determined when the object is allocated.
  
  #define _PyObject_EXTRA_INIT 0, 0,
  
@@ -75,17 +76,17 @@ diff --git a/Include/object.h b/Include/object.h
  
 +/*
 +#ifndef WITH_PARALLEL
- #define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
++#define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
 +#else
 +#define _Py_static_string(varname, value)  Py_TLS static _Py_Identifier varname = { 0, value, 0 }
 +#endif
 +*/
-+#define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
+ #define _Py_static_string(varname, value)  static _Py_Identifier varname = { 0, value, 0 }
 +
  #define _Py_IDENTIFIER(varname) _Py_static_string(PyId_##varname, #varname)
  
  /*
-@@ -625,6 +665,10 @@ given type object has a specified featur
+@@ -625,6 +665,10 @@ given type object has a specified feature.
  #define Py_TPFLAGS_HAVE_STACKLESS_EXTENSION 0
  #endif
  
@@ -96,7 +97,7 @@ diff --git a/Include/object.h b/Include/object.h
  /* Objects support type attribute cache */
  #define Py_TPFLAGS_HAVE_VERSION_TAG   (1L<<18)
  #define Py_TPFLAGS_VALID_VERSION_TAG  (1L<<19)
-@@ -706,6 +750,7 @@ PyAPI_FUNC(void) _Py_NegativeRefcount(co
+@@ -706,6 +749,7 @@ PyAPI_FUNC(void) _Py_NegativeRefcount(const char *fname,
  PyAPI_FUNC(PyObject *) _PyDict_Dummy(void);
  PyAPI_FUNC(PyObject *) _PySet_Dummy(void);
  PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
@@ -104,9 +105,9 @@ diff --git a/Include/object.h b/Include/object.h
  #define _Py_INC_REFTOTAL        _Py_RefTotal++
  #define _Py_DEC_REFTOTAL        _Py_RefTotal--
  #define _Py_REF_DEBUG_COMMA     ,
-@@ -714,7 +759,16 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
-                 _Py_NegativeRefcount(__FILE__, __LINE__,        \
-                                      (PyObject *)(OP));         \
+@@ -714,7 +758,16 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
+                 _Py_NegativeRefcount(__FILE__, __LINE__,            \
+                                      (PyObject *)(OP));             \
  }
 -#else
 +#else  /* WITH_PARALLEL */
@@ -122,7 +123,7 @@ diff --git a/Include/object.h b/Include/object.h
  #define _Py_INC_REFTOTAL
  #define _Py_DEC_REFTOTAL
  #define _Py_REF_DEBUG_COMMA
-@@ -724,17 +778,46 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(v
+@@ -724,17 +777,46 @@ PyAPI_FUNC(Py_ssize_t) _Py_GetRefTotal(void);
  #ifdef COUNT_ALLOCS
  PyAPI_FUNC(void) inc_count(PyTypeObject *);
  PyAPI_FUNC(void) dec_count(PyTypeObject *);
@@ -169,16 +170,17 @@ diff --git a/Include/object.h b/Include/object.h
  #ifdef Py_TRACE_REFS
  /* Py_TRACE_REFS is such major surgery that we call external routines. */
  PyAPI_FUNC(void) _Py_NewReference(PyObject *);
-@@ -748,22 +831,72 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyO
+@@ -748,22 +830,72 @@ PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
  /* Without Py_TRACE_REFS, there's little enough to do that we expand code
   * inline.
   */
 +#ifndef WITH_PARALLEL
- #define _Py_NewReference(op) (                          \
-     _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA         \
-     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA               \
+ #define _Py_NewReference(op) (                      \
+     _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA     \
+     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA           \
      Py_REFCNT(op) = 1)
-+#define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
+-
+ #define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
 +#else
 +#ifdef Py_DEBUG
 +#define _Py_NewReference(op)                        \
@@ -197,8 +199,7 @@ diff --git a/Include/object.h b/Include/object.h
 +    ))                                                  \
 +)
 +#endif
- 
--#define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
++
 +#define _Py_ForgetReference(op)                     \
 +    do {                                            \
 +        if (Py_PXCTX())                             \
@@ -214,8 +215,8 @@ diff --git a/Include/object.h b/Include/object.h
  PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
  #else
 +#ifndef WITH_PARALLEL
- #define _Py_Dealloc(op) (                               \
-     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA          \
+ #define _Py_Dealloc(op) (                           \
+     _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
      (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op)))
 +#else
 +
@@ -240,11 +241,11 @@ diff --git a/Include/object.h b/Include/object.h
  #endif /* !Py_TRACE_REFS */
  
 +#ifndef WITH_PARALLEL
- #define Py_INCREF(op) (                         \
-     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
+ #define Py_INCREF(op) (                                       \
+     _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA                     \
      ((PyObject*)(op))->ob_refcnt++)
-@@ -777,6 +910,78 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
-         _Py_Dealloc((PyObject *)(op));                  \
+@@ -777,6 +909,78 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
+         _Py_Dealloc((PyObject *)(op));                        \
      } while (0)
  
 +#else /* !WITH_PARALLEL */
@@ -322,8 +323,8 @@ diff --git a/Include/object.h b/Include/object.h
  /* Safely decref `op` and set `op` to NULL, especially useful in tp_clear
   * and tp_dealloc implementatons.
   *
-@@ -820,9 +1025,31 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *)
-         }                                       \
+@@ -820,9 +1025,31 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
+         }                                         \
      } while (0)
  
 +#define Py_ODECREF(op)                                        \
@@ -348,13 +349,13 @@ diff --git a/Include/object.h b/Include/object.h
 +
 +
  /* Macros to use in case the object pointer may be NULL: */
- #define Py_XINCREF(op) do { if ((op) == NULL) ; else Py_INCREF(op); } while (0)
- #define Py_XDECREF(op) do { if ((op) == NULL) ; else Py_DECREF(op); } while (0)
+ #define Py_XINCREF(op)  do { if ((op) == NULL) ; else Py_INCREF(op);  } while (0)
+ #define Py_XDECREF(op)  do { if ((op) == NULL) ; else Py_DECREF(op);  } while (0)
 +#define Py_OXDECREF(op) do { if ((op) == NULL) ; else Py_ODECREF(op); } while (0)
  
  /*
  These are provided as conveniences to Python runtime embedders, so that
-@@ -830,6 +1057,12 @@ they can have object code that is not de
+@@ -830,6 +1057,12 @@ they can have object code that is not dependent on Python compilation flags.
  */
  PyAPI_FUNC(void) Py_IncRef(PyObject *);
  PyAPI_FUNC(void) Py_DecRef(PyObject *);
@@ -367,7 +368,7 @@ diff --git a/Include/object.h b/Include/object.h
  
  PyAPI_DATA(PyTypeObject) _PyNone_Type;
  PyAPI_DATA(PyTypeObject) _PyNotImplemented_Type;
-@@ -870,6 +1103,16 @@ PyAPI_DATA(PyObject) _Py_NotImplementedS
+@@ -870,6 +1103,16 @@ PyAPI_DATA(PyObject) _Py_NotImplementedStruct; /* Don't use this directly */
   */
  PyAPI_DATA(int) _Py_SwappedOp[];
  
@@ -384,7 +385,7 @@ diff --git a/Include/object.h b/Include/object.h
  
  /*
  More conventions
-@@ -980,7 +1223,9 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy
+@@ -980,7 +1223,9 @@ PyAPI_FUNC(void) _PyTrash_thread_destroy_chain(void);
  
  #define Py_TRASHCAN_SAFE_BEGIN(op) \
      do { \

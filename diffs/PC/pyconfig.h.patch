@@ -1,11 +1,12 @@
 diff --git a/PC/pyconfig.h b/PC/pyconfig.h
+index 0b96539..b11947a 100644
 --- a/PC/pyconfig.h
 +++ b/PC/pyconfig.h
-@@ -88,6 +88,11 @@ WIN32 is still required for the locale m
+@@ -88,6 +88,11 @@ WIN32 is still required for the locale module.
  #define USE_SOCKET
  #endif
  
-+#if !defined(WITH_PARALLEL) && !defined(DISABLE_PARALLEL) 
++#if !defined(WITH_PARALLEL) && !defined(DISABLE_PARALLEL)
 +#define WITH_PARALLEL 1
 +#define WITH_INTRINSICS 1
 +#endif
@@ -13,7 +14,7 @@ diff --git a/PC/pyconfig.h b/PC/pyconfig.h
  /* CE6 doesn't have strdup() but _strdup(). Assume the same for earlier versions. */
  #if defined(MS_WINCE)
  #  include <stdlib.h>
-@@ -155,6 +160,14 @@ WIN32 is still required for the locale m
+@@ -155,6 +160,14 @@ WIN32 is still required for the locale module.
  #endif
  #endif /* MS_WIN64 */
  
@@ -28,7 +29,7 @@ diff --git a/PC/pyconfig.h b/PC/pyconfig.h
  /* set the version macros for the windows headers */
  #ifdef MS_WINX64
  /* 64 bit only runs on XP or greater */
-@@ -166,6 +179,8 @@ WIN32 is still required for the locale m
+@@ -166,6 +179,8 @@ WIN32 is still required for the locale module.
  #define Py_NTDDI NTDDI_WIN2KSP4
  #endif
  
@@ -37,3 +38,25 @@ diff --git a/PC/pyconfig.h b/PC/pyconfig.h
  /* We only set these values when building Python - we don't want to force
     these values on extensions, as that will affect the prototypes and
     structures exposed in the Windows headers. Even when building Python, we
+@@ -442,6 +457,11 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+ /* Define to 1 if you have the `copysign' function. */
+ #define HAVE_COPYSIGN 1
+ 
++/* Define to 1 if you have the `round' function. */
++#if _MSC_VER >= 1800
++#define HAVE_ROUND 1
++#endif
++
+ /* Define to 1 if you have the `isinf' macro. */
+ #define HAVE_DECL_ISINF 1
+ 
+@@ -731,6 +751,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+ /* The size of `wchar_t', as computed by sizeof. */
+ #define SIZEOF_WCHAR_T 2
+ 
++/* The size of `pid_t', as computed by sizeof. */
++#define SIZEOF_PID_T SIZEOF_INT
++
+ /* Define if you have the dl library (-ldl).  */
+ /* #undef HAVE_LIBDL */
+ 

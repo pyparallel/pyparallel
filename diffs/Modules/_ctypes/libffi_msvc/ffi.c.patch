@@ -1,7 +1,8 @@
 diff --git a/Modules/_ctypes/libffi_msvc/ffi.c b/Modules/_ctypes/libffi_msvc/ffi.c
+index 6e595e9..b7586c7 100644
 --- a/Modules/_ctypes/libffi_msvc/ffi.c
 +++ b/Modules/_ctypes/libffi_msvc/ffi.c
-@@ -65,43 +65,71 @@ void ffi_prep_args(char *stack, extended
+@@ -65,43 +65,71 @@ void ffi_prep_args(char *stack, extended_cif *ecif)
  	argp = (char *) ALIGN(argp, sizeof(void *));
  
        z = (*p_arg)->size;
@@ -82,7 +83,7 @@ diff --git a/Modules/_ctypes/libffi_msvc/ffi.c b/Modules/_ctypes/libffi_msvc/ffi
        else
  	{
  	  memcpy(argp, *p_argv, z);
-@@ -124,7 +152,6 @@ ffi_status ffi_prep_cif_machdep(ffi_cif 
+@@ -124,7 +152,6 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
    switch (cif->rtype->type)
      {
      case FFI_TYPE_VOID:
@@ -90,7 +91,7 @@ diff --git a/Modules/_ctypes/libffi_msvc/ffi.c b/Modules/_ctypes/libffi_msvc/ffi
      case FFI_TYPE_SINT64:
      case FFI_TYPE_FLOAT:
      case FFI_TYPE_DOUBLE:
-@@ -132,6 +159,18 @@ ffi_status ffi_prep_cif_machdep(ffi_cif 
+@@ -132,6 +159,18 @@ ffi_status ffi_prep_cif_machdep(ffi_cif *cif)
        cif->flags = (unsigned) cif->rtype->type;
        break;
  
@@ -128,7 +129,7 @@ diff --git a/Modules/_ctypes/libffi_msvc/ffi.c b/Modules/_ctypes/libffi_msvc/ffi
  {
    // this is our return value storage
    long double    res;
-@@ -237,7 +275,7 @@ ffi_closure_SYSV (ffi_closure *closure, 
+@@ -237,7 +275,7 @@ ffi_closure_SYSV (ffi_closure *closure, int *argp)
    void         **arg_area;
    unsigned short rtype;
    void          *resp = (void*)&res;

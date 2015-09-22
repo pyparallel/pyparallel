@@ -1,7 +1,8 @@
 diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
+index 9dcb74e..833ba71 100644
 --- a/Objects/bytesobject.c
 +++ b/Objects/bytesobject.c
-@@ -26,7 +26,7 @@ static Py_ssize_t
+@@ -26,7 +26,7 @@ _getbuffer(PyObject *obj, Py_buffer *view)
  }
  
  #ifdef COUNT_ALLOCS
@@ -10,7 +11,7 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
  #endif
  
  static PyBytesObject *characters[UCHAR_MAX + 1];
-@@ -103,6 +103,10 @@ PyBytes_FromStringAndSize(const char *st
+@@ -103,6 +103,10 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
      if (str != NULL)
          Py_MEMCPY(op->ob_sval, str, size);
      op->ob_sval[size] = '\0';
@@ -21,7 +22,7 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
      /* share short strings */
      if (size == 0) {
          nullstring = op;
-@@ -111,6 +115,7 @@ PyBytes_FromStringAndSize(const char *st
+@@ -111,6 +115,7 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
          characters[*str & UCHAR_MAX] = op;
          Py_INCREF(op);
      }
@@ -48,7 +49,7 @@ diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
      return (PyObject *) op;
  }
  
-@@ -2887,6 +2897,8 @@ int
+@@ -2887,6 +2897,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
          PyErr_BadInternalCall();
          return -1;
      }

@@ -1,7 +1,8 @@
 diff --git a/Python/pythonrun.c b/Python/pythonrun.c
+index 91d56b7..47c92a9 100644
 --- a/Python/pythonrun.c
 +++ b/Python/pythonrun.c
-@@ -251,6 +251,10 @@ void
+@@ -251,6 +250,10 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
      PyInterpreterState *interp;
      PyThreadState *tstate;
      PyObject *bimod, *sysmod, *pstderr;
@@ -12,7 +13,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
      char *p;
      extern void _Py_ReadyTypes(void);
  
-@@ -259,6 +263,10 @@ void
+@@ -259,6 +262,10 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
      initialized = 1;
      _Py_Finalizing = NULL;
  
@@ -23,7 +24,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  #if defined(HAVE_LANGINFO_H) && defined(HAVE_SETLOCALE)
      /* Set up the LC_CTYPE locale, so we can obtain
         the locale's charset without having to switch
-@@ -290,6 +298,10 @@ void
+@@ -290,6 +297,10 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
          Py_FatalError("Py_Initialize: can't make first thread");
      (void) PyThreadState_Swap(tstate);
  
@@ -34,7 +35,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  #ifdef WITH_THREAD
      /* We can't call _PyEval_FiniThreads() in Py_Finalize because
         destroying the GIL might fail when it is being referenced from
-@@ -397,6 +409,20 @@ void
+@@ -397,6 +408,20 @@ _Py_InitializeEx_Private(int install_sigs, int install_importlib)
  
      if (!Py_NoSiteFlag)
          initsite(); /* Module site */
@@ -55,7 +56,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  }
  
  void
-@@ -484,6 +510,13 @@ Py_Finalize(void)
+@@ -484,6 +509,13 @@ Py_Finalize(void)
  
      wait_for_thread_shutdown();
  
@@ -69,7 +70,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
      /* The interpreter is still entirely intact at this point, and the
       * exit funcs may be relying on that.  In particular, if some thread
       * or exit func is still waiting to do an import, the import machinery
-@@ -522,7 +555,11 @@ Py_Finalize(void)
+@@ -522,7 +554,11 @@ Py_Finalize(void)
       * XXX but I'm unclear on exactly how that one happens.  In any case,
       * XXX I haven't seen a real-life report of either of these.
       */
@@ -81,7 +82,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  #ifdef COUNT_ALLOCS
      /* With COUNT_ALLOCS, it helps to run GC multiple times:
         each collection might release some types from the type
-@@ -555,7 +592,7 @@ Py_Finalize(void)
+@@ -555,7 +591,7 @@ Py_Finalize(void)
       * XXX seen segfaults then, after adding print statements to the
       * XXX Python code getting called.
       */
@@ -90,7 +91,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
      PyGC_Collect();
  #endif
  
-@@ -2350,6 +2387,19 @@ Py_FatalError(const char *msg)
+@@ -2350,6 +2386,19 @@ Py_FatalError(const char *msg)
  {
      const int fd = fileno(stderr);
      PyThreadState *tstate;
@@ -110,7 +111,7 @@ diff --git a/Python/pythonrun.c b/Python/pythonrun.c
  
      fprintf(stderr, "Fatal Python error: %s\n", msg);
      fflush(stderr); /* it helps in Windows debug build */
-@@ -2405,6 +2455,10 @@ void _Py_PyAtExit(void (*func)(void))
+@@ -2405,6 +2454,10 @@ void _Py_PyAtExit(void (*func)(void))
  static void
  call_py_exitfuncs(void)
  {

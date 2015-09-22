@@ -180,6 +180,8 @@ class TefbHttpServer(HttpServer):
     update_sql = 'update world set randomNumber = ? where id = ?'
     fortune_sql = 'select * from fortune'
 
+    connect_string = localhost_connect_string
+
     @route
     def json(self, request):
         json_serialization(request, obj={'message': 'Hello, World'})
