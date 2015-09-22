@@ -1,6 +1,7 @@
 #===============================================================================
 # Imports
 #===============================================================================
+import json
 import sqlite3
 
 import parallel
@@ -46,6 +47,37 @@ class Foo(HttpServer):
         cur.execute("select * from country");
         results = cur.fetchall()
         return results
+
+class Bar(HttpServer):
+    http11 = True
+    json_dumps = json.dumps
+    json_loads = json.loads
+
+    def json(self, transport, data):
+        return { 'message': 'Hello, world!\n' }
+
+    def countries(self, transport, data):
+        db = sqlite3.connect(self.dbname)
+        cur = db.cursor()
+        cur.execute("select name from country limit 10");
+        results = cur.fetchall()
+        return results
+        #return json_serialization(request, results)
+
+    def cities(self, transport, data):
+        db = sqlite3.connect(self.dbname)
+        cur = db.cursor()
+        cur.execute("select * from city");
+        results = cur.fetchall()
+        return results
+
+    def country(self, transport, data):
+        db = sqlite3.connect(self.dbname)
+        cur = db.cursor()
+        cur.execute("select * from country");
+        results = cur.fetchall()
+        return results
+
 
 class SqliteGeoHttpServer(HttpServer):
     #http11 = True

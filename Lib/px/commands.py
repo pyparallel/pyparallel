@@ -561,12 +561,18 @@ class SqliteServer(TCPServerCommand):
             protocol = sqt.Foo
             parallel.register(transport=server3, protocol=protocol)
 
+            server4 = parallel.server(ip, port+3)
+            self._out("Running fast server2 on %s port %d ..." % (ip, port+3))
+            protocol = sqt.Bar
+            parallel.register(transport=server4, protocol=protocol)
+
             try:
                 parallel.run()
             except KeyboardInterrupt:
                 server1.shutdown()
                 server2.shutdown()
                 server3.shutdown()
+                server4.shutdown()
 
 #===============================================================================
 # Testing

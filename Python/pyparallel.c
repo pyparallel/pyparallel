@@ -131,6 +131,11 @@ static PyObject *_json_module = NULL;
 static PyObject *_json_loads = NULL;
 static PyObject *_json_dumps = NULL;
 
+static PyObject *_ujson_module = NULL;
+static PyObject *_ujson_loads = NULL;
+static PyObject *_ujson_dumps = NULL;
+extern PyObject* PyInit_ujson(void);
+
 static PyObject *_pyparallel_util_module = NULL;
 static PyObject *_pyparallel_util_get_methods_for_class = NULL;
 
@@ -8271,11 +8276,11 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         header_size = sizeof(http11_plaintext_response_header_begin)-1;
     } else {
         PyObject *args = PyTuple_Pack(1, o);
-        PyObject *s = PyObject_Call(_json_dumps, args, NULL);
-        if (!s)
+        PyObject *json = PyObject_Call(s->json_dumps, args, NULL);
+        if (!json)
             return NULL;
 
-        body = PyUnicode_AsUTF8AndSize(s, &body_size);
+        body = PyUnicode_AsUTF8AndSize(json, &body_size);
         if (!body)
             return NULL;
 
@@ -10949,6 +10954,8 @@ create_pxsocket(
         s->connection_made = parent->connection_made;
         s->connection_closed = parent->connection_closed;
         s->methods = parent->methods;
+        s->json_dumps = parent->json_dumps;
+        s->json_loads = parent->json_loads;
 
         /* xxx: eh, we should be able to just copy the exact value for flags.
          * (We can't, because it's being overloaded with different
@@ -11739,6 +11746,8 @@ _Py_IDENTIFIER(exception_handler);
 _Py_IDENTIFIER(initial_bytes_to_send);
 _Py_IDENTIFIER(next_bytes_to_send);
 _Py_IDENTIFIER(connection_string);
+_Py_IDENTIFIER(json_dumps);
+_Py_IDENTIFIER(json_loads);
 
 /* bools */
 _Py_IDENTIFIER(odbc);
@@ -11850,6 +11859,9 @@ PxSocket_InitProtocol(PxSocket *s)
 
     _PxSocket_RESOLVE(connection_string);
 
+    _PxSocket_RESOLVE(json_dumps);
+    _PxSocket_RESOLVE(json_loads);
+
     _PxSocket_RESOLVE_BOOL(throughput);
     _PxSocket_RESOLVE_BOOL(concurrency);
     _PxSocket_RESOLVE_BOOL(low_latency);
@@ -11865,8 +11877,15 @@ PxSocket_InitProtocol(PxSocket *s)
     if (s->data_received || s->lines_received)
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
 
-    if (PxSocket_IS_HTTP11(s))
+    if (PxSocket_IS_HTTP11(s)) {
         Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CAN_RECV;
+
+        if (!s->json_dumps)
+            s->json_dumps = _ujson_dumps;
+
+        if (!s->json_loads)
+            s->json_loads = _ujson_loads;
+    }
 
     /* Having next_bytes_to_send set implies that we want to keep the
      * connection open, which currently requires us to toggle the CAN_RECV
@@ -14116,6 +14135,49 @@ _async_db_connect(PyObject *self, PyObject *o)
 }
 */
 
+PyObject *
+_async__init_ujson(void)
+{
+    PyObject *d, *modules, *name;
+    //__debugbreak();
+
+    if (_ujson_module)
+        goto end;
+
+    _ujson_module = PyInit_ujson();
+    if (!_ujson_module)
+        return NULL;
+
+    d = PyModule_GetDict(_ujson_module);
+
+    _ujson_loads = PyDict_GetItemString(d, "loads");
+    if (!_ujson_loads)
+        return NULL;
+
+    _ujson_dumps = PyDict_GetItemString(d, "dumps");
+    if (!_ujson_dumps)
+        return NULL;
+
+    name = PyUnicode_FromString("ujson");
+    if (!name)
+        return NULL;
+
+    modules = PyImport_GetModuleDict();
+    if (!modules)
+        __debugbreak();
+
+    if (PyDict_SetItem(modules, name, _ujson_module) < 0)
+        return NULL;
+
+    Py_INCREF(_ujson_module);
+    Py_INCREF(_ujson_loads);
+    Py_INCREF(_ujson_dumps);
+
+end:
+    return _ujson_module;
+}
+
+PyDoc_STRVAR(_async__init_ujson_doc, "init ujson");
 
 #define _ASYNC(n, a) _METHOD(_async, n, a)
 #define _ASYNC_N(n) _ASYNC(n, METH_NOARGS)
@@ -14163,6 +14225,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_V(fileopener),
     _ASYNC_V(filecloser),
     _ASYNC_O(write_lock),
+    _ASYNC_N(_init_ujson),
     _ASYNC_N(acquire_gil),
     _ASYNC_N(release_gil),
     _ASYNC_N(active_hogs),
@@ -14231,6 +14294,7 @@ _pxodbc(void)
         _pxodbcmodule_obj = PyImport_ImportModule("pxodbc");
     return _pxodbcmodule_obj;
 }
+
 
 PyObject *
 _PyAsync_ModInit(void)
@@ -14301,6 +14365,11 @@ _PyAsync_ModInit(void)
         _json_dumps = PyDict_GetItemString(d, "dumps");
         if (!_json_dumps)
             return NULL;
+    }
+
+    if (!_async__init_ujson()) {
+        PyErr_PrintEx(0);
+        return NULL;
     }
 
     /* See if skipping the odbc stuff allows us to load on <= Win 7. */

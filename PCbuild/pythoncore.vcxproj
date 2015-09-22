@@ -589,6 +589,9 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\pyparallel_http.h" />
     <ClInclude Include="..\Include\pxlist.h" />
     <ClInclude Include="..\Include\statics.h" />
+    <ClInclude Include="..\Include\ultrajson.h" />
+    <ClInclude Include="..\Python\ujson_py_defines.h" />
+    <ClInclude Include="..\Python\ujson_version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c" />
@@ -765,6 +768,11 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\Python\pyparallel.c" />
     <ClCompile Include="..\Python\pxlist.c" />
     <ClCompile Include="..\Python\statics.c" />
+    <ClCompile Include="..\Python\JSONtoObj.c" />
+    <ClCompile Include="..\Python\objToJSON.c" />
+    <ClCompile Include="..\Python\ujson.c" />
+    <ClCompile Include="..\Python\ultrajsondec.c" />
+    <ClCompile Include="..\Python\ultrajsonenc.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\PC\python_nt.rc" />
