@@ -655,6 +655,8 @@ typedef struct _PyParallelContext {
     PyObject *errback;
     PyObject *result;
 
+    PyObject *tstate_dict;
+
     Context  *tp_ctx;
 
     PTP_POOL ptp;

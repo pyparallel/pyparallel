@@ -466,7 +466,9 @@ PyObject *
 PyThreadState_GetDict(void)
 {
     PyThreadState *tstate;
-    /* XXX: This needs to be reviewed for PyParallel. */   
+
+    if (Py_PXCTX())
+        return _PyParallel_GetThreadStateDict();
 
     tstate = PyThreadState_XGET();
     if (tstate == NULL)
@@ -474,9 +476,7 @@ PyThreadState_GetDict(void)
 
     if (tstate->dict == NULL) {
         PyObject *d;
-        PyPx_EnableTLSHeap();
         tstate->dict = d = PyDict_New();
-        PyPx_DisableTLSHeap();
         if (d == NULL)
             PyErr_Clear();
     }

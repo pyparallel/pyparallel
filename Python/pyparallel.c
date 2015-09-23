@@ -1131,6 +1131,9 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
     /* Copy the stats snapshot back to the context. */
     memcpy(&c->stats, &c->stats_snapshot, sizeof(Stats));
 
+    /* Clear the thread state dict. */
+    c->tstate_dict = NULL;
+
     /* And finally, reset the remaining active heap's memory. */
     SecureZeroMemory(s->next, s->remaining);
 }
@@ -7709,6 +7712,23 @@ _PyParallel_GetThreadState(void)
     if (c->pstate == c->tstate)
         __debugbreak();
     return c->pstate;
+}
+
+PyObject *
+_PyParallel_GetThreadStateDict(void)
+{
+    Context *c = ctx;
+    Px_GUARD();
+    if (!c)
+        __debugbreak();
+
+    if (!c->tstate_dict) {
+        c->tstate_dict = PyDict_New();
+        if (!c->tstate_dict)
+            return NULL;
+    }
+
+    return c->tstate_dict;
 }
 
 void
