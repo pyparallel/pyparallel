@@ -110,8 +110,7 @@ PyAPI_FUNC(int)     _PyParallel_IsDebugbreakOnNextExceptionSet(void);
 
 PyAPI_FUNC(int)     _PyParallel_IsParallelContext(void);
 
-PyAPI_FUNC(int)     PyPx_EnableTLSHeap(void);
-PyAPI_FUNC(int)     PyPx_DisableTLSHeap(void);
+PyAPI_FUNC(PyObject *) _PyParallel_GeThreadStateDict(void);
 
 #define PyExc_MAYBE_BREAK() \
     do { \
