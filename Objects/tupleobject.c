@@ -20,8 +20,8 @@ static PyTupleObject *free_list[PyTuple_MAXSAVESIZE];
 static int numfree[PyTuple_MAXSAVESIZE];
 #endif
 #ifdef COUNT_ALLOCS
-Py_TLS Py_ssize_t fast_tuple_allocs;
-Py_TLS Py_ssize_t tuple_zero_allocs;
+Py_ssize_t fast_tuple_allocs;
+Py_ssize_t tuple_zero_allocs;
 #endif
 
 /* Debug statistic to count GC tracking of tuples.
@@ -30,12 +30,13 @@ Py_TLS Py_ssize_t tuple_zero_allocs;
    does not necessarily prove that the heuristic is inefficient.
 */
 #ifdef SHOW_TRACK_COUNT
-Py_TLS static Py_ssize_t count_untracked = 0;
-Py_TLS static Py_ssize_t count_tracked = 0;
+static Py_ssize_t count_untracked = 0;
+static Py_ssize_t count_tracked = 0;
 
 static void
 show_track(void)
 {
+    Py_GUARD();
     fprintf(stderr, "Tuples created: %" PY_FORMAT_SIZE_T "d\n",
         count_tracked + count_untracked);
     fprintf(stderr, "Tuples tracked by the GC: %" PY_FORMAT_SIZE_T
@@ -52,6 +53,7 @@ _PyTuple_DebugMallocStats(FILE *out)
 #if PyTuple_MAXSAVESIZE > 0
     int i;
     char buf[128];
+    Py_GUARD();
     for (i = 1; i < PyTuple_MAXSAVESIZE; i++) {
         PyOS_snprintf(buf, sizeof(buf),
                       "free %d-sized PyTupleObject", i);
@@ -196,6 +198,8 @@ _PyTuple_MaybeUntrack(PyObject *op)
 {
     PyTupleObject *t;
     Py_ssize_t i, n;
+    Py_GUARD();
+    Py_GUARD_OBJ(op);
 
     if (!PyTuple_CheckExact(op) || !_PyObject_GC_IS_TRACKED(op))
         return;
@@ -278,21 +282,15 @@ static PyObject *
 tuplerepr(PyTupleObject *v)
 {
     Py_ssize_t i, n;
-    PyObject *s = NULL;
     _PyAccu acc;
-    Py_TLS static PyObject *sep = NULL;
+    PyObject *s = NULL;
+    PyObject *sep = NULL;
 
     n = Py_SIZE(v);
     if (n == 0)
-        return PyUnicode_FromString("()");
+        return Py_STATIC(empty_tuple);
 
-    if (sep == NULL) {
-        PyPx_EnableTLSHeap();
-        sep = PyUnicode_FromString(", ");
-        PyPx_DisableTLSHeap();
-        if (sep == NULL)
-            return NULL;
-    }
+    sep = Py_STATIC(comma_space);
 
     /* While not mutable, it is still possible to end up with a cycle in a
        tuple through an object that stores itself within a tuple (and thus
@@ -300,14 +298,14 @@ tuplerepr(PyTupleObject *v)
        possible within a type. */
     i = Py_ReprEnter((PyObject *)v);
     if (i != 0) {
-        return i > 0 ? PyUnicode_FromString("(...)") : NULL;
+        return i > 0 ? Py_STATIC(empty_tuple) : NULL;
     }
 
     if (_PyAccu_Init(&acc))
         goto error;
 
-    s = PyUnicode_FromString("(");
-    if (s == NULL || _PyAccu_Accumulate(&acc, s))
+    s = Py_STATIC(open_tuple);
+    if (_PyAccu_Accumulate(&acc, s))
         goto error;
     Py_CLEAR(s);
 
@@ -324,10 +322,10 @@ tuplerepr(PyTupleObject *v)
         Py_CLEAR(s);
     }
     if (n > 1)
-        s = PyUnicode_FromString(")");
+        s = Py_STATIC(close_tuple);
     else
-        s = PyUnicode_FromString(",)");
-    if (s == NULL || _PyAccu_Accumulate(&acc, s))
+        s = Py_STATIC(comma_close_tuple);
+    if (_PyAccu_Accumulate(&acc, s))
         goto error;
     Py_CLEAR(s);
 
@@ -875,7 +873,7 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
     if (oldsize == newsize)
         return 0;
 
-    if (oldsize == 0) {
+    if (oldsize == 0 || (Py_PXCTX() && Py_ISPY(v))) {
         /* Empty tuples are often shared, so we should never
            resize them in-place even if we do own the only
            (current) reference */
@@ -883,6 +881,8 @@ _PyTuple_Resize(PyObject **pv, Py_ssize_t newsize)
         *pv = PyTuple_New(newsize);
         return *pv == NULL ? -1 : 0;
     }
+
+    PyPx_GUARD_OBJ(v);
 
     /* XXX UNREF/NEWREF interface should be more symmetrical */
     _Py_DEC_REFTOTAL;
