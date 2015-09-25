@@ -90,6 +90,7 @@ static size_t count_reuse = 0;
 static void
 show_alloc(void)
 {
+    Py_GUARD();
     fprintf(stderr, "List allocations: %" PY_FORMAT_SIZE_T "d\n",
         count_alloc);
     fprintf(stderr, "List reuse through freelist: %" PY_FORMAT_SIZE_T
@@ -124,6 +125,7 @@ PyList_ClearFreeList(void)
 void
 PyList_Fini(void)
 {
+    Py_GUARD();
     PyList_ClearFreeList();
 }
 
@@ -131,6 +133,7 @@ PyList_Fini(void)
 void
 _PyList_DebugMallocStats(FILE *out)
 {
+    Py_GUARD();
     _PyDebugAllocatorStats(out,
                            "free PyListObject",
                            numfree, sizeof(PyListObject));
@@ -378,29 +381,20 @@ list_repr(PyListObject *v)
     Py_ssize_t i;
     PyObject *s = NULL;
     _PyAccu acc;
-    Py_TLS static PyObject *sep = NULL;
 
     if (Py_SIZE(v) == 0) {
-        return PyUnicode_FromString("[]");
-    }
-
-    if (sep == NULL) {
-        PyPx_EnableTLSHeap();
-        sep = PyUnicode_FromString(", ");
-        PyPx_DisableTLSHeap();
-        if (sep == NULL)
-            return NULL;
+        return Py_STATIC(empty_array);
     }
 
     i = Py_ReprEnter((PyObject*)v);
     if (i != 0) {
-        return i > 0 ? PyUnicode_FromString("[...]") : NULL;
+        return i > 0 ? Py_STATIC(ellipsis_array) : NULL;
     }
 
     if (_PyAccu_Init(&acc))
         goto error;
 
-    s = PyUnicode_FromString("[");
+    s = Py_STATIC(open_array);
     if (s == NULL || _PyAccu_Accumulate(&acc, s))
         goto error;
     Py_CLEAR(s);
@@ -418,7 +412,7 @@ list_repr(PyListObject *v)
             goto error;
         Py_CLEAR(s);
     }
-    s = PyUnicode_FromString("]");
+    s = Py_STATIC(close_array);
     if (s == NULL || _PyAccu_Accumulate(&acc, s))
         goto error;
     Py_CLEAR(s);
