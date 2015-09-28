@@ -14258,7 +14258,8 @@ PyUnicode_InternInPlace(PyObject **p)
     PyThreadState_GET()->recursion_critical = 0;
     /* The two references in interned are not counted by refcnt.
        The deallocator will take care of this */
-    Py_REFCNT(s) -= 2;
+    Py_DECREF(s);
+    Py_DECREF(s);
     _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
 }
 
