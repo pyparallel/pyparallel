@@ -2,6 +2,7 @@
 
 #include "Python.h"
 #include "accu.h"
+#include "statics.h"
 
 #ifdef STDC_HEADERS
 #include <stddef.h>
@@ -380,6 +381,7 @@ list_repr(PyListObject *v)
 {
     Py_ssize_t i;
     PyObject *s = NULL;
+    PyObject *sep = NULL;
     _PyAccu acc;
 
     if (Py_SIZE(v) == 0) {
@@ -398,6 +400,8 @@ list_repr(PyListObject *v)
     if (s == NULL || _PyAccu_Accumulate(&acc, s))
         goto error;
     Py_CLEAR(s);
+
+    sep = Py_STATIC(comma_space);
 
     /* Do repr() on each element.  Note that this may mutate the list,
        so must refetch the list size on each iteration. */
@@ -423,6 +427,7 @@ list_repr(PyListObject *v)
 error:
     _PyAccu_Destroy(&acc);
     Py_XDECREF(s);
+    Py_XDECREF(sep);
     Py_ReprLeave((PyObject *)v);
     return NULL;
 }
