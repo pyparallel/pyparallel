@@ -923,6 +923,8 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
     Objects *list = &h->px_deallocs;
     unsigned int count = 0, deallocs = 0, skipped = 0;
 
+    ODS(L"_PyHeap_DeallocObjects()\n");
+
     if (PyErr_Occurred())
         __debugbreak();
 
@@ -1011,6 +1013,8 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
      * case refers to the number of links in the linked list.)
      */
     int distance = c->h->id - s->id;
+
+    ODS(L"_PxContext_Rewind()\n");
 
     assert(s->ctx == c);
 
@@ -1186,6 +1190,8 @@ PxSocket_Reuse(PxSocket *s)
     ULONGLONG flags;
     PxSocket old;
     memcpy(&old, s, sizeof(PxSocket));
+
+    ODS(L"PxSocket_Reuse()\n");
 
     /* Invariants... */
     if (!s->reused_socket)
@@ -9172,7 +9178,7 @@ definitely_do_connection_made:
         assert(!result);
     if (!result) {
         //PxContext_RollbackHeap(c, &snapshot);
-        PxSocket_EXCEPTION();
+        PxSocket_FATAL();
     }
 
     Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CALLED_CONNECTION_MADE;
@@ -9182,7 +9188,7 @@ definitely_do_connection_made:
             PyErr_SetString(PyExc_RuntimeError,
                             "connection_made() callback scheduled sendfile but "
                             "returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
@@ -9191,7 +9197,7 @@ definitely_do_connection_made:
             PyErr_SetString(PyExc_RuntimeError,
                             "connection_made() callback scheduled an async op"
                             " but returned non-None data");
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
     }
 
@@ -9213,7 +9219,7 @@ definitely_do_connection_made:
             PyErr_SetString(PyExc_ValueError,
                             "connection_made() did not return a sendable "
                             "object (bytes, bytearray or unicode)");
-        PxSocket_EXCEPTION();
+        PxSocket_FATAL();
     }
 
     if (PyErr_Occurred())
@@ -10175,6 +10181,9 @@ send_result:
         snapshot = NULL;
         goto do_recv;
     }
+
+    if (!result)
+        __debugbreak();
 
     if (PyTuple_Check(result)) {
         static const char fmt[] = (
@@ -11298,13 +11307,6 @@ done:
     return (PyObject *)s;
 
 end:
-    /* Ugh, this logic is not even remotely correct. */
-    __debugbreak();
-    assert(PyErr_Occurred());
-    if (PyErr_Occurred()) {
-        assert(s->sock_fd == INVALID_SOCKET);
-        assert(!s->tp_io);
-    }
     return NULL;
 }
 
