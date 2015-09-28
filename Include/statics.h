@@ -52,6 +52,6 @@ _Py_Static(PyObject *o)
 
 PyAPI_FUNC(PyObject *) Py_Static(PyObject *);
 
-#define Py_STATIC(n) _Py_Static(statics.#n)
+#define Py_STATIC(n) _Py_Static(statics.##n)
 
 #endif /* PY_STATICS_H */
