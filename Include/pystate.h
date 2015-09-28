@@ -176,6 +176,7 @@ PyAPI_FUNC(void) _PyParallel_DeletedThreadState(PyThreadState *);
 
 PyAPI_FUNC(PyThreadState *) _PyParallel_GetThreadState(void);
 PyAPI_FUNC(PyThreadState *) _PyParallel_GetMainThreadState(void);
+PyAPI_FUNC(PyObject *) _PyParallel_GetThreadStateDict(void);
 #endif
 
 /* Variable and macro for in-line access to current thread state */

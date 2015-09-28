@@ -110,8 +110,6 @@ PyAPI_FUNC(int)     _PyParallel_IsDebugbreakOnNextExceptionSet(void);
 
 PyAPI_FUNC(int)     _PyParallel_IsParallelContext(void);
 
-PyAPI_FUNC(PyObject *) _PyParallel_GeThreadStateDict(void);
-
 #define PyExc_MAYBE_BREAK() \
     do { \
         if (_PyParallel_IsDebugbreakOnNextExceptionSet()) { \
