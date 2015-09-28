@@ -14242,12 +14242,12 @@ PyUnicode_InternInPlace(PyObject **p)
     t = PyDict_GetItem(interned, s);
     Py_END_ALLOW_RECURSION
 
-        if (t) {
-            Py_INCREF(t);
-            Py_DECREF(*p);
-            *p = t;
-            return;
-        }
+    if (t) {
+        Py_INCREF(t);
+        Py_DECREF(*p);
+        *p = t;
+        return;
+    }
 
     PyThreadState_GET()->recursion_critical = 1;
     if (PyDict_SetItem(interned, s, s) < 0) {
