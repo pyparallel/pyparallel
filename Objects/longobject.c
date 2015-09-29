@@ -209,6 +209,15 @@ _PyLong_Copy(PyLongObject *src)
     return (PyObject *)result;
 }
 
+/* We provide this method as well such that the tp_copy slot can conform to
+ * the copyfunc typedef (which has a `PyObject * (*func)(PyObject *)`
+ * signature). */
+PyObject *
+_PyLong_CopyObject(PyObject *src)
+{
+    return _PyLong_Copy((PyLongObject *)src);
+}
+
 /* Create a new int object from a C long int */
 
 PyObject *
@@ -5020,7 +5029,7 @@ PyTypeObject PyLong_Type = {
     0,                                          /* tp_weaklist */
     0,                                          /* tp_del */
     0,                                          /* tp_version_tag */
-    _PyLong_Copy,                               /* tp_copy */
+    _PyLong_CopyObject,                         /* tp_copy */
 };
 
 static PyTypeObject Int_InfoType;
