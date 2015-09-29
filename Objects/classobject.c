@@ -56,7 +56,7 @@ PyMethod_Clone(PyObject *orig)
     im = PyObject_GC_New(PyMethodObject, &PyMethod_Type);
     if (!im)
         return NULL;
-    
+
     im->im_func = om->im_func;
     im->im_self = om->im_self;
 
