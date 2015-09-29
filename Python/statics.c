@@ -120,7 +120,7 @@ _init_statics(void)
 
 static
 PyObject *
-Py_Static(PyObject *)
+Py_Static(PyObject *o)
 {
     return _Py_Static(o);
 }
