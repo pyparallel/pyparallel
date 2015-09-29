@@ -208,7 +208,6 @@ _PyIOBase_finalize(PyObject *self)
        resurrect the object as calling close() can invoke arbitrary code. */
     is_zombie = (Py_REFCNT(self) == 0);
     if (is_zombie) {
-        /* ++Py_REFCNT(self); */
         Py_INCREF(self);
     }
     PyErr_Fetch(&tp, &v, &tb);
