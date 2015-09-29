@@ -1,5 +1,5 @@
 diff --git a/Objects/longobject.c b/Objects/longobject.c
-index 4ae22ef..9aa2b17 100644
+index 4ae22ef..a4fb264 100644
 --- a/Objects/longobject.c
 +++ b/Objects/longobject.c
 @@ -30,7 +30,7 @@
@@ -11,3 +11,35 @@ index 4ae22ef..9aa2b17 100644
  #endif
  
  static PyObject *
+@@ -209,6 +209,15 @@ _PyLong_Copy(PyLongObject *src)
+     return (PyObject *)result;
+ }
+ 
++/* We provide this method as well such that the tp_copy slot can conform to
++ * the copyfunc typedef (which has a `PyObject * (*func)(PyObject *)`
++ * signature). */
++PyObject *
++_PyLong_CopyObject(PyObject *src)
++{
++    return _PyLong_Copy((PyLongObject *)src);
++}
++
+ /* Create a new int object from a C long int */
+ 
+ PyObject *
+@@ -5012,6 +5021,15 @@ PyTypeObject PyLong_Type = {
+     0,                                          /* tp_alloc */
+     long_new,                                   /* tp_new */
+     PyObject_Del,                               /* tp_free */
++    0,                                          /* tp_is_gc */
++    0,                                          /* tp_bases */
++    0,                                          /* tp_mro */
++    0,                                          /* tp_cache */
++    0,                                          /* tp_subclasses */
++    0,                                          /* tp_weaklist */
++    0,                                          /* tp_del */
++    0,                                          /* tp_version_tag */
++    _PyLong_CopyObject,                         /* tp_copy */
+ };
+ 
+ static PyTypeObject Int_InfoType;

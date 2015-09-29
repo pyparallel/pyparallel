@@ -1,5 +1,5 @@
 diff --git a/Objects/floatobject.c b/Objects/floatobject.c
-index a08a852..0be0e6e 100644
+index a08a852..4a05bf4 100644
 --- a/Objects/floatobject.c
 +++ b/Objects/floatobject.c
 @@ -114,8 +114,11 @@ PyFloat_GetInfo(void)
@@ -15,7 +15,33 @@ index a08a852..0be0e6e 100644
          free_list = (PyFloatObject *) Py_TYPE(op);
          numfree--;
      } else {
-@@ -181,6 +184,7 @@ PyFloat_FromString(PyObject *v)
+@@ -130,6 +133,25 @@ PyFloat_FromDouble(double fval)
+ }
+ 
+ PyObject *
++_PyFloat_Copy(PyObject *src)
++{
++    PyFloatObject *op;
++    if (!PyFloat_CheckExact(src)) {
++        PyErr_SetString(PyExc_TypeError,
++                        "attempted to copy something that isn't a float");
++        return NULL;
++    }
++    /* Inline the logic above. */
++    op = (PyFloatObject*) PyObject_MALLOC(sizeof(PyFloatObject));
++    if (!op)
++        return PyErr_NoMemory();
++
++    PyObject_INIT(op, &PyFloat_Type);
++    op->ob_fval = ((PyFloatObject *)src)->ob_fval;
++    return (PyObject *)op;
++}
++
++PyObject *
+ PyFloat_FromString(PyObject *v)
+ {
+     const char *s, *last, *end;
+@@ -181,6 +203,7 @@ PyFloat_FromString(PyObject *v)
  static void
  float_dealloc(PyFloatObject *op)
  {
@@ -23,7 +49,24 @@ index a08a852..0be0e6e 100644
      if (PyFloat_CheckExact(op)) {
          if (numfree >= PyFloat_MAXFREELIST)  {
              PyObject_FREE(op);
-@@ -1917,6 +1921,8 @@ PyFloat_ClearFreeList(void)
+@@ -1856,6 +1879,16 @@ PyTypeObject PyFloat_Type = {
+     0,                                          /* tp_init */
+     0,                                          /* tp_alloc */
+     float_new,                                  /* tp_new */
++    0,                                          /* tp_free */
++    0,                                          /* tp_is_gc */
++    0,                                          /* tp_bases */
++    0,                                          /* tp_mro */
++    0,                                          /* tp_cache */
++    0,                                          /* tp_subclasses */
++    0,                                          /* tp_weaklist */
++    0,                                          /* tp_del */
++    0,                                          /* tp_version_tag */
++    _PyFloat_Copy,                              /* tp_copy */
+ };
+ 
+ void
+@@ -1917,6 +1950,8 @@ PyFloat_ClearFreeList(void)
  {
      PyFloatObject *f = free_list, *next;
      int i = numfree;

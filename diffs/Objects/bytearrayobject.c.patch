@@ -1,0 +1,20 @@
+diff --git a/Objects/bytearrayobject.c b/Objects/bytearrayobject.c
+index 60b2811..a990386 100644
+--- a/Objects/bytearrayobject.c
++++ b/Objects/bytearrayobject.c
+@@ -2961,6 +2961,15 @@ PyTypeObject PyByteArray_Type = {
+     PyType_GenericAlloc,                /* tp_alloc */
+     PyType_GenericNew,                  /* tp_new */
+     PyObject_Del,                       /* tp_free */
++    0,                                  /* tp_is_gc */
++    0,                                  /* tp_bases */
++    0,                                  /* tp_mro */
++    0,                                  /* tp_cache */
++    0,                                  /* tp_subclasses */
++    0,                                  /* tp_weaklist */
++    0,                                  /* tp_del */
++    0,                                  /* tp_version_tag */
++    PyByteArray_FromObject,             /* tp_copy */
+ };
+ 
+ /*********************** Bytes Iterator ****************************/
