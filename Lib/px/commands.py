@@ -944,6 +944,8 @@ class UpdateGitDiffs(PxCommand):
             else:
                 self._out("Updated %s." % patchpath.replace(root + '\\', ''))
 
+        os.unlink('git-st.txt')
+
 
 #===============================================================================
 # System Info/Memory Commands
