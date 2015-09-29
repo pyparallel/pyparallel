@@ -829,7 +829,8 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
     if (old_value != NULL) {
         assert(ep->me_key != NULL && ep->me_key != dummy);
         *value_addr = value;
-#ifdef WITH_PARALLEL
+#if 0
+//#ifdef WITH_PARALLEL
         /* Super hack to support persisting values for sockets/protcols. */
         if (old_value != Py_None && Py_PXCTX() && Py_ISPX(old_value)) {
             if (Px_CLONED(old_value) && _PyParallel_IsHeapOverrideActive())
