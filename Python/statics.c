@@ -3,6 +3,8 @@
 
 static PyStatics statics;
 
+/* xxx todo: simplify this with some macro magic. */
+
 /* 0 = failure, 1 = success */
 int
 _init_statics(void)
