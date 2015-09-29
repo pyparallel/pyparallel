@@ -854,6 +854,10 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_CLEANED_UP                 (1ULL << 43)
 #define Px_SOCKFLAGS_HTTP11                     (1ULL << 44)
 #define Px_SOCKFLAGS_http11                     (1ULL << 44)
+#define Px_SOCKFLAGS_CLIENT_CREATED             (1ULL << 45)
+#define Px_SOCKFLAGS_client_created             (1ULL << 45)
+#define Px_SOCKFLAGS_CALLED_CLIENT_CREATED      (1ULL << 46)
+#define Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED  (1ULL << 47)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -959,6 +963,15 @@ typedef struct _PxObject {
 
 #define PxSocket_IS_HTTP11(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_HTTP11)
+
+#define PxSocket_HAS_CLIENT_CREATED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT_CREATED)
+
+#define PxSocket_CALLED_CLIENT_CREATED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CLIENT_CREATED)
+
+#define PxSocket_SNAPSHOT_UPDATE_SCHEDULED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED)
 
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
@@ -1217,6 +1230,7 @@ typedef struct _PxSocket {
     PyObject *send_complete;
     PyObject *data_received;
     PyObject *lines_received;
+    PyObject *client_created;
     PyObject *connection_made;
     PyObject *connection_closed;
     PyObject *exception_handler;
