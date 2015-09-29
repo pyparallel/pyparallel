@@ -90,8 +90,11 @@ bool SQLWChar::Convert(PyObject* o)
         return false;
     }
 
-    Py_UNICODE* pU   = (Py_UNICODE*)PyUnicode_AS_UNICODE(o);
-    Py_ssize_t  lenT = PyUnicode_GET_SIZE(o);
+    Py_ssize_t  lenT;
+    Py_UNICODE* pU = PyUnicode_AsUnicodeAndSize(o, &lenT);
+
+    if (!pU)
+        return false;
 
     if (ODBCCHAR_SIZE == Py_UNICODE_SIZE)
     {
