@@ -1,0 +1,16 @@
+diff --git a/PC/python_nt.rc b/PC/python_nt.rc
+index 52bf823..e9b1533 100644
+--- a/PC/python_nt.rc
++++ b/PC/python_nt.rc
+@@ -24,9 +24,11 @@
+ #if PY_RELEASE_LEVEL > 99
+ #   error "PY_RELEASE_LEVEL > 99"
+ #endif
++/*
+ #if PY_RELEASE_SERIAL > 9
+ #   error "PY_RELEASE_SERIAL > 9"
+ #endif
++*/
+ #define PYVERSION64 PY_MAJOR_VERSION, PY_MINOR_VERSION, FIELD3, PYTHON_API_VERSION
+ 
+ // String Tables

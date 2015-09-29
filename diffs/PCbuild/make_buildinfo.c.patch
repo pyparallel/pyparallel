@@ -1,0 +1,137 @@
+diff --git a/PCbuild/make_buildinfo.c b/PCbuild/make_buildinfo.c
+index f9aadee..043c673 100644
+--- a/PCbuild/make_buildinfo.c
++++ b/PCbuild/make_buildinfo.c
+@@ -62,13 +62,12 @@ int make_buildinfo2(const char *tmppath)
+     return 1;
+ }
+ 
+-const char DELIMS[] = { " \n" };
+-
+ int get_mercurial_info(char * hgbranch, char * hgtag, char * hgrev, int size)
+ {
+     int result = 0;
+     char filename[CMD_SIZE];
+     char cmdline[CMD_SIZE];
++    static const char DELIMS[] = { " \n" };
+ 
+     strcpy_s(filename, CMD_SIZE, "tmpXXXXXX");
+     if (_mktemp_s(filename, CMD_SIZE) == 0) {
+@@ -107,6 +106,80 @@ int get_mercurial_info(char * hgbranch, char * hgtag, char * hgrev, int size)
+     return result;
+ }
+ 
++int get_git_info(char * tag, char * rev, int size)
++{
++    int result = 0;
++    char filename[CMD_SIZE];
++    char cmdline[CMD_SIZE];
++    static const char DELIMS[] = { "-" };
++
++    strcpy_s(filename, CMD_SIZE, "tmpXXXXXX");
++    if (_mktemp_s(filename, CMD_SIZE) == 0) {
++        int rc;
++        int attempts = 1;
++
++        strcpy_s(cmdline, CMD_SIZE, "git describe --always --tags --dirty --long > ");
++        strcat_s(cmdline, CMD_SIZE, filename);
++
++        do {
++            rc = system(cmdline);
++            if (rc != 0 && attempts) {
++                char new_path[1024];
++                char prepend_path[] = (
++                    "PATH="
++                    "C:\\msysgit\\bin;"
++                    "C:\\msysgit\\mingw\\bin;"
++                    "C:\\msysgit\\cmd;"
++                );
++                char *path = getenv("PATH");
++                size_t path_len = strlen(path);
++                size_t copy_size = min(
++                    path_len,
++                    sizeof(new_path) - sizeof(prepend_path)
++                );
++                printf("git not on path, attempting to use c:\\msysgit\n");
++                memset(new_path, 0, sizeof(new_path));
++                memcpy(new_path, prepend_path, sizeof(prepend_path)-1);
++                memcpy(new_path+sizeof(prepend_path)-1, path, copy_size);
++                putenv(new_path);
++            }
++        } while (attempts--);
++
++        if (rc == 0) {
++            FILE * fp;
++
++            if (fopen_s(&fp, filename, "r") == 0) {
++                char * cp = fgets(cmdline, CMD_SIZE, fp);
++
++                if (cp) {
++                    char * context = NULL;
++                    char * tp = strtok_s(cp, DELIMS, &context);
++                    if (tp) {
++                        strcpy_s(tag, size, tp);
++                        tp = strtok_s(NULL, DELIMS, &context);
++                        if (tp) {
++                            strcat_s(tag, size, "-");
++                            strcat_s(tag, size, tp);
++                            tp = strtok_s(NULL, DELIMS, &context);
++                            if (tp) {
++                                strcpy_s(rev, size, tp);
++                                tp = strtok_s(NULL, DELIMS, &context);
++                                if (tp && strstr(tp, "dirty"))
++                                    strcat_s(rev, size, "+");
++                                result = 1;
++                            }
++                        }
++                    }
++                }
++                fclose(fp);
++            }
++        }
++        _unlink(filename);
++    }
++    return result;
++}
++
++
+ int main(int argc, char*argv[])
+ {
+     char command[CMD_SIZE] = "cl.exe -c -D_WIN32 -DUSE_DL_EXPORT -D_WINDOWS -DWIN32 -D_WINDLL ";
+@@ -157,21 +230,29 @@ int main(int argc, char*argv[])
+         strcat_s(command, CMD_SIZE, "getbuildinfo2.c\" -DSUBWCREV ");
+     }
+     else {
+-        char hgtag[CMD_SIZE];
+-        char hgbranch[CMD_SIZE];
+-        char hgrev[CMD_SIZE];
++        char tag[CMD_SIZE];
++        char branch[CMD_SIZE];
++        char rev[CMD_SIZE];
++        if (get_git_info(tag, rev, CMD_SIZE)) {
++            strcat_s(command, CMD_SIZE, "-DGITTAG=\\\"");
++            strcat_s(command, CMD_SIZE, tag);
++            strcat_s(command, CMD_SIZE, "\\\"");
++
++            strcat_s(command, CMD_SIZE, " -DGITVERSION=\\\"");
++            strcat_s(command, CMD_SIZE, rev);
++            strcat_s(command, CMD_SIZE, "\\\" ");
+ 
+-        if (get_mercurial_info(hgbranch, hgtag, hgrev, CMD_SIZE)) {
++        } else if (get_mercurial_info(branch, tag, rev, CMD_SIZE)) {
+             strcat_s(command, CMD_SIZE, "-DHGBRANCH=\\\"");
+-            strcat_s(command, CMD_SIZE, hgbranch);
++            strcat_s(command, CMD_SIZE, branch);
+             strcat_s(command, CMD_SIZE, "\\\"");
+ 
+             strcat_s(command, CMD_SIZE, " -DHGTAG=\\\"");
+-            strcat_s(command, CMD_SIZE, hgtag);
++            strcat_s(command, CMD_SIZE, tag);
+             strcat_s(command, CMD_SIZE, "\\\"");
+ 
+             strcat_s(command, CMD_SIZE, " -DHGVERSION=\\\"");
+-            strcat_s(command, CMD_SIZE, hgrev);
++            strcat_s(command, CMD_SIZE, rev);
+             strcat_s(command, CMD_SIZE, "\\\" ");
+         }
+         strcat_s(command, CMD_SIZE, "..\\Modules\\getbuildinfo.c");

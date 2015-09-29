@@ -1,5 +1,5 @@
 diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
-index 9dcb74e..833ba71 100644
+index 9dcb74e..7a28101 100644
 --- a/Objects/bytesobject.c
 +++ b/Objects/bytesobject.c
 @@ -26,7 +26,7 @@ _getbuffer(PyObject *obj, Py_buffer *view)
@@ -49,7 +49,23 @@ index 9dcb74e..833ba71 100644
      return (PyObject *) op;
  }
  
-@@ -2887,6 +2897,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
+@@ -2835,6 +2845,15 @@ PyTypeObject PyBytes_Type = {
+     0,                                          /* tp_alloc */
+     bytes_new,                                  /* tp_new */
+     PyObject_Del,                               /* tp_free */
++    0,                                          /* tp_is_gc */
++    0,                                          /* tp_bases */
++    0,                                          /* tp_mro */
++    0,                                          /* tp_cache */
++    0,                                          /* tp_subclasses */
++    0,                                          /* tp_weaklist */
++    0,                                          /* tp_del */
++    0,                                          /* tp_version_tag */
++    PyBytes_FromObject                          /* tp_copy */
+ };
+ 
+ void
+@@ -2887,6 +2906,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
          PyErr_BadInternalCall();
          return -1;
      }
@@ -58,7 +74,7 @@ index 9dcb74e..833ba71 100644
      /* XXX UNREF/NEWREF interface should be more symmetrical */
      _Py_DEC_REFTOTAL;
      _Py_ForgetReference(v);
-@@ -2909,6 +2921,8 @@ void
+@@ -2909,6 +2930,8 @@ void
  PyBytes_Fini(void)
  {
      int i;

@@ -1,7 +1,16 @@
 diff --git a/PCbuild/pyproject.props b/PCbuild/pyproject.props
-index 8155231..13cfb68 100644
+index 8155231..e5c4522 100644
 --- a/PCbuild/pyproject.props
 +++ b/PCbuild/pyproject.props
+@@ -17,7 +17,7 @@
+     <PythonExe>$(OutDir)python$(PyDebugExt).exe</PythonExe>
+     <KillPythonExe>$(OutDir)kill_python$(PyDebugExt).exe</KillPythonExe>
+     <externalsDir>..\..</externalsDir>
+-    <sqlite3Dir>$(externalsDir)\sqlite-3.7.12</sqlite3Dir>
++    <sqlite3Dir>..\contrib\sqlite3</sqlite3Dir>
+     <bz2Dir>$(externalsDir)\bzip2-1.0.6</bz2Dir>
+     <lzmaDir>$(externalsDir)\xz-5.0.3</lzmaDir>
+     <opensslDir>$(externalsDir)\openssl-1.0.1e</opensslDir>
 @@ -33,7 +33,7 @@
        <Optimization>MaxSpeed</Optimization>
        <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>

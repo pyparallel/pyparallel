@@ -1,5 +1,5 @@
 diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
-index 8b5c42f..1a91866 100644
+index 8b5c42f..2b31611 100644
 --- a/PCbuild/pythoncore.vcxproj
 +++ b/PCbuild/pythoncore.vcxproj
 @@ -158,6 +158,7 @@
@@ -82,34 +82,37 @@ index 8b5c42f..1a91866 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -470,6 +487,7 @@ IF %ERRORLEVEL% NEQ 0 (
-     <ClInclude Include="..\Include\genobject.h" />
-     <ClInclude Include="..\Include\graminit.h" />
-     <ClInclude Include="..\Include\grammar.h" />
-+    <ClInclude Include="..\Include\pyparallel_http.h" />
-     <ClInclude Include="..\Include\import.h" />
-     <ClInclude Include="..\Include\intrcheck.h" />
-     <ClInclude Include="..\Include\iterobject.h" />
-@@ -492,6 +510,11 @@ IF %ERRORLEVEL% NEQ 0 (
-     <ClInclude Include="..\Include\patchlevel.h" />
-     <ClInclude Include="..\Include\pgen.h" />
-     <ClInclude Include="..\Include\pgenheaders.h" />
+@@ -565,6 +582,16 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClInclude Include="..\Python\condvar.h" />
+     <ClInclude Include="..\Python\importdl.h" />
+     <ClInclude Include="..\Python\thread_nt.h" />
 +    <ClInclude Include="..\Include\picohttpparser.h" />
 +    <ClInclude Include="..\Include\pyparallel.h" />
 +    <ClInclude Include="..\Include\pyparallel_util.h" />
 +    <ClInclude Include="..\Include\pyparallel_odbc.h" />
++    <ClInclude Include="..\Include\pyparallel_http.h" />
 +    <ClInclude Include="..\Include\pxlist.h" />
-     <ClInclude Include="..\Include\py_curses.h" />
-     <ClInclude Include="..\Include\pyarena.h" />
-     <ClInclude Include="..\Include\pycapsule.h" />
-@@ -691,6 +714,10 @@ IF %ERRORLEVEL% NEQ 0 (
-     <ClCompile Include="..\PC\dl_nt.c" />
-     <ClCompile Include="..\PC\getpathp.c" />
-     <ClCompile Include="..\PC\msvcrtmodule.c" />
++    <ClInclude Include="..\Include\statics.h" />
++    <ClInclude Include="..\Include\ultrajson.h" />
++    <ClInclude Include="..\Python\ujson_py_defines.h" />
++    <ClInclude Include="..\Python\ujson_version.h" />
+   </ItemGroup>
+   <ItemGroup>
+     <ClCompile Include="..\Modules\_bisectmodule.c" />
+@@ -736,6 +763,16 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClCompile Include="..\Python\sysmodule.c" />
+     <ClCompile Include="..\Python\thread.c" />
+     <ClCompile Include="..\Python\traceback.c" />
 +    <ClCompile Include="..\Python\pyparallel_http.c" />
 +    <ClCompile Include="..\Python\picohttpparser.c" />
 +    <ClCompile Include="..\Python\pyparallel.c" />
 +    <ClCompile Include="..\Python\pxlist.c" />
-     <ClCompile Include="..\Python\random.c" />
-     <ClCompile Include="..\Python\_warnings.c" />
-     <ClCompile Include="..\Python\asdl.c" />
++    <ClCompile Include="..\Python\statics.c" />
++    <ClCompile Include="..\Python\JSONtoObj.c" />
++    <ClCompile Include="..\Python\objToJSON.c" />
++    <ClCompile Include="..\Python\ujson.c" />
++    <ClCompile Include="..\Python\ultrajsondec.c" />
++    <ClCompile Include="..\Python\ultrajsonenc.c" />
+   </ItemGroup>
+   <ItemGroup>
+     <ResourceCompile Include="..\PC\python_nt.rc" />

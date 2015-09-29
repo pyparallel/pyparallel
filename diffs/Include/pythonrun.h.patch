@@ -1,8 +1,19 @@
 diff --git a/Include/pythonrun.h b/Include/pythonrun.h
-index e8a582d..9fae818 100644
+index e8a582d..00ae0ce 100644
 --- a/Include/pythonrun.h
 +++ b/Include/pythonrun.h
-@@ -200,6 +200,10 @@ PyAPI_FUNC(int) _PyFrame_Init(void);
+@@ -187,6 +187,10 @@ PyAPI_FUNC(const char *) Py_GetBuildInfo(void);
+ #ifndef Py_LIMITED_API
+ PyAPI_FUNC(const char *) _Py_hgidentifier(void);
+ PyAPI_FUNC(const char *) _Py_hgversion(void);
++PyAPI_FUNC(const char *) _Py_gitidentifier(void);
++PyAPI_FUNC(const char *) _Py_gitversion(void);
++PyAPI_FUNC(const char *) _Py_identifier(void);
++PyAPI_FUNC(const char *) _Py_version(void);
+ #endif
+ 
+ /* Internal -- various one-time initializations */
+@@ -200,6 +204,10 @@ PyAPI_FUNC(int) _PyFrame_Init(void);
  PyAPI_FUNC(void) _PyFloat_Init(void);
  PyAPI_FUNC(int) PyByteArray_Init(void);
  PyAPI_FUNC(void) _PyRandom_Init(void);

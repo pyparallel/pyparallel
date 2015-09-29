@@ -1,5 +1,5 @@
 diff --git a/Python/pystate.c b/Python/pystate.c
-index 772aa53..9e6561a 100644
+index 772aa53..2674c46 100644
 --- a/Python/pystate.c
 +++ b/Python/pystate.c
 @@ -146,6 +146,9 @@ PyInterpreterState_Delete(PyInterpreterState *interp)
@@ -135,27 +135,21 @@ index 772aa53..9e6561a 100644
  
      _Py_atomic_store_relaxed(&_PyThreadState_Current, newts);
      /* It should not be possible for more than one thread state
-@@ -461,14 +465,18 @@ PyThreadState_Swap(PyThreadState *newts)
+@@ -461,8 +465,12 @@ PyThreadState_Swap(PyThreadState *newts)
  PyObject *
  PyThreadState_GetDict(void)
  {
 -    PyThreadState *tstate = (PyThreadState*)_Py_atomic_load_relaxed(
 -        &_PyThreadState_Current);
 +    PyThreadState *tstate;
-+    /* XXX: This needs to be reviewed for PyParallel. */   
++
++    if (Py_PXCTX())
++        return _PyParallel_GetThreadStateDict();
 +
 +    tstate = PyThreadState_XGET();
      if (tstate == NULL)
          return NULL;
  
-     if (tstate->dict == NULL) {
-         PyObject *d;
-+        PyPx_EnableTLSHeap();
-         tstate->dict = d = PyDict_New();
-+        PyPx_DisableTLSHeap();
-         if (d == NULL)
-             PyErr_Clear();
-     }
 @@ -606,6 +614,7 @@ _PyThread_CurrentFrames(void)
  static int
  PyThreadState_IsCurrent(PyThreadState *tstate)

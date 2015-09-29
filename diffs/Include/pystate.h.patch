@@ -1,5 +1,5 @@
 diff --git a/Include/pystate.h b/Include/pystate.h
-index 2017b02..fe49c1a 100644
+index 2017b02..0d3132d 100644
 --- a/Include/pystate.h
 +++ b/Include/pystate.h
 @@ -119,6 +118,11 @@ typedef struct _ts {
@@ -25,7 +25,7 @@ index 2017b02..fe49c1a 100644
  PyAPI_FUNC(int) PyState_AddModule(PyObject*, struct PyModuleDef*);
  PyAPI_FUNC(int) PyState_RemoveModule(struct PyModuleDef*);
  #endif
-@@ -145,10 +153,30 @@ PyAPI_FUNC(void) _PyGILState_Reinit(void);
+@@ -145,10 +153,31 @@ PyAPI_FUNC(void) _PyGILState_Reinit(void);
  #endif
  
  PyAPI_FUNC(PyThreadState *) PyThreadState_Get(void);
@@ -52,11 +52,12 @@ index 2017b02..fe49c1a 100644
 +
 +PyAPI_FUNC(PyThreadState *) _PyParallel_GetThreadState(void);
 +PyAPI_FUNC(PyThreadState *) _PyParallel_GetMainThreadState(void);
++PyAPI_FUNC(PyObject *) _PyParallel_GetThreadStateDict(void);
 +#endif
  
  /* Variable and macro for in-line access to current thread state */
  
-@@ -158,11 +186,24 @@ PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
+@@ -158,11 +187,24 @@ PyAPI_FUNC(int) PyThreadState_SetAsyncExc(long, PyObject *);
  PyAPI_DATA(_Py_atomic_address) _PyThreadState_Current;
  #endif
  
@@ -83,7 +84,7 @@ index 2017b02..fe49c1a 100644
  #endif
  
  typedef
-@@ -220,10 +261,6 @@ PyAPI_FUNC(PyThreadState *) PyGILState_GetThisThreadState(void);
+@@ -220,10 +262,6 @@ PyAPI_FUNC(PyThreadState *) PyGILState_GetThisThreadState(void);
  #ifndef Py_LIMITED_API
  PyAPI_FUNC(PyObject *) _PyThread_CurrentFrames(void);
  #endif

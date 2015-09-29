@@ -1,5 +1,5 @@
 diff --git a/Objects/dictobject.c b/Objects/dictobject.c
-index 7aa5ea8..7db5c17 100644
+index 7aa5ea8..6710990 100644
 --- a/Objects/dictobject.c
 +++ b/Objects/dictobject.c
 @@ -247,6 +247,9 @@ PyDict_ClearFreeList(void)
@@ -22,11 +22,12 @@ index 7aa5ea8..7db5c17 100644
          mp = free_list[--numfree];
          assert (mp != NULL);
          assert (Py_TYPE(mp) == &PyDict_Type);
-@@ -825,7 +829,16 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
+@@ -825,7 +829,17 @@ insertdict(PyDictObject *mp, PyObject *key, Py_hash_t hash, PyObject *value)
      if (old_value != NULL) {
          assert(ep->me_key != NULL && ep->me_key != dummy);
          *value_addr = value;
-+#ifdef WITH_PARALLEL
++#if 0
++//#ifdef WITH_PARALLEL
 +        /* Super hack to support persisting values for sockets/protcols. */
 +        if (old_value != Py_None && Py_PXCTX() && Py_ISPX(old_value)) {
 +            if (Px_CLONED(old_value) && _PyParallel_IsHeapOverrideActive())
@@ -39,7 +40,7 @@ index 7aa5ea8..7db5c17 100644
      }
      else {
          if (ep->me_key == NULL) {
-@@ -918,6 +931,15 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
+@@ -918,6 +932,15 @@ dictresize(PyDictObject *mp, Py_ssize_t minused)
      PyObject **oldvalues;
      Py_ssize_t i, oldsize;
  
@@ -55,7 +56,7 @@ index 7aa5ea8..7db5c17 100644
  /* Find the smallest table size > minused. */
      for (newsize = PyDict_MINSIZE_COMBINED;
           newsize <= minused && newsize > 0;
-@@ -1262,6 +1284,12 @@ PyDict_Clear(PyObject *op)
+@@ -1262,6 +1285,12 @@ PyDict_Clear(PyObject *op)
      PyObject **oldvalues;
      Py_ssize_t i, n;
  
@@ -68,7 +69,7 @@ index 7aa5ea8..7db5c17 100644
      if (!PyDict_Check(op))
          return;
      mp = ((PyDictObject *)op);
-@@ -1380,6 +1408,7 @@ dict_dealloc(PyDictObject *mp)
+@@ -1380,6 +1409,7 @@ dict_dealloc(PyDictObject *mp)
      PyObject **values = mp->ma_values;
      PyDictKeysObject *keys = mp->ma_keys;
      Py_ssize_t i, n;
@@ -76,7 +77,7 @@ index 7aa5ea8..7db5c17 100644
      PyObject_GC_UnTrack(mp);
      Py_TRASHCAN_SAFE_BEGIN(mp)
      if (values != NULL) {
-@@ -2258,6 +2287,15 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
+@@ -2258,6 +2288,15 @@ dict_setdefault(register PyDictObject *mp, PyObject *args)
  static PyObject *
  dict_clear(register PyDictObject *mp)
  {
@@ -92,7 +93,7 @@ index 7aa5ea8..7db5c17 100644
      PyDict_Clear((PyObject *)mp);
      Py_RETURN_NONE;
  }
-@@ -2696,7 +2734,8 @@ PyDict_SetItemString(PyObject *v, const char *key, PyObject *item)
+@@ -2696,7 +2735,8 @@ PyDict_SetItemString(PyObject *v, const char *key, PyObject *item)
      kv = PyUnicode_FromString(key);
      if (kv == NULL)
          return -1;

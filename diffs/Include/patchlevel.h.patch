@@ -1,0 +1,13 @@
+diff --git a/Include/patchlevel.h b/Include/patchlevel.h
+index f76b5b7..0ae5c93 100644
+--- a/Include/patchlevel.h
++++ b/Include/patchlevel.h
+@@ -20,7 +20,7 @@
+ #define PY_MINOR_VERSION	3
+ #define PY_MICRO_VERSION	5
+ #define PY_RELEASE_LEVEL	PY_RELEASE_LEVEL_FINAL
+-#define PY_RELEASE_SERIAL	0
++#include "serial.h"
+ 
+ /* Version as a string */
+ #define PY_VERSION      	"3.3.5"

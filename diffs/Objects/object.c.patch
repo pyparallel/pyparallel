@@ -1,5 +1,5 @@
 diff --git a/Objects/object.c b/Objects/object.c
-index e079d51..05549d9 100644
+index e079d51..6cb0cd6 100644
 --- a/Objects/object.c
 +++ b/Objects/object.c
 @@ -8,6 +8,13 @@
@@ -240,7 +240,32 @@ index e079d51..05549d9 100644
      if (op == NULL)
          fprintf(stderr, "NULL\n");
      else {
-@@ -1573,6 +1633,8 @@ PyObject _Py_NotImplementedStruct = {
+@@ -1311,6 +1371,24 @@ PyCallable_Check(PyObject *x)
+     return x->ob_type->tp_call != NULL;
+ }
+ 
++/* Test whether an object can be copied. */
++int
++PyObject_Copyable(PyObject *o)
++{
++    if (!o)
++        return 0;
++    return (Py_TYPE(o)->tp_copy != NULL);
++}
++
++/* Copy an object. */
++PyObject *
++PyObject_Copy(PyObject *o)
++{
++    PyTypeObject *tp = Py_TYPE(o);
++    assert(tp->tp_copy);
++    return (*tp->tp_copy)(o);
++}
++
+ 
+ /* Helper for PyObject_Dir without arguments: returns the local scope. */
+ static PyObject *
+@@ -1573,6 +1651,8 @@ PyObject _Py_NotImplementedStruct = {
  void
  _Py_ReadyTypes(void)
  {
@@ -249,7 +274,7 @@ index e079d51..05549d9 100644
      if (PyType_Ready(&PyType_Type) < 0)
          Py_FatalError("Can't initialize type type");
  
-@@ -1734,16 +1796,44 @@ _Py_ReadyTypes(void)
+@@ -1734,16 +1814,44 @@ _Py_ReadyTypes(void)
  
      if (PyType_Ready(&PySeqIter_Type) < 0)
          Py_FatalError("Can't initialize sequence iterator type");
@@ -294,7 +319,7 @@ index e079d51..05549d9 100644
      _Py_AddToAllObjects(op, 1);
      _Py_INC_TPALLOCS(op);
  }
-@@ -1754,6 +1844,10 @@ _Py_ForgetReference(register PyObject *op)
+@@ -1754,6 +1862,10 @@ _Py_ForgetReference(register PyObject *op)
  #ifdef SLOW_UNREF_CHECK
      register PyObject *p;
  #endif
@@ -305,7 +330,7 @@ index e079d51..05549d9 100644
      if (op->ob_refcnt < 0)
          Py_FatalError("UNREF negative refcnt");
      if (op == &refchain ||
-@@ -1783,7 +1877,11 @@ _Py_ForgetReference(register PyObject *op)
+@@ -1783,7 +1895,11 @@ _Py_ForgetReference(register PyObject *op)
  void
  _Py_Dealloc(PyObject *op)
  {
@@ -318,7 +343,7 @@ index e079d51..05549d9 100644
          _Py_ForgetReference(op);
      (*dealloc)(op);
  }
-@@ -1795,6 +1893,7 @@ void
+@@ -1795,6 +1911,7 @@ void
  _Py_PrintReferences(FILE *fp)
  {
      PyObject *op;
@@ -326,7 +351,7 @@ index e079d51..05549d9 100644
      fprintf(fp, "Remaining objects:\n");
      for (op = refchain._ob_next; op != &refchain; op = op->_ob_next) {
          fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] ", op, op->ob_refcnt);
-@@ -1811,6 +1910,7 @@ void
+@@ -1811,6 +1928,7 @@ void
  _Py_PrintReferenceAddresses(FILE *fp)
  {
      PyObject *op;
@@ -334,7 +359,7 @@ index e079d51..05549d9 100644
      fprintf(fp, "Remaining object addresses:\n");
      for (op = refchain._ob_next; op != &refchain; op = op->_ob_next)
          fprintf(fp, "%p [%" PY_FORMAT_SIZE_T "d] %s\n", op,
-@@ -1823,6 +1923,12 @@ _Py_GetObjects(PyObject *self, PyObject *args)
+@@ -1823,6 +1941,12 @@ _Py_GetObjects(PyObject *self, PyObject *args)
      int i, n;
      PyObject *t = NULL;
      PyObject *res, *op;
@@ -347,7 +372,7 @@ index e079d51..05549d9 100644
  
      if (!PyArg_ParseTuple(args, "i|O", &n, &t))
          return NULL;
-@@ -1861,24 +1966,31 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject *) = PyObject_Size;
+@@ -1861,24 +1984,31 @@ Py_ssize_t (*_Py_abstract_hack)(PyObject *) = PyObject_Size;
  void *
  PyMem_Malloc(size_t nbytes)
  {
@@ -379,7 +404,7 @@ index e079d51..05549d9 100644
      _PyCFunction_DebugMallocStats(out);
      _PyDict_DebugMallocStats(out);
      _PyFloat_DebugMallocStats(out);
-@@ -1910,6 +2022,8 @@ Py_ReprEnter(PyObject *obj)
+@@ -1910,6 +2040,8 @@ Py_ReprEnter(PyObject *obj)
      PyObject *list;
      Py_ssize_t i;
  
@@ -388,7 +413,7 @@ index e079d51..05549d9 100644
      dict = PyThreadState_GetDict();
      if (dict == NULL)
          return 0;
-@@ -1938,6 +2052,8 @@ Py_ReprLeave(PyObject *obj)
+@@ -1938,6 +2070,8 @@ Py_ReprLeave(PyObject *obj)
      PyObject *list;
      Py_ssize_t i;
  
@@ -397,7 +422,7 @@ index e079d51..05549d9 100644
      dict = PyThreadState_GetDict();
      if (dict == NULL)
          return;
-@@ -1971,6 +2087,8 @@ PyObject *_PyTrash_delete_later = NULL;
+@@ -1971,6 +2105,8 @@ PyObject *_PyTrash_delete_later = NULL;
  void
  _PyTrash_deposit_object(PyObject *op)
  {
@@ -406,7 +431,7 @@ index e079d51..05549d9 100644
      assert(PyObject_IS_GC(op));
      assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
      assert(op->ob_refcnt == 0);
-@@ -1982,7 +2100,10 @@ _PyTrash_deposit_object(PyObject *op)
+@@ -1982,7 +2118,10 @@ _PyTrash_deposit_object(PyObject *op)
  void
  _PyTrash_thread_deposit_object(PyObject *op)
  {
@@ -418,7 +443,7 @@ index e079d51..05549d9 100644
      assert(PyObject_IS_GC(op));
      assert(_Py_AS_GC(op)->gc.gc_refs == _PyGC_REFS_UNTRACKED);
      assert(op->ob_refcnt == 0);
-@@ -1996,6 +2117,7 @@ _PyTrash_thread_deposit_object(PyObject *op)
+@@ -1996,6 +2135,7 @@ _PyTrash_thread_deposit_object(PyObject *op)
  void
  _PyTrash_destroy_chain(void)
  {
@@ -426,7 +451,7 @@ index e079d51..05549d9 100644
      while (_PyTrash_delete_later) {
          PyObject *op = _PyTrash_delete_later;
          destructor dealloc = Py_TYPE(op)->tp_dealloc;
-@@ -2020,7 +2142,9 @@ _PyTrash_destroy_chain(void)
+@@ -2020,7 +2160,9 @@ _PyTrash_destroy_chain(void)
  void
  _PyTrash_thread_destroy_chain(void)
  {
@@ -437,7 +462,7 @@ index e079d51..05549d9 100644
      while (tstate->trash_delete_later) {
          PyObject *op = tstate->trash_delete_later;
          destructor dealloc = Py_TYPE(op)->tp_dealloc;
-@@ -2049,6 +2173,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
+@@ -2049,6 +2191,8 @@ PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
  void
  _Py_Dealloc(PyObject *op)
  {

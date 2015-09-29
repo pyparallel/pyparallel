@@ -1,0 +1,18 @@
+diff --git a/Lib/json/__init__.py b/Lib/json/__init__.py
+index 6d9b30d..f87221a 100644
+--- a/Lib/json/__init__.py
++++ b/Lib/json/__init__.py
+@@ -104,9 +104,12 @@ __all__ = [
+ 
+ __author__ = 'Bob Ippolito <bob@redivi.com>'
+ 
+-from .decoder import JSONDecoder
++from .decoder import JSONDecoder, errmsg
+ from .encoder import JSONEncoder
+ 
++from _json import _init_errmsg
++_init_errmsg(errmsg)
++
+ _default_encoder = JSONEncoder(
+     skipkeys=False,
+     ensure_ascii=True,

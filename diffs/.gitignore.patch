@@ -1,0 +1,53 @@
+diff --git a/.gitignore b/.gitignore
+index 49299ee..3b82156 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -37,6 +37,8 @@ PCbuild/*.o
+ PCbuild/*.pdb
+ PCbuild/Win32-temp-*
+ PCbuild/amd64/
++PCbuild/*.user
++PCbuild/*.suo
+ .purify
+ Parser/pgen
+ __pycache__
+@@ -56,7 +58,6 @@ libpython*.so*
+ platform
+ pybuilddir.txt
+ pyconfig.h
+-python
+ python.exe
+ python-gdb.py
+ python.exe-gdb.py
+@@ -67,3 +68,31 @@ TAGS
+ .coverage
+ coverage/
+ htmlcov/
++*.dmp
++*.dump
++*.db
++*.sqlite
++PC/py.res
++PC/pythonnt_rc.h
++PC/pythonnt_rc_d.h
++PCbuild/Win32-pgi/
++PCbuild/ipch/
++PCbuild/pcbuild.opensdf
++PCbuild/pcbuild.sdf
++PCbuild/py.iobj
++PCbuild/py.ipdb
++PCbuild/python.psess
++PCbuild/python1.psess
++PCbuild/python150731.vspx
++PCbuild/pyw.iobj
++PCbuild/pyw.ipdb
++PCbuild/x64-pgi/
++PCbuild/x64-pgo/
++PCbuild/x64-temp-Debug/
++PCbuild/x64-temp-Release/
++PCbuild/x64-temp-pgi/
++dump.txt
++Lib/distutils/command/wininst-10.0-amd64.exe
++Lib/distutils/command/wininst-9.0-amd64.pdb
++PC/python3dll.obj
++
