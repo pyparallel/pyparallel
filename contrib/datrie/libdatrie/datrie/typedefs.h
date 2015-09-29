@@ -29,9 +29,14 @@
 
 #include "pyconfig.h"
 #include "Python.h"
+/*
 #define malloc PyObject_MALLOC
 #define free PyObject_FREE
 #define realloc PyObject_REALLOC
+*/
+#define malloc  PyMem_RawMalloc
+#define free    PyMem_RawFree
+#define realloc PyMem_RawRealloc
 
 #include <limits.h>
 
