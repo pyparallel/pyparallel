@@ -798,6 +798,100 @@ PxContext_HeapSnapshot(Context *c)
     return c->s;
 }
 
+Heap *
+PxContext_UpdateHeapSnapshot(Context *c)
+{
+    assert(c->s);
+    c->s = &c->snapshot;
+    _PxContext_HeapSnapshot(c, c->s);
+    return c->s;
+}
+
+/* 0 = failure, 1 = success */
+int
+_PxSocket_TakeStartupSnapshot(PxSocket *s, int is_update)
+{
+    Context *c = s->ctx;
+
+    s->flags &= ~Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED;
+    s->startup_socket_flags = s->flags;
+
+    if (!is_update) {
+        /* Verify no previous snapshots exist if we're not an update. */
+        if (s->startup_socket_snapshot || s->startup_heap_snapshot)
+            __debugbreak();
+
+        s->startup_socket_snapshot = (
+            _PyHeap_Malloc(s->ctx, sizeof(PxSocket), 0, 0)
+        );
+        if (!s->startup_socket_snapshot)
+            __debugbreak();
+
+        s->startup_heap_snapshot = _PyHeap_Malloc(s->ctx, sizeof(Heap), 0, 0);
+        if (!s->startup_heap_snapshot)
+            __debugbreak();
+
+    } else {
+        /* Verify previous snapshots exist if we're an update. */
+        if (!s->startup_socket_snapshot || !s->startup_heap_snapshot)
+            __debugbreak();
+    }
+
+    memcpy(s->startup_socket_snapshot, s, sizeof(PxSocket));
+    /* This next line is (at least at the time of writing) identical to
+     * what `_PxContext_HeapSnapshot(c, s->startup_heap_snapshot)` would
+     * perform.  I've used memcpy() directly here instead for two reasons:
+     *      1. It's more obvious what's happening.
+     *      2. It's identical to the above line where we copy the socket.
+     */
+    memcpy(s->startup_heap_snapshot, c->h, sizeof(Heap));
+
+    return 1;
+}
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_TakeStartupSnapshot(PxSocket *s)
+{
+    return _PxSocket_TakeStartupSnapshot(s, 0);
+}
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_UpdateStartupSnapshot(PxSocket *s)
+{
+    return _PxSocket_TakeStartupSnapshot(s, 1);
+}
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_MaybeUpdateStartupSnapshot(PxSocket *s, int *updated)
+{
+    int result = 1;
+    if (PxSocket_SNAPSHOT_UPDATE_SCHEDULED(s)) {
+        result = PxSocket_UpdateStartupSnapshot(s);
+        if (updated)
+            *updated = 1;
+    }
+    return result;
+}
+
+/* 0 = failure, 1 = success */
+int
+PxSocket_MaybeUpdateSnapshot(PxSocket *s, int *updated)
+{
+    int result = 1;
+    if (PxSocket_SNAPSHOT_UPDATE_SCHEDULED(s)) {
+        Heap *h = PxContext_UpdateHeapSnapshot(s->ctx);
+        if (!h)
+            return -1;
+        if (updated)
+            *updated = 1;
+        Px_SOCKFLAGS(s) &= ~Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED;
+    }
+    return result;
+}
+
 /* Ensure (assert/break) that the given heap is in the initial state. */
 void
 _PyHeap_EnsureReset(Heap *h)
@@ -936,11 +1030,22 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
             __debugbreak();
     }
 
+    /* If h->num_px_deallocs is zero, but list->first or list->last is set,
+     * make sure they come before the snapshot. */
     if (!h->num_px_deallocs) {
-        if (list->first)
-            __debugbreak();
-        if (list->last)
-            __debugbreak();
+        if (!is_snapshot) {
+            if (list->first)
+                __debugbreak();
+            if (list->last)
+                __debugbreak();
+        } else {
+            op = list->first ? list->first->op : 0;
+            if (op && !Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s))
+                __debugbreak();
+            op = list->last ? list->last->op : 0;
+            if (op && !Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s))
+                __debugbreak();
+        }
         return 0;
     }
 
@@ -1874,6 +1979,30 @@ _Px_objobjargproc_ass(PyObject *o, PyObject *k, PyObject *v)
     return !(!_Px_TryPersist(k) || !_Px_TryPersist(v));
 }
 
+PyObject *
+PxSocket_CopyObject(PxSocket *s, PyObject *o)
+{
+    PyObject *result;
+
+    if (!s->heap_override) {
+        s->heap_override = HeapCreate(0, 0, 0);
+        if (!s->heap_override) {
+            PyErr_SetFromWindowsErr(0);
+            _Px_WRITE_UNLOCK(o);
+            return NULL;
+        }
+    }
+    _PyParallel_SetHeapOverride(s->heap_override);
+    if (Py_ISPY(o)) {
+        /* If it's a main thread object, don't bother copying it. */
+        result = o;
+    } else {
+        if (!Py_ISPX(o))
+            __debugbreak();
+        result = PyObject_Copy(o);
+    }
+    return result;
+}
 
 int
 _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
@@ -1883,6 +2012,8 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
     PyObject *v = NULL;
     PyTypeObject *tp;
     PxSocket *s = NULL;
+    int remove_heap_override = 0;
+    int copied = 0;
     int result;
     assert(Py_ORIG_TYPE(o));
 
@@ -1891,23 +2022,17 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
         tp = Py_ORIG_TYPE_CAST(o);
         if (c && c->io_obj && c->io_type == Px_IOTYPE_SOCKET) {
             s = (PxSocket *)c->io_obj;
-            if (!s->heap_override) {
-                s->heap_override = HeapCreate(0, 0, 0);
-                if (!s->heap_override) {
-                    PyErr_SetFromWindowsErr(0);
+            if (PyErr_Occurred())
+                __debugbreak();
+            if (!PyObject_Copyable(v_orig)) {
+                Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED;
+            } else {
+                v_copy = PxSocket_CopyObject(s, v_orig);
+                if (!v_copy || PyErr_Occurred()) {
                     _Px_WRITE_UNLOCK(o);
                     return -1;
                 }
-            }
-            _PyParallel_SetHeapOverride(s->heap_override);
-            if (Py_ISPY(v_orig)) {
-                /* If it's a main thread object, don't bother cloning it. */
-                ;
-            } else {
-                if (!Py_ISPX(v_orig))
-                    __debugbreak();
-                v_copy = PyObject_Clone(v_orig,
-                                        "unsupported clone object type");
+                remove_heap_override = 1;
             }
         }
         v = (v_copy ? v_copy : v_orig);
@@ -1916,8 +2041,11 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
         else
             result = PyObject_GenericSetAttr(o, n, v);
 
-        if (_PyParallel_IsHeapOverrideActive())
+        if (remove_heap_override) {
+            if (!_PyParallel_IsHeapOverrideActive())
+                __debugbreak();
             _PyParallel_RemoveHeapOverride();
+        }
 
     } __finally {
         _Px_WRITE_UNLOCK(o);
@@ -2052,7 +2180,7 @@ _Px_sq_length(PyObject *o)
     return result;
 }
 
-char
+int
 _PyObject_PrepOrigType(PyObject *o, PyObject *kwds)
 {
     PyMappingMethods *old_mm, *new_mm;
@@ -3459,7 +3587,10 @@ _PyHeap_Free(Context *c, void *p)
     if (Px_TLS_HEAP_ACTIVE)
         return;
 
-    Px_GUARD_MEM(p);
+    /* Because of the way the rollback works, by the time free is called
+     * against the pointer, it may already be reset. */
+    if (p)
+        Px_GUARD_MEM(p);
 
     h = c->h;
     s = &c->stats;
@@ -8033,6 +8164,8 @@ restart:
         if (!_PyHeap_Init(c, 0))
             return PyErr_NoMemory();
 
+        /* Pick up the new heap. */
+        h = c->h;
         if (h->remaining <= old_remaining)
             __debugbreak();
 
@@ -8476,6 +8609,26 @@ PxSocket_IOLoop(PxSocket *s)
 
     if (PyErr_Occurred())
         __debugbreak();
+
+    if (s->client_created && !PxSocket_CALLED_CLIENT_CREATED(s)) {
+        ODS(L"client_created:\n");
+        args = PyTuple_Pack(1, s);
+        if (!args)
+            PxSocket_FATAL();
+        result = PyObject_CallObject(s->client_created, args);
+        if (!result) {
+            if (!PyErr_Occurred())
+                __debugbreak();
+
+            PxSocket_FATAL();
+        }
+        if (PyErr_Occurred()) {
+            PxSocket_FATAL();
+        }
+        s->flags |= Px_SOCKFLAGS_CALLED_CLIENT_CREATED;
+        if (!PxSocket_MaybeUpdateStartupSnapshot(s, 0))
+            PxSocket_FATAL();
+    }
 
 dispatch_io_op:
     if (s->next_io_op) {
@@ -9182,6 +9335,12 @@ definitely_do_connection_made:
     }
 
     Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_CALLED_CONNECTION_MADE;
+
+    if (!PxSocket_MaybeUpdateSnapshot(s, 0)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "failed to update snapshot after connection_made()");
+        PxSocket_FATAL();
+    }
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
         if (result != Py_None) {
@@ -10143,6 +10302,12 @@ do_data_received_callback:
     if (PyErr_Occurred())
         __debugbreak();
 
+    if (!PxSocket_MaybeUpdateSnapshot(s, 0)) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "failed to update snapshot after data_received()");
+        PxSocket_FATAL();
+    }
+
     if (PxSocket_IS_HTTP11(s))
         result = PxSocket_ConvertToHttpResponse(s, result);
 
@@ -10980,6 +11145,7 @@ create_pxsocket(
         s->next_bytes_to_send = parent->next_bytes_to_send;
         s->next_bytes_callable = parent->next_bytes_callable;
         s->send_complete = parent->send_complete;
+        s->client_created = parent->client_created;
         s->connection_made = parent->connection_made;
         s->connection_closed = parent->connection_closed;
         s->methods = parent->methods;
@@ -11265,44 +11431,10 @@ set_other_sockopts:
         PxSocketServer_LinkChild(s);
 
     if (!PxSocket_IS_SERVER(s)) {
-        PxSocket *socket_snapshot;
-        Heap     *heap_snapshot;
-
-        /* I haven't thought about (read: implemented any support for) how
-         * client socket (i.e. not accept sockets) re-use would work yet, so
-         * let's just make sure we only hit this path if we're a server client
-         * for now.
-         */
-        /*
-        if (!PxSocket_IS_SERVERCLIENT(s))
-            __debugbreak();
-        */
-
-        assert(!s->startup_socket_snapshot);
-        assert(!s->startup_heap_snapshot);
-
-        s->startup_socket_flags = s->flags;
-
-        socket_snapshot = _PyHeap_Malloc(s->ctx, sizeof(PxSocket), 0, 0);
-        if (!socket_snapshot)
-            __debugbreak();
-
-        heap_snapshot = _PyHeap_Malloc(s->ctx, sizeof(Heap), 0, 0);
-        if (!heap_snapshot)
-            __debugbreak();
-
-        s->startup_socket_snapshot = socket_snapshot;
-        s->startup_heap_snapshot   = heap_snapshot;
-
-        memcpy(s->startup_socket_snapshot, s, sizeof(PxSocket));
-        /* This next line is (at least at the time of writing) identical to
-         * what `_PxContext_HeapSnapshot(c, s->startup_heap_snapshot)` would
-         * perform.  I've used memcpy() directly here instead for two reasons:
-         *      1. It's more obvious what's happening.
-         *      2. It's identical to the above line where we copy the socket.
-         */
-        memcpy(s->startup_heap_snapshot, c->h, sizeof(Heap));
+        if (!PxSocket_TakeStartupSnapshot(s))
+            PxSocket_SYSERROR("PxSocket_TakeStartupSnapshot()");
     }
+
 done:
     return (PyObject *)s;
 
@@ -11762,6 +11894,7 @@ _Py_IDENTIFIER(recv_shutdown);
 _Py_IDENTIFIER(send_complete);
 _Py_IDENTIFIER(data_received);
 _Py_IDENTIFIER(lines_received);
+_Py_IDENTIFIER(client_created);
 _Py_IDENTIFIER(connection_made);
 _Py_IDENTIFIER(connection_closed);
 _Py_IDENTIFIER(exception_handler);
@@ -11870,6 +12003,7 @@ PxSocket_InitProtocol(PxSocket *s)
     _PxSocket_RESOLVE_OBJECT(send_complete);
     _PxSocket_RESOLVE_OBJECT(data_received);
     _PxSocket_RESOLVE_OBJECT(lines_received);
+    _PxSocket_RESOLVE_OBJECT(client_created);
     _PxSocket_RESOLVE_OBJECT(connection_made);
     _PxSocket_RESOLVE_OBJECT(connection_closed);
     _PxSocket_RESOLVE_OBJECT(exception_handler);
@@ -12938,7 +13072,6 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     if (s->target_accepts_posted <= 0)
         s->target_accepts_posted = _PyParallel_NumCPUs * 4;
-        //s->target_accepts_posted = 1;
 
     s->accepts_sem = CreateSemaphore(
         NULL,                           /* semaphore attributes */
