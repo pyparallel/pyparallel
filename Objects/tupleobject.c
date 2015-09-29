@@ -3,6 +3,7 @@
 
 #include "Python.h"
 #include "accu.h"
+#include "statics.h"
 
 /* Speed optimization to avoid frequent malloc/free of small tuples */
 #ifndef PyTuple_MAXSAVESIZE
