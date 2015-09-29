@@ -1,13 +1,12 @@
 diff --git a/Modules/_io/iobase.c b/Modules/_io/iobase.c
-index e38473a..b173878 100644
+index e38473a..7f02d4e 100644
 --- a/Modules/_io/iobase.c
 +++ b/Modules/_io/iobase.c
-@@ -208,7 +208,8 @@ _PyIOBase_finalize(PyObject *self)
+@@ -208,7 +208,7 @@ _PyIOBase_finalize(PyObject *self)
         resurrect the object as calling close() can invoke arbitrary code. */
      is_zombie = (Py_REFCNT(self) == 0);
      if (is_zombie) {
 -        ++Py_REFCNT(self);
-+        /* ++Py_REFCNT(self); */
 +        Py_INCREF(self);
      }
      PyErr_Fetch(&tp, &v, &tb);

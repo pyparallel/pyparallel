@@ -1,17 +1,25 @@
 diff --git a/Objects/longobject.c b/Objects/longobject.c
-index 4ae22ef..a4fb264 100644
+index 4ae22ef..0f9a1f4 100644
 --- a/Objects/longobject.c
 +++ b/Objects/longobject.c
-@@ -30,7 +30,7 @@
- */
- static PyLongObject small_ints[NSMALLNEGINTS + NSMALLPOSINTS];
+@@ -37,6 +37,8 @@ static PyObject *
+ get_small_int(sdigit ival)
+ {
+     PyObject *v = (PyObject*)(small_ints + ival + NSMALLNEGINTS);
++    if (Py_PXCTX())
++        goto end;
+     Py_INCREF(v);
  #ifdef COUNT_ALLOCS
--Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
-+Py_TLS Py_ssize_t quick_int_allocs, quick_neg_int_allocs;
+     if (ival >= 0)
+@@ -44,6 +46,7 @@ get_small_int(sdigit ival)
+     else
+         quick_neg_int_allocs++;
  #endif
- 
- static PyObject *
-@@ -209,6 +209,15 @@ _PyLong_Copy(PyLongObject *src)
++end:
+     return v;
+ }
+ #define CHECK_SMALL_INT(ival) \
+@@ -209,6 +212,15 @@ _PyLong_Copy(PyLongObject *src)
      return (PyObject *)result;
  }
  
@@ -27,7 +35,7 @@ index 4ae22ef..a4fb264 100644
  /* Create a new int object from a C long int */
  
  PyObject *
-@@ -5012,6 +5021,15 @@ PyTypeObject PyLong_Type = {
+@@ -5012,6 +5024,15 @@ PyTypeObject PyLong_Type = {
      0,                                          /* tp_alloc */
      long_new,                                   /* tp_new */
      PyObject_Del,                               /* tp_free */
