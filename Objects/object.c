@@ -1371,6 +1371,24 @@ PyCallable_Check(PyObject *x)
     return x->ob_type->tp_call != NULL;
 }
 
+/* Test whether an object can be copied. */
+int
+PyObject_Copyable(PyObject *o)
+{
+    if (!o)
+        return 0;
+    return (Py_TYPE(o)->tp_copy != NULL);
+}
+
+/* Copy an object. */
+PyObject *
+PyObject_Copy(PyObject *o)
+{
+    PyTypeObject *tp = Py_TYPE(o);
+    assert(tp->tp_copy);
+    return (*tp->tp_copy)(o);
+}
+
 
 /* Helper for PyObject_Dir without arguments: returns the local scope. */
 static PyObject *
