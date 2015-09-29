@@ -1,0 +1,13 @@
+****************************
+  What's New In PyParallel 3.3.5.99783
+****************************
+
+This article is a running list of changes being made to PyParallel, which was
+forked from Python at v3.3.5.
+
+Summary -- Release highlights
+=============================
+
+The 3.3.5.99783 version marks the first installer/release since switching to
+GitHub (and thus, git).
+
