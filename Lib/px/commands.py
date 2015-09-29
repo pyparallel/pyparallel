@@ -574,6 +574,78 @@ class SqliteServer(TCPServerCommand):
                 server3.shutdown()
                 server4.shutdown()
 
+class SqliteServerTest(TCPServerCommand):
+    _shortname_ = 'sqt'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        pydatadir = join_path(dirname(__file__), '../../examples/pydata')
+        with chdir(pydatadir):
+            import parallel
+            import sqlite_test as sqt
+            import sqlite3
+
+            server1 = parallel.server(ip, port)
+            self._out("Running geo server on %s port %d ..." % (ip, port))
+            protocol = sqt.Bar
+            parallel.register(transport=server1, protocol=protocol)
+
+            server2 = parallel.server(ip, port+1)
+            self._out("Running geo server on %s port %d ..." % (ip, port+1))
+            protocol = sqt.Bar2
+            parallel.register(transport=server2, protocol=protocol)
+
+            try:
+                parallel.run()
+            except KeyboardInterrupt:
+                server1.shutdown()
+                server2.shutdown()
+
+class DbServerTest(TCPServerCommand):
+    _shortname_ = 'dbt'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        pydatadir = join_path(dirname(__file__), '../../examples/pydata')
+        with chdir(pydatadir):
+            import parallel
+            import db_test as dbt
+
+            server1 = parallel.server(ip, port)
+            self._out("Running server on %s port %d ..." % (ip, port))
+            protocol = dbt.Foo
+            parallel.register(transport=server1, protocol=protocol)
+
+            try:
+                parallel.run()
+            except KeyboardInterrupt:
+                server1.shutdown()
+
+
 #===============================================================================
 # Testing
 #===============================================================================
