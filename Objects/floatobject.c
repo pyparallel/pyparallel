@@ -133,6 +133,25 @@ PyFloat_FromDouble(double fval)
 }
 
 PyObject *
+_PyFloat_Copy(PyObject *src)
+{
+    PyFloatObject *op;
+    if (!PyFloat_CheckExact(src)) {
+        PyErr_SetString(PyExc_TypeError,
+                        "attempted to copy something that isn't a float");
+        return NULL;
+    }
+    /* Inline the logic above. */
+    op = (PyFloatObject*) PyObject_MALLOC(sizeof(PyFloatObject));
+    if (!op)
+        return PyErr_NoMemory();
+
+    PyObject_INIT(op, &PyFloat_Type);
+    op->ob_fval = ((PyFloatObject *)src)->ob_fval;
+    return (PyObject *)op;
+}
+
+PyObject *
 PyFloat_FromString(PyObject *v)
 {
     const char *s, *last, *end;
@@ -1860,6 +1879,16 @@ PyTypeObject PyFloat_Type = {
     0,                                          /* tp_init */
     0,                                          /* tp_alloc */
     float_new,                                  /* tp_new */
+    0,                                          /* tp_free */
+    0,                                          /* tp_is_gc */
+    0,                                          /* tp_bases */
+    0,                                          /* tp_mro */
+    0,                                          /* tp_cache */
+    0,                                          /* tp_subclasses */
+    0,                                          /* tp_weaklist */
+    0,                                          /* tp_del */
+    0,                                          /* tp_version_tag */
+    _PyFloat_Copy,                              /* tp_copy */
 };
 
 void
