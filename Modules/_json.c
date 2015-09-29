@@ -84,7 +84,7 @@ static PyObject *
 join_list_unicode(PyObject *lst)
 {
     /* return u''.join(lst) */
-    return PyUnicode_Join(statics.sep, lst);
+    return PyUnicode_Join(statics.empty, lst);
 }
 
 /* Forward decls */

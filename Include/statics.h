@@ -2,7 +2,7 @@
 #define PY_STATICS_H
 
 typedef struct _statics {
-    PyObject *sep;                                    /* ""                   */
+    PyObject *empty;                                  /* ""                   */
     PyObject *nul;                                    /* "\0"                 */
     PyObject *comma;                                  /* ","                  */
     PyObject *space;                                  /* " "                  */
