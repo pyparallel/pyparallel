@@ -645,6 +645,38 @@ class DbServerTest(TCPServerCommand):
             except KeyboardInterrupt:
                 server1.shutdown()
 
+class RateLimitServerTest(TCPServerCommand):
+    _shortname_ = 'rl'
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        miscdir = join_path(dirname(__file__), '../../examples/misc')
+        with chdir(miscdir):
+            import parallel
+            import ratelimit_test as rlt
+
+            server1 = parallel.server(ip, port)
+            self._out("Running server on %s port %d ..." % (ip, port))
+            protocol = rlt.RateLimitedServer
+            parallel.register(transport=server1, protocol=protocol)
+
+            try:
+                parallel.run()
+            except KeyboardInterrupt:
+                server1.shutdown()
+
 
 #===============================================================================
 # Testing

@@ -9,6 +9,7 @@ extern "C" {
 #include "statics.h"
 #include "pyparallel_private.h"
 #include "fileio.h"
+#include "datetime.h"
 #include "frameobject.h"
 #include "structmember.h"
 #include <dbghelp.h>
@@ -4091,6 +4092,32 @@ done:
     return result;
 }
 
+/* 0 = failure, 1 = success */
+/* PyErr will be set on error. */
+int
+_PyParallel_PyTimeDeltaToRelativeThreadpoolTime(
+    PyObject *delta,
+    PFILETIME filetime
+)
+{
+    PyDateTime_Delta *d = (PyDateTime_Delta *)delta;
+    if (!_PyDelta_Check(delta)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "invalid type: expected datetime.timedelta");
+        return 0;
+    }
+
+    _PyParallel_DaysSecondsMicrosecondsToRelativeThreadpoolTime(
+        d->days,
+        d->seconds,
+        d->microseconds,
+        filetime
+    );
+
+    return 1;
+}
+
+
 /*
 void *
 _PyParallel_CreatedNewThreadState(PyThreadState *tstate)
@@ -4143,7 +4170,7 @@ void
 _PxState_InitGmtimeTimer(PxState *px)
 {
     FILETIME ft;
-    _PyParallel_SecondsToRelativeThreadpoolTimerTime(1, &ft);
+    _PyParallel_SecondsToRelativeThreadpoolTime(1, &ft);
     SetThreadpoolTimer(px->ptp_timer_gmtime, &ft, 1000, 100);
 }
 
@@ -4850,7 +4877,7 @@ int _PyParallel_SetThreadpoolWait(
     if (!_extract_socket(c, &s))
         goto end;
 
-    _PyParallel_SecondsToRelativeThreadpoolWaitTime(
+    _PyParallel_SecondsToRelativeThreadpoolTime(
         timeout_seconds,
         &s->wait_timeout
     );
@@ -8674,6 +8701,9 @@ dispatch_io_op:
             case PxSocket_IO_DISCONNECT:
                 goto overlapped_disconnectex_callback;
 
+            case PxSocket_IO_RATE_LIMIT:
+                goto try_recv;
+
             default:
                 ASSERT_UNREACHABLE();
 
@@ -9947,6 +9977,17 @@ do_recv:
     assert(!w);
     assert(!snapshot);
 
+    if (s->recv_id > 0 &&
+        PxSocket_IS_RATE_LIMITED(s) &&
+        s->last_io_op != PxSocket_IO_RATE_LIMIT)
+    {
+        /* xxx todo: check to see if the rate limit period has elapsed already
+         * and don't set the threadpool timer if so. */
+        s->this_io_op = PxSocket_IO_RATE_LIMIT;
+        SetThreadpoolTimer(s->ratelimit_timer, &s->rate_limit_ft, 0, 0);
+        goto end;
+    }
+
     rbuf = s->rbuf;
     if (rbuf->snapshot)
         __debugbreak();
@@ -10887,6 +10928,7 @@ PxSocket_Cleanup(PxSocket *s)
     Px_CLOSE_THREADPOOL_WORK(s->preallocate_children_tp_work);
     Px_CLOSE_THREADPOOL_WORK(s->shutdown_server_tp_work);
     Px_CLOSE_THREADPOOL_TIMER(s->slowloris_protection_tp_timer);
+    Px_CLOSE_THREADPOOL_TIMER(s->ratelimit_timer);
 
     Px_CLOSE_HANDLE(s->fd_accept);
     Px_CLOSE_HANDLE(s->client_connected);
@@ -10954,6 +10996,14 @@ PxSocket_IOCallback(
     ULONG io_result,
     ULONG_PTR nbytes,
     TP_IO *tp_io
+);
+
+void
+CALLBACK
+PxSocket_RateLimitTimerCallback(
+    _Inout_ PTP_CALLBACK_INSTANCE instance,
+    _Inout_opt_ PVOID context,
+    _Inout_ PTP_TIMER timer
 );
 
 PyObject *
@@ -11178,6 +11228,13 @@ create_pxsocket(
         if (PxSocket_IS_HTTP11(parent))
             Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_HTTP11;
 
+        if (PxSocket_IS_RATE_LIMITED(parent)) {
+            PFILETIME dst = &s->rate_limit_ft, src = &parent->rate_limit_ft;
+            Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RATE_LIMIT;
+            dst->dwLowDateTime = src->dwLowDateTime;
+            dst->dwHighDateTime = src->dwHighDateTime;
+        }
+
         if (PxSocket_ODBC(parent)) {
             if (!parent->henv)
                 /* Should be set during PxSocketServer_InitODBC(). */
@@ -11313,8 +11370,8 @@ setnonblock:
         /* If it gets below 512, break.  We want to keep the entire buffer
          * within the same page used by the heap. */
         /* Eek... down to 432. */
-        if (s->recvbuf_size < 400)
-            __debugbreak();
+        //if (s->recvbuf_size < 400)
+        //    __debugbreak();
         //s->recvbuf_size = 512;
         s->sendbuf_size = 0;
     }
@@ -11412,7 +11469,19 @@ set_other_sockopts:
                                   s->ctx,
                                   c->ptp_cbe);
     if (!s->tp_io)
-        PxSocket_SYSERROR("CreateThreadpoolIo(PyParallel_IOCallback)");
+        PxSocket_SYSERROR("CreateThreadpoolIo(PxSocket_IOCallback)");
+
+    if (!PxSocket_IS_SERVER(s) && PxSocket_IS_RATE_LIMITED(s)) {
+        s->ratelimit_timer = CreateThreadpoolTimer(
+            PxSocket_RateLimitTimerCallback,
+            s->ctx,
+            c->ptp_cbe
+        );
+        if (!s->ratelimit_timer)
+            PxSocket_SYSERROR(
+                "CreateThreadpoolTimer(PxSocket_RateLimitTimerCallback)"
+            );
+    }
 
     if (s->recycled)
         goto done;
@@ -11607,6 +11676,27 @@ _pxsocket_initial_bytes_to_send(Context *c, PxSocket *s)
     if (i == Py_None)
         return NULL;
     return _try_extract_something_sendable_from_object(c, i, 0);
+}
+
+void PxSocket_IOLoop_RateLimit(PxSocket *s) { PxSocket_IOLoop(s); }
+
+void
+CALLBACK
+PxSocket_RateLimitTimerCallback(
+    _Inout_ PTP_CALLBACK_INSTANCE instance,
+    _Inout_opt_ PVOID context,
+    _Inout_ PTP_TIMER timer
+)
+{
+    Context *c = (Context *)context;
+    PxSocket *s = (PxSocket *)c->io_obj;
+    ENTERED_CALLBACK();
+    if (s->this_io_op != PxSocket_IO_RATE_LIMIT)
+        __debugbreak();
+    EnterCriticalSection(&s->cs);
+    PxSocket_IOLoop_RateLimit(s);
+    LeaveCriticalSection(&s->cs);
+    return;
 }
 
 /* These stubs are useful when debugging as they allow you to quickly see what
@@ -11903,6 +11993,7 @@ _Py_IDENTIFIER(next_bytes_to_send);
 _Py_IDENTIFIER(connection_string);
 _Py_IDENTIFIER(json_dumps);
 _Py_IDENTIFIER(json_loads);
+_Py_IDENTIFIER(rate_limit);
 
 /* bools */
 _Py_IDENTIFIER(odbc);
@@ -12027,6 +12118,19 @@ PxSocket_InitProtocol(PxSocket *s)
 
     _PxSocket_RESOLVE_INT(max_sync_send_attempts);
     _PxSocket_RESOLVE_INT(max_sync_recv_attempts);
+
+    _PxSocket_RESOLVE(rate_limit);
+    if (s->rate_limit) {
+        int success = _PyParallel_PyTimeDeltaToRelativeThreadpoolTime(
+            s->rate_limit,
+            &s->rate_limit_ft
+        );
+        if (!success) {
+            assert(PyErr_Occurred());
+            return 0;
+        }
+        Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_RATE_LIMIT;
+    }
 
     assert(!PyErr_Occurred());
 

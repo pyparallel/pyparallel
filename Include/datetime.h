@@ -181,6 +181,8 @@ typedef struct {
 
 #define PyDelta_Check(op) PyObject_TypeCheck(op, &PyDateTime_DeltaType)
 #define PyDelta_CheckExact(op) (Py_TYPE(op) == &PyDateTime_DeltaType)
+/* Needed for pyparallel. */
+int _PyDelta_Check(PyObject *op);
 
 #define PyTZInfo_Check(op) PyObject_TypeCheck(op, &PyDateTime_TZInfoType)
 #define PyTZInfo_CheckExact(op) (Py_TYPE(op) == &PyDateTime_TZInfoType)

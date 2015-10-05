@@ -858,6 +858,8 @@ typedef struct _PxObject {
 #define Px_SOCKFLAGS_client_created             (1ULL << 45)
 #define Px_SOCKFLAGS_CALLED_CLIENT_CREATED      (1ULL << 46)
 #define Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED  (1ULL << 47)
+#define Px_SOCKFLAGS_rate_limit                 (1ULL << 48)
+#define Px_SOCKFLAGS_RATE_LIMIT                 (1ULL << 48)
 #define Px_SOCKFLAGS_                           (1ULL << 63)
 
 #define PxSocket_CBFLAGS(s) (((PxSocket *)s)->cb_flags)
@@ -973,6 +975,9 @@ typedef struct _PxObject {
 #define PxSocket_SNAPSHOT_UPDATE_SCHEDULED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED)
 
+#define PxSocket_IS_RATE_LIMITED(s) \
+    (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RATE_LIMIT)
+
 #define PxSocket_RECV_MORE(s)   (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_RECV_MORE)
 
 #define PxSocket_CB_CONNECTION_MADE     (1)
@@ -1001,6 +1006,7 @@ typedef struct _PxObject {
 #define PxSocket_IO_WAIT                (17)
 #define PxSocket_IO_TIMER               (18)
 #define PxSocket_IO_DB_CONNECT          (19)
+#define PxSocket_IO_RATE_LIMIT          (20)
 
 #define PxSocket_SET_NEXT_OP(s, op)     \
     do {                                \
@@ -1133,6 +1139,7 @@ typedef struct _PxSocket {
     PTP_WORK shutdown_server_tp_work;
     PTP_WORK preallocate_children_tp_work;
     PTP_TIMER slowloris_protection_tp_timer;
+    PTP_TIMER ratelimit_timer;
 
     HANDLE heap_override;
     PyObject *last_getattr_name;
@@ -1245,6 +1252,8 @@ typedef struct _PxSocket {
     PyObject *http11;
     PyObject *json_dumps;
     PyObject *json_loads;
+    PyObject *rate_limit;
+    FILETIME  rate_limit_ft;
 
     PyObject *methods;
 
