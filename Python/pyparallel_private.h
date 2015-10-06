@@ -1238,7 +1238,7 @@ typedef struct _PxSocket {
     PyObject *data_received;
     PyObject *lines_received;
     PyObject *client_created;
-    PyObject *server_created;
+    PyObject *server_started;
     PyObject *connection_made;
     PyObject *connection_closed;
     PyObject *exception_handler;
