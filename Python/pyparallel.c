@@ -1632,7 +1632,6 @@ PxSocket_NEW_SBUF(
         return 0;
 
     b = *sbuf;
-
     b->last_thread_id = _Py_get_current_thread_id();
     b->snapshot = snapshot;
     b->s = s;
@@ -11985,6 +11984,7 @@ _Py_IDENTIFIER(send_complete);
 _Py_IDENTIFIER(data_received);
 _Py_IDENTIFIER(lines_received);
 _Py_IDENTIFIER(client_created);
+_Py_IDENTIFIER(server_created);
 _Py_IDENTIFIER(connection_made);
 _Py_IDENTIFIER(connection_closed);
 _Py_IDENTIFIER(exception_handler);
@@ -12095,6 +12095,7 @@ PxSocket_InitProtocol(PxSocket *s)
     _PxSocket_RESOLVE_OBJECT(data_received);
     _PxSocket_RESOLVE_OBJECT(lines_received);
     _PxSocket_RESOLVE_OBJECT(client_created);
+    _PxSocket_RESOLVE_OBJECT(server_created);
     _PxSocket_RESOLVE_OBJECT(connection_made);
     _PxSocket_RESOLVE_OBJECT(connection_closed);
     _PxSocket_RESOLVE_OBJECT(exception_handler);
@@ -13094,6 +13095,20 @@ PxSocketServer_Start(PTP_CALLBACK_INSTANCE instance, void *context)
 
     if (!PxSocketServer_InitODBC(s))
         PxSocket_FATAL();
+
+    if (PxSocket_HAS_SERVER_CREATED(s)) {
+        PyObject *result, *args = PyTuple_Pack(1, s);
+        if (!args)
+            PxSocket_FATAL();
+        result = PyObject_CallObject(s->server_created, args);
+        if (!result) {
+            if (!PyErr_Occurred())
+                __debugbreak();
+            PxSocket_FATAL();
+        }
+        if (PyErr_Occurred())
+            PxSocket_FATAL();
+    }
 
     px = c->px;
     s->this_io_op = PxSocket_IO_LISTEN;

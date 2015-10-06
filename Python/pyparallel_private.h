@@ -969,6 +969,8 @@ typedef struct _PxObject {
 #define PxSocket_HAS_CLIENT_CREATED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CLIENT_CREATED)
 
+#define PxSocket_HAS_SERVER_CREATED(s) (s->server_created != NULL)
+
 #define PxSocket_CALLED_CLIENT_CREATED(s) \
     (Px_SOCKFLAGS(s) & Px_SOCKFLAGS_CALLED_CLIENT_CREATED)
 
@@ -1238,6 +1240,7 @@ typedef struct _PxSocket {
     PyObject *data_received;
     PyObject *lines_received;
     PyObject *client_created;
+    PyObject *server_created;
     PyObject *connection_made;
     PyObject *connection_closed;
     PyObject *exception_handler;
