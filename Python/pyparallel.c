@@ -1818,7 +1818,7 @@ _PyObject_Dealloc(PyObject *o)
 }
 
 
-char
+int
 _protected(PyObject *obj)
 {
     PyObject **dp;
