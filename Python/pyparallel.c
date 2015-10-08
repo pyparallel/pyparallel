@@ -6017,7 +6017,7 @@ _async_run_once(PyObject *self, PyObject *args)
 
     px = (PxState *)tstate->px;
 
-    if (px->num_contexts == 0) {
+    if (!px || px->num_contexts == 0) {
         PyErr_SetNone(PyExc_AsyncRunCalledWithoutEventsError);
         return NULL;
     }
