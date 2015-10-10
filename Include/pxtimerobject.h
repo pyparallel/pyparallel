@@ -37,7 +37,8 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define Px_TIMERFLAGS_STOP_REQUESTED                    (1ULL <<  3)
 #define Px_TIMERFLAGS_STOPPED                           (1ULL <<  4)
 #define Px_TIMERFLAGS_RUNNING                           (1ULL <<  5)
-#define Px_TIMERFLAGS_SNAPSHOT_UPDATE_SCHEDULED         (1ULL <<  6)
+#define Px_TIMERFLAGS_SHUTDOWN_REQUESTED                (1ULL <<  6)
+#define Px_TIMERFLAGS_SHUTDOWN                          (1ULL <<  7)
 #define Px_TIMERFLAGS_                                  (1ULL << 63)
 
 #define PxTimer_IS_VALID(t)                                                    \
@@ -57,6 +58,12 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 
 #define PxTimer_RUNNING(t)                                                     \
     (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_RUNNING)
+
+#define PxTimer_SHUTDOWN_REQUESTED(t)                                          \
+    (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_SHUTDOWN_REQUESTED)
+
+#define PxTimer_SHUTDOWN(t)                                                    \
+    (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_SHUTDOWN)
 
 #define PxTimer_XSET(timer, flag)                                              \
     InterlockedExchange(timer->flags, timer->flags | flag)
@@ -78,6 +85,12 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 
 #define PxTimer_SET_STOP_REQUESTED(t)                                          \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_STOP_REQUESTED)
+
+#define PxTimer_SET_SHUTDOWN(t)                                                \
+    PxTimer_SET_FLAG(t, Px_TIMERFLAGS_SHUTDOWN)
+
+#define PxTimer_SET_SHUTDOWN_REQUESTED(t)                                      \
+    PxTimer_SET_FLAG(t, Px_TIMERFLAGS_SHUTDOWN_REQUESTED)
 
 #define PxTimer_SET_STOPPED(t)                                                 \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_STOPPED)
@@ -103,7 +116,7 @@ typedef struct _PxTimerObject {
     INIT_ONCE start_once;
     INIT_ONCE stop_once;
     INIT_ONCE shutdown_once;
-    TP_WORK shutdown;
+    PTP_WORK shutdown_work;
     PyObject *data;
     SRWLOCK data_srwlock;
 } PxTimerObject;
@@ -124,10 +137,17 @@ PyAPI_FUNC(int) PxTimer_Valid(PyObject *o);
 #define PxTimer_VALID(t) PxTimer_Valid((PyObject *)t)
 
 PyAPI_FUNC(PxTimerObject *) PxTimer_GetActive(void);
+PyAPI_FUNC(void) PxTimer_Cleanup(PxTimerObject *t);
 
 PyObject *pxtimer_set_data(PxTimerObject *t, PyObject *data);
 PyObject *pxtimer_get_data(PxTimerObject *t);
 
+PyObject *pxtimer_start(PyObject *self);
+PyObject *pxtimer_stop(PyObject *self);
+PyObject *pxtimer_shutdown(PyObject *self);
+
+PyObject *pxtimer_start(PyObject *self);
+PyObject *pxtimer_stop(PyObject *self);
 PyObject *pxtimer_shutdown(PyObject *self);
 
 #ifdef __cpplus

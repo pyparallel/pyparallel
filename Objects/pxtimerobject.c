@@ -34,17 +34,35 @@ CALLBACK
 PxTimer_ShutdownCallback(
     _Inout_ PTP_CALLBACK_INSTANCE instance,
     _Inout_opt_ PVOID context,
-    _Inout_ PTP_TIMER timer
+    _Inout_ PTP_WORK work
 )
 {
     PxTimerObject *t = (PxTimerObject *)context;
     PxContext *c = t->ctx;
     PxState *px = c->px;
 
+    WaitForThreadpoolTimerCallbacks(t->ptp_timer, TRUE /* cancel callbacks */);
+
+    Px_CLOSE_THREADPOOL_TIMER(t->ptp_timer);
+    Px_CLOSE_THREADPOOL_WORK(t->shutdown_work);
+
+    ctx = c;
     _PyParallel_EnteredCallback(c, instance);
 
     EnterCriticalSection(&t->cs);
+
+    PxTimer_Cleanup(t);
+
+    ((PyObject *)t)->is_px = _Py_NOT_PARALLEL;
+    Py_PXFLAGS(s) &= ~Py_PXFLAGS_ISPX;
+    Py_PXFLAGS(s) |=  (Py_PXFLAGS_ISPY | Py_PXFLAGS_WASPX);
+
+    PxTimer_SET_SHUTDOWN(t);
+
     LeaveCriticalSection(&t->cs);
+
+    if (Py_REFCNT(t) == 0)
+        pxtimer_dealloc(t);
 }
 
 
@@ -101,7 +119,7 @@ end:
 
 BOOL
 CALLBACK
-PxTimer_StartCallback(
+PxTimer_StartOnceCallback(
     PINIT_ONCE init_once,
     PVOID param,
     PVOID *context
@@ -122,7 +140,7 @@ PxTimer_StartCallback(
 
 BOOL
 CALLBACK
-PxTimer_StopCallback(
+PxTimer_StopOnceCallback(
     PINIT_ONCE init_once,
     PVOID param,
     PVOID *context
@@ -130,14 +148,29 @@ PxTimer_StopCallback(
 {
     PxTimerObject *t = (PxTimerObject *)context;
 
-    assert(PxTimer_VALID(t));
-
     /* Toggle the stop requested flag and set another timer with NULL
      * parameters.  This will synchronously trigger another timer callback,
      * which tests for the flag and registers the stop, which we use to
      * indicate that the timer is not and will not run again. */
     PxTimer_SET_STOP_REQUESTED(t);
     SetThreadpoolTimer(t->ptp_timer, NULL, 0, 0);
+
+    return TRUE;
+}
+
+BOOL
+CALLBACK
+PxTimer_ShutdownOnceCallback(
+    PINIT_ONCE init_once,
+    PVOID param,
+    PVOID *context
+)
+{
+    PxTimerObject *t = (PxTimerObject *)context;
+
+    PxTimer_SET_SHUTDOWN_REQUESTED(t);
+    pxtimer_stop((PyObject *)t);
+    SubmitThreadpoolWork(t->shutdown_work);
 
     return TRUE;
 }
@@ -215,6 +248,21 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
 
     InitializeCriticalSectionAndSpinCount(&t->cs, 4000);
 
+    t->shutdown_work = CreateThreadpoolWork(PxTimer_ShutdownWorkCallback,
+                                            t,
+                                            c->ptp_cbe);
+
+    if (!t->shutdown_work)
+        PxTimer_SYSERROR("CreateThreadpoolWork(PxTimer_ShutdownWorkCallback)");
+
+    t->ptp_timer = CreateThreadpoolTimer(PxTimer_Callback, t, c->ptp_cbe);
+    if (!t->ptp_timer)
+        PxTimer_SYSERROR("CreateThreadpoolTimer(PxTimer_Callback)");
+
+    InitOnceInitialize(&t->start_once);
+    InitOnceInitialize(&t->stop_once);
+    InitOnceInitialize(&t->shutdown_once);
+
     _PxState_RegisterTimer(t);
 
 end:
@@ -244,7 +292,7 @@ pxtimer_dealloc(PxTimerObject *t)
     DeleteCriticalSection(&t->cs);
 
     Px_CLOSE_THREADPOOL_TIMER(t->ptp_timer);
-    Px_CLOSE_THREADPOOL_WORK(t->shutdown);
+    Px_CLOSE_THREADPOOL_WORK(t->shutdown_work);
     Px_HEAP_DESTROY(c->heap_handle);
     Px_HEAP_DESTROY(t->heap_override);
     Px_FREE(c);
@@ -268,7 +316,7 @@ pxtimer_start(PyObject *self)
         return NULL;
     }
 
-    InitOnceExecuteOnce(&t->start, PxTimer_StartCallback, t, NULL);
+    InitOnceExecuteOnce(&t->start_once, PxTimer_StartOnceCallback, t, NULL);
 
     Py_RETURN_NONE;
 }
@@ -292,7 +340,7 @@ pxtimer_stop(PyObject *self)
         /* Shortcut if stop() is called within our own callback. */
         PxTimer_SET_STOP_REQUESTED(t);
     else
-        InitOnceExecuteOnce(&t->stop, PxTimer_StopCallback, t, NULL);
+        InitOnceExecuteOnce(&t->stop_once, PxTimer_StopOnceCallback, t, NULL);
 
     Py_RETURN_NONE;
 }
@@ -313,7 +361,20 @@ pxtimer_set_timeout(PyObject *self, PyObject *delta)
 PyObject *
 pxtimer_shutdown(PyObject *self)
 {
-    return NULL;
+    PxTimerObject *t = (PxTimerObject *)self;
+
+    if (!PxTimer_VALID(t)) {
+        PyErr_SetString(PyExc_ValueError, "invalid timer object");
+        return NULL;
+    }
+
+    if (t == PxTimer_GetActive())
+        /* Shortcut if stop() is called within our own callback. */
+        PxTimer_SET_STOP_REQUESTED(t);
+    else
+        InitOnceExecuteOnce(&t->stop_once, PxTimer_StopOnceCallback, t, NULL);
+
+    Py_RETURN_NONE;
 }
 
 int
