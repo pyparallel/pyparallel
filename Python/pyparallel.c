@@ -6577,7 +6577,7 @@ PxSocket_CleanupChildren(PxSocket *s)
         }
 
         CancelThreadpoolIo(child->tp_io);
-        Px_CLOSE_SOCKET(s->sock_fd);
+        Px_CLOSE_SOCKET(child->sock_fd);
 
         //CancelThreadpoolWait(child->tp_wait);
         //CloseThreadpoolWait(child->tp_wait);
