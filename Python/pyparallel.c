@@ -774,10 +774,13 @@ PxState *
 PXSTATE(void)
 {
     PxState *px;
+    PxContext *c = ctx;
     PyThreadState *pstate = get_main_thread_state();
     if (!pstate) {
-        if (Py_PXCTX())
-            px = ctx->px;
+        if (c)
+            px = c->px;
+        else
+            px = NULL;
     } else
         px = (PxState *)pstate->px;
     return px;
@@ -4173,20 +4176,29 @@ _PxState_InitGmtimeTimer(PxState *px)
     SetThreadpoolTimer(px->ptp_timer_gmtime, &ft, 1000, 100);
 }
 
-
-/* 0 = failure, 1 = success */
-int
-_PyParallel_InitPxState(PyThreadState *tstate, int destroy)
+BOOL
+CALLBACK
+PxState_InitOnce(
+    PINIT_ONCE init_once,
+    PVOID param,
+    PVOID *context
+)
 {
-    int result = 0;
+    PyThreadState *tstate = (PyThreadState *)param;
+    PxState **ppx = (PxState **)context;
     PxState *px;
 
-    if (tstate->px) {
-        if (!destroy)
+    if (!init_once) {
+        if (!tstate)
+            __debugbreak();
+        if (ppx)
             __debugbreak();
         px = (PxState *)tstate->px;
         goto cleanup;
     }
+
+    if (tstate->px)
+        __debugbreak();
 
     px = (PxState *)malloc(sizeof(PxState));
     if (!px) {
@@ -4343,20 +4355,37 @@ free_px:
     px = NULL;
 
 done:
-    if (!px)
-        PyErr_SetFromWindowsErr(0);
+    if (px) {
+        tstate->px = px;
+        *ppx = px;
+    }
 
     return (px ? 1 : 0);
+}
+
+/* 0 = failure, 1 = success */
+BOOL
+PxState_Init(PyThreadState *tstate, PxState **ppx)
+{
+    return InitOnceExecuteOnce((PINIT_ONCE)& tstate->px_init_once,
+                               PxState_InitOnce,
+                               tstate,
+                               ppx);
+}
+
+void
+PxState_Destroy(PyThreadState *tstate)
+{
+    PxState *px = (PxState *)tstate->px;
+    if (!px)
+        return;
+    PxState_InitOnce(NULL, tstate, NULL);
 }
 
 void
 _PyParallel_ClearingThreadState(PyThreadState *tstate)
 {
-    int destroy = 1;
-    PxState *px = (PxState *)tstate->px;
-    if (!px)
-        return;
-    _PyParallel_InitPxState(tstate, destroy);
+    PxState_Destroy(tstate);
 }
 
 PyObject* _async_run(PyObject *, PyObject *);
@@ -6438,11 +6467,11 @@ create_threadpool_for_context(Context *c,
 Context *
 new_context(size_t heapsize)
 {
-    PxState *px;
+    PxState *px = NULL;
     Stats *s;
     PyThreadState *tstate;
     PyThreadState *pstate;
-    Context *c;
+    Context *c, *x;
 
     if (_PyParallel_HitHardMemoryLimit())
         return (Context *)PyErr_NoMemory();
@@ -6452,11 +6481,12 @@ new_context(size_t heapsize)
         __debugbreak();
 
     if (!tstate->px) {
-        if (!_PyParallel_InitPxState(tstate, 0))
+        if (!PxState_Init(tstate, &px))
             return NULL;
-    }
+    } else
+        px = tstate->px;
 
-    if (!tstate->px)
+    if (!px)
         __debugbreak();
 
     c = (Context *)malloc(sizeof(Context));
@@ -6473,7 +6503,7 @@ new_context(size_t heapsize)
     }
 
     c->tstate = tstate;
-    px = c->px = (PxState *)c->tstate->px;
+    c->px = px;
 
     if (!_PyHeap_Init(c, heapsize))
         goto free_heap;
@@ -6510,31 +6540,31 @@ new_context(size_t heapsize)
     s = &(c->stats);
     s->startup_size = s->allocated;
 
-    if (ctx) {
-        Context *x = ctx;
-        if (x) {
-            if (x->tp_ctx) {
-                if (x->tp_ctx != x)
-                    __debugbreak();
+    x = ctx;
+    if (x) {
+        if (x->tp_ctx) {
+            if (x->tp_ctx != x)
+                __debugbreak();
 
-                if (x->ptp_cbe != &x->tp_cbe)
-                    __debugbreak();
+            if (x->ptp_cbe != &x->tp_cbe)
+                __debugbreak();
 
-                c->tp_ctx = x;
-                c->ptp_cbe = x->ptp_cbe;
-            }
-            if (x->tpw_ctx) {
-                if (x->tpw_ctx != x)
-                    __debugbreak();
+            c->tp_ctx = x;
+            c->ptp_cbe = x->ptp_cbe;
+        }
+        if (x->tpw_ctx) {
+            if (x->tpw_ctx != x)
+                __debugbreak();
 
-                if (x->ptpw_cbe != &x->tpw_cbe)
-                    __debugbreak();
+            if (x->ptpw_cbe != &x->tpw_cbe)
+                __debugbreak();
 
-                c->tpw_ctx = x;
-                c->ptpw_cbe = x->ptpw_cbe;
-            }
+            c->tpw_ctx = x;
+            c->ptpw_cbe = x->ptpw_cbe;
         }
     }
+
+    InterlockedIncrement(&px->active);
 
     return c;
 

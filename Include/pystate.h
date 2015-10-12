@@ -119,6 +119,7 @@ typedef struct _ts {
     /* XXX signal handlers should also be here */
 
 #ifdef WITH_PARALLEL
+    void *px_init_once;
     void *px;
     int is_parallel_thread;
 #endif
