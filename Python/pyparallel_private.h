@@ -190,7 +190,7 @@ Px_NEXT_POWER_OF_2(const unsigned int i)
 
 
 typedef struct _PyParallelHeap PyParallelHeap, Heap;
-typedef struct _PyParallelContext PyParallelContext, WorkContext, Context;
+typedef struct _PyParallelContext PyParallelContext, WorkContext, Context, PxContext;
 typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
 typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
 typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
@@ -471,6 +471,8 @@ typedef struct _PxParents {
 
 #define Px_IOTYPE_FILE      (1)
 #define Px_IOTYPE_SOCKET    (1UL <<  1)
+#define Px_IOTYPE_TIMER     (1UL <<  2)
+#define Px_IOTYPE_DIRECTORY (1UL <<  3)
 
 typedef struct _PxIO PxIO;
 
@@ -527,6 +529,11 @@ typedef struct _PxState {
     PTP_TIMER ptp_timer_gmtime;
     SRWLOCK   gmtime_srwlock;
     char      gmtime_buf[GMTIME_STRLEN];
+
+    /* List head */
+    LIST_ENTRY timers;
+    CRITICAL_SECTION timers_cs;
+    volatile long num_timers;
 
     /* List head */
     LIST_ENTRY contexts;
@@ -637,9 +644,11 @@ int _PyParallel_InitPxState(PyThreadState *tstate, int destroy);
 
 #define PxContext_HEAD  PxContext ctx_base;
 
+/*
 typedef struct _PxContext {
     _PxContext_HEAD_EXTRA
 } PxContext;
+*/
 
 typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
@@ -654,6 +663,7 @@ typedef struct _PyParallelContext {
     PyObject *callback;
     PyObject *errback;
     PyObject *result;
+    PyObject *parent;
 
     PyObject *tstate_dict;
 
@@ -756,7 +766,7 @@ typedef struct _PyParallelContext {
     char was_persisted;
     int persisted_count;
 
-} PyParallelContext, Context;
+} PyParallelContext, Context, PxContext;
 
 int PxContext_Snapshot(Context *c);
 int PxContext_Restore(Context *c);
@@ -1615,7 +1625,6 @@ void PxSocket_HandleException(Context *c, const char *syscall, int fatal);
 
 int PxSocket_LoadInitialBytes(PxSocket *s);
 
-
 __inline
 PyObject *
 _read_lock(PyObject *obj)
@@ -2233,10 +2242,43 @@ PyAPI_FUNC(PyObject *) PyXList_Flush(PyObject *xlist);
  * in the list. */
 PyAPI_FUNC(Py_ssize_t) PyXList_Size(PyObject *);
 
+PyAPI_FUNC(void) _PyParallel_SetHeapOverride(HANDLE h);
+PyAPI_FUNC(void) _PyParallel_RemoveHeapOverride();
+
+PyAPI_FUNC(void) _PyParallel_EnteredCallback(Context *c,
+                                             PTP_CALLBACK_INSTANCE instance);
+
+PyAPI_FUNC(void) _PxState_RegisterContext(PxContext *c);
+PyAPI_FUNC(void) _PxState_UnregisterContext(PxContext *c);
+
+typedef struct _PxTimerObject PxTimerObject;
+PyAPI_FUNC(void) _PxState_RegisterTimer(PxTimerObject *t);
+PyAPI_FUNC(void) _PxState_UnregisterTimer(PxTimerObject *t);
+
+PyAPI_FUNC(PxContext *) PxContext_New(size_t heapsize);
+PyAPI_FUNC(int) PxContext_Close(PxContext *c);
+
+PyAPI_FUNC(Heap *) PxContext_HeapSnapshot(PxContext *c);
+PyAPI_FUNC(void)   PxContext_RollbackHeap(PxContext *c, Heap **snapshot);
+
+PyAPI_FUNC(void *)      PxContext_Malloc(PxContext *c,
+                                         Py_ssize_t size,
+                                         Py_ssize_t alignment,
+                                         int no_realloc);
+
+PyAPI_FUNC(PyObject *) PxContext_InitObject(PxContext *c,
+                                            PyObject *o,
+                                            PyTypeObject *tp,
+                                            Py_ssize_t nitems);
+
+PyAPI_FUNC(PxContext *) PxContext_GetActive(void);
+
+PyAPI_FUNC(void) _PxContext_UnregisterHeaps(PxContext *c);
+
 #ifdef __cpplus
 }
 #endif
 
 #endif /* PYPARALLEL_PRIVATE_H */
 
-/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell: */
+/* vim:set ts=8 sw=4 sts=4 tw=78 et nospell:                                  */

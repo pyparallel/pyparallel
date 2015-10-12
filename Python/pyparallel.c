@@ -8,6 +8,7 @@ extern "C" {
 
 #include "statics.h"
 #include "pyparallel_private.h"
+#include "pxtimerobject.h"
 #include "fileio.h"
 #include "datetime.h"
 #include "frameobject.h"
@@ -30,6 +31,7 @@ extern "C" {
 #define CS_SOCK_SPINCOUNT 4000
 #define PX_CS_SPINCOUNT 1000
 #define PX_CONTEXTS_CS_SPINCOUNT 1000
+#define PX_TIMERS_CS_SPINCOUNT 1000
 #define CHILDREN_SPINCOUNT 4000
 
 #define _LINE(n) #n
@@ -593,7 +595,6 @@ _PyParallel_IsHeapOverrideActive(void)
     return (heap_override != NULL);
 }
 
-static
 void
 _PyParallel_SetHeapOverride(HANDLE heap_handle)
 {
@@ -607,8 +608,6 @@ _PyParallel_GetHeapOverride(void)
     return heap_override;
 }
 
-
-static
 void
 _PyParallel_RemoveHeapOverride(void)
 {
@@ -1792,6 +1791,12 @@ _PyParallel_GetActiveContext(void)
     return ctx;
 }
 
+PxContext *
+PxContext_GetActive(void)
+{
+    return ctx;
+}
+
 void
 _PyObject_Dealloc(PyObject *o)
 {
@@ -2023,19 +2028,23 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
     _Px_WRITE_LOCK(o);
     __try {
         tp = Py_ORIG_TYPE_CAST(o);
-        if (c && c->io_obj && c->io_type == Px_IOTYPE_SOCKET) {
-            s = (PxSocket *)c->io_obj;
-            if (PyErr_Occurred())
-                __debugbreak();
-            if (!PyObject_Copyable(v_orig)) {
-                Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED;
-            } else {
-                v_copy = PxSocket_CopyObject(s, v_orig);
-                if (!v_copy || PyErr_Occurred()) {
-                    _Px_WRITE_UNLOCK(o);
-                    return -1;
+        if (c && c->io_obj) {
+            if (c->io_type == Px_IOTYPE_SOCKET) {
+                s = (PxSocket *)c->io_obj;
+                if (PyErr_Occurred())
+                    __debugbreak();
+                if (!PyObject_Copyable(v_orig)) {
+                    Px_SOCKFLAGS(s) |= Px_SOCKFLAGS_SNAPSHOT_UPDATE_SCHEDULED;
+                } else {
+                    v_copy = PxSocket_CopyObject(s, v_orig);
+                    if (!v_copy || PyErr_Occurred()) {
+                        _Px_WRITE_UNLOCK(o);
+                        return -1;
+                    }
+                    remove_heap_override = 1;
                 }
-                remove_heap_override = 1;
+            } else if (c->io_type == Px_IOTYPE_TIMER) {
+                __debugbreak();
             }
         }
         v = (v_copy ? v_copy : v_orig);
@@ -2573,6 +2582,12 @@ _protect(PyObject *obj)
 }
 
 PyObject *
+_PyParallel_ProtectObject(PyObject *o)
+{
+    return _protect(o);
+}
+
+PyObject *
 _async_protect(PyObject *self, PyObject *obj)
 {
     Py_INCREF(obj);
@@ -2775,6 +2790,75 @@ _PxContext_UnregisterHeaps(Context *c)
     // memcpy'ing over stats is at fault (saw heap_count == 3 and s->heaps
     // == 2, which corroborates this theory).
     //assert(heap_count == s->heaps);
+}
+
+void
+_PxState_RegisterContext(PxContext *c)
+{
+    PxState *px = c->px;
+
+    EnterCriticalSection(&px->contexts_cs);
+    InsertTailList(&px->contexts, &c->px_link);
+    LeaveCriticalSection(&px->contexts_cs);
+    InterlockedIncrement(&px->num_contexts);
+}
+
+void
+_PxState_UnregisterContext(PxContext *c)
+{
+    PxState *px = c->px;
+
+    if (c->px_link.Flink) {
+        /* If we're dealloc'd directly from PxState_DestroyContexts(), they'll
+         * detach us from the contexts list first.  If not, Flink will still
+         * have a value, so we detach instead. */
+        EnterCriticalSection(&px->contexts_cs);
+        RemoveEntryList(&c->px_link);
+        SecureZeroMemory(&c->px_link, sizeof(LIST_ENTRY));
+        InterlockedDecrement(&px->num_contexts);
+        LeaveCriticalSection(&px->contexts_cs);
+    }
+
+#ifdef Py_DEBUG
+    /* pxsocket_dealloc() originally had this:
+     *
+     *      if (!PxSocket_IS_SERVER(s))
+     *          _PxContext_UnregisterHeaps(c);
+     *
+     * I've forgotten why.  So, let's debugbreak if we hit it so we can assess
+     * whether it's still needed. */
+    if (c->io_obj && c->io_type == Px_IOTYPE_SOCKET) {
+        PxSocket *s = (PxSocket *)c->io_obj;
+        if (PxSocket_IS_SERVER(s))
+            __debugbreak();
+    }
+    _PxContext_UnregisterHeaps(c);
+#endif
+}
+
+void
+_PxState_RegisterTimer(PxTimerObject *t)
+{
+    PxContext *c = t->ctx;
+    PxState *px = c->px;
+    if (t->px_link.Flink)
+        __debugbreak();
+    EnterCriticalSection(&px->timers_cs);
+    InsertHeadList(&px->timers, &t->px_link);
+    LeaveCriticalSection(&px->timers_cs);
+    InterlockedIncrement(&px->num_timers);
+}
+
+void
+_PxState_UnregisterTimer(PxTimerObject *t)
+{
+    PxContext *c = t->ctx;
+    PxState *px = c->px;
+    EnterCriticalSection(&px->timers_cs);
+    RemoveEntryList(&t->px_link);
+    SecureZeroMemory(&t->px_link, sizeof(LIST_ENTRY));
+    LeaveCriticalSection(&px->timers_cs);
+    InterlockedDecrement(&px->num_timers);
 }
 
 #define _MEMSIG_INVALID     (0UL)
@@ -3500,6 +3584,17 @@ begin:
     goto begin;
 }
 
+void *
+PxContext_Malloc(
+    PxContext *c,
+    Py_ssize_t size,
+    Py_ssize_t alignment,
+    int no_realloc
+)
+{
+    return _PyHeap_Malloc(c, size, alignment, no_realloc);
+}
+
 
 void
 _PyHeap_FastFree(Heap *h, Stats *s, void *p)
@@ -3812,6 +3907,16 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
 
 end:
     return n;
+}
+
+PyObject *
+PxContext_InitObject(
+    PxContext *c,
+    PyObject *p,
+    PyTypeObject *tp,
+    Py_ssize_t nitems)
+{
+    return init_object(c, p, tp, nitems);
 }
 
 
@@ -4267,7 +4372,9 @@ PxState_InitOnce(
 
     px->ptp_cbe = &px->tp_cbe;
     InitializeThreadpoolEnvironment(px->ptp_cbe);
-    SetThreadpoolCallbackPriority(px->ptp_cbe, TP_CALLBACK_PRIORITY_LOW);
+    // We're using the timer callback env for all timers now, so don't use the
+    // low priority anymore.
+    //SetThreadpoolCallbackPriority(px->ptp_cbe, TP_CALLBACK_PRIORITY_LOW);
 
     px->ptp_cg = CreateThreadpoolCleanupGroup();
     if (!px->ptp_cg)
@@ -4299,6 +4406,11 @@ PxState_InitOnce(
                                           PX_CONTEXTS_CS_SPINCOUNT);
     InitializeListHead(&px->contexts);
     CheckListEntry(&px->contexts);
+
+    InitializeCriticalSectionAndSpinCount(&px->timers_cs,
+                                          PX_TIMERS_CS_SPINCOUNT);
+    InitializeListHead(&px->timers);
+    CheckListEntry(&px->timers);
 
     goto done;
 
@@ -5168,7 +5280,6 @@ void
 PxState_DestroyContexts(PxState *px)
 {
     Context *c;
-    PxSocket *s;
     PLIST_ENTRY head = &px->contexts;
     PLIST_ENTRY entry;
 
@@ -5187,18 +5298,20 @@ PxState_DestroyContexts(PxState *px)
             continue;
         }
 
-        if (c->io_type != Px_IOTYPE_SOCKET)
-            __debugbreak();
+        if (c->io_type == Px_IOTYPE_SOCKET) {
+            PxSocket *s = (PxSocket *)c->io_obj;
+            if (!PxSocket_IS_SERVER(s))
+                __debugbreak();
 
-        s = (PxSocket *)c->io_obj;
-        if (!PxSocket_IS_SERVER(s))
-            __debugbreak();
+            if (!PxSocket_IS_CLEANED_UP(s))
+                SetEvent(s->shutdown);
+            else {
+                s->ready_for_dealloc = 1;
+                pxsocket_dealloc(s);
+            }
+        } else if (c->io_type == Px_IOTYPE_TIMER) {
 
-        if (!PxSocket_IS_CLEANED_UP(s))
-            SetEvent(s->shutdown);
-        else {
-            s->ready_for_dealloc = 1;
-            pxsocket_dealloc(s);
+
         }
     }
 
@@ -6577,6 +6690,12 @@ free_context:
     return NULL;
 }
 
+PxContext *
+PxContext_New(size_t heapsize)
+{
+    return new_context(heapsize);
+}
+
 void
 PxSocket_CleanupChild(PxSocket *s)
 {
@@ -6759,10 +6878,7 @@ create_threadpool_for_context(Context *c,
 
     /* Only top-level contexts (i.e. those with threadpool contexts) get added
      * to the PxState list of contexts. */
-    EnterCriticalSection(&px->contexts_cs);
-    InsertTailList(&px->contexts, &c->px_link);
-    InterlockedIncrement(&px->num_contexts);
-    LeaveCriticalSection(&px->contexts_cs);
+    _PxState_RegisterContext(c);
 
     return 1;
 }
@@ -8400,7 +8516,7 @@ PxSocket_SuggestNumBuffers(
     LONGLONG total_body_size   = _Px_SZ(_Px_VSZ(tp, body_size));
     LONGLONG total_size        = total_header_size + total_body_size;
 
-    tipping_point -= total_header_size;
+    tipping_point -= (LONG)total_header_size;
     if (tipping_point <= 0)
         /* Underflow safety check. */
         tipping_point = PxSocket_DEFAULT_TIPPING_POINT;
@@ -10987,21 +11103,14 @@ pxsocket_dealloc(PxSocket *s)
     if (s->henv != SQL_NULL_HANDLE)
         _SQLFreeHandle(SQL_HANDLE_ENV, s->henv);
 
-    if (c->px_link.Flink) {
-        /* If we're dealloc'd directly from PxState_DestroyContexts(), they'll
-         * detach us from the contexts list first.  If not, Flink will still
-         * have a value, so we detach instead. */
-        EnterCriticalSection(&px->contexts_cs);
-        RemoveEntryList(&c->px_link);
-        SecureZeroMemory(&c->px_link, sizeof(LIST_ENTRY));
-        InterlockedDecrement(&px->num_contexts);
-        LeaveCriticalSection(&px->contexts_cs);
-    }
+    _PxState_UnregisterContext(c);
 
+/* xxx todo: see what happens when the is server bit is set.
 #ifdef Py_DEBUG
     if (!PxSocket_IS_SERVER(s))
         _PxContext_UnregisterHeaps(c);
 #endif
+*/
 
     DeleteCriticalSection(&s->cs);
 
@@ -11078,10 +11187,6 @@ create_pxsocket(
         if (_PyParallel_HitHardMemoryLimit())
             return PyErr_NoMemory();
         c = new_context_for_socket(0);
-        /* Ugh, really need to put all these PxState counters in one place.
-         * (Or at the very least, document which ones you're meant to alter
-         * when.) */
-        InterlockedIncrement(&c->px->active);
     }
 
     if (!c)
@@ -13439,7 +13544,6 @@ PxSocket_Register(PyObject *transport, PyObject *protocol_type)
 {
     PxSocket *s = (PxSocket *)transport;
     Context *c = s->ctx;
-    PxListItem *item;
     PTP_SIMPLE_CALLBACK cb;
 
     assert(c);
@@ -13899,7 +14003,17 @@ static PyTypeObject PxSocket_Type = {
     PyType_GenericAlloc,                        /* tp_alloc */
     0,                                          /* tp_new */
     0,                                          /* tp_free */
+    0,                                          /* tp_is_gc */
+    0,                                          /* tp_bases */
+    0,                                          /* tp_mro */
+    0,                                          /* tp_cache */
+    0,                                          /* tp_subclasses */
+    0,                                          /* tp_weaklist */
+    0,                                          /* tp_del */
+    0,                                          /* tp_version_tag */
+    0,                                          /* tp_copy */
 };
+
 
 PyObject *
 _async_client_or_server(PyObject *self, PyObject *args,

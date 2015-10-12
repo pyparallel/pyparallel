@@ -39,6 +39,7 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define Px_TIMERFLAGS_RUNNING                           (1ULL <<  5)
 #define Px_TIMERFLAGS_SHUTDOWN_REQUESTED                (1ULL <<  6)
 #define Px_TIMERFLAGS_SHUTDOWN                          (1ULL <<  7)
+#define Px_TIMERFLAGS_CLEANED_UP                        (1ULL <<  8)
 #define Px_TIMERFLAGS_                                  (1ULL << 63)
 
 #define PxTimer_IS_VALID(t)                                                    \
@@ -62,6 +63,9 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define PxTimer_SHUTDOWN_REQUESTED(t)                                          \
     (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_SHUTDOWN_REQUESTED)
 
+#define PxTimer_CLEANED_UP(t)                                                  \
+    (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_CLEANED_UP)
+
 #define PxTimer_SHUTDOWN(t)                                                    \
     (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_SHUTDOWN)
 
@@ -71,8 +75,8 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define PxTimer_XUNSET(timer, flag)                                            \
     InterlockedExchange(timer->flags, timer->flags & ~flag)
 
-#define PxTimer_SET(timer, flag)   Px_TIMERFLAGS(t) |= flag
-#define PxTimer_UNSET(timer, flag) Px_TIMERFLAGS(t) &= ~flag
+#define PxTimer_SET_FLAG(timer, flag)   Px_TIMERFLAGS(t) |= flag
+#define PxTimer_UNSET_FLAG(timer, flag) Px_TIMERFLAGS(t) &= ~flag
 
 #define PxTimer_SET_START_REQUESTED(t)                                         \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_START_REQUESTED)
@@ -100,6 +104,9 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 
 #define PxTimer_UNSET_RUNNING(t)                                               \
     PxTimer_UNSET_FLAG(t, Px_TIMERFLAGS_RUNNING)
+
+#define PxTimer_SET_CLEANED_UP(t)                                              \
+    PxTimer_SET_FLAG(t, Px_TIMERFLAGS_CLEANED_UP)
 
 typedef struct _PxTimerObject {
     PyObject_HEAD
@@ -133,22 +140,19 @@ PyAPI_FUNC(PyObject *) PxTimer_New(
     PyObject *errback
 );
 
-PyAPI_FUNC(int) PxTimer_Valid(PyObject *o);
-#define PxTimer_VALID(t) PxTimer_Valid((PyObject *)t)
+PyAPI_FUNC(int) PxTimer_Valid(PxTimerObject *t);
 
 PyAPI_FUNC(PxTimerObject *) PxTimer_GetActive(void);
 PyAPI_FUNC(void) PxTimer_Cleanup(PxTimerObject *t);
 
-PyObject *pxtimer_set_data(PxTimerObject *t, PyObject *data);
-PyObject *pxtimer_get_data(PxTimerObject *t);
+int pxtimer_set_data(PxTimerObject *t, PyObject *data, void *closure);
+PyObject *pxtimer_get_data(PxTimerObject *t, void *closure);
 
 PyObject *pxtimer_start(PyObject *self);
 PyObject *pxtimer_stop(PyObject *self);
 PyObject *pxtimer_shutdown(PyObject *self);
 
-PyObject *pxtimer_start(PyObject *self);
-PyObject *pxtimer_stop(PyObject *self);
-PyObject *pxtimer_shutdown(PyObject *self);
+void pxtimer_dealloc(PxTimerObject *self);
 
 #ifdef __cpplus
 }

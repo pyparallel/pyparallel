@@ -99,6 +99,8 @@ _PyParallel_DaysSecondsMicrosecondsToRelativeThreadpoolTime(
 }
 #endif
 
+PyAPI_FUNC(PyObject *) _PyParallel_ProtectObject(PyObject *o);
+
 #endif /* PYPARALLEL_UTIL_H */
 
 /* vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                  */
