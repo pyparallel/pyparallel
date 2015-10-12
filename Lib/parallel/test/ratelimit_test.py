@@ -32,6 +32,9 @@ class RateLimitedServer(HttpServer):
     http11 = True
     rate_limit = datetime.timedelta(milliseconds=16)
 
+    def server_created(self, transport):
+        parallel.debug("server created!")
+
     def hello(self, transport, data):
         return b'Hello, World!'
 
