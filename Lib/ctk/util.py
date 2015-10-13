@@ -959,11 +959,11 @@ def list_zfill(l, width):
 
     return [ '' for _ in range(0, width-list_len) ] + l
 
-class timer:
+class stopwatch:
     """
     Helper class for timing execution of code within a code block.
     Usage:
-    >>> with timer.timeit():
+    >>> with stopwatch.timeit():
         ...
         ...
     135ms
