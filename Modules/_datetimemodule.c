@@ -105,6 +105,12 @@ static PyTypeObject PyDateTime_TZInfoType;
 static PyTypeObject PyDateTime_TimeZoneType;
 
 int
+_PyDateTime_Check(PyObject *op)
+{
+    return PyDateTime_Check(op);
+}
+
+int
 _PyDelta_Check(PyObject *op)
 {
     return PyDelta_Check(op);
