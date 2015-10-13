@@ -80,15 +80,17 @@ _PyParallel_DaysSecondsMicrosecondsToRelativeThreadpoolTime(
     ULARGE_INTEGER micro, sec, day, rel;
     micro.LowPart = microseconds;
     micro.HighPart = 0;
-    rel.QuadPart = (_MICROSECOND_RELATIVE * micro.QuadPart);
+    rel.QuadPart = (_MICROSECOND_ABSOLUTE * micro.QuadPart);
 
     sec.LowPart = seconds;
     sec.HighPart = 0;
-    rel.QuadPart -= (_SECOND_RELATIVE * sec.QuadPart);
+    rel.QuadPart += (_SECOND_ABSOLUTE * sec.QuadPart);
 
     day.LowPart = days;
     day.HighPart = 0;
-    rel.QuadPart -= (_DAY_RELATIVE * day.QuadPart);
+    rel.QuadPart += (_DAY_ABSOLUTE * day.QuadPart);
+
+    rel.QuadPart *= -1ULL;
 
     filetime->dwLowDateTime = rel.LowPart;
     filetime->dwHighDateTime = rel.HighPart;
