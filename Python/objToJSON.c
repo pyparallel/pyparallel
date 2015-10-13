@@ -128,7 +128,9 @@ static void *PyStringToUTF8(JSOBJ _obj, JSONTypeContext *tc, void *outValue, siz
 static void *PyUnicodeToUTF8(JSOBJ _obj, JSONTypeContext *tc, void *outValue, size_t *_outLen)
 {
   PyObject *obj = (PyObject *) _obj;
-  PyObject *newObj = PyUnicode_EncodeUTF8 (PyUnicode_AS_UNICODE(obj), PyUnicode_GET_SIZE(obj), NULL);
+  Py_ssize_t len;
+  Py_UNICODE *u = PyUnicode_AsUnicodeAndSize(obj, &len);
+  PyObject *newObj = PyUnicode_EncodeUTF8 (u, len, NULL);
 
   GET_TC(tc)->newObj = newObj;
 
