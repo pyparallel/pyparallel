@@ -8317,6 +8317,15 @@ static const char http11_plaintext_response_header_begin[] = (
     "Content-Length: "
 );
 
+static const char http11_html_response_header_begin[] = (
+    "HTTP/1.1 200 OK\r\n"
+    "Server: PyParallel\r\n"
+    "Date: XXXXXXXXXXXXXXXXXXXXXXXXXXXXX\r\n"
+    /*     ^ 43 */
+    "Content-Type: text/html; charset=utf-8\r\n"
+    "Content-Length: "
+);
+
 #define _DATE_IX 43
 
 static const char http11_header_connection_close[] = (
@@ -8461,6 +8470,18 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         body = &b->ob_sval[0];
         header = (char *)&http11_plaintext_response_header_begin[0];
         header_size = sizeof(http11_plaintext_response_header_begin)-1;
+    } else if (PyByteArray_Check(o)) {
+        PyByteArrayObject *b = (PyByteArrayObject *)o;
+        body_obj = o;
+        body_size = ((PyVarObject *)b)->ob_size;
+        body = b->ob_bytes;
+        header = (char *)&http11_plaintext_response_header_begin[0];
+        header_size = sizeof(http11_plaintext_response_header_begin)-1;
+    } else if (PyUnicode_Check(o)) {
+        body_obj = o;
+        body = PyUnicode_AsUTF8AndSize(o, &body_size);
+        header = (char *)&http11_html_response_header_begin[0];
+        header_size = sizeof(http11_html_response_header_begin)-1;
     } else {
         PyObject *args = PyTuple_Pack(1, o);
         PyObject *json = PyObject_Call(s->json_dumps, args, NULL);
