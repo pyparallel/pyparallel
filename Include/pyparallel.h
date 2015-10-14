@@ -46,6 +46,128 @@ extern "C" {
     (Py_PXFLAGS((o)) & Py_PXFLAGS_DEALLOC)              \
 )
 
+#ifdef _WIN64
+#define Px_PTR_ALIGN_SIZE 8U
+#define Px_PTR_ALIGN_RAW 8
+#define Px_UINTPTR unsigned long long
+#define Px_INTPTR long long
+#define Px_UINTPTR_1 (1ULL)
+#define Px_INTPTR_BITS 64
+#define Px_LARGE_PAGE_SIZE 2 * 1024 * 1024 /* 2MB on x64 */
+#else
+#define Px_LARGE_PAGE_SIZE 4 * 1024 * 1024 /* 4MB on x86 */
+#define Px_PTR_ALIGN_SIZE 4U
+#define Px_PTR_ALIGN_RAW 4
+#define Px_UINTPTR unsigned long
+#define Px_INTPTR long
+#define Px_INTPTR_BITS 32
+#define Px_UINTPTR_1 (1UL)
+#endif
+#define Px_PAGE_SIZE (4096)
+#define Px_SMALL_PAGE_SIZE Px_PAGE_SIZE
+#define Px_PAGE_SHIFT 12ULL
+#define Px_MEM_ALIGN_RAW MEMORY_ALLOCATION_ALIGNMENT
+#define Px_MEM_ALIGN_SIZE ((Px_UINTPTR)MEMORY_ALLOCATION_ALIGNMENT)
+#define Px_PAGE_ALIGN_SIZE ((Px_UINTPTR)Px_PAGE_SIZE)
+#define Px_CACHE_ALIGN_SIZE ((Px_UINTPTR)SYSTEM_CACHE_ALIGNMENT_SIZE)
+
+#define Px_ALIGN(n, a) (                             \
+    (((Px_UINTPTR)(n)) + (((Px_UINTPTR)(a))-1ULL)) & \
+    ~(((Px_UINTPTR)(a))-1ULL)                        \
+)
+
+#define Px_ALIGN_DOWN(n, a) (                        \
+    (((Px_UINTPTR)(n)) & (-((Px_INTPTR)(a))))        \
+)
+
+#define Px_PTR_ALIGN(n)         (Px_ALIGN((n), Px_PTR_ALIGN_SIZE))
+#define Px_MEM_ALIGN(n)         (Px_ALIGN((n), Px_MEM_ALIGN_SIZE))
+#define Px_CACHE_ALIGN(n)       (Px_ALIGN((n), Px_CACHE_ALIGN_SIZE))
+#define Px_PAGE_ALIGN(n)        (Px_ALIGN((n), Px_PAGE_ALIGN_SIZE))
+#define Px_PAGE_ALIGN_DOWN(n)   (Px_ALIGN_DOWN((n), Px_PAGE_ALIGN_SIZE))
+
+#define Px_PAGESIZE_ALIGN_UP(n, s)      (Px_ALIGN((n), s))
+#define Px_PAGESIZE_ALIGN_DOWN(n, s)    (Px_ALIGN_DOWN((n), s))
+
+#define Px_PTR(p)           ((Px_UINTPTR)(p))
+#define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
+
+#define Px_PTR_ALIGNED_ADD(p, n) \
+    (Px_PTR_ALIGN(Px_PTR_ADD(p, Px_PTR_ALIGN(n))))
+
+#define Px_ALIGNED_MALLOC(n)                                  \
+    (Py_PXCTX() ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+                _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
+
+#define Px_ALIGNED_FREE(n)                                    \
+    (Py_PXCTX() ? _PxHeap_Malloc(ctx, n, Px_MEM_ALIGN_SIZE) : \
+                _aligned_malloc(n, MEMORY_ALLOCATION_ALIGNMENT))
+
+#define Px_MAX(a, b) ((a > b) ? a : b)
+
+#define Px_DEFAULT_HEAP_SIZE (Px_PAGE_SIZE)
+#define Px_DEFAULT_TLS_HEAP_SIZE (Px_PAGE_SIZE)
+#define Px_MAX_SEM (32768)
+
+#define Px_PTR_IN_HEAP(p, h)                                    \
+    (!p || !h ? __debugbreak(), 0 : (                           \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(h))->base)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(h))->base)) +                     \
+            Px_PTR((((Heap *)(h))->size))                       \
+        ))                                                      \
+    ))
+
+#define Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(p, h, s)                 \
+    (!p || !h || !s || (h->id != s->id) ? __debugbreak(), 0 : ( \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->base)) &&         \
+        (Px_PTR((p)) <= Px_PTR(((Heap *)(s))->next)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(s))->base)) +                     \
+            Px_PTR((((Heap *)(s))->size))                       \
+        ))                                                      \
+))
+
+
+#define Px_PTR_IN_HEAP_AFTER_SNAPSHOT(p, h, s)                  \
+    (!p || !h || !s || (h->id != s->id) ? __debugbreak(), 0 : ( \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->base)) &&         \
+        (Px_PTR((p)) >= Px_PTR(((Heap *)(s))->next)) &&         \
+        (Px_PTR((p)) <= Px_PTR(                                 \
+            Px_PTR((((Heap *)(s))->base)) +                     \
+            Px_PTR((((Heap *)(s))->size))                       \
+        ))                                                      \
+))
+
+static __inline
+size_t
+Px_GET_ALIGNMENT(void *p)
+{
+    Px_UINTPTR c = Px_PTR(p);
+    unsigned int i = 0;
+    if (!p)
+        return 0;
+    while (!((c >> i) & 1))
+        i++;
+    return (1ULL << i);
+}
+
+static __inline
+unsigned int
+Px_NEXT_POWER_OF_2(const unsigned int i)
+{
+    unsigned int v = i-1;
+    v |= v >> 1;
+    v |= v >> 2;
+    v |= v >> 4;
+    v |= v >> 8;
+    v |= v >> 16;
+    return v+1;
+}
+
+#define Py_ASPX(ob) ((PxObject *)(((PyObject*)(ob))->px))
+
+
 PyAPI_DATA(volatile long) Py_MainThreadId;
 PyAPI_DATA(long) Py_MainProcessId;
 PyAPI_DATA(long) Py_ParallelContextsEnabled;
