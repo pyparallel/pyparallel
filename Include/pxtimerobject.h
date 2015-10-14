@@ -9,24 +9,22 @@ extern "C" {
 #include "../Python/pyparallel_private.h"
 #include <Windows.h>
 
-void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
-
 #define PxTimer_FATAL() do {                                                   \
     assert(PyErr_Occurred());                                                  \
-    PxTimer_HandleException(c, "", 1);                                         \
+    PxContext_HandleException(c, "", 1);                                       \
     goto end;                                                                  \
 } while (0)
 
 
 #define PxTimer_EXCEPTION() do {                                               \
     assert(PyErr_Occurred());                                                  \
-    PxTimer_HandleException(c, "", 0);                                         \
+    PxContext_HandleException(c, "", 1);                                       \
     goto end;                                                                  \
 } while (0)
 
 #define PxTimer_SYSERROR(n) do {                                               \
     PyErr_SetFromWindowsErr(0);                                                \
-    PxTimer_HandleException(c, n, 1);                                          \
+    PxContext_HandleException(c, n, 1);                                        \
     goto end;                                                                  \
 } while (0)
 

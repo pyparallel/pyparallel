@@ -10830,6 +10830,69 @@ end:
     return;
 }
 
+void
+PxContext_HandleException(
+    PxContext *c,
+    const char *syscall,
+    int fatal
+)
+{
+    PyObject *o = c->io_obj;
+    PyObject *exc, *args, *func, *result;
+    PxState *px;
+    PyThreadState *pstate;
+    PxListItem *item;
+    PxListHead *list;
+
+    assert(PyErr_Occurred());
+
+    pstate = c->pstate;
+    px = c->px;
+
+    if (fatal)
+        goto error;
+
+    func = c->errback;
+
+    if (!func)
+        goto error;
+
+    exc = PyTuple_Pack(3, pstate->curexc_type,
+                          pstate->curexc_value,
+                          pstate->curexc_traceback);
+    if (!exc)
+        goto error;
+
+    PyErr_Clear();
+    args = Py_BuildValue("(OsO)", o, syscall, exc);
+    if (!args)
+        goto error;
+
+    result = PyObject_CallObject(func, args);
+    if (!result)
+        goto error;
+
+    assert(!pstate->curexc_type);
+
+    goto end;
+
+error:
+    assert(pstate->curexc_type);
+    list = px->errors;
+    item = c->error;
+    item->p1 = pstate->curexc_type;
+    item->p2 = pstate->curexc_value;
+    item->p3 = pstate->curexc_traceback;
+
+    InterlockedExchange(&(c->done), 1);
+    item->from = c;
+    PxList_TimestampItem(item);
+    PxList_Push(list, item);
+    SetEvent(px->wakeup);
+end:
+    return;
+}
+
 static __inline
 void
 PxSocketServer_LinkChildren(PxSocket *s)

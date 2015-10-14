@@ -2115,6 +2115,10 @@ PyAPI_FUNC(PyObject *) PxContext_InitObject(PxContext *c,
 
 PyAPI_FUNC(PxContext *) PxContext_GetActive(void);
 
+PyAPI_FUNC(void) PxContext_HandleException(PxContext *c,
+                                           const char *syscall,
+                                           int fatal);
+
 PyAPI_FUNC(void) _PxContext_UnregisterHeaps(PxContext *c);
 
 PyAPI_FUNC(int) _PyParallel_PyTimeDeltaToRelativeThreadpoolTime(
