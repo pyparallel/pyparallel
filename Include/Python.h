@@ -131,4 +131,8 @@
 #include "fileutils.h"
 #include "pyfpe.h"
 
+#ifdef WITH_PARALLEL
+PyAPI_DATA(PyTypeObject) PxTimer_Type;
+#endif
+
 #endif /* !Py_PYTHON_H */
