@@ -10409,7 +10409,7 @@ send_result:
         s->total_send_size = 0;
         if (!s->send_buffers) {
             PyErr_NoMemory();
-            PxSocket_EXCEPTION();
+            PxSocket_FATAL();
         }
 
         for (i = 0; i < s->num_send_buffers; i++) {
@@ -10424,14 +10424,14 @@ send_result:
             err = (char *)_PyHeap_Malloc(c, errlen, 0, 0);
             if (!err) {
                 PyErr_NoMemory();
-                PxSocket_EXCEPTION();
+                PxSocket_FATAL();
             }
 
             if (!snprintf(err, errlen, &fmt[0], i)) {
                 PyErr_SetString(PyExc_RuntimeError,
                                 "snprintf() failed during error message "
                                 "generation @ " __FILE__ ":" _LINE(__LINE__));
-                PxSocket_EXCEPTION();
+                PxSocket_FATAL();
             }
         }
 
