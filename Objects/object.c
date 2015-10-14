@@ -296,6 +296,29 @@ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     return PyObject_INIT_VAR(op, tp, nitems);
 }
 
+PyObject *
+PyVarObject_Copy(PyObject *src)
+{
+    PyVarObject *dst;
+    PyTypeObject *tp = Py_TYPE(src);
+    void *dst_start, *copy_start, *copy_end;
+    size_t var_size;
+    size_t copy_size;
+
+    dst = PyObject_NEW_VAR(PyVarObject, tp, Py_SIZE(src));
+    if (!dst)
+        return NULL;
+    /* Copy everything from after the PyVarObject struct. */
+    var_size = Px_PTR(_PyObject_VAR_SIZE(tp, Py_SIZE(src)));
+    dst_start = (void *)(Px_PTR(dst) + Px_PTR(sizeof(PyVarObject)));
+    copy_start = (void *)(Px_PTR(src) + Px_PTR(sizeof(PyVarObject)));
+    copy_end = (void *)(Px_PTR(src) + Px_PTR(var_size));
+    copy_size = Px_PTR(copy_end) - Px_PTR(copy_start);
+    memcpy(dst_start, copy_start, copy_size);
+
+    return (PyObject *)dst;
+}
+
 int
 PyObject_Print(PyObject *op, FILE *fp, int flags)
 {

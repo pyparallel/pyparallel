@@ -317,6 +317,8 @@ _PyObject_NEW_VAR(PyTypeObject *tp, Py_ssize_t n)
 
 #endif /* WITH_PARALLEL */
 
+PyAPI_FUNC(PyObject *) PyVarObject_Copy(PyObject *);
+
 /* This example code implements an object constructor with a custom
    allocator, where PyObject_New is inlined, and shows the important
    distinction between two steps (at least):
