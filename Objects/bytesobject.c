@@ -2853,8 +2853,37 @@ PyTypeObject PyBytes_Type = {
     0,                                          /* tp_weaklist */
     0,                                          /* tp_del */
     0,                                          /* tp_version_tag */
-    PyBytes_FromObject                          /* tp_copy */
+    PyBytes_CopyObject                          /* tp_copy */
 };
+
+PyBytesObject *
+PyBytes_Copy(PyBytesObject *src)
+{
+    PyBytesObject *dst;
+
+    dst = (PyBytesObject *)PyVarObject_Copy((PyObject *)src);
+    if (!dst)
+        return NULL;
+
+#ifdef Py_DEBUG
+    assert(dst->ob_shash == src->ob_shash);
+    assert(dst->ob_sval[Py_SIZE(dst)] == '\0');
+#endif
+
+    return dst;
+}
+
+PyObject *
+PyBytes_CopyObject(PyObject *o)
+{
+    if (!PyBytes_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "bytes copy attempted on non-bytes object");
+        return NULL;
+    }
+
+    return (PyObject *)PyBytes_Copy((PyBytesObject *)o);
+}
 
 void
 PyBytes_Concat(register PyObject **pv, register PyObject *w)
