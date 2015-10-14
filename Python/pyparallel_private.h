@@ -68,16 +68,13 @@ extern "C" {
 #endif
 
 
-typedef struct _PyParallelHeap PyParallelHeap, Heap;
+typedef struct _PyParallelHeap PyParallelHeap, Heap, PxHeap;
 typedef struct _PyParallelContext PyParallelContext, WorkContext, Context, PxContext;
 typedef struct _PyParallelIOContext PyParallelIOContext, IOContext;
-typedef struct _PyParallelContextStats PyParallelContextStats, Stats;
-typedef struct _PyParallelIOContextStats PyParallelIOContextStats, IOStats;
 typedef struct _PyParallelCallback PyParallelCallback, Callback;
 
 typedef struct _PxSocket PxSocket;
 typedef struct _PxSocketBuf PxSocketBuf;
-typedef struct _PxHeap PxHeap;
 
 typedef struct _PxThreadLocalState TLS;
 
@@ -229,6 +226,7 @@ remove_object(Objects *list, Object *o)
 }
 
 #define _PxHeap_HEAD_EXTRA                  \
+    PyObject_HEAD                           \
     Heap       *sle_prev;                   \
     Heap       *sle_next;                   \
     void       *base;                       \
@@ -239,68 +237,32 @@ remove_object(Objects *list, Object *o)
     size_t      size;                       \
     size_t      allocated;                  \
     size_t      remaining;                  \
-    int         id;                         \
-    int         flags;                      \
-    Context    *ctx;                        \
-    TLS        *tls;
+    short       group;                      \
+    short       id;                         \
+    Context    *ctx;
 
 #define PxHeap_HEAD PxHeap heap_base;
 
-typedef struct _PxHeap {
+typedef struct _PxHeapHead {
     _PxHeap_HEAD_EXTRA
-} PxHeap;
+} PxHeapHead;
 
 typedef struct _PyParallelHeap {
     _PxHeap_HEAD_EXTRA
-    Objects px_deallocs;
-    int     num_px_deallocs;
-    int     px_deallocs_skipped;
-    size_t  mallocs;
-    size_t  deallocs;
-    size_t  mem_reallocs;
-    size_t  obj_reallocs;
-    size_t  resizes;
-    size_t  frees;
-    size_t  alignment_mismatches;
-    size_t  bytes_wasted;
-} PyParallelHeap, Heap;
-
-typedef struct _PyParallelContextStats {
-    unsigned __int64 submitted;
-    unsigned __int64 entered;
-    unsigned __int64 exited;
-    unsigned __int64 start;
-    unsigned __int64 end;
-    double runtime;
-
-    long thread_id;
-    long process_id;
-
-    int blocking_calls;
-
-    size_t mallocs;
-    size_t mem_reallocs;
-    size_t obj_reallocs;
-    size_t deallocs;
-    size_t resizes;
-    size_t frees;
-    size_t alignment_mismatches;
-    size_t bytes_wasted;
-
-    size_t newrefs;
-    size_t forgetrefs;
-
-    size_t heaps;
-
-    size_t size;
-    size_t allocated;
-    size_t remaining;
-
-    size_t objects;
-    size_t varobjs;
-
-    size_t startup_size;
-} PyParallelContextStats, Stats;
+    Objects   px_deallocs;
+    short     num_px_deallocs;
+    short     px_deallocs_skipped;
+    short     objects;
+    short     varobjs;
+    short     mallocs;
+    short     deallocs;
+    short     mem_reallocs;
+    short     obj_reallocs;
+    short     resizes;
+    short     frees;
+    short     alignment_mismatches;
+    short     bytes_wasted;
+} PyParallelHeap, Heap, PxHeap;
 
 typedef struct _PxThreadLocalState {
     Heap       *h;
@@ -311,7 +273,6 @@ typedef struct _PxThreadLocalState {
     DWORD       thread_id;
     DWORD       thread_seq_id;
     PxState    *px;
-    Stats       stats;
 
     /*
     CRITICAL_SECTION riobuf_bitmap_cs;
@@ -519,6 +480,7 @@ int _PyParallel_InitPxState(PyThreadState *tstate, int destroy);
     PyThreadState *tstate;          \
     PyThreadState *pstate;          \
     PTP_CALLBACK_INSTANCE instance; \
+    short heap_groups;              \
     int flags;
 
 #define PxContext_HEAD  PxContext ctx_base;
@@ -531,8 +493,6 @@ typedef struct _PxContext {
 
 typedef struct _PyParallelContext {
     _PxContext_HEAD_EXTRA
-    Stats     stats;
-    Stats     stats_snapshot;
 
     PyObject *waitobj;
     PyObject *waitobj_timeout;
@@ -682,9 +642,6 @@ typedef struct _PxObject {
 #define Px_IS_WORK_CTX(c)        (Px_CTXFLAGS(c) & Px_CTXFLAGS_IS_WORK_CTX)
 #define Px_CTX_IS_DISASSOCIATED(c) (Px_CTXFLAGS(c) & Px_CTXFLAGS_DISASSOCIATED)
 #define Px_CTX_HAS_STATS(c)      (Px_CTXFLAGS(c) & Px_CTXFLAGS_HAS_STATS)
-
-#define STATS(c) \
-    (Px_CTX_HAS_STATS(c) ? ((Stats *)(&(((Context *)c)->stats))) : 0)
 
 #define Px_SOCKFLAGS(s)     (((PxSocket *)s)->flags)
 
@@ -1047,7 +1004,6 @@ typedef struct _PxSocket {
     /* Start-up snapshots. */
     Heap     *startup_heap_snapshot;
     PxSocket *startup_socket_snapshot;
-    Stats    *startup_context_stats_snapshot;
     /* Ugh, we need to store the "socket flags set at startup" separately
      * because of our dodgy overloading of 'flags' with both static protocol
      * information (that will never change) like whether concurrency is set,
@@ -2137,8 +2093,15 @@ PyAPI_FUNC(void) _PxState_UnregisterTimer(PxTimerObject *t);
 PyAPI_FUNC(PxContext *) PxContext_New(size_t heapsize);
 PyAPI_FUNC(int) PxContext_Close(PxContext *c);
 
+PyAPI_FUNC(int) _PxContext_InitAdditionalHeap(PxContext *c,
+                                              Heap *h,
+                                              size_t heapsize);
+
 PyAPI_FUNC(Heap *) PxContext_HeapSnapshot(PxContext *c);
 PyAPI_FUNC(void)   PxContext_RollbackHeap(PxContext *c, Heap **snapshot);
+
+PyAPI_FUNC(void) _PxContext_HeapSnapshot(PxContext *c, PxHeap *snapshot);
+PyAPI_FUNC(void) _PxContext_Rewind(PxContext *c, PxHeap *snapshot);
 
 PyAPI_FUNC(void *)      PxContext_Malloc(PxContext *c,
                                          Py_ssize_t size,
@@ -2153,6 +2116,14 @@ PyAPI_FUNC(PyObject *) PxContext_InitObject(PxContext *c,
 PyAPI_FUNC(PxContext *) PxContext_GetActive(void);
 
 PyAPI_FUNC(void) _PxContext_UnregisterHeaps(PxContext *c);
+
+PyAPI_FUNC(int) _PyParallel_PyTimeDeltaToRelativeThreadpoolTime(
+    PyObject *delta,
+    PFILETIME filetime
+);
+
+PyAPI_FUNC(int) FILETIME_FromPyObject(PFILETIME ft, PyObject *o);
+PyAPI_FUNC(PyObject *) PyObject_FromFILETIME(PFILETIME ft);
 
 #ifdef __cpplus
 }
