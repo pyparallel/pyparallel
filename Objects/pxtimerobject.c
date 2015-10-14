@@ -142,7 +142,7 @@ PxTimer_Callback(
     ReleaseSRWLockExclusive(&t->data_srwlock);
 
     if (++t->count < 0) {
-        t->times_wrapped++;
+        t->count_wrapped++;
         t->count = 1;
     } else if (t->count == 1)
         expect_snapshot = 0;
@@ -655,6 +655,18 @@ pxtimer_get_is_set(PxTimerObject *t, void *closure)
     return PyBool_FromLong(PxTimer_IsSet(t));
 }
 
+PyObject *
+pxtimer_get_count(PxTimerObject *t, void *closure)
+{
+    return PyLong_FromLongLong(t->count);
+}
+
+PyObject *
+pxtimer_get_count_wrapped(PxTimerObject *t, void *closure)
+{
+    return PyLong_FromLong(t->count_wrapped);
+}
+
 int
 pxtimer_init(PyObject *self, PyObject *args, PyObject *kwds)
 {
@@ -783,6 +795,18 @@ static PyGetSetDef PxTimer_GetSetList[] = {
         (getter)pxtimer_get_duration,
         (setter)NULL,
         "number of microseconds taken for the timer callback to execute",
+    },
+    {
+        "count",
+        (getter)pxtimer_get_count,
+        (setter)NULL,
+        "number of times the timer has executed"
+    },
+    {
+        "count_wrapped",
+        (getter)pxtimer_get_count_wrapped,
+        (setter)NULL,
+        "number of times the counter has wrapped around",
     },
     {
         "critical_section_contention",

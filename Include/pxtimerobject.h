@@ -124,8 +124,8 @@ typedef struct _PxTimerObject {
     Heap  snapshot;
     Heap *last_ctx_heap;
     Heap *last_timer_heap;
-    volatile LONG times_wrapped;
     volatile LONGLONG count;
+    volatile LONG count_wrapped; /* this isn't a good name */
     volatile LONG flags;
     FILETIME duetime;
     DWORD period;
