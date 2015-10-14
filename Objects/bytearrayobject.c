@@ -259,6 +259,30 @@ PyByteArray_Concat(PyObject *a, PyObject *b)
     return (PyObject *)result;
 }
 
+PyByteArrayObject *
+PyByteArray_Copy(PyByteArrayObject *src)
+{
+    PyByteArrayObject *dst;
+
+    dst = (PyByteArrayObject *)PyVarObject_Copy((PyObject *)src);
+    if (!dst)
+        return NULL;
+    dst->ob_exports = 0;
+    return dst;
+}
+
+PyObject *
+PyByteArray_CopyObject(PyObject *o)
+{
+    if (!PyByteArray_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "bytearray copy attempted on non-bytearray");
+        return NULL;
+    }
+    return (PyObject *)PyByteArray_Copy((PyByteArrayObject *)o);
+}
+
+
 /* Functions stuffed into the type object */
 
 static Py_ssize_t
@@ -2969,7 +2993,7 @@ PyTypeObject PyByteArray_Type = {
     0,                                  /* tp_weaklist */
     0,                                  /* tp_del */
     0,                                  /* tp_version_tag */
-    PyByteArray_FromObject,             /* tp_copy */
+    PyByteArray_CopyObject,             /* tp_copy */
 };
 
 /*********************** Bytes Iterator ****************************/
