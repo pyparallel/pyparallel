@@ -42,7 +42,7 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define Px_TIMERFLAGS_CLEANED_UP                        (1ULL <<  8)
 #define Px_TIMERFLAGS_                                  (1ULL << 63)
 
-#define PxTimer_IS_VALID(t)                                                    \
+#define PxTimer_VALID(t)                                                       \
     (Px_TIMERFLAGS(t) & Px_TIMERFLAGS_VALID)
 
 #define PxTimer_START_REQUESTED(t)                                             \
@@ -78,6 +78,9 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define PxTimer_SET_FLAG(timer, flag)   Px_TIMERFLAGS(t) |= flag
 #define PxTimer_UNSET_FLAG(timer, flag) Px_TIMERFLAGS(t) &= ~flag
 
+#define PxTimer_SET_VALID(t)                                                   \
+    PxTimer_SET_FLAG(t, Px_TIMERFLAGS_VALID)
+
 #define PxTimer_SET_START_REQUESTED(t)                                         \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_START_REQUESTED)
 
@@ -89,6 +92,9 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 
 #define PxTimer_SET_STOP_REQUESTED(t)                                          \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_STOP_REQUESTED)
+
+#define PxTimer_UNSET_STOP_REQUESTED(t)                                        \
+    PxTimer_UNSET_FLAG(t, Px_TIMERFLAGS_STOP_REQUESTED)
 
 #define PxTimer_SET_SHUTDOWN(t)                                                \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_SHUTDOWN)
@@ -108,10 +114,17 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define PxTimer_SET_CLEANED_UP(t)                                              \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_CLEANED_UP)
 
+
+
 typedef struct _PxTimerObject {
     PyObject_HEAD
     Context *ctx;
-    HANDLE heap_override;
+    Heap  heap;
+    Heap  snapshot;
+    Heap *last_ctx_heap;
+    Heap *last_timer_heap;
+    volatile LONG times_wrapped;
+    volatile LONGLONG count;
     volatile LONG flags;
     FILETIME duetime;
     DWORD period;
@@ -120,30 +133,23 @@ typedef struct _PxTimerObject {
     PTP_CALLBACK_ENVIRON ptp_cbe;
     LIST_ENTRY px_link;
     CRITICAL_SECTION cs;
+    volatile LONG cs_contention;
     INIT_ONCE start_once;
     INIT_ONCE stop_once;
     INIT_ONCE shutdown_once;
     PTP_WORK shutdown_work;
     PyObject *data;
     SRWLOCK data_srwlock;
+    LARGE_INTEGER duration;
+    SRWLOCK duration_srwlock;
 } PxTimerObject;
 
 PyAPI_FUNC(PyObject *) PxTimer_StartTimers(void);
 
-PyAPI_FUNC(PyObject *) PxTimer_New(
-    PyObject *duetime,
-    PyObject *period,
-    PyObject *window_length,
-    PyObject *func,
-    PyObject *args,
-    PyObject *kwds,
-    PyObject *errback
-);
-
 PyAPI_FUNC(int) PxTimer_Valid(PxTimerObject *t);
+PyAPI_FUNC(int) PxTimer_IsSet(PxTimerObject *t);
 
 PyAPI_FUNC(PxTimerObject *) PxTimer_GetActive(void);
-PyAPI_FUNC(void) PxTimer_Cleanup(PxTimerObject *t);
 
 int pxtimer_set_data(PxTimerObject *t, PyObject *data, void *closure);
 PyObject *pxtimer_get_data(PxTimerObject *t, void *closure);

@@ -5,7 +5,7 @@
 #include "Python.h"
 #include "pxtimerobject.h"
 
-static PyTypeObject PxTimerObject_Type;
+static PyTypeObject PxTimer_Type;
 
 Py_TLS PxTimerObject *active_timer = NULL;
 
@@ -29,14 +29,6 @@ _PxTimer_ClearActive(void)
     active_timer = NULL;
 }
 
-/* Can be called multiple times safely. */
-void
-PxTimer_Cleanup(PxTimerObject *t)
-{
-    if (PxTimer_CLEANED_UP(t))
-        return;
-}
-
 void
 CALLBACK
 PxTimer_ShutdownWorkCallback(
@@ -53,7 +45,12 @@ PxTimer_ShutdownWorkCallback(
 
     EnterCriticalSection(&t->cs);
 
-    PxTimer_Cleanup(t);
+    Px_CLOSE_THREADPOOL_TIMER(t->ptp_timer);
+
+    Py_REFCNT(t) -= 1;
+
+    if (Py_REFCNT(t) < 0)
+        __debugbreak();
 
     ((PyObject *)t)->is_px = _Py_NOT_PARALLEL;
     Py_PXFLAGS(t) &= ~Py_PXFLAGS_ISPX;
@@ -78,16 +75,27 @@ PxTimer_Callback(
     PxContext *c = t->ctx;
     PxState *px = c->px;
     PyObject *result;
-    Heap *snapshot;
+    Heap *prev_snapshot, *this_snapshot;
+    LARGE_INTEGER start, end, elapsed, frequency;
+    int expect_snapshot = 1;
+    int expected_snapshot_group = 0;
 
     _PyParallel_EnteredCallback(c, instance);
 
-    EnterCriticalSection(&t->cs);
+    if (!TryEnterCriticalSection(&t->cs)) {
+        InterlockedIncrement(&t->cs_contention);
+        return;
+    }
 
     if (PxTimer_STOP_REQUESTED(t)) {
         PxTimer_SET_STOPPED(t);
+        PxTimer_UNSET_STOP_REQUESTED(t);
+        InitOnceInitialize(&t->start_once);
         goto leave;
     }
+
+    QueryPerformanceFrequency(&frequency);
+    QueryPerformanceCounter(&start);
 
     /* 'STARTED' is set if a timer has ever run.  'RUNNING' is set when it's
      * actually running, and then unset at the end.  And _PxTimer_SetActive()
@@ -98,19 +106,89 @@ PxTimer_Callback(
     PxTimer_SET_RUNNING(t);
     _PxTimer_SetActive(t);
 
-    snapshot = PxContext_HeapSnapshot(c);
+    switch (c->h->group) {
+        case 1:
+            /* Context's active heap belongs to the context. */
+            prev_snapshot = &t->snapshot;
+            this_snapshot = &c->snapshot;
+            break;
+        case 2:
+            /* Context's active heap belongs to the timer. */
+            prev_snapshot = &c->snapshot;
+            this_snapshot = &t->snapshot;
+            break;
+        default:
+            __debugbreak();
+    }
+
+    /* Make sure the context's snapshot pointer (c->s) is empty, and that the
+     * underlying snapshot struct is also empty (this_snapshot->base). */
+    if (c->s)
+        __debugbreak();
+
+    if (this_snapshot->base)
+        __debugbreak();
+
+    _PxContext_HeapSnapshot(c, this_snapshot);
 
     result = PyEval_CallObjectWithKeywords(c->func, c->args, c->kwds);
 
     if (!result)
         PxTimer_EXCEPTION();
 
-    if (pxtimer_set_data(t, result, NULL))
-        PxTimer_EXCEPTION();
+    AcquireSRWLockExclusive(&t->data_srwlock);
+    t->data = result;
+    ReleaseSRWLockExclusive(&t->data_srwlock);
 
-    PxContext_RollbackHeap(c, &snapshot);
+    if (++t->count < 0) {
+        t->times_wrapped++;
+        t->count = 1;
+    } else if (t->count == 1)
+        expect_snapshot = 0;
+
+    /* We now switch to our alternate heap and roll back any snapshot if
+     * applicable. */
+    switch (c->h->group) {
+        case 1:
+            /* Context's active heap belongs to the context.  Switch to the
+             * timer heap. */
+            t->last_ctx_heap = c->h;
+            c->h = t->last_timer_heap;
+            expected_snapshot_group = 2;
+            break;
+        case 2:
+            /* Context's active heap belongs to the timer.  Switch to the
+             * context's heap. */
+            t->last_timer_heap = c->h;
+            c->h = t->last_ctx_heap;
+            expected_snapshot_group = 1;
+            break;
+        default:
+            __debugbreak();
+    }
+
+    if (expect_snapshot) {
+        if (!prev_snapshot->base)
+            __debugbreak();
+        if (prev_snapshot->group != expected_snapshot_group)
+            __debugbreak();
+
+        _PxContext_Rewind(c, prev_snapshot);
+
+    } else {
+        if (prev_snapshot->base)
+            __debugbreak();
+    }
 
 end:
+    QueryPerformanceCounter(&end);
+    elapsed.QuadPart = end.QuadPart - start.QuadPart;
+    elapsed.QuadPart *= 1000000;
+    elapsed.QuadPart /= frequency.QuadPart;
+    AcquireSRWLockExclusive(&t->duration_srwlock);
+    t->duration.QuadPart = elapsed.QuadPart;
+    ReleaseSRWLockExclusive(&t->duration_srwlock);
+
     PxTimer_UNSET_RUNNING(t);
     _PxTimer_ClearActive();
 leave:
@@ -126,11 +204,12 @@ PxTimer_StartOnceCallback(
     PVOID *context
 )
 {
-    PxTimerObject *t = (PxTimerObject *)context;
+    PxTimerObject *t = (PxTimerObject *)param;
 
     assert(PxTimer_Valid(t));
 
     PxTimer_SET_START_REQUESTED(t);
+    InitOnceInitialize(&t->stop_once);
     SetThreadpoolTimer(t->ptp_timer,
                        &t->duetime,
                        t->period,
@@ -147,7 +226,7 @@ PxTimer_StopOnceCallback(
     PVOID *context
 )
 {
-    PxTimerObject *t = (PxTimerObject *)context;
+    PxTimerObject *t = (PxTimerObject *)param;
 
     /* Toggle the stop requested flag and set another timer with NULL
      * parameters.  This will synchronously trigger another timer callback,
@@ -167,7 +246,7 @@ PxTimer_ShutdownOnceCallback(
     PVOID *context
 )
 {
-    PxTimerObject *t = (PxTimerObject *)context;
+    PxTimerObject *t = (PxTimerObject *)param;
 
     PxTimer_SET_SHUTDOWN_REQUESTED(t);
     pxtimer_stop((PyObject *)t);
@@ -179,7 +258,13 @@ PxTimer_ShutdownOnceCallback(
 int
 PxTimer_Valid(PxTimerObject *t)
 {
-    return 1;
+    return PxTimer_VALID(t);
+}
+
+int
+PxTimer_IsSet(PxTimerObject *t)
+{
+    return IsThreadpoolTimerSet(t->ptp_timer);
 }
 
 void
@@ -236,9 +321,6 @@ error:
     item->p2 = pstate->curexc_value;
     item->p3 = pstate->curexc_traceback;
 
-    if (fatal)
-        PxTimer_Cleanup(t);
-
     InterlockedExchange(&(c->done), 1);
     item->from = c;
     PxList_TimestampItem(item);
@@ -262,11 +344,12 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
     Context *c, *x = PxContext_GetActive();
     PxState *px;
     PxTimerObject *t;
+    PyObject *result = NULL;
 
     if (nitems != 0)
         __debugbreak();
 
-    if (type != &PxTimerObject_Type)
+    if (type != &PxTimer_Type)
         __debugbreak();
 
     c = PxContext_New(0);
@@ -296,24 +379,27 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
     if (!t)
         PxTimer_FATAL();
 
-    t->heap_override = HeapCreate(HEAP_NO_SERIALIZE, 0, 0);
-    if (!t->heap_override)
-        PxTimer_SYSERROR("HeapCreate(t->heap_override)");
-
     c->io_obj = (PyObject *)t;
     c->io_type = Px_IOTYPE_TIMER;
 
     if (!PxContext_InitObject(c, c->io_obj, type, 0))
         PxTimer_FATAL();
 
+    t->last_ctx_heap = c->h;
+    _PxContext_InitAdditionalHeap(c, &t->heap, 0);
+
+    if (t->last_ctx_heap == c->h)
+        /* Should be altered by call above. */
+        __debugbreak();
+
+    t->last_timer_heap = c->h;
+
+    if (t->last_timer_heap->group == t->last_ctx_heap->group)
+        __debugbreak();
+
     /* Used in concert with stop() and pxtimer_dealloc(). */
     if (!Py_PXCTX())
         Py_REFCNT(t) = 2;
-
-    /*
-    if (!_PyParallel_ProtectObject(c->io_obj))
-        __debugbreak();
-    */
 
     InitializeSRWLock(&t->data_srwlock);
 
@@ -336,21 +422,28 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
     InitOnceInitialize(&t->stop_once);
     InitOnceInitialize(&t->shutdown_once);
 
-    _PxState_RegisterTimer(t);
+    t->data = Py_None;
 
+    _PxState_RegisterTimer(t);
+    _PxState_RegisterContext(c);
+
+    result = (PyObject *)t;
 end:
-    Py_RETURN_NONE;
+    return result;
 }
 
-int
-pxtimer_init(PyObject *self, PyObject *args, PyObject *kwds)
+PyObject *
+pxtimer_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
 {
-    PxTimerObject *t = (PxTimerObject *)self;
+    PxTimerObject *t;
 
-    /* xxx: remember to activate context and call the relevant tp_init() slot
-     * for generic object initialization. */
+    t = (PxTimerObject *)type->tp_alloc(type, 0);
+    if (!t)
+        return NULL;
 
-    return -1;
+    /* Do we need to do anything else here?  Seems like we could let the
+     * generic PyType_GenericNew() handle all of this functionality. */
+    return (PyObject *)t;
 }
 
 void
@@ -367,7 +460,6 @@ pxtimer_dealloc(PxTimerObject *t)
     Px_CLOSE_THREADPOOL_TIMER(t->ptp_timer);
     Px_CLOSE_THREADPOOL_WORK(t->shutdown_work);
     Px_HEAP_DESTROY(c->heap_handle);
-    Px_HEAP_DESTROY(t->heap_override);
     Px_FREE(c);
 
     InterlockedDecrement(&px->active);
@@ -422,43 +514,6 @@ pxtimer_shutdown(PyObject *self)
     Py_RETURN_NONE;
 }
 
-int
-pxtimer_set_data(PxTimerObject *t, PyObject *data, void *closure)
-{
-    PyObject *old_data = t->data;
-
-    if (t != PxTimer_GetActive()) {
-        PyErr_SetString(PyExc_RuntimeError,
-                        "cannot set timer data from a different thread");
-        return -1;
-    }
-
-    if (Py_ISPX(data)) {
-        if (!PyObject_Copyable(data)) {
-            PyErr_SetString(PyExc_ValueError,
-                            "cannot set non-copyable object");
-            return -1;
-        }
-
-        _PyParallel_SetHeapOverride(t->heap_override);
-        AcquireSRWLockExclusive(&t->data_srwlock);
-        t->data = PyObject_Copy(data);
-        ReleaseSRWLockExclusive(&t->data_srwlock);
-        _PyParallel_RemoveHeapOverride();
-    } else {
-        AcquireSRWLockExclusive(&t->data_srwlock);
-        t->data = data;
-        ReleaseSRWLockExclusive(&t->data_srwlock);
-    }
-
-    /* This may need to be changed down the track if PyObject_Copy()
-     * implementations do anything other than a single malloc call. */
-    if (old_data && Py_ISPX(old_data))
-        HeapFree(t->heap_override, 0, old_data);
-
-    return 0;
-}
-
 PyObject *
 pxtimer_get_data(PxTimerObject *t, void *closure)
 {
@@ -473,15 +528,330 @@ pxtimer_get_data(PxTimerObject *t, void *closure)
         data = PyObject_Copy(t->data);
     ReleaseSRWLockShared(&t->data_srwlock);
 
+    Py_INCREF(data);
     return data;
 }
 
+PyObject *
+pxtimer_get_duration(PxTimerObject *t, void *closure)
+{
+    LARGE_INTEGER d;
+
+    AcquireSRWLockShared(&t->duration_srwlock);
+    d.QuadPart = t->duration.QuadPart;
+    ReleaseSRWLockShared(&t->duration_srwlock);
+
+    return PyLong_FromLongLong(d.QuadPart);
+}
+
+PyObject *
+pxtimer_get_critical_section_contention(PxTimerObject *t, void *closure)
+{
+    return PyLong_FromLong(t->cs_contention);
+}
+
+PyObject *
+pxtimer_get_duetime(PxTimerObject *t, void *closure)
+{
+    LARGE_INTEGER i;
+    i.LowPart = t->duetime.dwLowDateTime;
+    i.HighPart = t->duetime.dwHighDateTime;
+    return PyLong_FromLongLong(i.QuadPart);
+}
+
+int
+pxtimer_set_duetime(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!FILETIME_FromPyObject(&t->duetime, o))
+        return -1;
+    return 0;
+}
+
+PyObject *
+pxtimer_get_period(PxTimerObject *t, void *closure)
+{
+    return PyLong_FromUnsignedLong(t->period);
+}
+
+int
+pxtimer_set_period(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyLong_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "period must be an integer");
+        return -1;
+    }
+
+    t->period = PyLong_AsLong(o);
+
+    /* Update the timer (to pick up the new period) if it's already been
+     * started. */
+    if (PxTimer_Valid(t) && PxTimer_IsSet(t))
+        SetThreadpoolTimer(t->ptp_timer,
+                           &t->duetime,
+                           t->period,
+                           t->window_length);
+
+    return 0;
+}
+
+PyObject *
+pxtimer_get_window_length(PxTimerObject *t, void *closure)
+{
+    return PyLong_FromUnsignedLong(t->window_length);
+}
+
+int
+pxtimer_set_window_length(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyLong_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "window_length must be an integer");
+        return -1;
+    }
+
+    t->window_length = PyLong_AsLong(o);
+    return 0;
+}
+
+PyObject *
+pxtimer_get_func(PxTimerObject *t, void *closure)
+{
+    PyObject *func = t->ctx->func;
+    Py_INCREF(func);
+    return func;
+}
+
+int
+pxtimer_set_func(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyCallable_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "func must be a callable object");
+        return -1;
+    }
+
+    Py_CLEAR(t->ctx->func);
+    Py_INCREF(o);
+    t->ctx->func = o;
+    return 0;
+}
+
+PyObject *
+pxtimer_get_args(PxTimerObject *t, void *closure)
+{
+    PyObject *args = t->ctx->args;
+    PyObject *result = (args ? args : Py_None);
+    Py_INCREF(result);
+    return result;
+}
+
+int
+pxtimer_set_args(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyTuple_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "args must be a tuple object");
+        return -1;
+    }
+
+    Py_CLEAR(t->ctx->args);
+    Py_INCREF(o);
+    t->ctx->args = o;
+    return 0;
+}
+
+PyObject *
+pxtimer_get_kwds(PxTimerObject *t, void *closure)
+{
+    PyObject *kwds = t->ctx->kwds;
+    PyObject *result = (kwds ? kwds : Py_None);
+    Py_INCREF(result);
+    return result;
+}
+
+int
+pxtimer_set_kwds(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyDict_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "kwds must be a dict object");
+        return -1;
+    }
+
+    Py_CLEAR(t->ctx->kwds);
+    Py_INCREF(o);
+    t->ctx->kwds = o;
+    return 0;
+}
+
+PyObject *
+pxtimer_get_exception_handler(PxTimerObject *t, void *closure)
+{
+    PyObject *errback = t->ctx->errback;
+    PyObject *result = (errback ? errback : Py_None);
+    Py_INCREF(result);
+    return result;
+}
+
+int
+pxtimer_set_exception_handler(PxTimerObject *t, PyObject *o, void *closure)
+{
+    if (!PyCallable_Check(o)) {
+        PyErr_SetString(PyExc_ValueError,
+                        "exception_handler must be a callable object");
+        return -1;
+    }
+
+    Py_CLEAR(t->ctx->errback);
+    Py_INCREF(o);
+    t->ctx->errback = o;
+    return 0;
+}
+
+PyObject *
+pxtimer_get_is_set(PxTimerObject *t, void *closure)
+{
+    return PyBool_FromLong(PxTimer_IsSet(t));
+}
+
+int
+pxtimer_init(PyObject *self, PyObject *args, PyObject *kwds)
+{
+    PyObject *duetime = NULL, *period = NULL, *func = NULL;
+    PyObject *_args = NULL, *_kwds = NULL;
+    PyObject *exception_handler = NULL;
+    PyObject *window_length = NULL;
+    PxTimerObject *t = (PxTimerObject *)self;
+
+    static char *kwlist[] = {
+        "duetime",
+        "period",
+        "func",
+        "args",
+        "kwds",
+        "exception_handler",
+        "window_length",
+        NULL
+    };
+
+    static const char *fmt = "OOO|OOOO:timer.__init__()";
+
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwds, fmt, kwlist,
+                                     &duetime,
+                                     &period,
+                                     &func,
+                                     &_args,
+                                     &_kwds,
+                                     &exception_handler,
+                                     &window_length))
+        return -1;
+
+    if (pxtimer_set_duetime(t, duetime, NULL) < 0)
+        return -1;
+
+    if (pxtimer_set_period(t, period, NULL) < 0)
+        return -1;
+
+    if (pxtimer_set_func(t, func, NULL) < 0)
+        return -1;
+
+    if (_args && pxtimer_set_args(t, _args, NULL) < 0)
+        return -1;
+
+    if (_kwds && pxtimer_set_kwds(t, _kwds, NULL) < 0)
+        return -1;
+
+    if (exception_handler &&
+        pxtimer_set_exception_handler(t, exception_handler, NULL) < 0)
+        return -1;
+
+    if (window_length && pxtimer_set_window_length(t, window_length, NULL) < 0)
+        return -1;
+
+    PxTimer_SET_VALID(t);
+
+    return 0;
+}
 
 static PyGetSetDef PxTimer_GetSetList[] = {
     {
         "data",
         (getter)pxtimer_get_data,
-        (setter)pxtimer_set_data,
+        (setter)NULL,
+        "the results of the timer function are accessible via the `data` "
+        "attribute; when accessed, a read-lock is automatically obtained "
+        "and the object is copied into a new object, which is then returned "
+        "(thus, if you need to refer to the data more than once, don't keep "
+        "calling `t.data`, take a copy via `data = t.data` and use that)"
+    },
+    {
+        "duetime",
+        (getter)pxtimer_get_duetime,
+        (setter)pxtimer_set_duetime,
+        "indicates when the timer will be invoked; use datetime.timedelta() "
+        "to specify relative times, and datetime.datetime() for absolute times"
+    },
+    {
+        "period",
+        (getter)pxtimer_get_period,
+        (setter)pxtimer_set_period,
+        "if non-zero, indicates the number of milliseconds between subsequent "
+        "invocations of the timer; use this if you want your timer to repeat "
+        "at a given rate until stopped"
+    },
+    {
+        "func",
+        (getter)pxtimer_get_func,
+        (setter)pxtimer_set_func,
+        "the function the timer will execute during callback"
+    },
+    {
+        "args",
+        (getter)pxtimer_get_args,
+        (setter)pxtimer_set_args,
+        "if set, the args that will be passed to the function when "
+        "executed during the callback"
+    },
+    {
+        "kwds",
+        (getter)pxtimer_get_kwds,
+        (setter)pxtimer_set_kwds,
+        "if set, the keywords that will be passed to the function when "
+        "executed during the callback"
+    },
+    {
+        "exception_handler",
+        (getter)pxtimer_get_exception_handler,
+        (setter)pxtimer_set_exception_handler,
+        "if set, a function that will be called if the timer encounters an "
+        "exception during callback execution; the function signature must "
+        "expect a 3-part tuple; the first item will be the timer, the second "
+        "will be a string that, if set, refers to an offending system call, "
+        "and the third will be another 3-part tuple containing the exception "
+        "information (in the format (exc_type, exc_value, exc_traceback))"
+    },
+    {
+        "is_set",
+        (getter)pxtimer_get_is_set,
+        (setter)NULL,
+        "boolean indicating whether or not the timer has been set (started)",
+    },
+    {
+        "duration",
+        (getter)pxtimer_get_duration,
+        (setter)NULL,
+        "number of microseconds taken for the timer callback to execute",
+    },
+    {
+        "critical_section_contention",
+        (getter)pxtimer_get_critical_section_contention,
+        (setter)NULL,
+        "number of times the timer callback was entered, but the critical "
+        "section was already held because a previous timer run had not yet "
+        "finished executing (this can happen when period is too short "
+        "relative to the execution duration of the callback)"
     },
     { NULL },
 };
@@ -508,9 +878,9 @@ static PyMethodDef PxTimer_Methods[] = {
     { NULL, NULL }
 };
 
-static PyTypeObject PxTimerObject_Type = {
+PyTypeObject PxTimer_Type = {
     PyVarObject_HEAD_INIT(0, 0)
-    "_parallel.timer",                          /* tp_name */
+    "timer",                                    /* tp_name */
     sizeof(PxTimerObject),                      /* tp_basicsize */
     0,                                          /* tp_itemsize */
     (destructor)pxtimer_dealloc,                /* tp_dealloc */
@@ -528,7 +898,8 @@ static PyTypeObject PxTimerObject_Type = {
     0,                                          /* tp_getattro */
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT,                         /* tp_flags */
+    Py_TPFLAGS_DEFAULT      |
+        Py_TPFLAGS_BASETYPE,                    /* tp_flags */
     "Parallel Timer Object",                    /* tp_doc */
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
@@ -546,7 +917,7 @@ static PyTypeObject PxTimerObject_Type = {
     0,                                          /* tp_dictoffset */
     pxtimer_init,                               /* tp_init */
     pxtimer_alloc,                              /* tp_alloc */
-    0,                                          /* tp_new */
+    pxtimer_new,                                /* tp_new */
     0,                                          /* tp_free */
     0,                                          /* tp_is_gc */
     0,                                          /* tp_bases */
@@ -558,20 +929,6 @@ static PyTypeObject PxTimerObject_Type = {
     0,                                          /* tp_version_tag */
     0,                                          /* tp_copy */
 };
-
-PyObject *
-PxTimer_New(
-    PyObject *duetime,
-    PyObject *period,
-    PyObject *window_length,
-    PyObject *func,
-    PyObject *args,
-    PyObject *kwds,
-    PyObject *errback
-)
-{
-    return NULL;
-}
 
 /*
 PyObject *
