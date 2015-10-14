@@ -8423,7 +8423,7 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
     PyObject *tuple = NULL;
     PyObject *result;
     PyBytesObject *bytes;
-    PyObject *header_bytes, *body_bytes;
+    PyObject *header_bytes, *body_bytes, *body_obj;
     char  gmtime[GMTIME_STRLEN];
     char  content_length[20]; /* 20 == len(str(2 ** 64)) */
     char *connection_close = NULL;
@@ -8456,6 +8456,7 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
 
     if (PyBytes_Check(o)) {
         PyBytesObject *b = (PyBytesObject *)o;
+        body_obj = o;
         body_size = ((PyVarObject *)b)->ob_size;
         body = &b->ob_sval[0];
         header = (char *)&http11_plaintext_response_header_begin[0];
@@ -8465,6 +8466,8 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         PyObject *json = PyObject_Call(s->json_dumps, args, NULL);
         if (!json)
             return NULL;
+
+        body_obj = json;
 
         body = PyUnicode_AsUTF8AndSize(json, &body_size);
         if (!body)
@@ -8515,14 +8518,13 @@ PxSocket_ConvertToHttpResponse(PxSocket *s, PyObject *o)
         if (!header_bytes)
             return NULL;
 
-        result = PyTuple_Pack(2, header_bytes, o);
+        result = PyTuple_Pack(2, header_bytes, body_obj);
         if (!result)
             return NULL;
 
         bytes = (PyBytesObject *)header_bytes;
     }
 
-    bytes = (PyBytesObject *)result;
     buf = &bytes->ob_sval[0];
 
     p = &buf[0];
