@@ -1687,21 +1687,6 @@ _PyParallel_DisassociateCurrentThreadFromCallback(void)
     Px_CTXFLAGS(c) |= Px_CTXFLAGS_DISASSOCIATED;
 }
 
-void
-_PyParallel_BlockingCall(void)
-{
-    Context *c = ctx;
-    Stats   *s = STATS(c);
-    Px_GUARD();
-
-    if (Px_CTX_IS_DISASSOCIATED(c))
-        return;
-
-    if (s && ++s->blocking_calls > _PxBlockingCallsThreshold)
-        _PyParallel_DisassociateCurrentThreadFromCallback();
-}
-
-
 void *
 _PyHeap_MemAlignedMalloc(Context *c, size_t n)
 {
