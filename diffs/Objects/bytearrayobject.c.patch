@@ -1,8 +1,39 @@
 diff --git a/Objects/bytearrayobject.c b/Objects/bytearrayobject.c
-index 60b2811..a990386 100644
+index 60b2811..9c17d6a 100644
 --- a/Objects/bytearrayobject.c
 +++ b/Objects/bytearrayobject.c
-@@ -2961,6 +2961,15 @@ PyTypeObject PyByteArray_Type = {
+@@ -259,6 +259,30 @@ PyByteArray_Concat(PyObject *a, PyObject *b)
+     return (PyObject *)result;
+ }
+ 
++PyByteArrayObject *
++PyByteArray_Copy(PyByteArrayObject *src)
++{
++    PyByteArrayObject *dst;
++
++    dst = (PyByteArrayObject *)PyVarObject_Copy((PyObject *)src);
++    if (!dst)
++        return NULL;
++    dst->ob_exports = 0;
++    return dst;
++}
++
++PyObject *
++PyByteArray_CopyObject(PyObject *o)
++{
++    if (!PyByteArray_Check(o)) {
++        PyErr_SetString(PyExc_ValueError,
++                        "bytearray copy attempted on non-bytearray");
++        return NULL;
++    }
++    return (PyObject *)PyByteArray_Copy((PyByteArrayObject *)o);
++}
++
++
+ /* Functions stuffed into the type object */
+ 
+ static Py_ssize_t
+@@ -2961,6 +2985,15 @@ PyTypeObject PyByteArray_Type = {
      PyType_GenericAlloc,                /* tp_alloc */
      PyType_GenericNew,                  /* tp_new */
      PyObject_Del,                       /* tp_free */
@@ -14,7 +45,7 @@ index 60b2811..a990386 100644
 +    0,                                  /* tp_weaklist */
 +    0,                                  /* tp_del */
 +    0,                                  /* tp_version_tag */
-+    PyByteArray_FromObject,             /* tp_copy */
++    PyByteArray_CopyObject,             /* tp_copy */
  };
  
  /*********************** Bytes Iterator ****************************/

@@ -1,5 +1,5 @@
 diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
-index 8b5c42f..2b31611 100644
+index 8b5c42f..9af3e3e 100644
 --- a/PCbuild/pythoncore.vcxproj
 +++ b/PCbuild/pythoncore.vcxproj
 @@ -158,6 +158,7 @@
@@ -82,7 +82,7 @@ index 8b5c42f..2b31611 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -565,6 +582,16 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -565,6 +582,17 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClInclude Include="..\Python\condvar.h" />
      <ClInclude Include="..\Python\importdl.h" />
      <ClInclude Include="..\Python\thread_nt.h" />
@@ -92,6 +92,7 @@ index 8b5c42f..2b31611 100644
 +    <ClInclude Include="..\Include\pyparallel_odbc.h" />
 +    <ClInclude Include="..\Include\pyparallel_http.h" />
 +    <ClInclude Include="..\Include\pxlist.h" />
++    <ClInclude Include="..\Include\pxtimerobject.h" />
 +    <ClInclude Include="..\Include\statics.h" />
 +    <ClInclude Include="..\Include\ultrajson.h" />
 +    <ClInclude Include="..\Python\ujson_py_defines.h" />
@@ -99,7 +100,15 @@ index 8b5c42f..2b31611 100644
    </ItemGroup>
    <ItemGroup>
      <ClCompile Include="..\Modules\_bisectmodule.c" />
-@@ -736,6 +763,16 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -674,6 +702,7 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClCompile Include="..\Objects\unicodectype.c" />
+     <ClCompile Include="..\Objects\unicodeobject.c" />
+     <ClCompile Include="..\Objects\weakrefobject.c" />
++    <ClCompile Include="..\Objects\pxtimerobject.c" />
+     <ClCompile Include="..\Parser\acceler.c" />
+     <ClCompile Include="..\Parser\bitset.c" />
+     <ClCompile Include="..\Parser\firstsets.c" />
+@@ -736,6 +765,16 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClCompile Include="..\Python\sysmodule.c" />
      <ClCompile Include="..\Python\thread.c" />
      <ClCompile Include="..\Python\traceback.c" />

@@ -1,0 +1,23 @@
+diff --git a/Modules/_datetimemodule.c b/Modules/_datetimemodule.c
+index fa231d9..cfad7b3 100644
+--- a/Modules/_datetimemodule.c
++++ b/Modules/_datetimemodule.c
+@@ -104,6 +104,18 @@ static PyTypeObject PyDateTime_TimeType;
+ static PyTypeObject PyDateTime_TZInfoType;
+ static PyTypeObject PyDateTime_TimeZoneType;
+ 
++int
++_PyDateTime_Check(PyObject *op)
++{
++    return PyDateTime_Check(op);
++}
++
++int
++_PyDelta_Check(PyObject *op)
++{
++    return PyDelta_Check(op);
++}
++
+ /* ---------------------------------------------------------------------------
+  * Math utilities.
+  */

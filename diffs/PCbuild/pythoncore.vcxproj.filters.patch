@@ -1,8 +1,8 @@
 diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.filters
-index 5647feb..364f7cd 100644
+index 5647feb..7732f58 100644
 --- a/PCbuild/pythoncore.vcxproj.filters
 +++ b/PCbuild/pythoncore.vcxproj.filters
-@@ -408,9 +408,39 @@
+@@ -408,9 +408,42 @@
      <ClInclude Include="..\Python\ceval_gil.h">
        <Filter>Python</Filter>
      </ClInclude>
@@ -16,6 +16,9 @@ index 5647feb..364f7cd 100644
 +      <Filter>Include</Filter>
 +    </ClInclude>
 +    <ClInclude Include="..\Include\pxlist.h">
++      <Filter>Include</Filter>
++    </ClInclude>
++    <ClInclude Include="..\Include\pxtimerobject.h">
 +      <Filter>Include</Filter>
 +    </ClInclude>
      <ClInclude Include="..\Include\namespaceobject.h">
@@ -42,7 +45,17 @@ index 5647feb..364f7cd 100644
    </ItemGroup>
    <ItemGroup>
      <ClCompile Include="..\Modules\_bisectmodule.c">
-@@ -917,9 +947,39 @@
+@@ -728,6 +761,9 @@
+     <ClCompile Include="..\Objects\weakrefobject.c">
+       <Filter>Objects</Filter>
+     </ClCompile>
++    <ClCompile Include="..\Objects\pxtimerobject.c">
++      <Filter>Objects</Filter>
++    </ClCompile>
+     <ClCompile Include="..\Parser\acceler.c">
+       <Filter>Parser</Filter>
+     </ClCompile>
+@@ -917,9 +953,39 @@
      <ClCompile Include="..\Modules\_winapi.c">
        <Filter>PC</Filter>
      </ClCompile>

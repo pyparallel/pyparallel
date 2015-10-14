@@ -1,5 +1,5 @@
 diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
-index 9dcb74e..7a28101 100644
+index 9dcb74e..1afba04 100644
 --- a/Objects/bytesobject.c
 +++ b/Objects/bytesobject.c
 @@ -26,7 +26,7 @@ _getbuffer(PyObject *obj, Py_buffer *view)
@@ -49,7 +49,7 @@ index 9dcb74e..7a28101 100644
      return (PyObject *) op;
  }
  
-@@ -2835,6 +2845,15 @@ PyTypeObject PyBytes_Type = {
+@@ -2835,8 +2845,46 @@ PyTypeObject PyBytes_Type = {
      0,                                          /* tp_alloc */
      bytes_new,                                  /* tp_new */
      PyObject_Del,                               /* tp_free */
@@ -61,11 +61,42 @@ index 9dcb74e..7a28101 100644
 +    0,                                          /* tp_weaklist */
 +    0,                                          /* tp_del */
 +    0,                                          /* tp_version_tag */
-+    PyBytes_FromObject                          /* tp_copy */
++    PyBytes_CopyObject                          /* tp_copy */
  };
  
++PyBytesObject *
++PyBytes_Copy(PyBytesObject *src)
++{
++    PyBytesObject *dst;
++
++    dst = (PyBytesObject *)PyVarObject_Copy((PyObject *)src);
++    if (!dst)
++        return NULL;
++
++#ifdef Py_DEBUG
++    assert(dst->ob_shash == src->ob_shash);
++    assert(dst->ob_sval[Py_SIZE(dst)] == '\0');
++#endif
++
++    return dst;
++}
++
++PyObject *
++PyBytes_CopyObject(PyObject *o)
++{
++    if (!PyBytes_Check(o)) {
++        PyErr_SetString(PyExc_ValueError,
++                        "bytes copy attempted on non-bytes object");
++        return NULL;
++    }
++
++    return (PyObject *)PyBytes_Copy((PyBytesObject *)o);
++}
++
  void
-@@ -2887,6 +2906,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
+ PyBytes_Concat(register PyObject **pv, register PyObject *w)
+ {
+@@ -2887,6 +2935,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
          PyErr_BadInternalCall();
          return -1;
      }
@@ -74,7 +105,7 @@ index 9dcb74e..7a28101 100644
      /* XXX UNREF/NEWREF interface should be more symmetrical */
      _Py_DEC_REFTOTAL;
      _Py_ForgetReference(v);
-@@ -2909,6 +2930,8 @@ void
+@@ -2909,6 +2959,8 @@ void
  PyBytes_Fini(void)
  {
      int i;
