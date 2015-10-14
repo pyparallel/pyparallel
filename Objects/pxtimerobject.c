@@ -175,6 +175,7 @@ PxTimer_Callback(
             __debugbreak();
 
         _PxContext_Rewind(c, prev_snapshot);
+        SecureZeroMemory(prev_snapshot, sizeof(Heap));
 
     } else {
         if (prev_snapshot->base)

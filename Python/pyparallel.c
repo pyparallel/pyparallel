@@ -1245,9 +1245,6 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
 
     /* Reset the remaining active heap's memory. */
     SecureZeroMemory(s->next, s->remaining);
-
-    /* And then reset the snapshot. */
-    SecureZeroMemory(s, Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE));
 }
 
 void
