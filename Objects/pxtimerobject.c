@@ -82,16 +82,16 @@ PxTimer_Callback(
 
     _PyParallel_EnteredCallback(c, instance);
 
+    if (PxTimer_STOP_REQUESTED(t)) {
+        EnterCriticalSection(&t->cs);
+        PxTimer_SET_STOPPED(t);
+        PxTimer_UNSET_STOP_REQUESTED(t);
+        goto leave;
+    }
+
     if (!TryEnterCriticalSection(&t->cs)) {
         InterlockedIncrement(&t->cs_contention);
         return;
-    }
-
-    if (PxTimer_STOP_REQUESTED(t)) {
-        PxTimer_SET_STOPPED(t);
-        PxTimer_UNSET_STOP_REQUESTED(t);
-        InitOnceInitialize(&t->start_once);
-        goto leave;
     }
 
     QueryPerformanceFrequency(&frequency);
@@ -234,6 +234,7 @@ PxTimer_StopOnceCallback(
      * which tests for the flag and registers the stop, which we use to
      * indicate that the timer is not and will not run again. */
     PxTimer_SET_STOP_REQUESTED(t);
+    InitOnceInitialize(&t->start_once);
     SetThreadpoolTimer(t->ptp_timer, NULL, 0, 0);
 
     return TRUE;
