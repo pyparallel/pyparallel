@@ -10372,7 +10372,7 @@ do_data_received_callback:
         PxSocket_FATAL();
     }
 
-    if (PxSocket_IS_HTTP11(s))
+    if (PxSocket_IS_HTTP11(s) && func != s->data_received)
         result = PxSocket_ConvertToHttpResponse(s, result);
 
     if (PxSocket_IS_SENDFILE_SCHEDULED(s)) {
