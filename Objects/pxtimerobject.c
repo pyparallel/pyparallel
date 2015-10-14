@@ -102,6 +102,7 @@ PxTimer_Callback(
      * is used to set the TLS 'active_timer' which allows the timer to quickly
      * differentiate between calls originating from itself (e.g. calling stop()
      * or setting an attribute) versus external calls (from other threads). */
+    PxTimer_UNSET_START_REQUESTED(t);
     PxTimer_SET_STARTED(t);
     PxTimer_SET_RUNNING(t);
     _PxTimer_SetActive(t);

@@ -84,6 +84,9 @@ void PxTimer_HandleException(Context *c, const char *syscall, int fatal);
 #define PxTimer_SET_START_REQUESTED(t)                                         \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_START_REQUESTED)
 
+#define PxTimer_UNSET_START_REQUESTED(t)                                       \
+    PxTimer_UNSET_FLAG(t, Px_TIMERFLAGS_START_REQUESTED)
+
 #define PxTimer_SET_STARTED(t)                                                 \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_STARTED)
 
