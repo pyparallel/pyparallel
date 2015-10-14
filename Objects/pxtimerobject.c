@@ -468,7 +468,6 @@ pxtimer_get_data(PxTimerObject *t, void *closure)
         data = PyObject_Copy(t->data);
     ReleaseSRWLockShared(&t->data_srwlock);
 
-    Py_INCREF(data);
     return data;
 }
 
