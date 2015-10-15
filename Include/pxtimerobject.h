@@ -1,3 +1,4 @@
+/* PxTimer.  Copyright 2015, Trent Nelson <trent@trent.me> */
 #ifndef PXTIMEROBJECT_H
 #define PXTIMEROBJECT_H
 
@@ -114,8 +115,6 @@ extern "C" {
 
 #define PxTimer_SET_CLEANED_UP(t)                                              \
     PxTimer_SET_FLAG(t, Px_TIMERFLAGS_CLEANED_UP)
-
-
 
 typedef struct _PxTimerObject {
     PyObject_HEAD
