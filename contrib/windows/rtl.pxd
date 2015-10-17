@@ -1,0 +1,39 @@
+from types cimport *
+
+cdef extern from "<wdm.h>":
+    void RtlInitializeBitMap(PRTL_BITMAP BitMapHeader, PULONG BitMapBuffer, ULONG SizeOfBitmap)
+
+    BOOLEAN RtlAreBitsClear(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG Length)
+    BOOLEAN RtlAreBitsSet(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG Length)
+    BOOLEAN RtlCheckBit(PRTL_BITMAP BitMapHeader, ULONG BitPosition)
+    BOOLEAN RtlClearAllBits(PRTL_BITMAP BitMapHeader)
+    BOOLEAN RtlClearBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
+    BOOLEAN RtlClearBits(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG NumberToClear)
+
+    ULONG RtlFindClearBits(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
+    ULONG RtlFindClearBitsAndSet(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
+
+    ULONG RtlFindClearRuns(PRTL_BITMAP BitMapHeader, PRTL_BITMAP_RUN RunArray, ULONG SizeOfRunArray, BOOLEAN LocateLongestRuns)
+    ULONG RtlFindFirstRunClear(PRTL_BITMAP BitMapHeader, PULONG StartingIndex)
+    ULONG RtlFindLastBackwardRunClear(PRTL_BITMAP BitMapHeader, PULONG FromIndex, PULONG StartingRunIndex)
+
+    ULONG RtlFindLongestRunClear(PRTL_BITMAP BitMapHeader, PULONG StartingIndex)
+    ULONG RtlFindNextForwardRunClear(PRTL_BITMAP BitMapHeader, PULONG FromIndex, PULONG StartingRunIndex)
+    ULONG RtlFindSetBits(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
+    ULONG RtlFindSetBitsAndClear(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
+
+    ULONG RtlNumberOfClearBits(PRTL_BITMAP BitMapHeader)
+    ULONG RtlNumberOfSetBits(PRTL_BITMAP BitMapHeader)
+
+    VOID RtlSetAllBits(PRTL_BITMAP BitMapHeader)
+    VOID RtlSetBits(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG NumberToSet)
+    VOID RtlSetBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
+
+    CCHAR RtlFindMostSignificantBit(ULONGLONG Set)
+    CCHAR RtlFindLeastSignificantBit(ULONGLONG Set)
+
+    ULONG RtlNumberOfSetBitsUlongPtr(ULONG_PTR Target)
+
+    BOOLEAN RtlTestBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
+
+# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
