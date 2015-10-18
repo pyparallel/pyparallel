@@ -2,13 +2,18 @@ cdef extern from "<windows.h>":
 
     ctypedef bint BOOL
     ctypedef char CHAR
+    ctypedef CHAR CCHAR
     ctypedef CHAR BOOLEAN
     ctypedef unsigned char UCHAR
     ctypedef UCHAR BYTE
     ctypedef short SHORT
     ctypedef unsigned short USHORT
+    ctypedef unsigned short WORD
+    ctypedef WORD ATOM
     ctypedef USHORT WCHAR
     ctypedef WCHAR* PWSTR
+    ctypedef float FLOAT
+    ctypedef FLOAT* PFLOAT
     ctypedef int INT32
     ctypedef long long INT64
     ctypedef Py_ssize_t INT_PTR
@@ -30,14 +35,15 @@ cdef extern from "<windows.h>":
     ctypedef unsigned long long ULONG64
     ctypedef ULONG64* PULONG64
     ctypedef ULONGLONG* PULONGLONG
-    ctypedef Py_ssize_t HANDLE
-    ctypedef unsigned short WORD
     ctypedef unsigned long DWORD
     ctypedef DWORD* PDWORD
     ctypedef unsigned int DWORD32
     ctypedef unsigned long long DWORD64
     ctypedef long long __int64
+    ctypedef Py_ssize_t PVOID
+    ctypedef Py_ssize_t LPVOID
 
+    ctypedef Py_ssize_t HANDLE
     ctypedef HANDLE HDC
     ctypedef HANDLE HWND
     ctypedef HANDLE HRGN
@@ -56,6 +62,39 @@ cdef extern from "<windows.h>":
         DWORD dwProcessId
         DWORD dwThreadId
     ctypedef PROCESS_INFORMATION* PPROCESS_INFORMATION
+
+    ctypedef enum PROCESS_INFORMATION_CLASS:
+        ProcessBasicInformation             = 0
+        ProcessQuotaLimits                  = 1
+        ProcessIoCounters                   = 2
+        ProcessVmCounters                   = 3
+        ProcessTimes                        = 4
+        ProcessBasePriority                 = 5
+        ProcessRaisePriority                = 6
+        ProcessDebugPort                    = 7
+        ProcessExceptionPort                = 8
+        ProcessAccessToken                  = 9
+        ProcessLdtInformation               = 10
+        ProcessLdtSize                      = 11
+        ProcessDefaultHardErrorMode         = 12
+        ProcessIoPortHandlers               = 13
+        ProcessPooledUsageAndLimits         = 14
+        ProcessWorkingSetWatch              = 15
+        ProcessUserModeIOPL                 = 16
+        ProcessEnableAlignmentFaultFixup    = 17
+        ProcessPriorityClass                = 18
+        ProcessWx86Information              = 19
+        ProcessHandleCount                  = 20
+        ProcessAffinityMask                 = 21
+        ProcessPriorityBoost                = 22
+
+        ProcessWow64Information             = 26
+        ProcessImageFileName                = 27
+
+    ctypedef struct SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION:
+        DWORD64 CycleTime
+    ctypedef SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION* PSYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION
+
 
     ctypedef struct MEMORY_PRIORITY_INFORMATION:
         ULONG MemoryPriority
@@ -275,7 +314,7 @@ cdef extern from "<windows.h>":
         GROUP_RELATIONSHIP Group
     ctypedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX
 
-    ctypedef HEAPENTRY32:
+    ctypedef struct HEAPENTRY32:
         Py_ssize_t dwSize
         HANDLE hHandle
         ULONG_PTR dwAddress
@@ -308,7 +347,7 @@ cdef extern from "<windows.h>":
         LONG tpBasePri
         LONG tpDeltaPri
         DWORD dwFlags
-    ctypedef struct THREADENTRY32* PTHREADENTRY32
+    ctypedef THREADENTRY32* PTHREADENTRY32
 
     ctypedef struct BITMAP:
         LONG bmType
@@ -343,3 +382,4 @@ cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):
     ul.HighPart = filetime.dwHighDateTime
     return ul.QuadPart
 
+# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
