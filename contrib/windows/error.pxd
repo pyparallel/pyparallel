@@ -3,7 +3,7 @@
 from types cimport *
 
 cdef extern from "<windows.h>":
-    DWORD ERROR_SUCCESS = 0
-    DWORD ERROR_INSUFFICIENT_BUFFER = 122
+    pass
 
-cdef public DWORD ERROR_SUCCESS
+cdef public DWORD ERROR_SUCCESS = 0
+cdef public DWORD ERROR_INSUFFICIENT_BUFFER = 122

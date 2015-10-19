@@ -25,9 +25,9 @@ cdef extern from "<wdm.h>":
     ULONG RtlNumberOfClearBits(PRTL_BITMAP BitMapHeader)
     ULONG RtlNumberOfSetBits(PRTL_BITMAP BitMapHeader)
 
-    VOID RtlSetAllBits(PRTL_BITMAP BitMapHeader)
-    VOID RtlSetBits(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG NumberToSet)
-    VOID RtlSetBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
+    void RtlSetAllBits(PRTL_BITMAP BitMapHeader)
+    void RtlSetBits(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG NumberToSet)
+    void RtlSetBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
 
     CCHAR RtlFindMostSignificantBit(ULONGLONG Set)
     CCHAR RtlFindLeastSignificantBit(ULONGLONG Set)
