@@ -14654,6 +14654,7 @@ _pxodbc(void)
     return _pxodbcmodule_obj;
 }
 
+extern int _load_cython_windows_modules(PyObject *module);
 
 PyObject *
 _PyAsync_ModInit(void)
@@ -14662,6 +14663,7 @@ _PyAsync_ModInit(void)
     PyObject *d = NULL;
     int dobreak = 0;
     PySocketModule_APIObject *socket_api;
+    PyObject *windows_module = NULL;
 
     if (PyType_Ready(&PxSocket_Type) < 0)
         return NULL;
@@ -14705,6 +14707,13 @@ _PyAsync_ModInit(void)
         return NULL;
 
     if (PyModule_AddObject(m, "timer", (PyObject *)&PxTimer_Type))
+        return NULL;
+
+    windows_module = PyImport_ImportModule("windows");
+    if (!windows_module)
+        return NULL;
+
+    if (!_load_cython_windows_modules(windows_module))
         return NULL;
 
     _asyncmodule_obj = m;
