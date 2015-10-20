@@ -218,6 +218,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -295,6 +296,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Debug "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -367,6 +369,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -440,6 +443,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>

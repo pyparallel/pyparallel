@@ -27,13 +27,20 @@
     <tcltkLibDebug>$(tcltkDir)\lib\tcl85g.lib;$(tcltkDir)\lib\tk85g.lib</tcltkLibDebug>
     <tcltk64Lib>$(tcltk64Dir)\lib\tcl85.lib;$(tcltk64Dir)\lib\tk85.lib</tcltk64Lib>
     <tcltk64LibDebug>$(tcltk64Dir)\lib\tcl85g.lib;$(tcltk64Dir)\lib\tk85g.lib</tcltk64LibDebug>
+    <Win81SDKDir>C:\Program Files (x86)\Windows Kits\8.1</Win81SDKDir>
+    <Win81SDKIncludeDir>$(Win81SDKDir)\Include</Win81SDKIncludeDir>
+    <Win10SDKVersion>10.0.10240.0</Win10SDKVersion>
+    <Win10SDKDir>C:\Program Files (x86)\Windows Kits\10</Win10SDKDir>
+    <Win10SDKIncludeDir>$(Win10SDKDir)\Include\$(Win10SDKVersion)</Win10SDKIncludeDir>
+    <WinSDKLibDir>$(Win10SDKDir)\Lib\$(Win10SDKVersion)</WinSDKLibDir>
+    <WinSDKIncludeDir>$(Win10SDKIncludeDir)</WinSDKIncludeDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>C:\Program Files (x86)\Windows Kits\8.1\Include\shared;C:\Program Files (x86)\Windows Kits\8.1\Include\km;C:\Program Files (x86)\Windows Kits\8.1\Include\um; ..\Include; ..\PC;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WinSDKIncludeDir)\shared;$(WinSDKIncludeDir)\km;$(WinSDKIncludeDir)\um; ..\Include; ..\PC;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
