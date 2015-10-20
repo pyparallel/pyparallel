@@ -3,8 +3,12 @@
   <Target Name="ListCython">
     <Message Text="Found: @(CythonFile->'%(CythonFile.Identity)'"/>
   </Target>
-  <Target Name="Cython" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(CythonFile.Filename).c')">
-    <Exec Command="cython -3 %(CythonFile.Filename).pyx -w . -I . --fast-fail --t"
+  <Target Name="Cython" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).c')">
+    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail --timestamps"
+      WorkingDirectory="%(CythonFile.RelativeDir)"/>
+  </Target>
+  <Target Name="CythonForce" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).c')">
+    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail"
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
   </Target>
   <Target Name="PreBuild" DependsOnTargets="Cython"/>
