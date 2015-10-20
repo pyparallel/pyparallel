@@ -1,6 +1,6 @@
 from types cimport *
 
-cdef extern from "<wdm.h>":
+cdef extern from *:
     void RtlInitializeBitMap(PRTL_BITMAP BitMapHeader, PULONG BitMapBuffer, ULONG SizeOfBitmap)
 
     BOOLEAN RtlAreBitsClear(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG Length)
@@ -15,10 +15,10 @@ cdef extern from "<wdm.h>":
 
     ULONG RtlFindClearRuns(PRTL_BITMAP BitMapHeader, PRTL_BITMAP_RUN RunArray, ULONG SizeOfRunArray, BOOLEAN LocateLongestRuns)
     ULONG RtlFindFirstRunClear(PRTL_BITMAP BitMapHeader, PULONG StartingIndex)
-    ULONG RtlFindLastBackwardRunClear(PRTL_BITMAP BitMapHeader, PULONG FromIndex, PULONG StartingRunIndex)
+    ULONG RtlFindLastBackwardRunClear(PRTL_BITMAP BitMapHeader, ULONG FromIndex, PULONG StartingRunIndex)
 
     ULONG RtlFindLongestRunClear(PRTL_BITMAP BitMapHeader, PULONG StartingIndex)
-    ULONG RtlFindNextForwardRunClear(PRTL_BITMAP BitMapHeader, PULONG FromIndex, PULONG StartingRunIndex)
+    ULONG RtlFindNextForwardRunClear(PRTL_BITMAP BitMapHeader, ULONG FromIndex, PULONG StartingRunIndex)
     ULONG RtlFindSetBits(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
     ULONG RtlFindSetBitsAndClear(PRTL_BITMAP BitMapHeader, ULONG NumberToFind, ULONG HintIndex)
 

@@ -1,4 +1,5 @@
 
+include "windows.pxi"
 from processthreads cimport *
 #include "processthreads.pxi"
 

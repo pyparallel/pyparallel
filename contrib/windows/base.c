@@ -234,8 +234,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__windows__base
-#define __PYX_HAVE_API__windows__base
+#define __PYX_HAVE__base
+#define __PYX_HAVE_API__base
 #include <windows.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -445,7 +445,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "windows\\base.pyx",
+  "base.pyx",
 };
 
 /*--- Type declarations ---*/
@@ -544,75 +544,14 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 /* Module declarations from 'types' */
 
 /* Module declarations from 'base' */
+#define __Pyx_MODULE_NAME "base"
+int __pyx_module_is_main_base = 0;
 
-/* Module declarations from 'windows.base' */
-#define __Pyx_MODULE_NAME "windows.base"
-int __pyx_module_is_main_windows__base = 0;
-
-/* Implementation of 'windows.base' */
+/* Implementation of 'base' */
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_test;
-
-/* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
-
-static CYTHON_INLINE ULONGLONG __pyx_f_5types_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
-  ULARGE_INTEGER __pyx_v_ul;
-  ULONGLONG __pyx_r;
-  __Pyx_RefNannyDeclarations
-  DWORD __pyx_t_1;
-  __Pyx_RefNannySetupContext("FileTimeToUnsignedLongLong", 0);
-
-  /* "types.pxd":381
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime             # <<<<<<<<<<<<<<
- *     ul.HighPart = filetime.dwHighDateTime
- *     return ul.QuadPart
- */
-  __pyx_t_1 = __pyx_v_filetime->dwLowDateTime;
-  __pyx_v_ul.LowPart = __pyx_t_1;
-
-  /* "types.pxd":382
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- *     ul.HighPart = filetime.dwHighDateTime             # <<<<<<<<<<<<<<
- *     return ul.QuadPart
- * 
- */
-  __pyx_t_1 = __pyx_v_filetime->dwHighDateTime;
-  __pyx_v_ul.HighPart = __pyx_t_1;
-
-  /* "types.pxd":383
- *     ul.LowPart = filetime.dwLowDateTime
- *     ul.HighPart = filetime.dwHighDateTime
- *     return ul.QuadPart             # <<<<<<<<<<<<<<
- * 
- * # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
- */
-  __pyx_r = __pyx_v_ul.QuadPart;
-  goto __pyx_L0;
-
-  /* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
-
-  /* function exit code */
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
 
 static PyMethodDef __pyx_methods[] = {
   {0, 0, 0, 0}
@@ -726,14 +665,14 @@ PyMODINIT_FUNC PyInit_base(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_windows__base) {
+  if (__pyx_module_is_main_base) {
     if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "windows.base")) {
-      if (unlikely(PyDict_SetItemString(modules, "windows.base", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "base")) {
+      if (unlikely(PyDict_SetItemString(modules, "base", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -753,21 +692,13 @@ PyMODINIT_FUNC PyInit_base(void)
   if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "windows\base.pyx":1
+  /* "base.pyx":1
  * from base cimport *             # <<<<<<<<<<<<<<
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
 
   /*--- Wrapped vars code ---*/
 
@@ -776,11 +707,11 @@ PyMODINIT_FUNC PyInit_base(void)
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init windows.base", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init base", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init windows.base");
+    PyErr_SetString(PyExc_ImportError, "init base");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();

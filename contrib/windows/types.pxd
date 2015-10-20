@@ -1,4 +1,4 @@
-cdef extern from "<windows.h>":
+cdef extern from *:
 
     ctypedef bint BOOL
     ctypedef char CHAR
@@ -361,7 +361,8 @@ cdef extern from "<windows.h>":
     ctypedef BITMAP* LPBITMAP
 
     ctypedef struct RTL_BITMAP:
-        pass
+        ULONG SizeOfBitMap
+        PULONG Buffer
     ctypedef RTL_BITMAP* PRTL_BITMAP
 
     ctypedef struct RTL_BITMAP_RUN:
@@ -375,11 +376,5 @@ cdef extern from "<windows.h>":
         PHYSICAL_ADDRESS PhysicalAddress
         Py_ssize_t NumberOfBytes
     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
-
-cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):
-    cdef ULARGE_INTEGER ul
-    ul.LowPart = filetime.dwLowDateTime
-    ul.HighPart = filetime.dwHighDateTime
-    return ul.QuadPart
 
 # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:

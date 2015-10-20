@@ -234,8 +234,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__windows__error
-#define __PYX_HAVE_API__windows__error
+#define __PYX_HAVE__error
+#define __PYX_HAVE_API__error
 #include <windows.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -445,7 +445,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "windows\\error.pyx",
+  "error.pyx",
 };
 
 /*--- Type declarations ---*/
@@ -557,36 +557,18 @@ static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr
 
 static int __Pyx_ExportVoidPtr(PyObject *name, void *p, const char *sig);
 
-#if !defined(__Pyx_PyIdentifier_FromString)
-#if PY_MAJOR_VERSION < 3
-  #define __Pyx_PyIdentifier_FromString(s) PyString_FromString(s)
-#else
-  #define __Pyx_PyIdentifier_FromString(s) PyUnicode_FromString(s)
-#endif
-#endif
-
-static PyObject *__Pyx_ImportModule(const char *name);
-
-static int __Pyx_ImportVoidPtr(PyObject *module, const char *name, void **p, const char *sig);
-
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 
 /* Module declarations from 'types' */
 
 /* Module declarations from 'error' */
-static DWORD *__pyx_vp_5error_ERROR_SUCCESS = 0;
-#define __pyx_v_5error_ERROR_SUCCESS (*__pyx_vp_5error_ERROR_SUCCESS)
-static DWORD *__pyx_vp_5error_ERROR_INSUFFICIENT_BUFFER = 0;
-#define __pyx_v_5error_ERROR_INSUFFICIENT_BUFFER (*__pyx_vp_5error_ERROR_INSUFFICIENT_BUFFER)
+__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_5error_ERROR_SUCCESS;
+__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_5error_ERROR_INSUFFICIENT_BUFFER;
+#define __Pyx_MODULE_NAME "error"
+int __pyx_module_is_main_error = 0;
 
-/* Module declarations from 'windows.error' */
-__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_7windows_5error_ERROR_SUCCESS;
-__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_7windows_5error_ERROR_INSUFFICIENT_BUFFER;
-#define __Pyx_MODULE_NAME "windows.error"
-int __pyx_module_is_main_windows__error = 0;
-
-/* Implementation of 'windows.error' */
+/* Implementation of 'error' */
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
 static char __pyx_k_pyx_capi[] = "__pyx_capi__";
@@ -597,67 +579,8 @@ static PyObject *__pyx_n_s_ERROR_SUCCESS;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_pyx_capi;
 static PyObject *__pyx_n_s_test;
-DWORD __pyx_v_7windows_5error_ERROR_SUCCESS;
-DWORD __pyx_v_7windows_5error_ERROR_INSUFFICIENT_BUFFER;
-
-/* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
-
-static CYTHON_INLINE ULONGLONG __pyx_f_5types_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
-  ULARGE_INTEGER __pyx_v_ul;
-  ULONGLONG __pyx_r;
-  __Pyx_RefNannyDeclarations
-  DWORD __pyx_t_1;
-  __Pyx_RefNannySetupContext("FileTimeToUnsignedLongLong", 0);
-
-  /* "types.pxd":381
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime             # <<<<<<<<<<<<<<
- *     ul.HighPart = filetime.dwHighDateTime
- *     return ul.QuadPart
- */
-  __pyx_t_1 = __pyx_v_filetime->dwLowDateTime;
-  __pyx_v_ul.LowPart = __pyx_t_1;
-
-  /* "types.pxd":382
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- *     ul.HighPart = filetime.dwHighDateTime             # <<<<<<<<<<<<<<
- *     return ul.QuadPart
- * 
- */
-  __pyx_t_1 = __pyx_v_filetime->dwHighDateTime;
-  __pyx_v_ul.HighPart = __pyx_t_1;
-
-  /* "types.pxd":383
- *     ul.LowPart = filetime.dwLowDateTime
- *     ul.HighPart = filetime.dwHighDateTime
- *     return ul.QuadPart             # <<<<<<<<<<<<<<
- * 
- * # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
- */
-  __pyx_r = __pyx_v_ul.QuadPart;
-  goto __pyx_L0;
-
-  /* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
-
-  /* function exit code */
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
+DWORD __pyx_v_5error_ERROR_SUCCESS;
+DWORD __pyx_v_5error_ERROR_INSUFFICIENT_BUFFER;
 
 static PyMethodDef __pyx_methods[] = {
   {0, 0, 0, 0}
@@ -716,7 +639,6 @@ PyMODINIT_FUNC PyInit_error(void)
 #endif
 {
   PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -775,14 +697,14 @@ PyMODINIT_FUNC PyInit_error(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_windows__error) {
+  if (__pyx_module_is_main_error) {
     if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "windows.error")) {
-      if (unlikely(PyDict_SetItemString(modules, "windows.error", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "error")) {
+      if (unlikely(PyDict_SetItemString(modules, "error", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -792,53 +714,40 @@ PyMODINIT_FUNC PyInit_error(void)
   if (__Pyx_InitCachedConstants() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Global init code ---*/
   /*--- Variable export code ---*/
-  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_SUCCESS, (void *)&__pyx_v_7windows_5error_ERROR_SUCCESS, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_INSUFFICIENT_BUFFER, (void *)&__pyx_v_7windows_5error_ERROR_INSUFFICIENT_BUFFER, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_SUCCESS, (void *)&__pyx_v_5error_ERROR_SUCCESS, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_INSUFFICIENT_BUFFER, (void *)&__pyx_v_5error_ERROR_INSUFFICIENT_BUFFER, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Function export code ---*/
   /*--- Type init code ---*/
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
-  __pyx_t_1 = __Pyx_ImportModule("error"); if (!__pyx_t_1) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (__Pyx_ImportVoidPtr(__pyx_t_1, "ERROR_SUCCESS", (void **)&__pyx_vp_5error_ERROR_SUCCESS, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (__Pyx_ImportVoidPtr(__pyx_t_1, "ERROR_INSUFFICIENT_BUFFER", (void **)&__pyx_vp_5error_ERROR_INSUFFICIENT_BUFFER, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  Py_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   /*--- Function import code ---*/
   /*--- Execution code ---*/
   #if defined(__Pyx_Generator_USED) || defined(__Pyx_Coroutine_USED)
   if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "windows\error.pyx":1
+  /* "error.pyx":1
  * from error cimport *             # <<<<<<<<<<<<<<
  * 
  * #cdef public DWORD ERROR_SUCCESS
  */
-  __pyx_t_2 = PyDict_New(); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_2) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-  /* "types.pxd":379
- *     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
- * 
- * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
- *     cdef ULARGE_INTEGER ul
- *     ul.LowPart = filetime.dwLowDateTime
- */
+  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /*--- Wrapped vars code ---*/
 
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init windows.error", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init error", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init windows.error");
+    PyErr_SetString(PyExc_ImportError, "init error");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -1488,71 +1397,6 @@ bad:
     Py_XDECREF(d);
     return -1;
 }
-
-#ifndef __PYX_HAVE_RT_ImportModule
-#define __PYX_HAVE_RT_ImportModule
-static PyObject *__Pyx_ImportModule(const char *name) {
-    PyObject *py_name = 0;
-    PyObject *py_module = 0;
-    py_name = __Pyx_PyIdentifier_FromString(name);
-    if (!py_name)
-        goto bad;
-    py_module = PyImport_Import(py_name);
-    Py_DECREF(py_name);
-    return py_module;
-bad:
-    Py_XDECREF(py_name);
-    return 0;
-}
-#endif
-
-#ifndef __PYX_HAVE_RT_ImportVoidPtr
-#define __PYX_HAVE_RT_ImportVoidPtr
-static int __Pyx_ImportVoidPtr(PyObject *module, const char *name, void **p, const char *sig) {
-    PyObject *d = 0;
-    PyObject *cobj = 0;
-    d = PyObject_GetAttrString(module, (char *)"__pyx_capi__");
-    if (!d)
-        goto bad;
-    cobj = PyDict_GetItemString(d, name);
-    if (!cobj) {
-        PyErr_Format(PyExc_ImportError,
-            "%.200s does not export expected C variable %.200s",
-                PyModule_GetName(module), name);
-        goto bad;
-    }
-#if PY_VERSION_HEX >= 0x02070000
-    if (!PyCapsule_IsValid(cobj, sig)) {
-        PyErr_Format(PyExc_TypeError,
-            "C variable %.200s.%.200s has wrong signature (expected %.500s, got %.500s)",
-             PyModule_GetName(module), name, sig, PyCapsule_GetName(cobj));
-        goto bad;
-    }
-    *p = PyCapsule_GetPointer(cobj, sig);
-#else
-    {const char *desc, *s1, *s2;
-    desc = (const char *)PyCObject_GetDesc(cobj);
-    if (!desc)
-        goto bad;
-    s1 = desc; s2 = sig;
-    while (*s1 != '\0' && *s1 == *s2) { s1++; s2++; }
-    if (*s1 != *s2) {
-        PyErr_Format(PyExc_TypeError,
-            "C variable %.200s.%.200s has wrong signature (expected %.500s, got %.500s)",
-             PyModule_GetName(module), name, sig, desc);
-        goto bad;
-    }
-    *p = PyCObject_AsVoidPtr(cobj);}
-#endif
-    if (!(*p))
-        goto bad;
-    Py_DECREF(d);
-    return 0;
-bad:
-    Py_XDECREF(d);
-    return -1;
-}
-#endif
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {
     while (t->p) {
