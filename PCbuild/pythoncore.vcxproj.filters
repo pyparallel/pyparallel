@@ -453,16 +453,12 @@
     <ClInclude Include="..\Python\ujson_py_defines.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\contrib\windows\processthreads.h" />
-    <ClInclude Include="..\contrib\windows\processthreads.h" />
+    <ClInclude Include="..\contrib\windows\processthreads.h" >
+      <Filter>Windows\Generated</Filter>
+    </ClInclude>
     <ClInclude Include="..\contrib\windows\error.h">
       <Filter>Windows\Generated</Filter>
     </ClInclude>
-    <ClInclude Include="..\contrib\windows\processthreads.h" />
-    <ClInclude Include="..\contrib\windows\error.h">
-      <Filter>Windows\Generated</Filter>
-    </ClInclude>
-    <ClInclude Include="..\contrib\windows\processthreads.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Modules\_bisectmodule.c">
@@ -1005,34 +1001,21 @@
     <ClCompile Include="..\Python\ultrajsonenc.c">
       <Filter>Python</Filter>
     </ClCompile>
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
-    <ClCompile Include="..\contrib\windows\*.c" />
     <ClCompile Include="..\contrib\windows\base.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
-    <ClCompile Include="..\contrib\windows\base.c">
+    <ClCompile Include="..\contrib\windows\_loader.c">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\contrib\windows\error.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
-    <ClCompile Include="..\contrib\windows\base.c">
+    <ClCompile Include="..\contrib\windows\rtl.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
-    <ClCompile Include="..\contrib\windows\error.c" />
-    <ClCompile Include="..\contrib\windows\processthreads.c" />
-    <ClCompile Include="..\contrib\windows\_loader.c" />
+    <ClCompile Include="..\contrib\windows\processthreads.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\PC\python_nt.rc">
@@ -1040,131 +1023,17 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\contrib\windows\appnotify.pxd">
+    <CythonFile Include="..\contrib\windows\base.pyx">
       <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\winreg.pxd">
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\error.pyx">
       <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\avrt.pxd">
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\processthreads.pyx">
       <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\base.pxd">
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\rtl.pyx">
       <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\base.pyx">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\console.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\datetime.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\debug.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\errhandling.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\error.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\error.pyx">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\fibers.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\file.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\handle.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\heap.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\interlocked.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\io.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\job.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\libloader.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\memory.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\nt.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\path.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\processenv.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\processthreads.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\processthreads.pyx">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\processtopology.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\profile.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\realtime.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\rtl.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\rtl.pyx">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\string.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\synch.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\sysinfo.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\systemtopology.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\threadpool.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\time.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\timezone.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\tlhelp32.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\types.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\user.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\util.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
-    <None Include="..\contrib\windows\wingdi.pxd">
-      <Filter>Windows\Cython</Filter>
-    </None>
+    </CythonFile>
   </ItemGroup>
 </Project>
