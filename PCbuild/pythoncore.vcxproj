@@ -457,7 +457,10 @@ IF %ERRORLEVEL% NEQ 0 (
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CythonFile Include="..\contrib\windows\*.pyx" />
+    <CythonFile Include="..\contrib\windows\processthreads.pyx" />
+    <CythonFile Include="..\contrib\windows\error.pyx" />
+    <CythonFile Include="..\contrib\windows\base.pyx" />
+    <CythonFile Include="..\contrib\windows\rtl.pyx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\abstract.h" />
@@ -597,10 +600,15 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\ultrajson.h" />
     <ClInclude Include="..\Python\ujson_py_defines.h" />
     <ClInclude Include="..\Python\ujson_version.h" />
-    <ClInclude Include="..\contrib\windows\*.h" />
+    <ClInclude Include="..\contrib\windows\processthreads.h" />
+    <ClInclude Include="..\contrib\windows\error.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\contrib\windows\*.c" />
+    <ClCompile Include="..\contrib\windows\_loader.c" />
+    <ClCompile Include="..\contrib\windows\base.c" />
+    <ClCompile Include="..\contrib\windows\error.c" />
+    <ClCompile Include="..\contrib\windows\processthreads.c" />
+    <ClCompile Include="..\contrib\windows\rtl.c" />
     <ClCompile Include="..\Modules\_bisectmodule.c" />
     <ClCompile Include="..\Modules\_codecsmodule.c" />
     <ClCompile Include="..\Modules\_collectionsmodule.c" />
@@ -798,50 +806,6 @@ IF %ERRORLEVEL% NEQ 0 (
       <Project>{f0e0541e-f17d-430b-97c4-93adf0dd284e}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\contrib\windows\appnotify.pxd" />
-    <None Include="..\contrib\windows\avrt.pxd" />
-    <None Include="..\contrib\windows\base.pxd" />
-    <None Include="..\contrib\windows\base.pyx" />
-    <None Include="..\contrib\windows\console.pxd" />
-    <None Include="..\contrib\windows\datetime.pxd" />
-    <None Include="..\contrib\windows\debug.pxd" />
-    <None Include="..\contrib\windows\errhandling.pxd" />
-    <None Include="..\contrib\windows\error.pxd" />
-    <None Include="..\contrib\windows\error.pyx" />
-    <None Include="..\contrib\windows\fibers.pxd" />
-    <None Include="..\contrib\windows\file.pxd" />
-    <None Include="..\contrib\windows\handle.pxd" />
-    <None Include="..\contrib\windows\heap.pxd" />
-    <None Include="..\contrib\windows\interlocked.pxd" />
-    <None Include="..\contrib\windows\io.pxd" />
-    <None Include="..\contrib\windows\job.pxd" />
-    <None Include="..\contrib\windows\libloader.pxd" />
-    <None Include="..\contrib\windows\memory.pxd" />
-    <None Include="..\contrib\windows\nt.pxd" />
-    <None Include="..\contrib\windows\path.pxd" />
-    <None Include="..\contrib\windows\processenv.pxd" />
-    <None Include="..\contrib\windows\processthreads.pxd" />
-    <None Include="..\contrib\windows\processthreads.pyx" />
-    <None Include="..\contrib\windows\processtopology.pxd" />
-    <None Include="..\contrib\windows\profile.pxd" />
-    <None Include="..\contrib\windows\realtime.pxd" />
-    <None Include="..\contrib\windows\rtl.pxd" />
-    <None Include="..\contrib\windows\rtl.pyx" />
-    <None Include="..\contrib\windows\string.pxd" />
-    <None Include="..\contrib\windows\synch.pxd" />
-    <None Include="..\contrib\windows\sysinfo.pxd" />
-    <None Include="..\contrib\windows\systemtopology.pxd" />
-    <None Include="..\contrib\windows\threadpool.pxd" />
-    <None Include="..\contrib\windows\time.pxd" />
-    <None Include="..\contrib\windows\timezone.pxd" />
-    <None Include="..\contrib\windows\tlhelp32.pxd" />
-    <None Include="..\contrib\windows\types.pxd" />
-    <None Include="..\contrib\windows\user.pxd" />
-    <None Include="..\contrib\windows\util.pxd" />
-    <None Include="..\contrib\windows\wingdi.pxd" />
-    <None Include="..\contrib\windows\winreg.pxd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
