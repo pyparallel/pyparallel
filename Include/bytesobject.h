@@ -69,6 +69,7 @@ PyAPI_FUNC(PyObject *) PyBytes_DecodeEscape(const char *, Py_ssize_t,
 
 PyAPI_FUNC(PyObject *) PyBytes_CopyObject(PyObject *b);
 PyAPI_FUNC(PyBytesObject *) PyBytes_Copy(PyBytesObject *b);
+PyAPI_FUNC(PyBytesObject *) PyBytes_New(Py_ssize_t size);
 
 /* Macro, trading safety for speed */
 #ifndef Py_LIMITED_API

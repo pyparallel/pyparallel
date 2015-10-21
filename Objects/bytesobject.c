@@ -119,6 +119,29 @@ end:
     return (PyObject *) op;
 }
 
+PyBytesObject *
+PyBytes_New(Py_ssize_t size)
+{
+    PyBytesObject *o;
+    if (size < 0) {
+        PyErr_SetString(PyExc_SystemError,
+            "Negative size passed to PyBytes_New");
+        return NULL;
+    }
+
+    if (size > PY_SSIZE_T_MAX - PyBytesObject_SIZE) {
+        PyErr_SetString(PyExc_OverflowError,
+                        "byte string is too large");
+        return NULL;
+    }
+
+    o = PyObject_NEW_VAR(PyBytesObject, &PyBytes_Type, size);
+    if (!o)
+        return NULL;
+
+    return o;
+}
+
 PyObject *
 PyBytes_FromString(const char *str)
 {
