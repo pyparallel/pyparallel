@@ -15,5 +15,14 @@
     <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail -a"
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
   </Target>
+  <Target Name="CythonCpp" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
+    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --timestamps -o %(Filename).cpp"
+      WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
+  </Target>
+  <Target Name="CythonCppForce" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
+    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail -o %(Filename).cpp"
+      WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
+  </Target>
   <Target Name="PreBuild" DependsOnTargets="Cython"/>
+  <Target Name="AllCython" DependsOnTargets="Cython;CythonCpp"/>
 </Project>

@@ -10,12 +10,23 @@
         return 0;                                                              \
 } while (0)
 
+#define _LOAD_CPP(n) do {                                                      \
+    PyObject *mod;                                                             \
+    extern PyObject *_load_##n();                                              \
+    mod = _load_##n();                                                         \
+    if (!mod)                                                                  \
+        return 0;                                                              \
+    if (PyModule_AddObject(m, #n, mod))                                        \
+        return 0;                                                              \
+} while (0)
+
 int
 _load_cython_windows_modules(PyObject *m)
 {
     _LOAD(processthreads);
     _LOAD(rtl);
     _LOAD(user);
+    _LOAD_CPP(gdiplus);
     return 1;
 }
 

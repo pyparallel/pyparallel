@@ -40,6 +40,9 @@
     <Filter Include="Windows\Generated">
       <UniqueIdentifier>{4969894b-4ea1-4ec6-ae6a-d975ee35f289}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Windows\Cython++">
+      <UniqueIdentifier>{9b82735b-f99c-4c4a-910f-e2441d50f802}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\abstract.h">
@@ -453,7 +456,10 @@
     <ClInclude Include="..\Python\ujson_py_defines.h">
       <Filter>Include</Filter>
     </ClInclude>
-    <ClInclude Include="..\contrib\windows\processthreads.h" >
+    <ClInclude Include="..\contrib\windows\_gdiplus.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\contrib\windows\processthreads.h">
       <Filter>Windows\Generated</Filter>
     </ClInclude>
     <ClInclude Include="..\contrib\windows\error.h">
@@ -1007,6 +1013,12 @@
     <ClCompile Include="..\contrib\windows\_loader.c">
       <Filter>Windows</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\_gdiplus.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\contrib\windows\gdiplus.cpp">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\error.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1041,5 +1053,10 @@
     <CythonFile Include="..\contrib\windows\rtl.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
+  </ItemGroup>
+  <ItemGroup>
+    <CythonCppFile Include="..\contrib\windows\gdiplus.pyx">
+      <Filter>Windows\Cython++</Filter>
+    </CythonCppFile>
   </ItemGroup>
 </Project>

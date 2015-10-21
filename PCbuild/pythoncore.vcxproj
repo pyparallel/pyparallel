@@ -461,11 +461,14 @@ IF %ERRORLEVEL% NEQ 0 (
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\user.pyx" />
+    <CythonFile Include="..\contrib\windows\rtl.pyx" />
     <CythonFile Include="..\contrib\windows\processthreads.pyx" />
     <CythonFile Include="..\contrib\windows\error.pyx" />
     <CythonFile Include="..\contrib\windows\base.pyx" />
-    <CythonFile Include="..\contrib\windows\rtl.pyx" />
-    <CythonFile Include="..\contrib\windows\user.pyx" />
+  </ItemGroup>
+  <ItemGroup>
+    <CythonCppFile Include="..\contrib\windows\gdiplus.pyx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\abstract.h" />
@@ -607,9 +610,12 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Python\ujson_version.h" />
     <ClInclude Include="..\contrib\windows\processthreads.h" />
     <ClInclude Include="..\contrib\windows\error.h" />
+    <ClInclude Include="..\contrib\windows\_gdiplus.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\contrib\windows\_loader.c" />
+    <ClCompile Include="..\contrib\windows\_gdiplus.cpp" />
+    <ClCompile Include="..\contrib\windows\gdiplus.cpp" />
     <ClCompile Include="..\contrib\windows\base.c" />
     <ClCompile Include="..\contrib\windows\error.c" />
     <ClCompile Include="..\contrib\windows\processthreads.c" />

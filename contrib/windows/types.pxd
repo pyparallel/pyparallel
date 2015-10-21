@@ -52,6 +52,8 @@ cdef extern from *:
     ctypedef Py_ssize_t PVOID
     ctypedef Py_ssize_t LPVOID
     ctypedef const void * LPCVOID
+    ctypedef PVOID INIT_ONCE
+    ctypedef PVOID* PINIT_ONCE
 
     ctypedef Py_ssize_t HANDLE
     ctypedef HANDLE HDC
@@ -181,6 +183,8 @@ cdef extern from *:
         pass
     ctypedef CRITICAL_SECTION* PCRITICAL_SECTION
     ctypedef CRITICAL_SECTION* LPCRITICAL_SECTION
+
+    ctypedef BOOL (__stdcall *PINIT_ONCE_FN)(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context)
 
     ctypedef enum LOGICAL_PROCESSOR_RELATIONSHIP:
         RelationProcessorCore       = 0
