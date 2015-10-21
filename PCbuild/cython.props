@@ -11,5 +11,9 @@
     <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail"
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
   </Target>
+  <Target Name="CythonAnnotate" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).html')">
+    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail -a"
+      WorkingDirectory="%(CythonFile.RelativeDir)"/>
+  </Target>
   <Target Name="PreBuild" DependsOnTargets="Cython"/>
 </Project>
