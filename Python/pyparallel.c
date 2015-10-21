@@ -6314,7 +6314,7 @@ start:
 
     /* ...and do a single wait if we haven't. */
     Py_BEGIN_ALLOW_THREADS
-    err = WaitForSingleObject(px->wakeup, 0);
+    err = WaitForSingleObject(px->wakeup, 500);
     Py_END_ALLOW_THREADS
     switch (err) {
         case WAIT_OBJECT_0:
