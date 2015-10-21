@@ -3,6 +3,9 @@ cdef extern from *:
     ctypedef bint BOOL
     ctypedef char CHAR
     ctypedef CHAR CCHAR
+    ctypedef CHAR* PCHAR
+    ctypedef CHAR* CSTR
+    ctypedef CHAR* LPCSTR
     ctypedef CHAR BOOLEAN
     ctypedef unsigned char UCHAR
     ctypedef UCHAR BYTE
@@ -12,6 +15,11 @@ cdef extern from *:
     ctypedef WORD ATOM
     ctypedef USHORT WCHAR
     ctypedef WCHAR* PWSTR
+    ctypedef WCHAR* PTSTR
+    ctypedef WCHAR* LPTSTR
+    ctypedef WCHAR* LPSTR
+    ctypedef WCHAR* LPWSTR
+    ctypedef const WCHAR* LPCTSTR
     ctypedef float FLOAT
     ctypedef FLOAT* PFLOAT
     ctypedef int INT32
@@ -37,11 +45,13 @@ cdef extern from *:
     ctypedef ULONGLONG* PULONGLONG
     ctypedef unsigned long DWORD
     ctypedef DWORD* PDWORD
+    ctypedef DWORD* LPDWORD
     ctypedef unsigned int DWORD32
     ctypedef unsigned long long DWORD64
     ctypedef long long __int64
     ctypedef Py_ssize_t PVOID
     ctypedef Py_ssize_t LPVOID
+    ctypedef const void * LPCVOID
 
     ctypedef Py_ssize_t HANDLE
     ctypedef HANDLE HDC
@@ -349,6 +359,33 @@ cdef extern from *:
         DWORD dwFlags
     ctypedef THREADENTRY32* PTHREADENTRY32
 
+    ctypedef struct SECURITY_ATTRIBUTES:
+        DWORD   nLength
+        LPVOID  lpSecurityDescriptor
+        BOOL    bInheritHandle
+    ctypedef SECURITY_ATTRIBUTES* PSECURITY_ATTRIBUTES
+    ctypedef SECURITY_ATTRIBUTES* LPSECURITY_ATTRIBUTES
+
+    ctypedef struct OVERLAPPED:
+        ULONG_PTR Internal
+        ULONG_PTR InternalHigh
+        DWORD Offset
+        DWORD OffsetHigh
+        LPVOID Pointer
+        HANDLE hEvent
+    ctypedef OVERLAPPED* LPOVERLAPPED
+
+    ctypedef struct SIZE:
+        LONG cx
+        LONG cy
+    ctypedef SIZE* PSIZE
+
+    ctypedef struct RGBQUAD:
+        BYTE rgbBlue
+        BYTE rgbGreen
+        BYTE rgbRed
+        BYTE rgbReserved
+
     ctypedef struct BITMAP:
         LONG bmType
         LONG bmWidth
@@ -359,6 +396,106 @@ cdef extern from *:
         LPVOID bmBits
     ctypedef BITMAP* PBITMAP
     ctypedef BITMAP* LPBITMAP
+
+    ctypedef struct BITMAPFILEHEADER:
+        WORD  bfType
+        DWORD bfSize
+        WORD  bfReserved1
+        WORD  bfReserved2
+        DWORD bfOffBits
+    ctypedef BITMAPFILEHEADER* PBITMAPFILEHEADER
+
+    ctypedef struct BITMAPINFOHEADER:
+        DWORD   biSize
+        LONG    biWidth
+        LONG    biHeight
+        WORD    biPlanes
+        WORD    biBitCount
+        DWORD   biCompression
+        DWORD   biSizeImage
+        LONG    biXPelsPerMeter
+        LONG    biYPelsPerMeter
+        DWORD   biClrUsed
+        DWORD   biClrImportant
+    ctypedef BITMAPINFOHEADER* PBITMAPINFOHEADER
+
+    ctypedef struct BITMAPINFO:
+        BITMAPINFOHEADER bmiHeader
+        RGBQUAD          bmiColors[1]
+    ctypedef BITMAPINFO* PBITMAPINFO
+    ctypedef BITMAPINFO* LPBITMAPINFO
+
+    ctypedef long FXPT2DOT30
+    ctypedef struct CIEXYZ:
+        FXPT2DOT30 ciexyzX
+        FXPT2DOT30 ciexyzY
+        FXPT2DOT30 ciexyzZ
+
+    ctypedef struct CIEXYZTRIPLE:
+        CIEXYZ ciexyzRed
+        CIEXYZ ciexyzGreen
+        CIEXYZ ciexyzBlue
+
+    ctypedef struct BITMAPV4HEADER:
+        DWORD        bV4Size
+        LONG         bV4Width
+        LONG         bV4Height
+        WORD         bV4Planes
+        WORD         bV4BitCount
+        DWORD        bV4V4Compression
+        DWORD        bV4SizeImage
+        LONG         bV4XPelsPerMeter
+        LONG         bV4YPelsPerMeter
+        DWORD        bV4ClrUsed
+        DWORD        bV4ClrImportant
+        DWORD        bV4RedMask
+        DWORD        bV4GreenMask
+        DWORD        bV4BlueMask
+        DWORD        bV4AlphaMask
+        DWORD        bV4CSType
+        CIEXYZTRIPLE bV4Endpoints
+        DWORD        bV4GammaRed
+        DWORD        bV4GammaGreen
+        DWORD        bV4GammaBlue
+    ctypedef BITMAPV4HEADER* PBITMAPV4HEADER
+
+    ctypedef struct BITMAPV5HEADER:
+        DWORD        bV5Size
+        LONG         bV5Width
+        LONG         bV5Height
+        WORD         bV5Planes
+        WORD         bV5BitCount
+        DWORD        bV5Compression
+        DWORD        bV5SizeImage
+        LONG         bV5XPelsPerMeter
+        LONG         bV5YPelsPerMeter
+        DWORD        bV5ClrUsed
+        DWORD        bV5ClrImportant
+        DWORD        bV5RedMask
+        DWORD        bV5GreenMask
+        DWORD        bV5BlueMask
+        DWORD        bV5AlphaMask
+        DWORD        bV5CSType
+        CIEXYZTRIPLE bV5Endpoints
+        DWORD        bV5GammaRed
+        DWORD        bV5GammaGreen
+        DWORD        bV5GammaBlue
+        DWORD        bV5Intent
+        DWORD        bV5ProfileData
+        DWORD        bV5ProfileSize
+        DWORD        bV5Reserved
+    ctypedef BITMAPV5HEADER* PBITMAPV5HEADER
+
+    ctypedef struct RECT:
+        LONG left
+        LONG top
+        LONG right
+        LONG bottom
+    ctypedef RECT* PRECT
+    ctypedef RECT* LPRECT
+    ctypedef RECT RECTL
+    ctypedef RECTL* PRECTL
+    ctypedef RECTL* LPRECTL
 
     ctypedef struct RTL_BITMAP:
         ULONG SizeOfBitMap

@@ -15,6 +15,7 @@ _load_cython_windows_modules(PyObject *m)
 {
     _LOAD(processthreads);
     _LOAD(rtl);
+    _LOAD(user);
     return 1;
 }
 

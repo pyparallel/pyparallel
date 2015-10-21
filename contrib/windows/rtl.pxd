@@ -1,6 +1,7 @@
 from types cimport *
 
 cdef extern from *:
+    # Bitmaps:
     void RtlInitializeBitMap(PRTL_BITMAP BitMapHeader, PULONG BitMapBuffer, ULONG SizeOfBitmap)
 
     BOOLEAN RtlAreBitsClear(PRTL_BITMAP BitMapHeader, ULONG StartingIndex, ULONG Length)
@@ -35,5 +36,9 @@ cdef extern from *:
     ULONG RtlNumberOfSetBitsUlongPtr(ULONG_PTR Target)
 
     BOOLEAN RtlTestBit(PRTL_BITMAP BitMapHeader, ULONG BitNumber)
+    # End of bitmaps
+
+    void RtlPrefetchMemoryNonTemporal(PVOID Source, Py_ssize_t Length)
+    void RtlCopyMemory(PVOID dst, PVOID src, Py_ssize_t Length)
 
 # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:

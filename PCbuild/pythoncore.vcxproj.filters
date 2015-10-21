@@ -1013,6 +1013,9 @@
     <ClCompile Include="..\contrib\windows\rtl.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\user.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\processthreads.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1024,6 +1027,9 @@
   </ItemGroup>
   <ItemGroup>
     <CythonFile Include="..\contrib\windows\base.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\user.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
     <CythonFile Include="..\contrib\windows\error.pyx">

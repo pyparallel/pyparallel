@@ -465,6 +465,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <CythonFile Include="..\contrib\windows\error.pyx" />
     <CythonFile Include="..\contrib\windows\base.pyx" />
     <CythonFile Include="..\contrib\windows\rtl.pyx" />
+    <CythonFile Include="..\contrib\windows\user.pyx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\abstract.h" />
@@ -613,6 +614,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\contrib\windows\error.c" />
     <ClCompile Include="..\contrib\windows\processthreads.c" />
     <ClCompile Include="..\contrib\windows\rtl.c" />
+    <ClCompile Include="..\contrib\windows\user.c" />
     <ClCompile Include="..\Modules\_bisectmodule.c" />
     <ClCompile Include="..\Modules\_codecsmodule.c" />
     <ClCompile Include="..\Modules\_collectionsmodule.c" />

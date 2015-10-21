@@ -1,7 +1,7 @@
 # WinBase.h
 from types cimport *
 
-cdef extern from "<windows.h>":
+cdef extern from *:
 
     BOOL __stdcall GetProcessInformation(HANDLE hProcess, PROCESS_INFORMATION_CLASS ProcessInformationClass, PMEMORY_PRIORITY_INFORMATION ProcessInformation, DWORD ProcessInformationSize)
 
@@ -24,5 +24,9 @@ cdef extern from "<windows.h>":
     BOOL __stdcall GetNumaAvailableMemoryNodeEx(USHORT Node, PULONGLONG AvailableBytes)
 
     BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP RelationshipType, PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX Buffer, PDWORD ReturnedLength)
+
+    PVOID SecureZeroMemory(void *buf, Py_ssize_t cnt)
+
+    BOOL __stdcall CloseHandle(HANDLE hObject)
 
 # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
