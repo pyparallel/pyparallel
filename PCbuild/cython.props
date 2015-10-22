@@ -20,7 +20,7 @@
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
   </Target>
   <Target Name="CythonCppForce" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
-    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail -o %(Filename).cpp"
+    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --lenient -o %(Filename).cpp"
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
   </Target>
   <Target Name="PreBuild" DependsOnTargets="Cython"/>

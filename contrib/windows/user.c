@@ -451,8 +451,21 @@ static const char *__pyx_f[] = {
 
 /*--- Type declarations ---*/
 struct __pyx_obj_4user_Screenshot;
+struct __pyx_opt_args_4user_10Screenshot_save;
 
-/* "user.pyx":18
+/* "user.pyx":154
+ *         return 1
+ * 
+ *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
+ *         cdef:
+ *             HANDLE h
+ */
+struct __pyx_opt_args_4user_10Screenshot_save {
+  int __pyx_n;
+  ULONG quality;
+};
+
+/* "user.pyx":17
  * DEF MAX_FILE_NAME = 1024
  * 
  * cdef class Screenshot:             # <<<<<<<<<<<<<<
@@ -468,9 +481,9 @@ struct __pyx_obj_4user_Screenshot {
   DWORD bitmap_size;
   DWORD dib_size;
   BITMAP bitmap;
+  HBITMAP handle;
   HDC screen;
   HDC memory;
-  HBITMAP handle;
 };
 
 
@@ -478,7 +491,7 @@ struct __pyx_obj_4user_Screenshot {
 struct __pyx_vtabstruct_4user_Screenshot {
   void (*copy_to_clipboard)(struct __pyx_obj_4user_Screenshot *, int __pyx_skip_dispatch);
   BOOLEAN (*copy)(struct __pyx_obj_4user_Screenshot *, PCHAR, DWORD, PDWORD);
-  DWORD (*save)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch);
+  DWORD (*save)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args);
   DWORD (*write)(struct __pyx_obj_4user_Screenshot *, HANDLE, int __pyx_skip_dispatch);
 };
 static struct __pyx_vtabstruct_4user_Screenshot *__pyx_vtabptr_4user_Screenshot;
@@ -597,6 +610,12 @@ static void __Pyx_WriteUnraisable(const char *name, int clineno,
                                   int lineno, const char *filename,
                                   int full_traceback, int nogil);
 
+static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
+
+static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
+    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
+    const char* function_name);
+
 static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
     const char *name, int exact);
 
@@ -628,6 +647,10 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_LONG(LONG value);
 
 static PyObject* __pyx_convert__to_py_BITMAPINFOHEADER(BITMAPINFOHEADER s);
 static PyObject* __pyx_convert__to_py_BITMAP(BITMAP s);
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value);
+
 static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *);
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
@@ -642,7 +665,7 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_Screenshot *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PCHAR __pyx_v_buf, DWORD __pyx_v_buf_size, PDWORD __pyx_v_bytes_written); /* proto*/
-static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch); /* proto*/
+static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args); /* proto*/
 static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot *__pyx_v_self, HANDLE __pyx_v_handle, int __pyx_skip_dispatch); /* proto*/
 
 /* Module declarations from 'types' */
@@ -682,10 +705,12 @@ static char __pyx_k_bmType[] = "bmType";
 static char __pyx_k_OSError[] = "OSError";
 static char __pyx_k_biWidth[] = "biWidth";
 static char __pyx_k_bmWidth[] = "bmWidth";
+static char __pyx_k_quality[] = "quality";
 static char __pyx_k_biHeight[] = "biHeight";
 static char __pyx_k_biPlanes[] = "biPlanes";
 static char __pyx_k_bmHeight[] = "bmHeight";
 static char __pyx_k_bmPlanes[] = "bmPlanes";
+static char __pyx_k_filename[] = "filename";
 static char __pyx_k_GetDIBits[] = "GetDIBits";
 static char __pyx_k_bfOffBits[] = "bfOffBits";
 static char __pyx_k_biClrUsed[] = "biClrUsed";
@@ -744,8 +769,10 @@ static PyObject *__pyx_n_s_bmType;
 static PyObject *__pyx_n_s_bmWidth;
 static PyObject *__pyx_n_s_bmWidthBytes;
 static PyObject *__pyx_n_s_copy_to_clipboard;
+static PyObject *__pyx_n_s_filename;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_pyx_vtable;
+static PyObject *__pyx_n_s_quality;
 static PyObject *__pyx_n_s_save;
 static PyObject *__pyx_kp_u_save_MultiByteToWideChar_failed;
 static PyObject *__pyx_n_s_test;
@@ -754,7 +781,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
 static Py_ssize_t __pyx_pf_4user_10Screenshot_2__len__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_6copy_to_clipboard(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename); /* proto */
+static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, ULONG __pyx_v_quality); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_10write(struct __pyx_obj_4user_Screenshot *__pyx_v_self, HANDLE __pyx_v_handle); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_6header___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_4info___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
@@ -762,6 +789,9 @@ static PyObject *__pyx_pf_4user_10Screenshot_3buf___get__(struct __pyx_obj_4user
 static PyObject *__pyx_pf_4user_10Screenshot_11bitmap_size___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_8dib_size___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_6bitmap___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4user_10Screenshot_6handle___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4user_10Screenshot_6screen___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4user_10Screenshot_6memory___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_tp_new_4user_Screenshot(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tuple_;
 static PyObject *__pyx_tuple__2;
@@ -830,8 +860,8 @@ static CYTHON_INLINE ULONGLONG __pyx_f_4user_FileTimeToUnsignedLongLong(PFILETIM
   return __pyx_r;
 }
 
-/* "user.pyx":31
- *         HBITMAP handle
+/* "user.pyx":29
+ *         HDC memory
  * 
  *     def __cinit__(self):             # <<<<<<<<<<<<<<
  *         SecureZeroMemory(&self.info, sizeof(self.info))
@@ -871,7 +901,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "user.pyx":32
+  /* "user.pyx":30
  * 
  *     def __cinit__(self):
  *         SecureZeroMemory(&self.info, sizeof(self.info))             # <<<<<<<<<<<<<<
@@ -880,7 +910,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   SecureZeroMemory((&__pyx_v_self->info), (sizeof(__pyx_v_self->info)));
 
-  /* "user.pyx":33
+  /* "user.pyx":31
  *     def __cinit__(self):
  *         SecureZeroMemory(&self.info, sizeof(self.info))
  *         SecureZeroMemory(&self.header, sizeof(self.header))             # <<<<<<<<<<<<<<
@@ -889,7 +919,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   SecureZeroMemory((&__pyx_v_self->header), (sizeof(__pyx_v_self->header)));
 
-  /* "user.pyx":34
+  /* "user.pyx":32
  *         SecureZeroMemory(&self.info, sizeof(self.info))
  *         SecureZeroMemory(&self.header, sizeof(self.header))
  *         SecureZeroMemory(&self.bitmap, sizeof(self.bitmap))             # <<<<<<<<<<<<<<
@@ -898,7 +928,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   SecureZeroMemory((&__pyx_v_self->bitmap), (sizeof(__pyx_v_self->bitmap)));
 
-  /* "user.pyx":36
+  /* "user.pyx":34
  *         SecureZeroMemory(&self.bitmap, sizeof(self.bitmap))
  * 
  *         self.screen = 0             # <<<<<<<<<<<<<<
@@ -907,7 +937,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->screen = 0;
 
-  /* "user.pyx":37
+  /* "user.pyx":35
  * 
  *         self.screen = 0
  *         self.memory = 0             # <<<<<<<<<<<<<<
@@ -916,7 +946,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->memory = 0;
 
-  /* "user.pyx":38
+  /* "user.pyx":36
  *         self.screen = 0
  *         self.memory = 0
  *         self.handle = 0             # <<<<<<<<<<<<<<
@@ -925,7 +955,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->handle = 0;
 
-  /* "user.pyx":40
+  /* "user.pyx":38
  *         self.handle = 0
  * 
  *         self.screen = GetDC(<HWND>NULL)             # <<<<<<<<<<<<<<
@@ -934,7 +964,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->screen = GetDC(((HWND)NULL));
 
-  /* "user.pyx":41
+  /* "user.pyx":39
  * 
  *         self.screen = GetDC(<HWND>NULL)
  *         if not self.screen:             # <<<<<<<<<<<<<<
@@ -944,20 +974,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((!(__pyx_v_self->screen != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":42
+    /* "user.pyx":40
  *         self.screen = GetDC(<HWND>NULL)
  *         if not self.screen:
  *             raise RuntimeError("GetDC")             # <<<<<<<<<<<<<<
  * 
  *         self.memory = CreateCompatibleDC(self.screen)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":41
+    /* "user.pyx":39
  * 
  *         self.screen = GetDC(<HWND>NULL)
  *         if not self.screen:             # <<<<<<<<<<<<<<
@@ -966,7 +996,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":44
+  /* "user.pyx":42
  *             raise RuntimeError("GetDC")
  * 
  *         self.memory = CreateCompatibleDC(self.screen)             # <<<<<<<<<<<<<<
@@ -975,7 +1005,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->memory = CreateCompatibleDC(__pyx_v_self->screen);
 
-  /* "user.pyx":45
+  /* "user.pyx":43
  * 
  *         self.memory = CreateCompatibleDC(self.screen)
  *         if not self.memory:             # <<<<<<<<<<<<<<
@@ -985,20 +1015,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((!(__pyx_v_self->memory != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":46
+    /* "user.pyx":44
  *         self.memory = CreateCompatibleDC(self.screen)
  *         if not self.memory:
  *             raise RuntimeError("CreateCompatibleDC")             # <<<<<<<<<<<<<<
  * 
  *         cdef int width = GetSystemMetrics(SM_CXSCREEN)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":45
+    /* "user.pyx":43
  * 
  *         self.memory = CreateCompatibleDC(self.screen)
  *         if not self.memory:             # <<<<<<<<<<<<<<
@@ -1007,7 +1037,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":48
+  /* "user.pyx":46
  *             raise RuntimeError("CreateCompatibleDC")
  * 
  *         cdef int width = GetSystemMetrics(SM_CXSCREEN)             # <<<<<<<<<<<<<<
@@ -1016,7 +1046,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_width = GetSystemMetrics(SM_CXSCREEN);
 
-  /* "user.pyx":49
+  /* "user.pyx":47
  * 
  *         cdef int width = GetSystemMetrics(SM_CXSCREEN)
  *         cdef int height = GetSystemMetrics(SM_CYSCREEN)             # <<<<<<<<<<<<<<
@@ -1025,7 +1055,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_height = GetSystemMetrics(SM_CYSCREEN);
 
-  /* "user.pyx":50
+  /* "user.pyx":48
  *         cdef int width = GetSystemMetrics(SM_CXSCREEN)
  *         cdef int height = GetSystemMetrics(SM_CYSCREEN)
  *         self.handle = CreateCompatibleBitmap(self.screen, width, height)             # <<<<<<<<<<<<<<
@@ -1034,7 +1064,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->handle = CreateCompatibleBitmap(__pyx_v_self->screen, __pyx_v_width, __pyx_v_height);
 
-  /* "user.pyx":51
+  /* "user.pyx":49
  *         cdef int height = GetSystemMetrics(SM_CYSCREEN)
  *         self.handle = CreateCompatibleBitmap(self.screen, width, height)
  *         if not self.handle:             # <<<<<<<<<<<<<<
@@ -1044,20 +1074,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((!(__pyx_v_self->handle != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":52
+    /* "user.pyx":50
  *         self.handle = CreateCompatibleBitmap(self.screen, width, height)
  *         if not self.handle:
  *             raise RuntimeError("CreateCompatibleBitmap")             # <<<<<<<<<<<<<<
  * 
  *         SelectObject(self.memory, self.handle)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":51
+    /* "user.pyx":49
  *         cdef int height = GetSystemMetrics(SM_CYSCREEN)
  *         self.handle = CreateCompatibleBitmap(self.screen, width, height)
  *         if not self.handle:             # <<<<<<<<<<<<<<
@@ -1066,7 +1096,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":54
+  /* "user.pyx":52
  *             raise RuntimeError("CreateCompatibleBitmap")
  * 
  *         SelectObject(self.memory, self.handle)             # <<<<<<<<<<<<<<
@@ -1075,7 +1105,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   SelectObject(__pyx_v_self->memory, __pyx_v_self->handle);
 
-  /* "user.pyx":57
+  /* "user.pyx":55
  * 
  *         cdef BOOL result
  *         result = BitBlt(self.memory,             # <<<<<<<<<<<<<<
@@ -1084,7 +1114,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_result = BitBlt(__pyx_v_self->memory, 0, 0, __pyx_v_width, __pyx_v_height, __pyx_v_self->screen, 0, 0, SRCCOPY);
 
-  /* "user.pyx":64
+  /* "user.pyx":62
  *                         0, 0,
  *                         SRCCOPY)
  *         if not result:             # <<<<<<<<<<<<<<
@@ -1094,20 +1124,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((!(__pyx_v_result != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":65
+    /* "user.pyx":63
  *                         SRCCOPY)
  *         if not result:
  *             raise RuntimeError("BitBlt")             # <<<<<<<<<<<<<<
  * 
  *         GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":64
+    /* "user.pyx":62
  *                         0, 0,
  *                         SRCCOPY)
  *         if not result:             # <<<<<<<<<<<<<<
@@ -1116,7 +1146,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":67
+  /* "user.pyx":65
  *             raise RuntimeError("BitBlt")
  * 
  *         GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)             # <<<<<<<<<<<<<<
@@ -1125,7 +1155,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   GetObject(__pyx_v_self->handle, (sizeof(BITMAP)), ((LPVOID)(&__pyx_v_self->bitmap)));
 
-  /* "user.pyx":69
+  /* "user.pyx":67
  *         GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)
  * 
  *         cdef WORD bit_count = 32             # <<<<<<<<<<<<<<
@@ -1134,7 +1164,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_bit_count = 32;
 
-  /* "user.pyx":71
+  /* "user.pyx":69
  *         cdef WORD bit_count = 32
  * 
  *         self.info.biSize = sizeof(BITMAPINFOHEADER)             # <<<<<<<<<<<<<<
@@ -1143,7 +1173,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->info.biSize = (sizeof(BITMAPINFOHEADER));
 
-  /* "user.pyx":72
+  /* "user.pyx":70
  * 
  *         self.info.biSize = sizeof(BITMAPINFOHEADER)
  *         self.info.biWidth = self.bitmap.bmWidth             # <<<<<<<<<<<<<<
@@ -1153,7 +1183,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_3 = __pyx_v_self->bitmap.bmWidth;
   __pyx_v_self->info.biWidth = __pyx_t_3;
 
-  /* "user.pyx":73
+  /* "user.pyx":71
  *         self.info.biSize = sizeof(BITMAPINFOHEADER)
  *         self.info.biWidth = self.bitmap.bmWidth
  *         self.info.biHeight = self.bitmap.bmHeight             # <<<<<<<<<<<<<<
@@ -1163,7 +1193,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_3 = __pyx_v_self->bitmap.bmHeight;
   __pyx_v_self->info.biHeight = __pyx_t_3;
 
-  /* "user.pyx":74
+  /* "user.pyx":72
  *         self.info.biWidth = self.bitmap.bmWidth
  *         self.info.biHeight = self.bitmap.bmHeight
  *         self.info.biPlanes = 1             # <<<<<<<<<<<<<<
@@ -1172,7 +1202,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->info.biPlanes = 1;
 
-  /* "user.pyx":75
+  /* "user.pyx":73
  *         self.info.biHeight = self.bitmap.bmHeight
  *         self.info.biPlanes = 1
  *         self.info.biBitCount = bit_count             # <<<<<<<<<<<<<<
@@ -1181,7 +1211,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->info.biBitCount = __pyx_v_bit_count;
 
-  /* "user.pyx":76
+  /* "user.pyx":74
  *         self.info.biPlanes = 1
  *         self.info.biBitCount = bit_count
  *         self.info.biCompression = BI_RGB             # <<<<<<<<<<<<<<
@@ -1190,7 +1220,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->info.biCompression = BI_RGB;
 
-  /* "user.pyx":78
+  /* "user.pyx":76
  *         self.info.biCompression = BI_RGB
  * 
  *         assert(width == self.info.biWidth)             # <<<<<<<<<<<<<<
@@ -1201,12 +1231,12 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   if (unlikely(!Py_OptimizeFlag)) {
     if (unlikely(!((__pyx_v_width == __pyx_v_self->info.biWidth) != 0))) {
       PyErr_SetNone(PyExc_AssertionError);
-      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 76; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
 
-  /* "user.pyx":79
+  /* "user.pyx":77
  * 
  *         assert(width == self.info.biWidth)
  *         assert(height == self.info.biHeight)             # <<<<<<<<<<<<<<
@@ -1217,12 +1247,12 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   if (unlikely(!Py_OptimizeFlag)) {
     if (unlikely(!((__pyx_v_height == __pyx_v_self->info.biHeight) != 0))) {
       PyErr_SetNone(PyExc_AssertionError);
-      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
 
-  /* "user.pyx":81
+  /* "user.pyx":79
  *         assert(height == self.info.biHeight)
  * 
  *         self.bitmap_size = (((width * bit_count + 31) // 32) * 4 * height)             # <<<<<<<<<<<<<<
@@ -1231,7 +1261,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->bitmap_size = ((__Pyx_div_long(((__pyx_v_width * __pyx_v_bit_count) + 31), 32) * 4) * __pyx_v_height);
 
-  /* "user.pyx":82
+  /* "user.pyx":80
  * 
  *         self.bitmap_size = (((width * bit_count + 31) // 32) * 4 * height)
  *         self.buf = <PCHAR>PyMem_Malloc(self.bitmap_size)             # <<<<<<<<<<<<<<
@@ -1240,7 +1270,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->buf = ((PCHAR)PyMem_Malloc(__pyx_v_self->bitmap_size));
 
-  /* "user.pyx":85
+  /* "user.pyx":83
  * 
  *         cdef DWORD retval
  *         retval = GetDIBits(self.memory,             # <<<<<<<<<<<<<<
@@ -1249,7 +1279,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_retval = GetDIBits(__pyx_v_self->memory, __pyx_v_self->handle, 0, ((UINT)__pyx_v_height), ((LPVOID)__pyx_v_self->buf), ((LPBITMAPINFO)(&__pyx_v_self->info)), DIB_RGB_COLORS);
 
-  /* "user.pyx":92
+  /* "user.pyx":90
  *                            <LPBITMAPINFO>&self.info,
  *                            DIB_RGB_COLORS)
  *         if not retval:             # <<<<<<<<<<<<<<
@@ -1259,20 +1289,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((!(__pyx_v_retval != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":93
+    /* "user.pyx":91
  *                            DIB_RGB_COLORS)
  *         if not retval:
  *             raise RuntimeError("GetDIBits")             # <<<<<<<<<<<<<<
  *         if retval == ERROR_INVALID_PARAMETER:
  *             raise RuntimeError("GetDIBits: Invalid Parameter")
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":92
+    /* "user.pyx":90
  *                            <LPBITMAPINFO>&self.info,
  *                            DIB_RGB_COLORS)
  *         if not retval:             # <<<<<<<<<<<<<<
@@ -1281,7 +1311,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":94
+  /* "user.pyx":92
  *         if not retval:
  *             raise RuntimeError("GetDIBits")
  *         if retval == ERROR_INVALID_PARAMETER:             # <<<<<<<<<<<<<<
@@ -1291,20 +1321,20 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_1 = ((__pyx_v_retval == ERROR_INVALID_PARAMETER) != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":95
+    /* "user.pyx":93
  *             raise RuntimeError("GetDIBits")
  *         if retval == ERROR_INVALID_PARAMETER:
  *             raise RuntimeError("GetDIBits: Invalid Parameter")             # <<<<<<<<<<<<<<
  * 
  *         self.dib_size = (
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":94
+    /* "user.pyx":92
  *         if not retval:
  *             raise RuntimeError("GetDIBits")
  *         if retval == ERROR_INVALID_PARAMETER:             # <<<<<<<<<<<<<<
@@ -1313,7 +1343,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   }
 
-  /* "user.pyx":97
+  /* "user.pyx":95
  *             raise RuntimeError("GetDIBits: Invalid Parameter")
  * 
  *         self.dib_size = (             # <<<<<<<<<<<<<<
@@ -1322,7 +1352,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->dib_size = ((__pyx_v_self->bitmap_size + (sizeof(BITMAPFILEHEADER))) + (sizeof(BITMAPINFOHEADER)));
 
-  /* "user.pyx":103
+  /* "user.pyx":101
  *         )
  * 
  *         self.header.bfOffBits = (             # <<<<<<<<<<<<<<
@@ -1331,7 +1361,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->header.bfOffBits = (((DWORD)(sizeof(BITMAPFILEHEADER))) + ((DWORD)(sizeof(BITMAPINFOHEADER))));
 
-  /* "user.pyx":108
+  /* "user.pyx":106
  *         )
  * 
  *         self.header.bfSize = self.dib_size             # <<<<<<<<<<<<<<
@@ -1341,7 +1371,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   __pyx_t_4 = __pyx_v_self->dib_size;
   __pyx_v_self->header.bfSize = __pyx_t_4;
 
-  /* "user.pyx":109
+  /* "user.pyx":107
  * 
  *         self.header.bfSize = self.dib_size
  *         self.header.bfType = 0x4d42 # BM             # <<<<<<<<<<<<<<
@@ -1350,7 +1380,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->header.bfType = 0x4d42;
 
-  /* "user.pyx":110
+  /* "user.pyx":108
  *         self.header.bfSize = self.dib_size
  *         self.header.bfType = 0x4d42 # BM
  *         self.header.bfReserved1 = 0             # <<<<<<<<<<<<<<
@@ -1359,7 +1389,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->header.bfReserved1 = 0;
 
-  /* "user.pyx":111
+  /* "user.pyx":109
  *         self.header.bfType = 0x4d42 # BM
  *         self.header.bfReserved1 = 0
  *         self.header.bfReserved2 = 0             # <<<<<<<<<<<<<<
@@ -1368,8 +1398,8 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
  */
   __pyx_v_self->header.bfReserved2 = 0;
 
-  /* "user.pyx":31
- *         HBITMAP handle
+  /* "user.pyx":29
+ *         HDC memory
  * 
  *     def __cinit__(self):             # <<<<<<<<<<<<<<
  *         SecureZeroMemory(&self.info, sizeof(self.info))
@@ -1388,7 +1418,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
   return __pyx_r;
 }
 
-/* "user.pyx":113
+/* "user.pyx":111
  *         self.header.bfReserved2 = 0
  * 
  *     def __len__(self):             # <<<<<<<<<<<<<<
@@ -1414,7 +1444,7 @@ static Py_ssize_t __pyx_pf_4user_10Screenshot_2__len__(struct __pyx_obj_4user_Sc
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__len__", 0);
 
-  /* "user.pyx":114
+  /* "user.pyx":112
  * 
  *     def __len__(self):
  *         return self.dib_size             # <<<<<<<<<<<<<<
@@ -1424,7 +1454,7 @@ static Py_ssize_t __pyx_pf_4user_10Screenshot_2__len__(struct __pyx_obj_4user_Sc
   __pyx_r = __pyx_v_self->dib_size;
   goto __pyx_L0;
 
-  /* "user.pyx":113
+  /* "user.pyx":111
  *         self.header.bfReserved2 = 0
  * 
  *     def __len__(self):             # <<<<<<<<<<<<<<
@@ -1438,7 +1468,7 @@ static Py_ssize_t __pyx_pf_4user_10Screenshot_2__len__(struct __pyx_obj_4user_Sc
   return __pyx_r;
 }
 
-/* "user.pyx":116
+/* "user.pyx":114
  *         return self.dib_size
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -1462,7 +1492,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   int __pyx_t_1;
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
-  /* "user.pyx":117
+  /* "user.pyx":115
  * 
  *     def __dealloc__(self):
  *         if self.screen:             # <<<<<<<<<<<<<<
@@ -1472,7 +1502,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   __pyx_t_1 = (__pyx_v_self->screen != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":118
+    /* "user.pyx":116
  *     def __dealloc__(self):
  *         if self.screen:
  *             ReleaseDC(<HWND>NULL, self.screen)             # <<<<<<<<<<<<<<
@@ -1481,7 +1511,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
     ReleaseDC(((HWND)NULL), __pyx_v_self->screen);
 
-    /* "user.pyx":117
+    /* "user.pyx":115
  * 
  *     def __dealloc__(self):
  *         if self.screen:             # <<<<<<<<<<<<<<
@@ -1490,7 +1520,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
   }
 
-  /* "user.pyx":120
+  /* "user.pyx":118
  *             ReleaseDC(<HWND>NULL, self.screen)
  * 
  *         if self.memory:             # <<<<<<<<<<<<<<
@@ -1500,7 +1530,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   __pyx_t_1 = (__pyx_v_self->memory != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":121
+    /* "user.pyx":119
  * 
  *         if self.memory:
  *             DeleteObject(self.memory)             # <<<<<<<<<<<<<<
@@ -1509,7 +1539,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
     DeleteObject(__pyx_v_self->memory);
 
-    /* "user.pyx":120
+    /* "user.pyx":118
  *             ReleaseDC(<HWND>NULL, self.screen)
  * 
  *         if self.memory:             # <<<<<<<<<<<<<<
@@ -1518,7 +1548,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
   }
 
-  /* "user.pyx":123
+  /* "user.pyx":121
  *             DeleteObject(self.memory)
  * 
  *         if self.handle:             # <<<<<<<<<<<<<<
@@ -1528,7 +1558,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   __pyx_t_1 = (__pyx_v_self->handle != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":124
+    /* "user.pyx":122
  * 
  *         if self.handle:
  *             DeleteObject(self.handle)             # <<<<<<<<<<<<<<
@@ -1537,7 +1567,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
     DeleteObject(__pyx_v_self->handle);
 
-    /* "user.pyx":123
+    /* "user.pyx":121
  *             DeleteObject(self.memory)
  * 
  *         if self.handle:             # <<<<<<<<<<<<<<
@@ -1546,7 +1576,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
   }
 
-  /* "user.pyx":126
+  /* "user.pyx":124
  *             DeleteObject(self.handle)
  * 
  *         if self.buf:             # <<<<<<<<<<<<<<
@@ -1556,7 +1586,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   __pyx_t_1 = (__pyx_v_self->buf != 0);
   if (__pyx_t_1) {
 
-    /* "user.pyx":127
+    /* "user.pyx":125
  * 
  *         if self.buf:
  *             PyMem_Free(self.buf)             # <<<<<<<<<<<<<<
@@ -1565,7 +1595,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
     PyMem_Free(__pyx_v_self->buf);
 
-    /* "user.pyx":126
+    /* "user.pyx":124
  *             DeleteObject(self.handle)
  * 
  *         if self.buf:             # <<<<<<<<<<<<<<
@@ -1574,7 +1604,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
  */
   }
 
-  /* "user.pyx":116
+  /* "user.pyx":114
  *         return self.dib_size
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -1586,7 +1616,7 @@ static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Scre
   __Pyx_RefNannyFinishContext();
 }
 
-/* "user.pyx":129
+/* "user.pyx":127
  *             PyMem_Free(self.buf)
  * 
  *     cpdef void copy_to_clipboard(self):             # <<<<<<<<<<<<<<
@@ -1609,7 +1639,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_copy_to_clipboard); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_copy_to_clipboard); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4user_10Screenshot_7copy_to_clipboard)) {
       __Pyx_INCREF(__pyx_t_1);
@@ -1624,10 +1654,10 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
         }
       }
       if (__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       } else {
-        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -1638,7 +1668,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "user.pyx":130
+  /* "user.pyx":128
  * 
  *     cpdef void copy_to_clipboard(self):
  *         OpenClipboard(<HWND>NULL)             # <<<<<<<<<<<<<<
@@ -1647,7 +1677,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
  */
   OpenClipboard(((HWND)NULL));
 
-  /* "user.pyx":131
+  /* "user.pyx":129
  *     cpdef void copy_to_clipboard(self):
  *         OpenClipboard(<HWND>NULL)
  *         EmptyClipboard()             # <<<<<<<<<<<<<<
@@ -1656,7 +1686,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
  */
   EmptyClipboard();
 
-  /* "user.pyx":132
+  /* "user.pyx":130
  *         OpenClipboard(<HWND>NULL)
  *         EmptyClipboard()
  *         SetClipboardData(CF_BITMAP, self.handle)             # <<<<<<<<<<<<<<
@@ -1665,7 +1695,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
  */
   SetClipboardData(CF_BITMAP, __pyx_v_self->handle);
 
-  /* "user.pyx":133
+  /* "user.pyx":131
  *         EmptyClipboard()
  *         SetClipboardData(CF_BITMAP, self.handle)
  *         CloseClipboard()             # <<<<<<<<<<<<<<
@@ -1674,7 +1704,7 @@ static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_
  */
   CloseClipboard();
 
-  /* "user.pyx":129
+  /* "user.pyx":127
  *             PyMem_Free(self.buf)
  * 
  *     cpdef void copy_to_clipboard(self):             # <<<<<<<<<<<<<<
@@ -1716,7 +1746,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_6copy_to_clipboard(struct __pyx_obj
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("copy_to_clipboard", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_4user_10Screenshot_copy_to_clipboard(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_4user_10Screenshot_copy_to_clipboard(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1733,7 +1763,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_6copy_to_clipboard(struct __pyx_obj
   return __pyx_r;
 }
 
-/* "user.pyx":138
+/* "user.pyx":136
  *     # size is written into bytes_written and 0 is returned.  Otherwise, 1 is
  *     # returned and the number of bytes is written into bytes_written.
  *     cdef BOOLEAN copy(self, PCHAR buf, DWORD buf_size, PDWORD bytes_written):             # <<<<<<<<<<<<<<
@@ -1755,7 +1785,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("copy", 0);
 
-  /* "user.pyx":140
+  /* "user.pyx":138
  *     cdef BOOLEAN copy(self, PCHAR buf, DWORD buf_size, PDWORD bytes_written):
  *         cdef:
  *             DWORD header_size = sizeof(self.header)             # <<<<<<<<<<<<<<
@@ -1764,7 +1794,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   __pyx_v_header_size = (sizeof(__pyx_v_self->header));
 
-  /* "user.pyx":141
+  /* "user.pyx":139
  *         cdef:
  *             DWORD header_size = sizeof(self.header)
  *             DWORD info_size = sizeof(self.info)             # <<<<<<<<<<<<<<
@@ -1773,7 +1803,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   __pyx_v_info_size = (sizeof(__pyx_v_self->info));
 
-  /* "user.pyx":142
+  /* "user.pyx":140
  *             DWORD header_size = sizeof(self.header)
  *             DWORD info_size = sizeof(self.info)
  *             DWORD bitmap_offset = header_size + info_size             # <<<<<<<<<<<<<<
@@ -1782,7 +1812,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   __pyx_v_bitmap_offset = (__pyx_v_header_size + __pyx_v_info_size);
 
-  /* "user.pyx":144
+  /* "user.pyx":142
  *             DWORD bitmap_offset = header_size + info_size
  * 
  *         if not buf or buf_size < self.dib_size:             # <<<<<<<<<<<<<<
@@ -1800,7 +1830,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
   __pyx_L4_bool_binop_done:;
   if (__pyx_t_1) {
 
-    /* "user.pyx":145
+    /* "user.pyx":143
  * 
  *         if not buf or buf_size < self.dib_size:
  *             bytes_written[0] = self.dib_size             # <<<<<<<<<<<<<<
@@ -1810,7 +1840,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
     __pyx_t_3 = __pyx_v_self->dib_size;
     (__pyx_v_bytes_written[0]) = __pyx_t_3;
 
-    /* "user.pyx":146
+    /* "user.pyx":144
  *         if not buf or buf_size < self.dib_size:
  *             bytes_written[0] = self.dib_size
  *             return 0             # <<<<<<<<<<<<<<
@@ -1820,7 +1850,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
     __pyx_r = 0;
     goto __pyx_L0;
 
-    /* "user.pyx":144
+    /* "user.pyx":142
  *             DWORD bitmap_offset = header_size + info_size
  * 
  *         if not buf or buf_size < self.dib_size:             # <<<<<<<<<<<<<<
@@ -1829,7 +1859,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   }
 
-  /* "user.pyx":148
+  /* "user.pyx":146
  *             return 0
  * 
  *         RtlCopyMemory(buf[0], <PVOID>&self.header, header_size)             # <<<<<<<<<<<<<<
@@ -1838,7 +1868,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   RtlCopyMemory((__pyx_v_buf[0]), ((PVOID)(&__pyx_v_self->header)), __pyx_v_header_size);
 
-  /* "user.pyx":149
+  /* "user.pyx":147
  * 
  *         RtlCopyMemory(buf[0], <PVOID>&self.header, header_size)
  *         RtlCopyMemory(buf[header_size], <PVOID>&self.header, info_size)             # <<<<<<<<<<<<<<
@@ -1847,7 +1877,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   RtlCopyMemory((__pyx_v_buf[__pyx_v_header_size]), ((PVOID)(&__pyx_v_self->header)), __pyx_v_info_size);
 
-  /* "user.pyx":150
+  /* "user.pyx":148
  *         RtlCopyMemory(buf[0], <PVOID>&self.header, header_size)
  *         RtlCopyMemory(buf[header_size], <PVOID>&self.header, info_size)
  *         RtlCopyMemory(buf[bitmap_offset], <PVOID>self.buf, self.bitmap_size)             # <<<<<<<<<<<<<<
@@ -1856,7 +1886,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  */
   RtlCopyMemory((__pyx_v_buf[__pyx_v_bitmap_offset]), ((PVOID)__pyx_v_self->buf), __pyx_v_self->bitmap_size);
 
-  /* "user.pyx":152
+  /* "user.pyx":150
  *         RtlCopyMemory(buf[bitmap_offset], <PVOID>self.buf, self.bitmap_size)
  * 
  *         assert(bitmap_offset + self.bitmap_size == self.dib_size)             # <<<<<<<<<<<<<<
@@ -1867,12 +1897,12 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
   if (unlikely(!Py_OptimizeFlag)) {
     if (unlikely(!(((__pyx_v_bitmap_offset + __pyx_v_self->bitmap_size) == __pyx_v_self->dib_size) != 0))) {
       PyErr_SetNone(PyExc_AssertionError);
-      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 152; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      {__pyx_filename = __pyx_f[0]; __pyx_lineno = 150; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
 
-  /* "user.pyx":153
+  /* "user.pyx":151
  * 
  *         assert(bitmap_offset + self.bitmap_size == self.dib_size)
  *         bytes_written[0] = self.dib_size             # <<<<<<<<<<<<<<
@@ -1882,17 +1912,17 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
   __pyx_t_3 = __pyx_v_self->dib_size;
   (__pyx_v_bytes_written[0]) = __pyx_t_3;
 
-  /* "user.pyx":154
+  /* "user.pyx":152
  *         assert(bitmap_offset + self.bitmap_size == self.dib_size)
  *         bytes_written[0] = self.dib_size
  *         return 1             # <<<<<<<<<<<<<<
  * 
- *     cpdef DWORD save(self, unicode filename):
+ *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):
  */
   __pyx_r = 1;
   goto __pyx_L0;
 
-  /* "user.pyx":138
+  /* "user.pyx":136
  *     # size is written into bytes_written and 0 is returned.  Otherwise, 1 is
  *     # returned and the number of bytes is written into bytes_written.
  *     cdef BOOLEAN copy(self, PCHAR buf, DWORD buf_size, PDWORD bytes_written):             # <<<<<<<<<<<<<<
@@ -1909,16 +1939,17 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
   return __pyx_r;
 }
 
-/* "user.pyx":156
+/* "user.pyx":154
  *         return 1
  * 
- *     cpdef DWORD save(self, unicode filename):             # <<<<<<<<<<<<<<
+ *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
  *         cdef:
  *             HANDLE h
  */
 
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename); /*proto*/
-static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch) {
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args) {
+  ULONG __pyx_v_quality = ((ULONG)0x64);
   HANDLE __pyx_v_h;
   DWORD __pyx_v_total_bytes_written;
   WCHAR __pyx_v_uname[(0x400 + 1)];
@@ -1932,55 +1963,66 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   PyObject *__pyx_t_3 = NULL;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  DWORD __pyx_t_6;
-  int __pyx_t_7;
+  Py_ssize_t __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  DWORD __pyx_t_8;
+  int __pyx_t_9;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save", 0);
+  if (__pyx_optional_args) {
+    if (__pyx_optional_args->__pyx_n > 0) {
+      __pyx_v_quality = __pyx_optional_args->quality;
+    }
+  }
   /* Check if called by wrapper */
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_save); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_save); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4user_10Screenshot_9save)) {
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_quality); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
-      __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
-      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
-        __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
-        if (likely(__pyx_t_4)) {
-          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-          __Pyx_INCREF(__pyx_t_4);
+      __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
+      __pyx_t_6 = 0;
+      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_4))) {
+        __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
+        if (likely(__pyx_t_5)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+          __Pyx_INCREF(__pyx_t_5);
           __Pyx_INCREF(function);
-          __Pyx_DECREF_SET(__pyx_t_3, function);
+          __Pyx_DECREF_SET(__pyx_t_4, function);
+          __pyx_t_6 = 1;
         }
       }
-      if (!__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_filename); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-        __Pyx_GOTREF(__pyx_t_2);
-      } else {
-        __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-        __Pyx_GOTREF(__pyx_t_5);
-        __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4); __pyx_t_4 = NULL;
-        __Pyx_INCREF(__pyx_v_filename);
-        __Pyx_GIVEREF(__pyx_v_filename);
-        PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_filename);
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-        __Pyx_GOTREF(__pyx_t_2);
-        __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+      __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_7);
+      if (__pyx_t_5) {
+        __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
       }
-      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_6 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_6 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_INCREF(__pyx_v_filename);
+      __Pyx_GIVEREF(__pyx_v_filename);
+      PyTuple_SET_ITEM(__pyx_t_7, 0+__pyx_t_6, __pyx_v_filename);
+      __Pyx_GIVEREF(__pyx_t_3);
+      PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
+      __pyx_t_3 = 0;
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_t_8 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_8 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_r = __pyx_t_6;
+      __pyx_r = __pyx_t_8;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       goto __pyx_L0;
     }
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "user.pyx":159
+  /* "user.pyx":157
  *         cdef:
  *             HANDLE h
  *             DWORD total_bytes_written = 0             # <<<<<<<<<<<<<<
@@ -1989,7 +2031,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   __pyx_v_total_bytes_written = 0;
 
-  /* "user.pyx":165
+  /* "user.pyx":163
  *             Py_ssize_t name_len
  * 
  *         name = PyUnicode_AsUTF8AndSize(filename, &name_len)             # <<<<<<<<<<<<<<
@@ -1998,7 +2040,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   __pyx_v_name = PyUnicode_AsUTF8AndSize(__pyx_v_filename, (&__pyx_v_name_len));
 
-  /* "user.pyx":167
+  /* "user.pyx":165
  *         name = PyUnicode_AsUTF8AndSize(filename, &name_len)
  * 
  *         uname_len = MultiByteToWideChar(CP_UTF8,             # <<<<<<<<<<<<<<
@@ -2007,30 +2049,30 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   __pyx_v_uname_len = MultiByteToWideChar(CP_UTF8, 0, ((LPCSTR)__pyx_v_name), __pyx_v_name_len, (&(__pyx_v_uname[0])), 0x400);
 
-  /* "user.pyx":173
+  /* "user.pyx":171
  *                                         &uname[0],
  *                                         MAX_FILE_NAME)
  *         if uname_len == 0:             # <<<<<<<<<<<<<<
  *             raise ValueError("save(): MultiByteToWideChar failed")
  * 
  */
-  __pyx_t_7 = ((__pyx_v_uname_len == 0) != 0);
-  if (__pyx_t_7) {
+  __pyx_t_9 = ((__pyx_v_uname_len == 0) != 0);
+  if (__pyx_t_9) {
 
-    /* "user.pyx":174
+    /* "user.pyx":172
  *                                         MAX_FILE_NAME)
  *         if uname_len == 0:
  *             raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
  * 
  *         uname[uname_len] = 0
  */
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 172; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 172; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":173
+    /* "user.pyx":171
  *                                         &uname[0],
  *                                         MAX_FILE_NAME)
  *         if uname_len == 0:             # <<<<<<<<<<<<<<
@@ -2039,7 +2081,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   }
 
-  /* "user.pyx":176
+  /* "user.pyx":174
  *             raise ValueError("save(): MultiByteToWideChar failed")
  * 
  *         uname[uname_len] = 0             # <<<<<<<<<<<<<<
@@ -2048,7 +2090,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   (__pyx_v_uname[__pyx_v_uname_len]) = 0;
 
-  /* "user.pyx":178
+  /* "user.pyx":176
  *         uname[uname_len] = 0
  * 
  *         h = CreateFileW(<LPCTSTR>&uname[0],             # <<<<<<<<<<<<<<
@@ -2057,30 +2099,30 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   __pyx_v_h = CreateFileW(((LPCTSTR)(&(__pyx_v_uname[0]))), GENERIC_WRITE, 0, ((LPSECURITY_ATTRIBUTES)NULL), CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, ((HANDLE)NULL));
 
-  /* "user.pyx":185
+  /* "user.pyx":183
  *                        FILE_ATTRIBUTE_NORMAL,
  *                        <HANDLE>NULL)
  *         if not h:             # <<<<<<<<<<<<<<
  *             raise OSError("CreateFile")
  * 
  */
-  __pyx_t_7 = ((!(__pyx_v_h != 0)) != 0);
-  if (__pyx_t_7) {
+  __pyx_t_9 = ((!(__pyx_v_h != 0)) != 0);
+  if (__pyx_t_9) {
 
-    /* "user.pyx":186
+    /* "user.pyx":184
  *                        <HANDLE>NULL)
  *         if not h:
  *             raise OSError("CreateFile")             # <<<<<<<<<<<<<<
  * 
  *         try:
  */
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_OSError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 186; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_OSError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 186; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":185
+    /* "user.pyx":183
  *                        FILE_ATTRIBUTE_NORMAL,
  *                        <HANDLE>NULL)
  *         if not h:             # <<<<<<<<<<<<<<
@@ -2089,7 +2131,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   }
 
-  /* "user.pyx":188
+  /* "user.pyx":186
  *             raise OSError("CreateFile")
  * 
  *         try:             # <<<<<<<<<<<<<<
@@ -2098,7 +2140,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  */
   /*try:*/ {
 
-    /* "user.pyx":189
+    /* "user.pyx":187
  * 
  *         try:
  *             total_bytes_written = self.write(h)             # <<<<<<<<<<<<<<
@@ -2108,7 +2150,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
     __pyx_v_total_bytes_written = ((struct __pyx_vtabstruct_4user_Screenshot *)__pyx_v_self->__pyx_vtab)->write(__pyx_v_self, __pyx_v_h, 0);
   }
 
-  /* "user.pyx":191
+  /* "user.pyx":189
  *             total_bytes_written = self.write(h)
  *         finally:
  *             CloseHandle(h)             # <<<<<<<<<<<<<<
@@ -2123,7 +2165,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
     __pyx_L7:;
   }
 
-  /* "user.pyx":193
+  /* "user.pyx":191
  *             CloseHandle(h)
  * 
  *         return total_bytes_written             # <<<<<<<<<<<<<<
@@ -2133,10 +2175,10 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   __pyx_r = __pyx_v_total_bytes_written;
   goto __pyx_L0;
 
-  /* "user.pyx":156
+  /* "user.pyx":154
  *         return 1
  * 
- *     cpdef DWORD save(self, unicode filename):             # <<<<<<<<<<<<<<
+ *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
  *         cdef:
  *             HANDLE h
  */
@@ -2148,6 +2190,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_7);
   __Pyx_WriteUnraisable("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
   __pyx_r = 0;
   __pyx_L0:;
@@ -2156,16 +2199,67 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename); /*proto*/
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename) {
-  CYTHON_UNUSED int __pyx_lineno = 0;
-  CYTHON_UNUSED const char *__pyx_filename = NULL;
-  CYTHON_UNUSED int __pyx_clineno = 0;
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_filename = 0;
+  ULONG __pyx_v_quality;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("save (wrapper)", 0);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_r = __pyx_pf_4user_10Screenshot_8save(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self), ((PyObject*)__pyx_v_filename));
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_filename,&__pyx_n_s_quality,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_filename)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (kw_args > 0) {
+          PyObject* value = PyDict_GetItem(__pyx_kwds, __pyx_n_s_quality);
+          if (value) { values[1] = value; kw_args--; }
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "save") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else {
+      switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+    }
+    __pyx_v_filename = ((PyObject*)values[0]);
+    if (values[1]) {
+      __pyx_v_quality = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_quality == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    } else {
+      __pyx_v_quality = ((ULONG)0x64);
+    }
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("save", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_r = __pyx_pf_4user_10Screenshot_8save(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self), __pyx_v_filename, __pyx_v_quality);
 
   /* function exit code */
   goto __pyx_L0;
@@ -2176,24 +2270,29 @@ static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObj
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename) {
+static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, ULONG __pyx_v_quality) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
+  DWORD __pyx_t_1;
+  struct __pyx_opt_args_4user_10Screenshot_save __pyx_t_2;
+  PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_f_4user_10Screenshot_save(__pyx_v_self, __pyx_v_filename, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
+  __pyx_t_2.__pyx_n = 1;
+  __pyx_t_2.quality = __pyx_v_quality;
+  __pyx_t_1 = __pyx_vtabptr_4user_Screenshot->save(__pyx_v_self, __pyx_v_filename, 1, &__pyx_t_2); 
+  __pyx_t_3 = __Pyx_PyInt_From_DWORD(__pyx_t_1); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_r = __pyx_t_3;
+  __pyx_t_3 = 0;
   goto __pyx_L0;
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -2202,7 +2301,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screen
   return __pyx_r;
 }
 
-/* "user.pyx":195
+/* "user.pyx":193
  *         return total_bytes_written
  * 
  *     cpdef DWORD write(self, HANDLE handle):             # <<<<<<<<<<<<<<
@@ -2234,10 +2333,10 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_write); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_write); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4user_10Screenshot_11write)) {
-      __pyx_t_3 = PyInt_FromSsize_t(__pyx_v_handle); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = PyInt_FromSsize_t(__pyx_v_handle); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2251,22 +2350,22 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
         }
       }
       if (!__pyx_t_5) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_6);
         __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
         __Pyx_GIVEREF(__pyx_t_3);
         PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
         __pyx_t_3 = 0;
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_7 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_7 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_7 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_7 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_7;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2275,7 +2374,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "user.pyx":197
+  /* "user.pyx":195
  *     cpdef DWORD write(self, HANDLE handle):
  *         cdef:
  *             DWORD bytes_written = 0             # <<<<<<<<<<<<<<
@@ -2284,7 +2383,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_bytes_written = 0;
 
-  /* "user.pyx":198
+  /* "user.pyx":196
  *         cdef:
  *             DWORD bytes_written = 0
  *             DWORD total_bytes_written = 0             # <<<<<<<<<<<<<<
@@ -2293,7 +2392,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_total_bytes_written = 0;
 
-  /* "user.pyx":199
+  /* "user.pyx":197
  *             DWORD bytes_written = 0
  *             DWORD total_bytes_written = 0
  *             DWORD expected_bytes_written = 0             # <<<<<<<<<<<<<<
@@ -2302,7 +2401,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_expected_bytes_written = 0;
 
-  /* "user.pyx":201
+  /* "user.pyx":199
  *             DWORD expected_bytes_written = 0
  * 
  *         WriteFile(handle,             # <<<<<<<<<<<<<<
@@ -2311,7 +2410,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   WriteFile(__pyx_v_handle, ((LPSTR)(&__pyx_v_self->header)), (sizeof(__pyx_v_self->header)), (&__pyx_v_bytes_written), ((LPOVERLAPPED)NULL));
 
-  /* "user.pyx":207
+  /* "user.pyx":205
  *                   <LPOVERLAPPED>NULL)
  * 
  *         total_bytes_written = bytes_written             # <<<<<<<<<<<<<<
@@ -2320,7 +2419,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_total_bytes_written = __pyx_v_bytes_written;
 
-  /* "user.pyx":209
+  /* "user.pyx":207
  *         total_bytes_written = bytes_written
  * 
  *         WriteFile(handle,             # <<<<<<<<<<<<<<
@@ -2329,7 +2428,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   WriteFile(__pyx_v_handle, ((LPSTR)(&__pyx_v_self->info)), (sizeof(__pyx_v_self->info)), (&__pyx_v_bytes_written), ((LPOVERLAPPED)NULL));
 
-  /* "user.pyx":215
+  /* "user.pyx":213
  *                   <LPOVERLAPPED>NULL)
  * 
  *         total_bytes_written += bytes_written             # <<<<<<<<<<<<<<
@@ -2338,7 +2437,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_total_bytes_written = (__pyx_v_total_bytes_written + __pyx_v_bytes_written);
 
-  /* "user.pyx":217
+  /* "user.pyx":215
  *         total_bytes_written += bytes_written
  * 
  *         WriteFile(handle,             # <<<<<<<<<<<<<<
@@ -2347,7 +2446,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   WriteFile(__pyx_v_handle, ((LPSTR)__pyx_v_self->buf), __pyx_v_self->bitmap_size, (&__pyx_v_bytes_written), ((LPOVERLAPPED)NULL));
 
-  /* "user.pyx":223
+  /* "user.pyx":221
  *                   <LPOVERLAPPED>NULL)
  * 
  *         total_bytes_written += bytes_written             # <<<<<<<<<<<<<<
@@ -2356,7 +2455,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_total_bytes_written = (__pyx_v_total_bytes_written + __pyx_v_bytes_written);
 
-  /* "user.pyx":224
+  /* "user.pyx":222
  * 
  *         total_bytes_written += bytes_written
  *         expected_bytes_written = self.header.bfOffBits + self.bitmap_size             # <<<<<<<<<<<<<<
@@ -2365,7 +2464,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   __pyx_v_expected_bytes_written = (__pyx_v_self->header.bfOffBits + __pyx_v_self->bitmap_size);
 
-  /* "user.pyx":225
+  /* "user.pyx":223
  *         total_bytes_written += bytes_written
  *         expected_bytes_written = self.header.bfOffBits + self.bitmap_size
  *         if total_bytes_written != expected_bytes_written:             # <<<<<<<<<<<<<<
@@ -2375,34 +2474,34 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
   __pyx_t_8 = ((__pyx_v_total_bytes_written != __pyx_v_expected_bytes_written) != 0);
   if (__pyx_t_8) {
 
-    /* "user.pyx":227
+    /* "user.pyx":225
  *         if total_bytes_written != expected_bytes_written:
  *             msg = "Save failed: expected: %d, actual: %d" % (
  *                 expected_bytes_written,             # <<<<<<<<<<<<<<
  *                 total_bytes_written,
  *             )
  */
-    __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_expected_bytes_written); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 227; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_expected_bytes_written); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 225; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
 
-    /* "user.pyx":228
+    /* "user.pyx":226
  *             msg = "Save failed: expected: %d, actual: %d" % (
  *                 expected_bytes_written,
  *                 total_bytes_written,             # <<<<<<<<<<<<<<
  *             )
  *             raise RuntimeError(msg)
  */
-    __pyx_t_2 = __Pyx_PyInt_From_DWORD(__pyx_v_total_bytes_written); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 228; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyInt_From_DWORD(__pyx_v_total_bytes_written); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 226; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
 
-    /* "user.pyx":227
+    /* "user.pyx":225
  *         if total_bytes_written != expected_bytes_written:
  *             msg = "Save failed: expected: %d, actual: %d" % (
  *                 expected_bytes_written,             # <<<<<<<<<<<<<<
  *                 total_bytes_written,
  *             )
  */
-    __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 227; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 225; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_GIVEREF(__pyx_t_1);
     PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1);
@@ -2411,39 +2510,39 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
     __pyx_t_1 = 0;
     __pyx_t_2 = 0;
 
-    /* "user.pyx":226
+    /* "user.pyx":224
  *         expected_bytes_written = self.header.bfOffBits + self.bitmap_size
  *         if total_bytes_written != expected_bytes_written:
  *             msg = "Save failed: expected: %d, actual: %d" % (             # <<<<<<<<<<<<<<
  *                 expected_bytes_written,
  *                 total_bytes_written,
  */
-    __pyx_t_2 = PyUnicode_Format(__pyx_kp_u_Save_failed_expected_d_actual_d, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 226; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = PyUnicode_Format(__pyx_kp_u_Save_failed_expected_d_actual_d, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 224; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_v_msg = ((PyObject*)__pyx_t_2);
     __pyx_t_2 = 0;
 
-    /* "user.pyx":230
+    /* "user.pyx":228
  *                 total_bytes_written,
  *             )
  *             raise RuntimeError(msg)             # <<<<<<<<<<<<<<
  * 
  *         return total_bytes_written
  */
-    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 230; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 228; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_INCREF(__pyx_v_msg);
     __Pyx_GIVEREF(__pyx_v_msg);
     PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_v_msg);
-    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_2, NULL); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 230; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_4 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_2, NULL); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 228; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_Raise(__pyx_t_4, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 230; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 228; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "user.pyx":225
+    /* "user.pyx":223
  *         total_bytes_written += bytes_written
  *         expected_bytes_written = self.header.bfOffBits + self.bitmap_size
  *         if total_bytes_written != expected_bytes_written:             # <<<<<<<<<<<<<<
@@ -2452,7 +2551,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
  */
   }
 
-  /* "user.pyx":232
+  /* "user.pyx":230
  *             raise RuntimeError(msg)
  * 
  *         return total_bytes_written             # <<<<<<<<<<<<<<
@@ -2462,7 +2561,7 @@ static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot 
   __pyx_r = __pyx_v_total_bytes_written;
   goto __pyx_L0;
 
-  /* "user.pyx":195
+  /* "user.pyx":193
  *         return total_bytes_written
  * 
  *     cpdef DWORD write(self, HANDLE handle):             # <<<<<<<<<<<<<<
@@ -2497,7 +2596,7 @@ static PyObject *__pyx_pw_4user_10Screenshot_11write(PyObject *__pyx_v_self, PyO
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("write (wrapper)", 0);
   assert(__pyx_arg_handle); {
-    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(__pyx_arg_handle); if (unlikely((__pyx_v_handle == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(__pyx_arg_handle); if (unlikely((__pyx_v_handle == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2521,7 +2620,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_10write(struct __pyx_obj_4user_Scre
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("write", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_f_4user_10Screenshot_write(__pyx_v_self, __pyx_v_handle, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_f_4user_10Screenshot_write(__pyx_v_self, __pyx_v_handle, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2538,7 +2637,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_10write(struct __pyx_obj_4user_Scre
   return __pyx_r;
 }
 
-/* "user.pyx":20
+/* "user.pyx":19
  * cdef class Screenshot:
  *     cdef readonly:
  *         BITMAPFILEHEADER header             # <<<<<<<<<<<<<<
@@ -2568,7 +2667,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_6header___get__(struct __pyx_obj_4u
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_convert__to_py_BITMAPFILEHEADER(__pyx_v_self->header); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __pyx_convert__to_py_BITMAPFILEHEADER(__pyx_v_self->header); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2585,7 +2684,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_6header___get__(struct __pyx_obj_4u
   return __pyx_r;
 }
 
-/* "user.pyx":21
+/* "user.pyx":20
  *     cdef readonly:
  *         BITMAPFILEHEADER header
  *         BITMAPINFOHEADER info             # <<<<<<<<<<<<<<
@@ -2615,7 +2714,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_4info___get__(struct __pyx_obj_4use
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_convert__to_py_BITMAPINFOHEADER(__pyx_v_self->info); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __pyx_convert__to_py_BITMAPINFOHEADER(__pyx_v_self->info); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2632,7 +2731,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_4info___get__(struct __pyx_obj_4use
   return __pyx_r;
 }
 
-/* "user.pyx":22
+/* "user.pyx":21
  *         BITMAPFILEHEADER header
  *         BITMAPINFOHEADER info
  *         PCHAR buf             # <<<<<<<<<<<<<<
@@ -2662,7 +2761,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_3buf___get__(struct __pyx_obj_4user
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_self->buf); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyBytes_FromString(__pyx_v_self->buf); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2679,7 +2778,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_3buf___get__(struct __pyx_obj_4user
   return __pyx_r;
 }
 
-/* "user.pyx":23
+/* "user.pyx":22
  *         BITMAPINFOHEADER info
  *         PCHAR buf
  *         DWORD bitmap_size             # <<<<<<<<<<<<<<
@@ -2709,7 +2808,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_11bitmap_size___get__(struct __pyx_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_self->bitmap_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_self->bitmap_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2726,12 +2825,12 @@ static PyObject *__pyx_pf_4user_10Screenshot_11bitmap_size___get__(struct __pyx_
   return __pyx_r;
 }
 
-/* "user.pyx":24
+/* "user.pyx":23
  *         PCHAR buf
  *         DWORD bitmap_size
  *         DWORD dib_size             # <<<<<<<<<<<<<<
  *         BITMAP bitmap
- *     cdef:
+ *         HBITMAP handle
  */
 
 /* Python wrapper */
@@ -2756,7 +2855,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_8dib_size___get__(struct __pyx_obj_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_self->dib_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_v_self->dib_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2773,11 +2872,11 @@ static PyObject *__pyx_pf_4user_10Screenshot_8dib_size___get__(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "user.pyx":25
+/* "user.pyx":24
  *         DWORD bitmap_size
  *         DWORD dib_size
  *         BITMAP bitmap             # <<<<<<<<<<<<<<
- *     cdef:
+ *         HBITMAP handle
  *         HDC screen
  */
 
@@ -2803,7 +2902,7 @@ static PyObject *__pyx_pf_4user_10Screenshot_6bitmap___get__(struct __pyx_obj_4u
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __pyx_convert__to_py_BITMAP(__pyx_v_self->bitmap); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __pyx_convert__to_py_BITMAP(__pyx_v_self->bitmap); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2813,6 +2912,147 @@ static PyObject *__pyx_pf_4user_10Screenshot_6bitmap___get__(struct __pyx_obj_4u
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
   __Pyx_AddTraceback("user.Screenshot.bitmap.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "user.pyx":25
+ *         DWORD dib_size
+ *         BITMAP bitmap
+ *         HBITMAP handle             # <<<<<<<<<<<<<<
+ *         HDC screen
+ *         HDC memory
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4user_10Screenshot_6handle_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4user_10Screenshot_6handle_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4user_10Screenshot_6handle___get__(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4user_10Screenshot_6handle___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->handle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("user.Screenshot.handle.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "user.pyx":26
+ *         BITMAP bitmap
+ *         HBITMAP handle
+ *         HDC screen             # <<<<<<<<<<<<<<
+ *         HDC memory
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4user_10Screenshot_6screen_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4user_10Screenshot_6screen_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4user_10Screenshot_6screen___get__(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4user_10Screenshot_6screen___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->screen); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("user.Screenshot.screen.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "user.pyx":27
+ *         HBITMAP handle
+ *         HDC screen
+ *         HDC memory             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4user_10Screenshot_6memory_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4user_10Screenshot_6memory_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4user_10Screenshot_6memory___get__(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4user_10Screenshot_6memory___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->memory); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("user.Screenshot.memory.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -2879,9 +3119,21 @@ static PyObject *__pyx_getprop_4user_10Screenshot_bitmap(PyObject *o, CYTHON_UNU
   return __pyx_pw_4user_10Screenshot_6bitmap_1__get__(o);
 }
 
+static PyObject *__pyx_getprop_4user_10Screenshot_handle(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4user_10Screenshot_6handle_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_4user_10Screenshot_screen(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4user_10Screenshot_6screen_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_4user_10Screenshot_memory(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4user_10Screenshot_6memory_1__get__(o);
+}
+
 static PyMethodDef __pyx_methods_4user_Screenshot[] = {
   {"copy_to_clipboard", (PyCFunction)__pyx_pw_4user_10Screenshot_7copy_to_clipboard, METH_NOARGS, 0},
-  {"save", (PyCFunction)__pyx_pw_4user_10Screenshot_9save, METH_O, 0},
+  {"save", (PyCFunction)__pyx_pw_4user_10Screenshot_9save, METH_VARARGS|METH_KEYWORDS, 0},
   {"write", (PyCFunction)__pyx_pw_4user_10Screenshot_11write, METH_O, 0},
   {0, 0, 0, 0}
 };
@@ -2893,6 +3145,9 @@ static struct PyGetSetDef __pyx_getsets_4user_Screenshot[] = {
   {(char *)"bitmap_size", __pyx_getprop_4user_10Screenshot_bitmap_size, 0, 0, 0},
   {(char *)"dib_size", __pyx_getprop_4user_10Screenshot_dib_size, 0, 0, 0},
   {(char *)"bitmap", __pyx_getprop_4user_10Screenshot_bitmap, 0, 0, 0},
+  {(char *)"handle", __pyx_getprop_4user_10Screenshot_handle, 0, 0, 0},
+  {(char *)"screen", __pyx_getprop_4user_10Screenshot_screen, 0, 0, 0},
+  {(char *)"memory", __pyx_getprop_4user_10Screenshot_memory, 0, 0, 0},
   {0, 0, 0, 0, 0}
 };
 
@@ -3031,8 +3286,10 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_bmWidth, __pyx_k_bmWidth, sizeof(__pyx_k_bmWidth), 0, 0, 1, 1},
   {&__pyx_n_s_bmWidthBytes, __pyx_k_bmWidthBytes, sizeof(__pyx_k_bmWidthBytes), 0, 0, 1, 1},
   {&__pyx_n_s_copy_to_clipboard, __pyx_k_copy_to_clipboard, sizeof(__pyx_k_copy_to_clipboard), 0, 0, 1, 1},
+  {&__pyx_n_s_filename, __pyx_k_filename, sizeof(__pyx_k_filename), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
+  {&__pyx_n_s_quality, __pyx_k_quality, sizeof(__pyx_k_quality), 0, 0, 1, 1},
   {&__pyx_n_s_save, __pyx_k_save, sizeof(__pyx_k_save), 0, 0, 1, 1},
   {&__pyx_kp_u_save_MultiByteToWideChar_failed, __pyx_k_save_MultiByteToWideChar_failed, sizeof(__pyx_k_save_MultiByteToWideChar_failed), 0, 1, 0, 0},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
@@ -3040,9 +3297,9 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_builtin_OSError = __Pyx_GetBuiltinName(__pyx_n_s_OSError); if (!__pyx_builtin_OSError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 186; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 172; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_OSError = __Pyx_GetBuiltinName(__pyx_n_s_OSError); if (!__pyx_builtin_OSError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -3052,91 +3309,91 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "user.pyx":42
+  /* "user.pyx":40
  *         self.screen = GetDC(<HWND>NULL)
  *         if not self.screen:
  *             raise RuntimeError("GetDC")             # <<<<<<<<<<<<<<
  * 
  *         self.memory = CreateCompatibleDC(self.screen)
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_n_u_GetDC); if (unlikely(!__pyx_tuple_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_n_u_GetDC); if (unlikely(!__pyx_tuple_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
-  /* "user.pyx":46
+  /* "user.pyx":44
  *         self.memory = CreateCompatibleDC(self.screen)
  *         if not self.memory:
  *             raise RuntimeError("CreateCompatibleDC")             # <<<<<<<<<<<<<<
  * 
  *         cdef int width = GetSystemMetrics(SM_CXSCREEN)
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_n_u_CreateCompatibleDC); if (unlikely(!__pyx_tuple__2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_n_u_CreateCompatibleDC); if (unlikely(!__pyx_tuple__2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "user.pyx":52
+  /* "user.pyx":50
  *         self.handle = CreateCompatibleBitmap(self.screen, width, height)
  *         if not self.handle:
  *             raise RuntimeError("CreateCompatibleBitmap")             # <<<<<<<<<<<<<<
  * 
  *         SelectObject(self.memory, self.handle)
  */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_n_u_CreateCompatibleBitmap); if (unlikely(!__pyx_tuple__3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_n_u_CreateCompatibleBitmap); if (unlikely(!__pyx_tuple__3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "user.pyx":65
+  /* "user.pyx":63
  *                         SRCCOPY)
  *         if not result:
  *             raise RuntimeError("BitBlt")             # <<<<<<<<<<<<<<
  * 
  *         GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)
  */
-  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_n_u_BitBlt); if (unlikely(!__pyx_tuple__4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_n_u_BitBlt); if (unlikely(!__pyx_tuple__4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
 
-  /* "user.pyx":93
+  /* "user.pyx":91
  *                            DIB_RGB_COLORS)
  *         if not retval:
  *             raise RuntimeError("GetDIBits")             # <<<<<<<<<<<<<<
  *         if retval == ERROR_INVALID_PARAMETER:
  *             raise RuntimeError("GetDIBits: Invalid Parameter")
  */
-  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_n_u_GetDIBits); if (unlikely(!__pyx_tuple__5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_n_u_GetDIBits); if (unlikely(!__pyx_tuple__5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 91; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
 
-  /* "user.pyx":95
+  /* "user.pyx":93
  *             raise RuntimeError("GetDIBits")
  *         if retval == ERROR_INVALID_PARAMETER:
  *             raise RuntimeError("GetDIBits: Invalid Parameter")             # <<<<<<<<<<<<<<
  * 
  *         self.dib_size = (
  */
-  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_GetDIBits_Invalid_Parameter); if (unlikely(!__pyx_tuple__6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_u_GetDIBits_Invalid_Parameter); if (unlikely(!__pyx_tuple__6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
 
-  /* "user.pyx":174
+  /* "user.pyx":172
  *                                         MAX_FILE_NAME)
  *         if uname_len == 0:
  *             raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
  * 
  *         uname[uname_len] = 0
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_save_MultiByteToWideChar_failed); if (unlikely(!__pyx_tuple__7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_save_MultiByteToWideChar_failed); if (unlikely(!__pyx_tuple__7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 172; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
 
-  /* "user.pyx":186
+  /* "user.pyx":184
  *                        <HANDLE>NULL)
  *         if not h:
  *             raise OSError("CreateFile")             # <<<<<<<<<<<<<<
  * 
  *         try:
  */
-  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_n_u_CreateFile); if (unlikely(!__pyx_tuple__8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 186; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_n_u_CreateFile); if (unlikely(!__pyx_tuple__8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__8);
   __Pyx_GIVEREF(__pyx_tuple__8);
   __Pyx_RefNannyFinishContext();
@@ -3242,12 +3499,12 @@ PyMODINIT_FUNC PyInit_user(void)
   __pyx_vtabptr_4user_Screenshot = &__pyx_vtable_4user_Screenshot;
   __pyx_vtable_4user_Screenshot.copy_to_clipboard = (void (*)(struct __pyx_obj_4user_Screenshot *, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_copy_to_clipboard;
   __pyx_vtable_4user_Screenshot.copy = (BOOLEAN (*)(struct __pyx_obj_4user_Screenshot *, PCHAR, DWORD, PDWORD))__pyx_f_4user_10Screenshot_copy;
-  __pyx_vtable_4user_Screenshot.save = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_save;
+  __pyx_vtable_4user_Screenshot.save = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args))__pyx_f_4user_10Screenshot_save;
   __pyx_vtable_4user_Screenshot.write = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, HANDLE, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_write;
-  if (PyType_Ready(&__pyx_type_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyType_Ready(&__pyx_type_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_type_4user_Screenshot.tp_print = 0;
-  if (__Pyx_SetVtable(__pyx_type_4user_Screenshot.tp_dict, __pyx_vtabptr_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (PyObject_SetAttrString(__pyx_m, "Screenshot", (PyObject *)&__pyx_type_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_SetVtable(__pyx_type_4user_Screenshot.tp_dict, __pyx_vtabptr_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttrString(__pyx_m, "Screenshot", (PyObject *)&__pyx_type_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_ptype_4user_Screenshot = &__pyx_type_4user_Screenshot;
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
@@ -3705,6 +3962,120 @@ static void __Pyx_WriteUnraisable(const char *name, CYTHON_UNUSED int clineno,
 #endif
 }
 
+static void __Pyx_RaiseDoubleKeywordsError(
+    const char* func_name,
+    PyObject* kw_name)
+{
+    PyErr_Format(PyExc_TypeError,
+        #if PY_MAJOR_VERSION >= 3
+        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
+        #else
+        "%s() got multiple values for keyword argument '%s'", func_name,
+        PyString_AsString(kw_name));
+        #endif
+}
+
+static int __Pyx_ParseOptionalKeywords(
+    PyObject *kwds,
+    PyObject **argnames[],
+    PyObject *kwds2,
+    PyObject *values[],
+    Py_ssize_t num_pos_args,
+    const char* function_name)
+{
+    PyObject *key = 0, *value = 0;
+    Py_ssize_t pos = 0;
+    PyObject*** name;
+    PyObject*** first_kw_arg = argnames + num_pos_args;
+    while (PyDict_Next(kwds, &pos, &key, &value)) {
+        name = first_kw_arg;
+        while (*name && (**name != key)) name++;
+        if (*name) {
+            values[name-argnames] = value;
+            continue;
+        }
+        name = first_kw_arg;
+        #if PY_MAJOR_VERSION < 3
+        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
+            while (*name) {
+                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
+                        && _PyString_Eq(**name, key)) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    if ((**argname == key) || (
+                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
+                             && _PyString_Eq(**argname, key))) {
+                        goto arg_passed_twice;
+                    }
+                    argname++;
+                }
+            }
+        } else
+        #endif
+        if (likely(PyUnicode_Check(key))) {
+            while (*name) {
+                int cmp = (**name == key) ? 0 :
+                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
+                #endif
+                    PyUnicode_Compare(**name, key);
+                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                if (cmp == 0) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    int cmp = (**argname == key) ? 0 :
+                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
+                    #endif
+                        PyUnicode_Compare(**argname, key);
+                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                    if (cmp == 0) goto arg_passed_twice;
+                    argname++;
+                }
+            }
+        } else
+            goto invalid_keyword_type;
+        if (kwds2) {
+            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
+        } else {
+            goto invalid_keyword;
+        }
+    }
+    return 0;
+arg_passed_twice:
+    __Pyx_RaiseDoubleKeywordsError(function_name, key);
+    goto bad;
+invalid_keyword_type:
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() keywords must be strings", function_name);
+    goto bad;
+invalid_keyword:
+    PyErr_Format(PyExc_TypeError,
+    #if PY_MAJOR_VERSION < 3
+        "%.200s() got an unexpected keyword argument '%.200s'",
+        function_name, PyString_AsString(key));
+    #else
+        "%s() got an unexpected keyword argument '%U'",
+        function_name, key);
+    #endif
+bad:
+    return -1;
+}
+
 static void __Pyx_RaiseArgumentTypeInvalid(const char* name, PyObject *obj, PyTypeObject *type) {
     PyErr_Format(PyExc_TypeError,
         "Argument '%.200s' has incorrect type (expected %.200s, got %.200s)",
@@ -4108,6 +4479,216 @@ static PyObject* __pyx_convert__to_py_BITMAPINFOHEADER(BITMAPINFOHEADER s) {
 #if CYTHON_USE_PYLONG_INTERNALS
   #include "longintrepr.h"
 #endif
+
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *x) {
+    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(ULONG) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(ULONG, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (ULONG) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 2 * PyLong_SHIFT) {
+                            return (ULONG) (((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 3 * PyLong_SHIFT) {
+                            return (ULONG) (((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 4 * PyLong_SHIFT) {
+                            return (ULONG) (((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (ULONG) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(ULONG, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(ULONG) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) ((((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, long, PyLong_AsLong(x))
+            } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            ULONG val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (ULONG) -1;
+        }
+    } else {
+        ULONG val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (ULONG) -1;
+        val = __Pyx_PyInt_As_ULONG(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to ULONG");
+    return (ULONG) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to ULONG");
+    return (ULONG) -1;
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value) {
+    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(ULONG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(ULONG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(ULONG),
+                                     little, !is_unsigned);
+    }
+}
 
 static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *x) {
     const DWORD neg_one = (DWORD) -1, const_zero = (DWORD) 0;

@@ -1,6 +1,8 @@
 from types cimport *
 
 cdef extern from *:
+    ctypedef Py_ssize_t HBITMAP
+
     HBITMAP __stdcall CreateCompatibleBitmap(HDC hdc, int cx, int cy)
     HDC __stdcall CreateCompatibleDC(HDC hdc)
     HGDIOBJ __stdcall SelectObject(HDC hdc, HGDIOBJ h)

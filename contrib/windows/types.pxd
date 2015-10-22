@@ -19,7 +19,10 @@ cdef extern from *:
     ctypedef WCHAR* LPTSTR
     ctypedef WCHAR* LPSTR
     ctypedef WCHAR* LPWSTR
+    ctypedef WCHAR* POLESTR
+    ctypedef WCHAR* LPOLESTR
     ctypedef const WCHAR* LPCTSTR
+    ctypedef const WCHAR* LPCWSTR
     ctypedef float FLOAT
     ctypedef FLOAT* PFLOAT
     ctypedef int INT32
@@ -59,8 +62,26 @@ cdef extern from *:
     ctypedef HANDLE HDC
     ctypedef HANDLE HWND
     ctypedef HANDLE HRGN
-    ctypedef HANDLE HBITMAP
     ctypedef HANDLE HGDIOBJ
+
+    ctypedef void* _HANDLE
+    ctypedef _HANDLE _HBITMAP
+
+    ctypedef struct IID:
+        unsigned long x
+        unsigned short s1
+        unsigned short s2
+        unsigned char c[8]
+    ctypedef IID CLSID
+    ctypedef CLSID* PCLSID
+    ctypedef IID* REFIID
+
+    ctypedef struct GUID:
+        ULONG   Data1
+        USHORT  Data2
+        USHORT  Data3
+        UCHAR   Data4[8]
+    ctypedef GUID* PGUID
 
     ctypedef struct PROCESSOR_NUMBER:
         WORD Group

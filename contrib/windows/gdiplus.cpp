@@ -247,6 +247,7 @@ static CYTHON_INLINE float __PYX_NAN() {
 #define __PYX_HAVE_API__gdiplus
 #include "_gdiplus.h"
 #include <windows.h>
+#include "../../Include/unicodeobject.h"
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -523,6 +524,53 @@ static const char *__pyx_f[] = {
 #define __Pyx_CLEAR(r)    do { PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);} while(0)
 #define __Pyx_XCLEAR(r)   do { if((r) != NULL) {PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);}} while(0)
 
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name) {
+    PyTypeObject* tp = Py_TYPE(obj);
+    if (likely(tp->tp_getattro))
+        return tp->tp_getattro(obj, attr_name);
+#if PY_MAJOR_VERSION < 3
+    if (likely(tp->tp_getattr))
+        return tp->tp_getattr(obj, PyString_AS_STRING(attr_name));
+#endif
+    return PyObject_GetAttr(obj, attr_name);
+}
+#else
+#define __Pyx_PyObject_GetAttrStr(o,n) PyObject_GetAttr(o,n)
+#endif
+
+static PyObject *__Pyx_GetBuiltinName(PyObject *name);
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
+#else
+#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
+#endif
+
+static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb);
+static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb);
+
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+
+static void __Pyx_WriteUnraisable(const char *name, int clineno,
+                                  int lineno, const char *filename,
+                                  int full_traceback, int nogil);
+
+static int __Pyx_PyUnicode_Tailmatch(PyObject* s, PyObject* substr,
+                                     Py_ssize_t start, Py_ssize_t end, int direction);
+
+static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
+    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
+
+static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
+
+static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
+    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
+    const char* function_name);
+
+static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
+    const char *name, int exact);
+
 typedef struct {
     int code_line;
     PyCodeObject* code_object;
@@ -540,6 +588,10 @@ static void __pyx_insert_code_object(int code_line, PyCodeObject* code_object);
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename);
 
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_Gdiplus_3a__3a_Status(Gdiplus::Status value);
+
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
@@ -548,24 +600,59 @@ static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 static int __Pyx_check_binary_version(void);
 
+static int __Pyx_ExportFunction(const char *name, void (*f)(void), const char *sig);
+
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 
 /* Module declarations from 'types' */
 
+/* Module declarations from 'string' */
+
 /* Module declarations from 'gdiplus' */
+static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t, PyObject *, ULONG, int __pyx_skip_dispatch); /*proto*/
 static ULONG_PTR __pyx_f_7gdiplus_startup(int __pyx_skip_dispatch); /*proto*/
 static void __pyx_f_7gdiplus_shutdown(int __pyx_skip_dispatch); /*proto*/
+static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP, CLSID *, LPCWSTR, ULONG); /*proto*/
+static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP, LPCWSTR, ULONG); /*proto*/
+static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP, LPCWSTR, ULONG); /*proto*/
 #define __Pyx_MODULE_NAME "gdiplus"
 int __pyx_module_is_main_gdiplus = 0;
 
 /* Implementation of 'gdiplus' */
+static PyObject *__pyx_builtin_RuntimeError;
+static PyObject *__pyx_builtin_ValueError;
+static char __pyx_k_jpg[] = ".jpg";
+static char __pyx_k_png[] = ".png";
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
+static char __pyx_k_handle[] = "handle";
+static char __pyx_k_quality[] = "quality";
+static char __pyx_k_filename[] = "filename";
+static char __pyx_k_ValueError[] = "ValueError";
+static char __pyx_k_RuntimeError[] = "RuntimeError";
+static char __pyx_k_GdipSaveImageToFile_d[] = "GdipSaveImageToFile(%d)";
+static char __pyx_k_Unknown_file_extension[] = "Unknown file extension";
+static char __pyx_k_GdipCreateBitmapFromHBITMAP_d[] = "GdipCreateBitmapFromHBITMAP(%d)";
+static char __pyx_k_save_MultiByteToWideChar_failed[] = "save(): MultiByteToWideChar failed";
+static PyObject *__pyx_kp_u_GdipCreateBitmapFromHBITMAP_d;
+static PyObject *__pyx_kp_u_GdipSaveImageToFile_d;
+static PyObject *__pyx_n_s_RuntimeError;
+static PyObject *__pyx_kp_u_Unknown_file_extension;
+static PyObject *__pyx_n_s_ValueError;
+static PyObject *__pyx_n_s_filename;
+static PyObject *__pyx_n_s_handle;
+static PyObject *__pyx_kp_u_jpg;
 static PyObject *__pyx_n_s_main;
+static PyObject *__pyx_kp_u_png;
+static PyObject *__pyx_n_s_quality;
+static PyObject *__pyx_kp_u_save_MultiByteToWideChar_failed;
 static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_pf_7gdiplus_startup(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
 static PyObject *__pyx_pf_7gdiplus_2shutdown(CYTHON_UNUSED PyObject *__pyx_self); /* proto */
+static PyObject *__pyx_pf_7gdiplus_4save_bitmap(CYTHON_UNUSED PyObject *__pyx_self, Py_ssize_t __pyx_v_handle, PyObject *__pyx_v_filename, ULONG __pyx_v_quality); /* proto */
+static PyObject *__pyx_tuple_;
+static PyObject *__pyx_tuple__2;
 
 /* "windows.pxi":4
  *     pass
@@ -625,8 +712,8 @@ static CYTHON_INLINE ULONGLONG __pyx_f_7gdiplus_FileTimeToUnsignedLongLong(PFILE
   return __pyx_r;
 }
 
-/* "gdiplus.pyx":6
- * from gdiplus cimport *
+/* "gdiplus.pyx":12
+ * DEF MAX_FILE_NAME = 1024
  * 
  * cpdef ULONG_PTR startup():             # <<<<<<<<<<<<<<
  *     return gdiplus_startup()
@@ -639,7 +726,7 @@ static ULONG_PTR __pyx_f_7gdiplus_startup(CYTHON_UNUSED int __pyx_skip_dispatch)
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("startup", 0);
 
-  /* "gdiplus.pyx":7
+  /* "gdiplus.pyx":13
  * 
  * cpdef ULONG_PTR startup():
  *     return gdiplus_startup()             # <<<<<<<<<<<<<<
@@ -649,8 +736,8 @@ static ULONG_PTR __pyx_f_7gdiplus_startup(CYTHON_UNUSED int __pyx_skip_dispatch)
   __pyx_r = gdiplus_startup();
   goto __pyx_L0;
 
-  /* "gdiplus.pyx":6
- * from gdiplus cimport *
+  /* "gdiplus.pyx":12
+ * DEF MAX_FILE_NAME = 1024
  * 
  * cpdef ULONG_PTR startup():             # <<<<<<<<<<<<<<
  *     return gdiplus_startup()
@@ -685,7 +772,7 @@ static PyObject *__pyx_pf_7gdiplus_startup(CYTHON_UNUSED PyObject *__pyx_self) {
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("startup", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyInt_FromSsize_t(__pyx_f_7gdiplus_startup(0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 6; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_f_7gdiplus_startup(0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -702,7 +789,7 @@ static PyObject *__pyx_pf_7gdiplus_startup(CYTHON_UNUSED PyObject *__pyx_self) {
   return __pyx_r;
 }
 
-/* "gdiplus.pyx":9
+/* "gdiplus.pyx":15
  *     return gdiplus_startup()
  * 
  * cpdef void shutdown():             # <<<<<<<<<<<<<<
@@ -715,16 +802,16 @@ static void __pyx_f_7gdiplus_shutdown(CYTHON_UNUSED int __pyx_skip_dispatch) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("shutdown", 0);
 
-  /* "gdiplus.pyx":10
+  /* "gdiplus.pyx":16
  * 
  * cpdef void shutdown():
  *     gdiplus_shutdown()             # <<<<<<<<<<<<<<
  * 
- * # vim: set ts=8 sw=4 sts=4 tw=80 et:
+ * cdef void save_bitmap_as(HBITMAP handle, CLSID* encoder,
  */
   gdiplus_shutdown();
 
-  /* "gdiplus.pyx":9
+  /* "gdiplus.pyx":15
  *     return gdiplus_startup()
  * 
  * cpdef void shutdown():             # <<<<<<<<<<<<<<
@@ -758,7 +845,7 @@ static PyObject *__pyx_pf_7gdiplus_2shutdown(CYTHON_UNUSED PyObject *__pyx_self)
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("shutdown", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_7gdiplus_shutdown(0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_7gdiplus_shutdown(0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -775,9 +862,562 @@ static PyObject *__pyx_pf_7gdiplus_2shutdown(CYTHON_UNUSED PyObject *__pyx_self)
   return __pyx_r;
 }
 
+/* "gdiplus.pyx":18
+ *     gdiplus_shutdown()
+ * 
+ * cdef void save_bitmap_as(HBITMAP handle, CLSID* encoder,             # <<<<<<<<<<<<<<
+ *                          LPCWSTR filename, ULONG quality):
+ *     cdef:
+ */
+
+static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx_v_encoder, LPCWSTR __pyx_v_filename, ULONG __pyx_v_quality) {
+  Gdiplus::GpStatus __pyx_v_status;
+  Gdiplus::GpBitmap *__pyx_v_bitmap;
+  Gdiplus::EncoderParameters __pyx_v_params;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("save_bitmap_as", 0);
+
+  /* "gdiplus.pyx":25
+ *         EncoderParameters params
+ * 
+ *     status = GdipCreateBitmapFromHBITMAP(<HBITMAP>handle,             # <<<<<<<<<<<<<<
+ *                                          <HPALETTE>NULL,
+ *                                          &bitmap)
+ */
+  __pyx_v_status = Gdiplus::DllExports::GdipCreateBitmapFromHBITMAP(((HBITMAP)__pyx_v_handle), ((HPALETTE)NULL), (&__pyx_v_bitmap));
+
+  /* "gdiplus.pyx":28
+ *                                          <HPALETTE>NULL,
+ *                                          &bitmap)
+ *     if status:             # <<<<<<<<<<<<<<
+ *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)
+ * 
+ */
+  if (__pyx_v_status) {
+
+    /* "gdiplus.pyx":29
+ *                                          &bitmap)
+ *     if status:
+ *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)             # <<<<<<<<<<<<<<
+ * 
+ *     params.Count = 1
+ */
+    __pyx_t_1 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_2 = PyUnicode_Format(__pyx_kp_u_GdipCreateBitmapFromHBITMAP_d, __pyx_t_1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_GIVEREF(__pyx_t_2);
+    PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
+    __pyx_t_2 = 0;
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "gdiplus.pyx":28
+ *                                          <HPALETTE>NULL,
+ *                                          &bitmap)
+ *     if status:             # <<<<<<<<<<<<<<
+ *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)
+ * 
+ */
+  }
+
+  /* "gdiplus.pyx":31
+ *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)
+ * 
+ *     params.Count = 1             # <<<<<<<<<<<<<<
+ *     params.Parameter[0].NumberOfValues = 1
+ *     params.Parameter[0].Guid  = EncoderQuality
+ */
+  __pyx_v_params.Count = 1;
+
+  /* "gdiplus.pyx":32
+ * 
+ *     params.Count = 1
+ *     params.Parameter[0].NumberOfValues = 1             # <<<<<<<<<<<<<<
+ *     params.Parameter[0].Guid  = EncoderQuality
+ *     params.Parameter[0].Type  = EncoderParameterValueTypeLong
+ */
+  (__pyx_v_params.Parameter[0]).NumberOfValues = 1;
+
+  /* "gdiplus.pyx":33
+ *     params.Count = 1
+ *     params.Parameter[0].NumberOfValues = 1
+ *     params.Parameter[0].Guid  = EncoderQuality             # <<<<<<<<<<<<<<
+ *     params.Parameter[0].Type  = EncoderParameterValueTypeLong
+ *     params.Parameter[0].Value = <PVOID>&quality
+ */
+  (__pyx_v_params.Parameter[0]).Guid = Gdiplus::EncoderQuality;
+
+  /* "gdiplus.pyx":34
+ *     params.Parameter[0].NumberOfValues = 1
+ *     params.Parameter[0].Guid  = EncoderQuality
+ *     params.Parameter[0].Type  = EncoderParameterValueTypeLong             # <<<<<<<<<<<<<<
+ *     params.Parameter[0].Value = <PVOID>&quality
+ * 
+ */
+  (__pyx_v_params.Parameter[0]).Type = Gdiplus::EncoderParameterValueTypeLong;
+
+  /* "gdiplus.pyx":35
+ *     params.Parameter[0].Guid  = EncoderQuality
+ *     params.Parameter[0].Type  = EncoderParameterValueTypeLong
+ *     params.Parameter[0].Value = <PVOID>&quality             # <<<<<<<<<<<<<<
+ * 
+ *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
+ */
+  (__pyx_v_params.Parameter[0]).Value = ((PVOID)(&__pyx_v_quality));
+
+  /* "gdiplus.pyx":37
+ *     params.Parameter[0].Value = <PVOID>&quality
+ * 
+ *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)             # <<<<<<<<<<<<<<
+ *     if status:
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
+ */
+  __pyx_v_status = Gdiplus::DllExports::GdipSaveImageToFile(__pyx_v_bitmap, __pyx_v_filename, __pyx_v_encoder, (&__pyx_v_params));
+
+  /* "gdiplus.pyx":38
+ * 
+ *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
+ *     if status:             # <<<<<<<<<<<<<<
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
+ * 
+ */
+  if (__pyx_v_status) {
+
+    /* "gdiplus.pyx":39
+ *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
+ *     if status:
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)             # <<<<<<<<<<<<<<
+ * 
+ * cdef void save_bitmap_as_jpeg(HBITMAP handle,
+ */
+    __pyx_t_2 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_1 = PyUnicode_Format(__pyx_kp_u_GdipSaveImageToFile_d, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_GIVEREF(__pyx_t_1);
+    PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
+    __pyx_t_1 = 0;
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "gdiplus.pyx":38
+ * 
+ *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
+ *     if status:             # <<<<<<<<<<<<<<
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
+ * 
+ */
+  }
+
+  /* "gdiplus.pyx":18
+ *     gdiplus_shutdown()
+ * 
+ * cdef void save_bitmap_as(HBITMAP handle, CLSID* encoder,             # <<<<<<<<<<<<<<
+ *                          LPCWSTR filename, ULONG quality):
+ *     cdef:
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_WriteUnraisable("gdiplus.save_bitmap_as", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "gdiplus.pyx":41
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
+ * 
+ * cdef void save_bitmap_as_jpeg(HBITMAP handle,             # <<<<<<<<<<<<<<
+ *                               LPCWSTR filename,
+ *                               ULONG quality):
+ */
+
+static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP __pyx_v_handle, LPCWSTR __pyx_v_filename, ULONG __pyx_v_quality) {
+  CLSID *__pyx_v_encoder;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("save_bitmap_as_jpeg", 0);
+
+  /* "gdiplus.pyx":44
+ *                               LPCWSTR filename,
+ *                               ULONG quality):
+ *     cdef CLSID* encoder = &ImageEncoderJpegClsid             # <<<<<<<<<<<<<<
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ */
+  __pyx_v_encoder = (&ImageEncoderJpegClsid);
+
+  /* "gdiplus.pyx":45
+ *                               ULONG quality):
+ *     cdef CLSID* encoder = &ImageEncoderJpegClsid
+ *     save_bitmap_as(handle, encoder, filename, quality)             # <<<<<<<<<<<<<<
+ * 
+ * cdef void save_bitmap_as_png(HBITMAP handle,
+ */
+  __pyx_f_7gdiplus_save_bitmap_as(__pyx_v_handle, __pyx_v_encoder, __pyx_v_filename, __pyx_v_quality);
+
+  /* "gdiplus.pyx":41
+ *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
+ * 
+ * cdef void save_bitmap_as_jpeg(HBITMAP handle,             # <<<<<<<<<<<<<<
+ *                               LPCWSTR filename,
+ *                               ULONG quality):
+ */
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "gdiplus.pyx":47
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ * cdef void save_bitmap_as_png(HBITMAP handle,             # <<<<<<<<<<<<<<
+ *                              LPCWSTR filename,
+ *                              ULONG quality):
+ */
+
+static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP __pyx_v_handle, LPCWSTR __pyx_v_filename, ULONG __pyx_v_quality) {
+  CLSID *__pyx_v_encoder;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("save_bitmap_as_png", 0);
+
+  /* "gdiplus.pyx":50
+ *                              LPCWSTR filename,
+ *                              ULONG quality):
+ *     cdef CLSID* encoder = &ImageEncoderPngClsid             # <<<<<<<<<<<<<<
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ */
+  __pyx_v_encoder = (&ImageEncoderPngClsid);
+
+  /* "gdiplus.pyx":51
+ *                              ULONG quality):
+ *     cdef CLSID* encoder = &ImageEncoderPngClsid
+ *     save_bitmap_as(handle, encoder, filename, quality)             # <<<<<<<<<<<<<<
+ * 
+ * cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality):
+ */
+  __pyx_f_7gdiplus_save_bitmap_as(__pyx_v_handle, __pyx_v_encoder, __pyx_v_filename, __pyx_v_quality);
+
+  /* "gdiplus.pyx":47
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ * cdef void save_bitmap_as_png(HBITMAP handle,             # <<<<<<<<<<<<<<
+ *                              LPCWSTR filename,
+ *                              ULONG quality):
+ */
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "gdiplus.pyx":53
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ * cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality):             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         WCHAR uname[MAX_FILE_NAME+1]
+ */
+
+static PyObject *__pyx_pw_7gdiplus_5save_bitmap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__pyx_v_filename, ULONG __pyx_v_quality, CYTHON_UNUSED int __pyx_skip_dispatch) {
+  WCHAR __pyx_v_uname[(0x400 + 1)];
+  int __pyx_v_uname_len;
+  char *__pyx_v_name;
+  Py_ssize_t __pyx_v_name_len;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("save_bitmap", 0);
+
+  /* "gdiplus.pyx":60
+ *         Py_ssize_t name_len
+ * 
+ *     name = PyUnicode_AsUTF8AndSize(filename, &name_len)             # <<<<<<<<<<<<<<
+ * 
+ *     uname_len = MultiByteToWideChar(CP_UTF8,
+ */
+  __pyx_v_name = PyUnicode_AsUTF8AndSize(__pyx_v_filename, (&__pyx_v_name_len));
+
+  /* "gdiplus.pyx":62
+ *     name = PyUnicode_AsUTF8AndSize(filename, &name_len)
+ * 
+ *     uname_len = MultiByteToWideChar(CP_UTF8,             # <<<<<<<<<<<<<<
+ *                                     0,
+ *                                     <LPCSTR>name,
+ */
+  __pyx_v_uname_len = MultiByteToWideChar(CP_UTF8, 0, ((LPCSTR)__pyx_v_name), __pyx_v_name_len, (&(__pyx_v_uname[0])), 0x400);
+
+  /* "gdiplus.pyx":68
+ *                                     &uname[0],
+ *                                     MAX_FILE_NAME)
+ *     if uname_len == 0:             # <<<<<<<<<<<<<<
+ *         raise ValueError("save(): MultiByteToWideChar failed")
+ * 
+ */
+  __pyx_t_1 = ((__pyx_v_uname_len == 0) != 0);
+  if (__pyx_t_1) {
+
+    /* "gdiplus.pyx":69
+ *                                     MAX_FILE_NAME)
+ *     if uname_len == 0:
+ *         raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
+ * 
+ *     uname[uname_len] = 0
+ */
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "gdiplus.pyx":68
+ *                                     &uname[0],
+ *                                     MAX_FILE_NAME)
+ *     if uname_len == 0:             # <<<<<<<<<<<<<<
+ *         raise ValueError("save(): MultiByteToWideChar failed")
+ * 
+ */
+  }
+
+  /* "gdiplus.pyx":71
+ *         raise ValueError("save(): MultiByteToWideChar failed")
+ * 
+ *     uname[uname_len] = 0             # <<<<<<<<<<<<<<
+ * 
+ *     if filename.endswith(".png"):
+ */
+  (__pyx_v_uname[__pyx_v_uname_len]) = 0;
+
+  /* "gdiplus.pyx":73
+ *     uname[uname_len] = 0
+ * 
+ *     if filename.endswith(".png"):             # <<<<<<<<<<<<<<
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
+ *     elif filename.endswith(".jpg"):
+ */
+  if (unlikely(__pyx_v_filename == Py_None)) {
+    PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%s'", "endswith");
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_png, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if ((__pyx_t_1 != 0)) {
+
+    /* "gdiplus.pyx":74
+ * 
+ *     if filename.endswith(".png"):
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)             # <<<<<<<<<<<<<<
+ *     elif filename.endswith(".jpg"):
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
+ */
+    __pyx_f_7gdiplus_save_bitmap_as_png(((HBITMAP)__pyx_v_handle), (&(__pyx_v_uname[0])), __pyx_v_quality);
+
+    /* "gdiplus.pyx":73
+ *     uname[uname_len] = 0
+ * 
+ *     if filename.endswith(".png"):             # <<<<<<<<<<<<<<
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
+ *     elif filename.endswith(".jpg"):
+ */
+    goto __pyx_L4;
+  }
+
+  /* "gdiplus.pyx":75
+ *     if filename.endswith(".png"):
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
+ *     elif filename.endswith(".jpg"):             # <<<<<<<<<<<<<<
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
+ *     else:
+ */
+  if (unlikely(__pyx_v_filename == Py_None)) {
+    PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%s'", "endswith");
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_jpg, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if ((__pyx_t_1 != 0)) {
+
+    /* "gdiplus.pyx":76
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
+ *     elif filename.endswith(".jpg"):
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)             # <<<<<<<<<<<<<<
+ *     else:
+ *         raise ValueError("Unknown file extension")
+ */
+    __pyx_f_7gdiplus_save_bitmap_as_jpeg(((HBITMAP)__pyx_v_handle), (&(__pyx_v_uname[0])), __pyx_v_quality);
+
+    /* "gdiplus.pyx":75
+ *     if filename.endswith(".png"):
+ *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
+ *     elif filename.endswith(".jpg"):             # <<<<<<<<<<<<<<
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
+ *     else:
+ */
+    goto __pyx_L4;
+  }
+
+  /* "gdiplus.pyx":78
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
+ *     else:
+ *         raise ValueError("Unknown file extension")             # <<<<<<<<<<<<<<
+ * 
+ * # vim: set ts=8 sw=4 sts=4 tw=80 et:
+ */
+  /*else*/ {
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  }
+  __pyx_L4:;
+
+  /* "gdiplus.pyx":53
+ *     save_bitmap_as(handle, encoder, filename, quality)
+ * 
+ * cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality):             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         WCHAR uname[MAX_FILE_NAME+1]
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_WriteUnraisable("gdiplus.save_bitmap", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_7gdiplus_5save_bitmap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyObject *__pyx_pw_7gdiplus_5save_bitmap(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  Py_ssize_t __pyx_v_handle;
+  PyObject *__pyx_v_filename = 0;
+  ULONG __pyx_v_quality;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("save_bitmap (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_handle,&__pyx_n_s_filename,&__pyx_n_s_quality,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_handle)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_filename)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_quality)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "save_bitmap") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_handle == (Py_ssize_t)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_filename = ((PyObject*)values[1]);
+    __pyx_v_quality = __Pyx_PyInt_As_ULONG(values[2]); if (unlikely((__pyx_v_quality == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("gdiplus.save_bitmap", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_r = __pyx_pf_7gdiplus_4save_bitmap(__pyx_self, __pyx_v_handle, __pyx_v_filename, __pyx_v_quality);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_7gdiplus_4save_bitmap(CYTHON_UNUSED PyObject *__pyx_self, Py_ssize_t __pyx_v_handle, PyObject *__pyx_v_filename, ULONG __pyx_v_quality) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("save_bitmap", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_7gdiplus_save_bitmap(__pyx_v_handle, __pyx_v_filename, __pyx_v_quality, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("gdiplus.save_bitmap", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
 static PyMethodDef __pyx_methods[] = {
   {"startup", (PyCFunction)__pyx_pw_7gdiplus_1startup, METH_NOARGS, 0},
   {"shutdown", (PyCFunction)__pyx_pw_7gdiplus_3shutdown, METH_NOARGS, 0},
+  {"save_bitmap", (PyCFunction)__pyx_pw_7gdiplus_5save_bitmap, METH_VARARGS|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -800,19 +1440,59 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
+  {&__pyx_kp_u_GdipCreateBitmapFromHBITMAP_d, __pyx_k_GdipCreateBitmapFromHBITMAP_d, sizeof(__pyx_k_GdipCreateBitmapFromHBITMAP_d), 0, 1, 0, 0},
+  {&__pyx_kp_u_GdipSaveImageToFile_d, __pyx_k_GdipSaveImageToFile_d, sizeof(__pyx_k_GdipSaveImageToFile_d), 0, 1, 0, 0},
+  {&__pyx_n_s_RuntimeError, __pyx_k_RuntimeError, sizeof(__pyx_k_RuntimeError), 0, 0, 1, 1},
+  {&__pyx_kp_u_Unknown_file_extension, __pyx_k_Unknown_file_extension, sizeof(__pyx_k_Unknown_file_extension), 0, 1, 0, 0},
+  {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
+  {&__pyx_n_s_filename, __pyx_k_filename, sizeof(__pyx_k_filename), 0, 0, 1, 1},
+  {&__pyx_n_s_handle, __pyx_k_handle, sizeof(__pyx_k_handle), 0, 0, 1, 1},
+  {&__pyx_kp_u_jpg, __pyx_k_jpg, sizeof(__pyx_k_jpg), 0, 1, 0, 0},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
+  {&__pyx_kp_u_png, __pyx_k_png, sizeof(__pyx_k_png), 0, 1, 0, 0},
+  {&__pyx_n_s_quality, __pyx_k_quality, sizeof(__pyx_k_quality), 0, 0, 1, 1},
+  {&__pyx_kp_u_save_MultiByteToWideChar_failed, __pyx_k_save_MultiByteToWideChar_failed, sizeof(__pyx_k_save_MultiByteToWideChar_failed), 0, 1, 0, 0},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
+  __pyx_L1_error:;
+  return -1;
 }
 
 static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
+
+  /* "gdiplus.pyx":69
+ *                                     MAX_FILE_NAME)
+ *     if uname_len == 0:
+ *         raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
+ * 
+ *     uname[uname_len] = 0
+ */
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_save_MultiByteToWideChar_failed); if (unlikely(!__pyx_tuple_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple_);
+  __Pyx_GIVEREF(__pyx_tuple_);
+
+  /* "gdiplus.pyx":78
+ *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
+ *     else:
+ *         raise ValueError("Unknown file extension")             # <<<<<<<<<<<<<<
+ * 
+ * # vim: set ts=8 sw=4 sts=4 tw=80 et:
+ */
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Unknown_file_extension); if (unlikely(!__pyx_tuple__2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__2);
+  __Pyx_GIVEREF(__pyx_tuple__2);
   __Pyx_RefNannyFinishContext();
   return 0;
+  __pyx_L1_error:;
+  __Pyx_RefNannyFinishContext();
+  return -1;
 }
 
 static int __Pyx_InitGlobals(void) {
@@ -907,6 +1587,7 @@ PyMODINIT_FUNC PyInit_gdiplus(void)
   /*--- Global init code ---*/
   /*--- Variable export code ---*/
   /*--- Function export code ---*/
+  if (__Pyx_ExportFunction("save_bitmap", (void (*)(void))__pyx_f_7gdiplus_save_bitmap, "void (Py_ssize_t, PyObject *, ULONG, int __pyx_skip_dispatch)") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Type init code ---*/
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
@@ -920,7 +1601,7 @@ PyMODINIT_FUNC PyInit_gdiplus(void)
  * 
  * include "windows.pxi"             # <<<<<<<<<<<<<<
  * 
- * from gdiplus cimport *
+ * cdef extern from "../../Include/unicodeobject.h":
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
@@ -965,6 +1646,454 @@ end:
     return (__Pyx_RefNannyAPIStruct *)r;
 }
 #endif
+
+static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
+    PyObject* result = __Pyx_PyObject_GetAttrStr(__pyx_b, name);
+    if (unlikely(!result)) {
+        PyErr_Format(PyExc_NameError,
+#if PY_MAJOR_VERSION >= 3
+            "name '%U' is not defined", name);
+#else
+            "name '%.200s' is not defined", PyString_AS_STRING(name));
+#endif
+    }
+    return result;
+}
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
+    PyObject *result;
+    ternaryfunc call = func->ob_type->tp_call;
+    if (unlikely(!call))
+        return PyObject_Call(func, arg, kw);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = (*call)(func, arg, kw);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyObject *tmp_type, *tmp_value, *tmp_tb;
+    PyThreadState *tstate = PyThreadState_GET();
+    tmp_type = tstate->curexc_type;
+    tmp_value = tstate->curexc_value;
+    tmp_tb = tstate->curexc_traceback;
+    tstate->curexc_type = type;
+    tstate->curexc_value = value;
+    tstate->curexc_traceback = tb;
+    Py_XDECREF(tmp_type);
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(tmp_tb);
+#else
+    PyErr_Restore(type, value, tb);
+#endif
+}
+static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyThreadState *tstate = PyThreadState_GET();
+    *type = tstate->curexc_type;
+    *value = tstate->curexc_value;
+    *tb = tstate->curexc_traceback;
+    tstate->curexc_type = 0;
+    tstate->curexc_value = 0;
+    tstate->curexc_traceback = 0;
+#else
+    PyErr_Fetch(type, value, tb);
+#endif
+}
+
+#if PY_MAJOR_VERSION < 3
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
+                        CYTHON_UNUSED PyObject *cause) {
+    Py_XINCREF(type);
+    if (!value || value == Py_None)
+        value = NULL;
+    else
+        Py_INCREF(value);
+    if (!tb || tb == Py_None)
+        tb = NULL;
+    else {
+        Py_INCREF(tb);
+        if (!PyTraceBack_Check(tb)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: arg 3 must be a traceback or None");
+            goto raise_error;
+        }
+    }
+    if (PyType_Check(type)) {
+#if CYTHON_COMPILING_IN_PYPY
+        if (!value) {
+            Py_INCREF(Py_None);
+            value = Py_None;
+        }
+#endif
+        PyErr_NormalizeException(&type, &value, &tb);
+    } else {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto raise_error;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(type);
+        Py_INCREF(type);
+        if (!PyType_IsSubtype((PyTypeObject *)type, (PyTypeObject *)PyExc_BaseException)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: exception class must be a subclass of BaseException");
+            goto raise_error;
+        }
+    }
+    __Pyx_ErrRestore(type, value, tb);
+    return;
+raise_error:
+    Py_XDECREF(value);
+    Py_XDECREF(type);
+    Py_XDECREF(tb);
+    return;
+}
+#else
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
+    PyObject* owned_instance = NULL;
+    if (tb == Py_None) {
+        tb = 0;
+    } else if (tb && !PyTraceBack_Check(tb)) {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: arg 3 must be a traceback or None");
+        goto bad;
+    }
+    if (value == Py_None)
+        value = 0;
+    if (PyExceptionInstance_Check(type)) {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto bad;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(value);
+    } else if (PyExceptionClass_Check(type)) {
+        PyObject *instance_class = NULL;
+        if (value && PyExceptionInstance_Check(value)) {
+            instance_class = (PyObject*) Py_TYPE(value);
+            if (instance_class != type) {
+                int is_subclass = PyObject_IsSubclass(instance_class, type);
+                if (!is_subclass) {
+                    instance_class = NULL;
+                } else if (unlikely(is_subclass == -1)) {
+                    goto bad;
+                } else {
+                    type = instance_class;
+                }
+            }
+        }
+        if (!instance_class) {
+            PyObject *args;
+            if (!value)
+                args = PyTuple_New(0);
+            else if (PyTuple_Check(value)) {
+                Py_INCREF(value);
+                args = value;
+            } else
+                args = PyTuple_Pack(1, value);
+            if (!args)
+                goto bad;
+            owned_instance = PyObject_Call(type, args, NULL);
+            Py_DECREF(args);
+            if (!owned_instance)
+                goto bad;
+            value = owned_instance;
+            if (!PyExceptionInstance_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                             "calling %R should have returned an instance of "
+                             "BaseException, not %R",
+                             type, Py_TYPE(value));
+                goto bad;
+            }
+        }
+    } else {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: exception class must be a subclass of BaseException");
+        goto bad;
+    }
+#if PY_VERSION_HEX >= 0x03030000
+    if (cause) {
+#else
+    if (cause && cause != Py_None) {
+#endif
+        PyObject *fixed_cause;
+        if (cause == Py_None) {
+            fixed_cause = NULL;
+        } else if (PyExceptionClass_Check(cause)) {
+            fixed_cause = PyObject_CallObject(cause, NULL);
+            if (fixed_cause == NULL)
+                goto bad;
+        } else if (PyExceptionInstance_Check(cause)) {
+            fixed_cause = cause;
+            Py_INCREF(fixed_cause);
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "exception causes must derive from "
+                            "BaseException");
+            goto bad;
+        }
+        PyException_SetCause(value, fixed_cause);
+    }
+    PyErr_SetObject(type, value);
+    if (tb) {
+#if CYTHON_COMPILING_IN_PYPY
+        PyObject *tmp_type, *tmp_value, *tmp_tb;
+        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
+        Py_INCREF(tb);
+        PyErr_Restore(tmp_type, tmp_value, tb);
+        Py_XDECREF(tmp_tb);
+#else
+        PyThreadState *tstate = PyThreadState_GET();
+        PyObject* tmp_tb = tstate->curexc_traceback;
+        if (tb != tmp_tb) {
+            Py_INCREF(tb);
+            tstate->curexc_traceback = tb;
+            Py_XDECREF(tmp_tb);
+        }
+#endif
+    }
+bad:
+    Py_XDECREF(owned_instance);
+    return;
+}
+#endif
+
+static void __Pyx_WriteUnraisable(const char *name, CYTHON_UNUSED int clineno,
+                                  CYTHON_UNUSED int lineno, CYTHON_UNUSED const char *filename,
+                                  int full_traceback, CYTHON_UNUSED int nogil) {
+    PyObject *old_exc, *old_val, *old_tb;
+    PyObject *ctx;
+#ifdef WITH_THREAD
+    PyGILState_STATE state;
+    if (nogil)
+        state = PyGILState_Ensure();
+#endif
+    __Pyx_ErrFetch(&old_exc, &old_val, &old_tb);
+    if (full_traceback) {
+        Py_XINCREF(old_exc);
+        Py_XINCREF(old_val);
+        Py_XINCREF(old_tb);
+        __Pyx_ErrRestore(old_exc, old_val, old_tb);
+        PyErr_PrintEx(1);
+    }
+    #if PY_MAJOR_VERSION < 3
+    ctx = PyString_FromString(name);
+    #else
+    ctx = PyUnicode_FromString(name);
+    #endif
+    __Pyx_ErrRestore(old_exc, old_val, old_tb);
+    if (!ctx) {
+        PyErr_WriteUnraisable(Py_None);
+    } else {
+        PyErr_WriteUnraisable(ctx);
+        Py_DECREF(ctx);
+    }
+#ifdef WITH_THREAD
+    if (nogil)
+        PyGILState_Release(state);
+#endif
+}
+
+static int __Pyx_PyUnicode_Tailmatch(PyObject* s, PyObject* substr,
+                                     Py_ssize_t start, Py_ssize_t end, int direction) {
+    if (unlikely(PyTuple_Check(substr))) {
+        Py_ssize_t i, count = PyTuple_GET_SIZE(substr);
+        for (i = 0; i < count; i++) {
+            Py_ssize_t result;
+#if CYTHON_COMPILING_IN_CPYTHON
+            result = PyUnicode_Tailmatch(s, PyTuple_GET_ITEM(substr, i),
+                                         start, end, direction);
+#else
+            PyObject* sub = PySequence_ITEM(substr, i);
+            if (unlikely(!sub)) return -1;
+            result = PyUnicode_Tailmatch(s, sub, start, end, direction);
+            Py_DECREF(sub);
+#endif
+            if (result) {
+                return (int) result;
+            }
+        }
+        return 0;
+    }
+    return (int) PyUnicode_Tailmatch(s, substr, start, end, direction);
+}
+
+static void __Pyx_RaiseArgtupleInvalid(
+    const char* func_name,
+    int exact,
+    Py_ssize_t num_min,
+    Py_ssize_t num_max,
+    Py_ssize_t num_found)
+{
+    Py_ssize_t num_expected;
+    const char *more_or_less;
+    if (num_found < num_min) {
+        num_expected = num_min;
+        more_or_less = "at least";
+    } else {
+        num_expected = num_max;
+        more_or_less = "at most";
+    }
+    if (exact) {
+        more_or_less = "exactly";
+    }
+    PyErr_Format(PyExc_TypeError,
+                 "%.200s() takes %.8s %" CYTHON_FORMAT_SSIZE_T "d positional argument%.1s (%" CYTHON_FORMAT_SSIZE_T "d given)",
+                 func_name, more_or_less, num_expected,
+                 (num_expected == 1) ? "" : "s", num_found);
+}
+
+static void __Pyx_RaiseDoubleKeywordsError(
+    const char* func_name,
+    PyObject* kw_name)
+{
+    PyErr_Format(PyExc_TypeError,
+        #if PY_MAJOR_VERSION >= 3
+        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
+        #else
+        "%s() got multiple values for keyword argument '%s'", func_name,
+        PyString_AsString(kw_name));
+        #endif
+}
+
+static int __Pyx_ParseOptionalKeywords(
+    PyObject *kwds,
+    PyObject **argnames[],
+    PyObject *kwds2,
+    PyObject *values[],
+    Py_ssize_t num_pos_args,
+    const char* function_name)
+{
+    PyObject *key = 0, *value = 0;
+    Py_ssize_t pos = 0;
+    PyObject*** name;
+    PyObject*** first_kw_arg = argnames + num_pos_args;
+    while (PyDict_Next(kwds, &pos, &key, &value)) {
+        name = first_kw_arg;
+        while (*name && (**name != key)) name++;
+        if (*name) {
+            values[name-argnames] = value;
+            continue;
+        }
+        name = first_kw_arg;
+        #if PY_MAJOR_VERSION < 3
+        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
+            while (*name) {
+                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
+                        && _PyString_Eq(**name, key)) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    if ((**argname == key) || (
+                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
+                             && _PyString_Eq(**argname, key))) {
+                        goto arg_passed_twice;
+                    }
+                    argname++;
+                }
+            }
+        } else
+        #endif
+        if (likely(PyUnicode_Check(key))) {
+            while (*name) {
+                int cmp = (**name == key) ? 0 :
+                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
+                #endif
+                    PyUnicode_Compare(**name, key);
+                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                if (cmp == 0) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    int cmp = (**argname == key) ? 0 :
+                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
+                    #endif
+                        PyUnicode_Compare(**argname, key);
+                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                    if (cmp == 0) goto arg_passed_twice;
+                    argname++;
+                }
+            }
+        } else
+            goto invalid_keyword_type;
+        if (kwds2) {
+            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
+        } else {
+            goto invalid_keyword;
+        }
+    }
+    return 0;
+arg_passed_twice:
+    __Pyx_RaiseDoubleKeywordsError(function_name, key);
+    goto bad;
+invalid_keyword_type:
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() keywords must be strings", function_name);
+    goto bad;
+invalid_keyword:
+    PyErr_Format(PyExc_TypeError,
+    #if PY_MAJOR_VERSION < 3
+        "%.200s() got an unexpected keyword argument '%.200s'",
+        function_name, PyString_AsString(key));
+    #else
+        "%s() got an unexpected keyword argument '%U'",
+        function_name, key);
+    #endif
+bad:
+    return -1;
+}
+
+static void __Pyx_RaiseArgumentTypeInvalid(const char* name, PyObject *obj, PyTypeObject *type) {
+    PyErr_Format(PyExc_TypeError,
+        "Argument '%.200s' has incorrect type (expected %.200s, got %.200s)",
+        name, type->tp_name, Py_TYPE(obj)->tp_name);
+}
+static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
+    const char *name, int exact)
+{
+    if (unlikely(!type)) {
+        PyErr_SetString(PyExc_SystemError, "Missing type object");
+        return 0;
+    }
+    if (none_allowed && obj == Py_None) return 1;
+    else if (exact) {
+        if (likely(Py_TYPE(obj) == type)) return 1;
+        #if PY_MAJOR_VERSION == 2
+        else if ((type == &PyBaseString_Type) && likely(__Pyx_PyBaseString_CheckExact(obj))) return 1;
+        #endif
+    }
+    else {
+        if (likely(PyObject_TypeCheck(obj, type))) return 1;
+    }
+    __Pyx_RaiseArgumentTypeInvalid(name, obj, type);
+    return 0;
+}
 
 static int __pyx_bisect_code_objects(__Pyx_CodeObjectCacheEntry* entries, int count, int code_line) {
     int start = 0, mid = 0, end = count - 1;
@@ -1125,6 +2254,241 @@ bad:
     Py_XDECREF(py_frame);
 }
 
+#define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
+#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
+#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
+    {\
+        func_type value = func_value;\
+        if (sizeof(target_type) < sizeof(func_type)) {\
+            if (unlikely(value != (func_type) (target_type) value)) {\
+                func_type zero = 0;\
+                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
+                    return (target_type) -1;\
+                if (is_unsigned && unlikely(value < zero))\
+                    goto raise_neg_overflow;\
+                else\
+                    goto raise_overflow;\
+            }\
+        }\
+        return (target_type) value;\
+    }
+
+#if CYTHON_USE_PYLONG_INTERNALS
+  #include "longintrepr.h"
+#endif
+
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *x) {
+    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(ULONG) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(ULONG, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (ULONG) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 2 * PyLong_SHIFT) {
+                            return (ULONG) (((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 3 * PyLong_SHIFT) {
+                            return (ULONG) (((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 4 * PyLong_SHIFT) {
+                            return (ULONG) (((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (ULONG) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(ULONG, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(ULONG) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) ((((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, long, PyLong_AsLong(x))
+            } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            ULONG val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (ULONG) -1;
+        }
+    } else {
+        ULONG val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (ULONG) -1;
+        val = __Pyx_PyInt_As_ULONG(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to ULONG");
+    return (ULONG) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to ULONG");
+    return (ULONG) -1;
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_Gdiplus_3a__3a_Status(Gdiplus::Status value) {
+    const Gdiplus::Status neg_one = (Gdiplus::Status) -1, const_zero = (Gdiplus::Status) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(Gdiplus::Status) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(Gdiplus::Status) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(Gdiplus::Status) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(Gdiplus::Status) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(Gdiplus::Status) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(Gdiplus::Status),
+                                     little, !is_unsigned);
+    }
+}
+
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
     const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -1150,31 +2514,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
                                      little, !is_unsigned);
     }
 }
-
-#define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
-#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
-#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
-    {\
-        func_type value = func_value;\
-        if (sizeof(target_type) < sizeof(func_type)) {\
-            if (unlikely(value != (func_type) (target_type) value)) {\
-                func_type zero = 0;\
-                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
-                    return (target_type) -1;\
-                if (is_unsigned && unlikely(value < zero))\
-                    goto raise_neg_overflow;\
-                else\
-                    goto raise_overflow;\
-            }\
-        }\
-        return (target_type) value;\
-    }
-
-#if CYTHON_USE_PYLONG_INTERNALS
-  #include "longintrepr.h"
-#endif
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
     const long neg_one = (long) -1, const_zero = (long) 0;
@@ -1557,6 +2896,42 @@ static int __Pyx_check_binary_version(void) {
         return PyErr_WarnEx(NULL, message, 1);
     }
     return 0;
+}
+
+static int __Pyx_ExportFunction(const char *name, void (*f)(void), const char *sig) {
+    PyObject *d = 0;
+    PyObject *cobj = 0;
+    union {
+        void (*fp)(void);
+        void *p;
+    } tmp;
+    d = PyObject_GetAttrString(__pyx_m, (char *)"__pyx_capi__");
+    if (!d) {
+        PyErr_Clear();
+        d = PyDict_New();
+        if (!d)
+            goto bad;
+        Py_INCREF(d);
+        if (PyModule_AddObject(__pyx_m, (char *)"__pyx_capi__", d) < 0)
+            goto bad;
+    }
+    tmp.fp = f;
+#if PY_VERSION_HEX >= 0x02070000
+    cobj = PyCapsule_New(tmp.p, sig, 0);
+#else
+    cobj = PyCObject_FromVoidPtrAndDesc(tmp.p, (void *)sig, 0);
+#endif
+    if (!cobj)
+        goto bad;
+    if (PyDict_SetItemString(d, name, cobj) < 0)
+        goto bad;
+    Py_DECREF(cobj);
+    Py_DECREF(d);
+    return 0;
+bad:
+    Py_XDECREF(cobj);
+    Py_XDECREF(d);
+    return -1;
 }
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {

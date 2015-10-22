@@ -3,7 +3,6 @@ from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 cdef extern from "../../Include/unicodeobject.h":
     char* PyUnicode_AsUTF8AndSize(object, Py_ssize_t *)
-    #LPTSTR PyUnicode_AsWideCharString(PyObject *, Py_ssize_t *)
 
 include "windows.pxi"
 from base cimport *
@@ -23,10 +22,9 @@ cdef class Screenshot:
         DWORD bitmap_size
         DWORD dib_size
         BITMAP bitmap
-    cdef:
+        HBITMAP handle
         HDC screen
         HDC memory
-        HBITMAP handle
 
     def __cinit__(self):
         SecureZeroMemory(&self.info, sizeof(self.info))
@@ -153,7 +151,7 @@ cdef class Screenshot:
         bytes_written[0] = self.dib_size
         return 1
 
-    cpdef DWORD save(self, unicode filename):
+    cpdef DWORD save(self, unicode filename, ULONG quality = 100):
         cdef:
             HANDLE h
             DWORD total_bytes_written = 0
