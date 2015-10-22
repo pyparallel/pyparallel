@@ -132,6 +132,9 @@ begin:
             PxThread_SYSERROR("AvQuerySystemResponsiveness");
     }
 
+    if (!t->ctx->func)
+        goto post;
+
     switch (c->h->group) {
         case 1:
             /* Context's active heap belongs to the context. */
@@ -170,6 +173,7 @@ begin:
         ReleaseSRWLockExclusive(&t->data_srwlock);
     }
 
+post:
     if (++t->count < 0) {
         t->count_wrapped++;
         t->count = 1;
@@ -196,6 +200,9 @@ begin:
         default:
             __debugbreak();
     }
+
+    if (!t->ctx->func)
+        goto end;
 
     if (expect_snapshot) {
         if (!prev_snapshot->base)
@@ -729,7 +736,7 @@ pxthread_init(PyObject *self, PyObject *args, PyObject *kwds)
         NULL
     };
 
-    static const char *fmt = "O|OOOO:thread.__init__()";
+    static const char *fmt = "|OOOOOO:thread.__init__()";
 
     if (!PyArg_ParseTupleAndKeywords(args, kwds, fmt, kwlist,
                                      &func,
@@ -740,7 +747,7 @@ pxthread_init(PyObject *self, PyObject *args, PyObject *kwds)
                                      &thread_characteristics))
         return -1;
 
-    if (pxthread_set_func(t, func, NULL) < 0)
+    if (func && pxthread_set_func(t, func, NULL) < 0)
         return -1;
 
     if (_args && pxthread_set_args(t, _args, NULL) < 0)

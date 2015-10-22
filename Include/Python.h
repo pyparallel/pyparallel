@@ -133,6 +133,7 @@
 
 #ifdef WITH_PARALLEL
 PyAPI_DATA(PyTypeObject) PxTimer_Type;
+PyAPI_DATA(PyTypeObject) PxThread_Type;
 #endif
 
 #endif /* !Py_PYTHON_H */

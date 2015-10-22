@@ -14687,6 +14687,9 @@ _PyAsync_ModInit(void)
     if (PyType_Ready(&PxTimer_Type) < 0)
         Py_FatalError("Can't initialize timer type");
 
+    if (PyType_Ready(&PxThread_Type) < 0)
+        Py_FatalError("Can't initialize thread type");
+
     _pyparallel_util_module = PyImport_ImportModule("_pyparallel_util");
     if (!_pyparallel_util_module)
         return NULL;
@@ -14717,6 +14720,9 @@ _PyAsync_ModInit(void)
         return NULL;
 
     if (PyModule_AddObject(m, "timer", (PyObject *)&PxTimer_Type))
+        return NULL;
+
+    if (PyModule_AddObject(m, "thread", (PyObject *)&PxThread_Type))
         return NULL;
 
     windows_module = PyImport_ImportModule("windows");
