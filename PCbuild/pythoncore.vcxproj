@@ -218,7 +218,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -296,7 +296,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Debug "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -369,7 +369,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -443,7 +443,7 @@ IF %ERRORLEVEL% NEQ 0 (
       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
     </PreLinkEvent>
     <Link>
-      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <BaseAddress>0x1e000000</BaseAddress>
@@ -461,6 +461,7 @@ IF %ERRORLEVEL% NEQ 0 (
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\adv.pyx" />
     <CythonFile Include="..\contrib\windows\user.pyx" />
     <CythonFile Include="..\contrib\windows\rtl.pyx" />
     <CythonFile Include="..\contrib\windows\processthreads.pyx" />
@@ -611,6 +612,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\contrib\windows\processthreads.h" />
     <ClInclude Include="..\contrib\windows\error.h" />
     <ClInclude Include="..\contrib\windows\_gdiplus.h" />
+    <ClInclude Include="..\contrib\windows\_adv.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\contrib\windows\_loader.c" />
@@ -621,6 +623,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\contrib\windows\processthreads.c" />
     <ClCompile Include="..\contrib\windows\rtl.c" />
     <ClCompile Include="..\contrib\windows\user.c" />
+    <ClCompile Include="..\contrib\windows\adv.c" />
     <ClCompile Include="..\Modules\_bisectmodule.c" />
     <ClCompile Include="..\Modules\_codecsmodule.c" />
     <ClCompile Include="..\Modules\_collectionsmodule.c" />
