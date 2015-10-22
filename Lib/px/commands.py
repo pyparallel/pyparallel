@@ -983,7 +983,7 @@ class PatchCythonGeneratedFile(PxCommand):
     Cython caches tracebacks.  Don't do this for PyParallel.
     """
 
-    src = """\
+    src = b"""\
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename) {
     PyCodeObject *py_code = 0;
@@ -996,7 +996,7 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
         __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
     }"""
 
-    dst = """\
+    dst = b"""\
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename) {
     PyCodeObject *py_code = 0;
