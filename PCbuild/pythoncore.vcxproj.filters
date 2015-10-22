@@ -456,6 +456,12 @@
     <ClInclude Include="..\Python\ujson_py_defines.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\contrib\windows\_wdm.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\contrib\windows\_adv.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
     <ClInclude Include="..\contrib\windows\_gdiplus.h">
       <Filter>Windows</Filter>
     </ClInclude>
@@ -1007,6 +1013,9 @@
     <ClCompile Include="..\Python\ultrajsonenc.c">
       <Filter>Python</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\adv.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\base.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1038,6 +1047,9 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\adv.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
     <CythonFile Include="..\contrib\windows\base.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
