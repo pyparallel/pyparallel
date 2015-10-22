@@ -462,6 +462,9 @@
     <ClInclude Include="..\contrib\windows\_adv.h">
       <Filter>Windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\contrib\windows\_avrt.h">
+      <Filter>Windows</Filter>
+    </ClInclude>
     <ClInclude Include="..\contrib\windows\_gdiplus.h">
       <Filter>Windows</Filter>
     </ClInclude>
@@ -1013,6 +1016,9 @@
     <ClCompile Include="..\Python\ultrajsonenc.c">
       <Filter>Python</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\avrt.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\adv.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1023,6 +1029,9 @@
       <Filter>Windows</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\_gdiplus.cpp">
+      <Filter>Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\contrib\windows\_avrt.c">
       <Filter>Windows</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\gdiplus.cpp">
@@ -1047,6 +1056,9 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\avrt.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
     <CythonFile Include="..\contrib\windows\adv.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>

@@ -461,6 +461,7 @@ IF %ERRORLEVEL% NEQ 0 (
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\avrt.pyx" />
     <CythonFile Include="..\contrib\windows\adv.pyx" />
     <CythonFile Include="..\contrib\windows\user.pyx" />
     <CythonFile Include="..\contrib\windows\rtl.pyx" />
@@ -613,10 +614,12 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\contrib\windows\error.h" />
     <ClInclude Include="..\contrib\windows\_gdiplus.h" />
     <ClInclude Include="..\contrib\windows\_adv.h" />
+    <ClInclude Include="..\contrib\windows\_avrt.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\contrib\windows\_loader.c" />
     <ClCompile Include="..\contrib\windows\_gdiplus.cpp" />
+    <ClCompile Include="..\contrib\windows\_avrt.c" />
     <ClCompile Include="..\contrib\windows\gdiplus.cpp" />
     <ClCompile Include="..\contrib\windows\base.c" />
     <ClCompile Include="..\contrib\windows\error.c" />
@@ -624,6 +627,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\contrib\windows\rtl.c" />
     <ClCompile Include="..\contrib\windows\user.c" />
     <ClCompile Include="..\contrib\windows\adv.c" />
+    <ClCompile Include="..\contrib\windows\avrt.c" />
     <ClCompile Include="..\Modules\_bisectmodule.c" />
     <ClCompile Include="..\Modules\_codecsmodule.c" />
     <ClCompile Include="..\Modules\_collectionsmodule.c" />
