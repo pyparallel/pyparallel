@@ -25103,22 +25103,12 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename) {
     PyCodeObject *py_code = 0;
     PyFrameObject *py_frame = 0;
-#ifdef WITH_PARALLEL
-    if (!Py_PXCTX())
-        py_code = __pyx_find_code_object(c_line ? c_line : py_line);
-#else
     py_code = __pyx_find_code_object(c_line ? c_line : py_line);
-#endif
     if (!py_code) {
         py_code = __Pyx_CreateCodeObjectForTraceback(
             funcname, c_line, py_line, filename);
         if (!py_code) goto bad;
-#ifdef WITH_PARALLEL
-        if (!Py_PXCTX())
-            __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
-#else
         __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
-#endif
     }
     py_frame = PyFrame_New(
         PyThreadState_GET(), /*PyThreadState *tstate,*/

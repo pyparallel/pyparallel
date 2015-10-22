@@ -978,6 +978,90 @@ class UpdateGitDiffs(PxCommand):
 
         os.unlink('git-st.txt')
 
+class PatchCythonGeneratedFile(PxCommand):
+    """
+    Cython caches tracebacks.  Don't do this for PyParallel.
+    """
+
+    src = """\
+static void __Pyx_AddTraceback(const char *funcname, int c_line,
+                               int py_line, const char *filename) {
+    PyCodeObject *py_code = 0;
+    PyFrameObject *py_frame = 0;
+    py_code = __pyx_find_code_object(c_line ? c_line : py_line);
+    if (!py_code) {
+        py_code = __Pyx_CreateCodeObjectForTraceback(
+            funcname, c_line, py_line, filename);
+        if (!py_code) goto bad;
+        __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
+    }"""
+
+    dst = """\
+static void __Pyx_AddTraceback(const char *funcname, int c_line,
+                               int py_line, const char *filename) {
+    PyCodeObject *py_code = 0;
+    PyFrameObject *py_frame = 0;
+#ifdef WITH_PARALLEL
+    if (!Py_PXCTX())
+        py_code = __pyx_find_code_object(c_line ? c_line : py_line);
+#else
+    py_code = __pyx_find_code_object(c_line ? c_line : py_line);
+#endif
+    if (!py_code) {
+        py_code = __Pyx_CreateCodeObjectForTraceback(
+            funcname, c_line, py_line, filename);
+        if (!py_code) goto bad;
+#ifdef WITH_PARALLEL
+        if (!Py_PXCTX())
+            __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
+#else
+        __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
+#endif
+    }"""
+
+    path = None
+    class PathArg(PathInvariant):
+        _help = 'path of the generated Cython file (e.g. datrie.c)'
+
+    def run(self):
+        import pdb
+        dbg = pdb.Pdb()
+
+        path = self.path
+        assert os.path.exists(path), path
+
+        backup = path + '.orig'
+        with open(path, 'rb') as f:
+            data = f.read()
+
+        #dbg.set_trace()
+        ix = data.find(self.src)
+        if ix == -1:
+            ix = data.find(self.dst)
+            if ix != -1:
+                self._out("Already patched: %s" % path)
+                return
+            msg = (
+                "Failed to find target string in path %s "
+                "(try copying the backup %s back to %s)" % (
+                    path,
+                    backup,
+                    path,
+                )
+            )
+            raise CommandError(msg)
+
+        with open(backup, 'wb') as f:
+            f.write(data)
+
+        #dbg.set_trace()
+        new_data = data.replace(self.src, self.dst)
+        assert(new_data != data)
+
+        with open(path, 'wb') as f:
+            f.write(new_data)
+
+        self._out("Converted %s" % path)
 
 #===============================================================================
 # System Info/Memory Commands

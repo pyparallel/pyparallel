@@ -234,9 +234,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__error
-#define __PYX_HAVE_API__error
-#include <windows.h>
+#define __PYX_HAVE__base
+#define __PYX_HAVE_API__base
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -445,7 +444,7 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "error.pyx",
+  "base.pyx",
 };
 
 /*--- Type declarations ---*/
@@ -538,49 +537,20 @@ static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 static int __Pyx_check_binary_version(void);
 
-#if CYTHON_COMPILING_IN_CPYTHON
-#define __Pyx_PyObject_DelAttrStr(o,n) __Pyx_PyObject_SetAttrStr(o,n,NULL)
-static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value) {
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_setattro))
-        return tp->tp_setattro(obj, attr_name, value);
-#if PY_MAJOR_VERSION < 3
-    if (likely(tp->tp_setattr))
-        return tp->tp_setattr(obj, PyString_AS_STRING(attr_name), value);
-#endif
-    return PyObject_SetAttr(obj, attr_name, value);
-}
-#else
-#define __Pyx_PyObject_DelAttrStr(o,n)   PyObject_DelAttr(o,n)
-#define __Pyx_PyObject_SetAttrStr(o,n,v) PyObject_SetAttr(o,n,v)
-#endif
-
-static int __Pyx_ExportVoidPtr(PyObject *name, void *p, const char *sig);
-
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 
 /* Module declarations from 'types' */
 
-/* Module declarations from 'error' */
-__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_5error_ERROR_SUCCESS;
-__PYX_EXTERN_C DL_EXPORT(DWORD) __pyx_v_5error_ERROR_INSUFFICIENT_BUFFER;
-#define __Pyx_MODULE_NAME "error"
-int __pyx_module_is_main_error = 0;
+/* Module declarations from 'base' */
+#define __Pyx_MODULE_NAME "base"
+int __pyx_module_is_main_base = 0;
 
-/* Implementation of 'error' */
+/* Implementation of 'base' */
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
-static char __pyx_k_pyx_capi[] = "__pyx_capi__";
-static char __pyx_k_ERROR_SUCCESS[] = "ERROR_SUCCESS";
-static char __pyx_k_ERROR_INSUFFICIENT_BUFFER[] = "ERROR_INSUFFICIENT_BUFFER";
-static PyObject *__pyx_n_s_ERROR_INSUFFICIENT_BUFFER;
-static PyObject *__pyx_n_s_ERROR_SUCCESS;
 static PyObject *__pyx_n_s_main;
-static PyObject *__pyx_n_s_pyx_capi;
 static PyObject *__pyx_n_s_test;
-DWORD __pyx_v_5error_ERROR_SUCCESS;
-DWORD __pyx_v_5error_ERROR_INSUFFICIENT_BUFFER;
 
 static PyMethodDef __pyx_methods[] = {
   {0, 0, 0, 0}
@@ -593,7 +563,7 @@ static struct PyModuleDef __pyx_moduledef = {
   #else
     PyModuleDef_HEAD_INIT,
   #endif
-    "error",
+    "base",
     0, /* m_doc */
     -1, /* m_size */
     __pyx_methods /* m_methods */,
@@ -605,10 +575,7 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_n_s_ERROR_INSUFFICIENT_BUFFER, __pyx_k_ERROR_INSUFFICIENT_BUFFER, sizeof(__pyx_k_ERROR_INSUFFICIENT_BUFFER), 0, 0, 1, 1},
-  {&__pyx_n_s_ERROR_SUCCESS, __pyx_k_ERROR_SUCCESS, sizeof(__pyx_k_ERROR_SUCCESS), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
-  {&__pyx_n_s_pyx_capi, __pyx_k_pyx_capi, sizeof(__pyx_k_pyx_capi), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
@@ -631,11 +598,11 @@ static int __Pyx_InitGlobals(void) {
 }
 
 #if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC initerror(void); /*proto*/
-PyMODINIT_FUNC initerror(void)
+PyMODINIT_FUNC initbase(void); /*proto*/
+PyMODINIT_FUNC initbase(void)
 #else
-PyMODINIT_FUNC PyInit_error(void); /*proto*/
-PyMODINIT_FUNC PyInit_error(void)
+PyMODINIT_FUNC PyInit_base(void); /*proto*/
+PyMODINIT_FUNC PyInit_base(void)
 #endif
 {
   PyObject *__pyx_t_1 = NULL;
@@ -652,7 +619,7 @@ PyMODINIT_FUNC PyInit_error(void)
           Py_FatalError("failed to import 'refnanny' module");
   }
   #endif
-  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_error(void)", 0);
+  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_base(void)", 0);
   if (__Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -680,7 +647,7 @@ PyMODINIT_FUNC PyInit_error(void)
   #endif
   /*--- Module creation code ---*/
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4("error", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4("base", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -697,14 +664,14 @@ PyMODINIT_FUNC PyInit_error(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_error) {
+  if (__pyx_module_is_main_base) {
     if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "error")) {
-      if (unlikely(PyDict_SetItemString(modules, "error", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "base")) {
+      if (unlikely(PyDict_SetItemString(modules, "base", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -714,8 +681,6 @@ PyMODINIT_FUNC PyInit_error(void)
   if (__Pyx_InitCachedConstants() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Global init code ---*/
   /*--- Variable export code ---*/
-  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_SUCCESS, (void *)&__pyx_v_5error_ERROR_SUCCESS, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  if (__Pyx_ExportVoidPtr(__pyx_n_s_ERROR_INSUFFICIENT_BUFFER, (void *)&__pyx_v_5error_ERROR_INSUFFICIENT_BUFFER, "DWORD") < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Function export code ---*/
   /*--- Type init code ---*/
   /*--- Type import code ---*/
@@ -726,10 +691,8 @@ PyMODINIT_FUNC PyInit_error(void)
   if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "error.pyx":1
- * from error cimport *             # <<<<<<<<<<<<<<
- * 
- * #cdef public DWORD ERROR_SUCCESS
+  /* "base.pyx":1
+ * from base cimport *             # <<<<<<<<<<<<<<
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
@@ -743,11 +706,11 @@ PyMODINIT_FUNC PyInit_error(void)
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init error", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init base", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init error");
+    PyErr_SetString(PyExc_ImportError, "init base");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -913,22 +876,12 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename) {
     PyCodeObject *py_code = 0;
     PyFrameObject *py_frame = 0;
-#ifdef WITH_PARALLEL
-    if (!Py_PXCTX())
-        py_code = __pyx_find_code_object(c_line ? c_line : py_line);
-#else
     py_code = __pyx_find_code_object(c_line ? c_line : py_line);
-#endif
     if (!py_code) {
         py_code = __Pyx_CreateCodeObjectForTraceback(
             funcname, c_line, py_line, filename);
         if (!py_code) goto bad;
-#ifdef WITH_PARALLEL
-        if (!Py_PXCTX())
-            __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
-#else
         __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
-#endif
     }
     py_frame = PyFrame_New(
         PyThreadState_GET(), /*PyThreadState *tstate,*/
@@ -1376,36 +1329,6 @@ static int __Pyx_check_binary_version(void) {
         return PyErr_WarnEx(NULL, message, 1);
     }
     return 0;
-}
-
-static int __Pyx_ExportVoidPtr(PyObject *name, void *p, const char *sig) {
-    PyObject *d;
-    PyObject *cobj = 0;
-    d = PyDict_GetItem(__pyx_d, __pyx_n_s_pyx_capi);
-    Py_XINCREF(d);
-    if (!d) {
-        d = PyDict_New();
-        if (!d)
-            goto bad;
-        if (__Pyx_PyObject_SetAttrStr(__pyx_m, __pyx_n_s_pyx_capi, d) < 0)
-            goto bad;
-    }
-#if PY_VERSION_HEX >= 0x02070000
-    cobj = PyCapsule_New(p, sig, 0);
-#else
-    cobj = PyCObject_FromVoidPtrAndDesc(p, (void *)sig, 0);
-#endif
-    if (!cobj)
-        goto bad;
-    if (PyDict_SetItem(d, name, cobj) < 0)
-        goto bad;
-    Py_DECREF(cobj);
-    Py_DECREF(d);
-    return 0;
-bad:
-    Py_XDECREF(cobj);
-    Py_XDECREF(d);
-    return -1;
 }
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {
