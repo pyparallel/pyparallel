@@ -20,13 +20,13 @@
   <Target Name="CythonCpp" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
     <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --timestamps -o %(Filename).cpp"
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
-    <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonFile.RelativeDir)%(Filename).c" WorkingDirectory="$(ProjectDir).."/>
+    <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonCppFile.RelativeDir)%(Filename).cpp" WorkingDirectory="$(ProjectDir).."/>
   </Target>
   <Target Name="CythonCppForce" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
     <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --lenient -o %(Filename).cpp"
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
-    <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonFile.RelativeDir)%(Filename).c" WorkingDirectory="$(ProjectDir).."/>
+    <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonCppFile.RelativeDir)%(Filename).cpp" WorkingDirectory="$(ProjectDir).."/>
   </Target>
-  <Target Name="PreBuild" DependsOnTargets="Cython"/>
   <Target Name="AllCython" DependsOnTargets="Cython;CythonCpp"/>
+  <Target Name="PreBuild" DependsOnTargets="AllCython"/>
 </Project>
