@@ -9,6 +9,7 @@ extern "C" {
 #include "statics.h"
 #include "pyparallel_private.h"
 #include "pxtimerobject.h"
+#include "pxthreadobject.h"
 #include "fileio.h"
 #include "datetime.h"
 #include "frameobject.h"
@@ -2023,6 +2024,8 @@ _PyObject_GenericSetAttr(PyObject *o, PyObject *n, PyObject *v_orig)
                     remove_heap_override = 1;
                 }
             } else if (c->io_type == Px_IOTYPE_TIMER) {
+                __debugbreak();
+            } else if (c->io_type == Px_IOTYPE_THREAD) {
                 __debugbreak();
             }
         }
@@ -5292,6 +5295,7 @@ PxState_DestroyContexts(PxState *px)
             }
         } else if (c->io_type == Px_IOTYPE_TIMER) {
 
+        } else if (c->io_type == Px_IOTYPE_THREAD) {
 
         }
     }
@@ -6098,6 +6102,8 @@ _async_run_once(PyObject *self, PyObject *args)
 
         } else if (c->io_type == Px_IOTYPE_TIMER) {
             Py_DECREF(c->io_obj);
+        } else if (c->io_type == Px_IOTYPE_THREAD) {
+            Py_DECREF(c->io_obj);
         }
     }
 
@@ -6156,6 +6162,10 @@ start:
                     }
                 } else if (c->io_type == Px_IOTYPE_TIMER) {
                     pxtimer_shutdown(c->io_obj);
+                    item = PxList_SeverFromNext(item);
+                    continue;
+                } else if (c->io_type == Px_IOTYPE_THREAD) {
+                    pxthread_shutdown(c->io_obj);
                     item = PxList_SeverFromNext(item);
                     continue;
                 }

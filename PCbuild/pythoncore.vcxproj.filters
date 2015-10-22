@@ -435,6 +435,9 @@
     <ClInclude Include="..\Include\pxtimerobject.h">
       <Filter>Include</Filter>
     </ClInclude>
+    <ClInclude Include="..\Include\pxthreadobject.h">
+      <Filter>Include</Filter>
+    </ClInclude>
     <ClInclude Include="..\Include\namespaceobject.h">
       <Filter>Include</Filter>
     </ClInclude>
@@ -792,6 +795,9 @@
       <Filter>Objects</Filter>
     </ClCompile>
     <ClCompile Include="..\Objects\pxtimerobject.c">
+      <Filter>Objects</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Objects\pxthreadobject.c">
       <Filter>Objects</Filter>
     </ClCompile>
     <ClCompile Include="..\Parser\acceler.c">

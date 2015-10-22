@@ -606,6 +606,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClInclude Include="..\Include\pyparallel_http.h" />
     <ClInclude Include="..\Include\pxlist.h" />
     <ClInclude Include="..\Include\pxtimerobject.h" />
+    <ClInclude Include="..\Include\pxthreadobject.h" />
     <ClInclude Include="..\Include\statics.h" />
     <ClInclude Include="..\Include\ultrajson.h" />
     <ClInclude Include="..\Python\ujson_py_defines.h" />
@@ -736,6 +737,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\Objects\unicodeobject.c" />
     <ClCompile Include="..\Objects\weakrefobject.c" />
     <ClCompile Include="..\Objects\pxtimerobject.c" />
+    <ClCompile Include="..\Objects\pxthreadobject.c" />
     <ClCompile Include="..\Parser\acceler.c" />
     <ClCompile Include="..\Parser\bitset.c" />
     <ClCompile Include="..\Parser\firstsets.c" />

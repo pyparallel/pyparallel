@@ -313,6 +313,7 @@ typedef struct _PxParents {
 #define Px_IOTYPE_SOCKET    (1UL <<  1)
 #define Px_IOTYPE_TIMER     (1UL <<  2)
 #define Px_IOTYPE_DIRECTORY (1UL <<  3)
+#define Px_IOTYPE_THREAD    (1UL <<  4)
 
 typedef struct _PxIO PxIO;
 

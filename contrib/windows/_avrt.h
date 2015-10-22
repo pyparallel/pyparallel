@@ -2,7 +2,7 @@
 #include <Windows.h>
 #pragma comment(lib, "Avrt.lib")
 
-enum Tasks {
+typedef enum _TASK_ID {
     Audio = 0,
     Capture,
     Distribution,
@@ -10,12 +10,13 @@ enum Tasks {
     LowLatency,
     Playback,
     ProAudio,
-    WindowManager
-};
+    WindowManager,
+    InvalidTaskId
+} TASK_ID;
 
 typedef struct _TASK {
-    DWORD   TaskId;
-    LPCWSTR TaskName;
+    TASK_ID    TaskId;
+    LPCWSTR    TaskName;
 } TASK, *PTASK;
 
 static TASK Tasks[] = {
@@ -27,15 +28,16 @@ static TASK Tasks[] = {
     { Playback,         L"Playback" },
     { ProAudio,         L"ProAudio" },
     { WindowManager,    L"WindowManager" },
+    { InvalidTaskId,    L"InvalidTaskId" },
 };
 
-static const DWORD NumTasks = sizeof(Tasks)/sizeof(TASK);
+static const ULONG NumTasks = sizeof(Tasks)/sizeof(TASK);
 
 static __inline
 BOOL
-TaskIdToTaskName(_In_ DWORD TaskId, _Out_ LPCWSTR *TaskName)
+TaskIdToTaskName(_In_ TASK_ID TaskId, _Out_ LPCWSTR *TaskName)
 {
-    if (TaskId < 0 || TaskId > NumTasks-1)
+    if (TaskId >= InvalidTaskId)
         return FALSE;
     *TaskName = Tasks[TaskId].TaskName;
     return TRUE;
