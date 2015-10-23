@@ -665,7 +665,7 @@ class RateLimitServerTest(TCPServerCommand):
         miscdir = join_path(dirname(__file__), '../../examples/misc')
         with chdir(miscdir):
             import parallel
-            import ratelimit_test as rlt
+            from parallel.test import ratelimit_test as rlt
 
             server1 = parallel.server(ip, port)
             self._out("Running server on %s port %d ..." % (ip, port))
