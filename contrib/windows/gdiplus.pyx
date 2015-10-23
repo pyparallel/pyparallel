@@ -22,6 +22,8 @@ cdef void save_bitmap_as(HBITMAP handle, CLSID* encoder,
         GpBitmap* bitmap
         EncoderParameters params
 
+    gdiplus_startup()
+
     status = GdipCreateBitmapFromHBITMAP(<HBITMAP>handle,
                                          <HPALETTE>NULL,
                                          &bitmap)

@@ -885,13 +885,22 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
   /* "gdiplus.pyx":25
  *         EncoderParameters params
  * 
+ *     gdiplus_startup()             # <<<<<<<<<<<<<<
+ * 
+ *     status = GdipCreateBitmapFromHBITMAP(<HBITMAP>handle,
+ */
+  gdiplus_startup();
+
+  /* "gdiplus.pyx":27
+ *     gdiplus_startup()
+ * 
  *     status = GdipCreateBitmapFromHBITMAP(<HBITMAP>handle,             # <<<<<<<<<<<<<<
  *                                          <HPALETTE>NULL,
  *                                          &bitmap)
  */
   __pyx_v_status = Gdiplus::DllExports::GdipCreateBitmapFromHBITMAP(((HBITMAP)__pyx_v_handle), ((HPALETTE)NULL), (&__pyx_v_bitmap));
 
-  /* "gdiplus.pyx":28
+  /* "gdiplus.pyx":30
  *                                          <HPALETTE>NULL,
  *                                          &bitmap)
  *     if status:             # <<<<<<<<<<<<<<
@@ -900,31 +909,31 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   if (__pyx_v_status) {
 
-    /* "gdiplus.pyx":29
+    /* "gdiplus.pyx":31
  *                                          &bitmap)
  *     if status:
  *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)             # <<<<<<<<<<<<<<
  * 
  *     params.Count = 1
  */
-    __pyx_t_1 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_2 = PyUnicode_Format(__pyx_kp_u_GdipCreateBitmapFromHBITMAP_d, __pyx_t_1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = PyUnicode_Format(__pyx_kp_u_GdipCreateBitmapFromHBITMAP_d, __pyx_t_1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_GIVEREF(__pyx_t_2);
     PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2);
     __pyx_t_2 = 0;
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "gdiplus.pyx":28
+    /* "gdiplus.pyx":30
  *                                          <HPALETTE>NULL,
  *                                          &bitmap)
  *     if status:             # <<<<<<<<<<<<<<
@@ -933,7 +942,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   }
 
-  /* "gdiplus.pyx":31
+  /* "gdiplus.pyx":33
  *         raise RuntimeError("GdipCreateBitmapFromHBITMAP(%d)" % status)
  * 
  *     params.Count = 1             # <<<<<<<<<<<<<<
@@ -942,7 +951,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   __pyx_v_params.Count = 1;
 
-  /* "gdiplus.pyx":32
+  /* "gdiplus.pyx":34
  * 
  *     params.Count = 1
  *     params.Parameter[0].NumberOfValues = 1             # <<<<<<<<<<<<<<
@@ -951,7 +960,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   (__pyx_v_params.Parameter[0]).NumberOfValues = 1;
 
-  /* "gdiplus.pyx":33
+  /* "gdiplus.pyx":35
  *     params.Count = 1
  *     params.Parameter[0].NumberOfValues = 1
  *     params.Parameter[0].Guid  = EncoderQuality             # <<<<<<<<<<<<<<
@@ -960,7 +969,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   (__pyx_v_params.Parameter[0]).Guid = Gdiplus::EncoderQuality;
 
-  /* "gdiplus.pyx":34
+  /* "gdiplus.pyx":36
  *     params.Parameter[0].NumberOfValues = 1
  *     params.Parameter[0].Guid  = EncoderQuality
  *     params.Parameter[0].Type  = EncoderParameterValueTypeLong             # <<<<<<<<<<<<<<
@@ -969,7 +978,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   (__pyx_v_params.Parameter[0]).Type = Gdiplus::EncoderParameterValueTypeLong;
 
-  /* "gdiplus.pyx":35
+  /* "gdiplus.pyx":37
  *     params.Parameter[0].Guid  = EncoderQuality
  *     params.Parameter[0].Type  = EncoderParameterValueTypeLong
  *     params.Parameter[0].Value = <PVOID>&quality             # <<<<<<<<<<<<<<
@@ -978,7 +987,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   (__pyx_v_params.Parameter[0]).Value = ((PVOID)(&__pyx_v_quality));
 
-  /* "gdiplus.pyx":37
+  /* "gdiplus.pyx":39
  *     params.Parameter[0].Value = <PVOID>&quality
  * 
  *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)             # <<<<<<<<<<<<<<
@@ -987,7 +996,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   __pyx_v_status = Gdiplus::DllExports::GdipSaveImageToFile(__pyx_v_bitmap, __pyx_v_filename, __pyx_v_encoder, (&__pyx_v_params));
 
-  /* "gdiplus.pyx":38
+  /* "gdiplus.pyx":40
  * 
  *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
  *     if status:             # <<<<<<<<<<<<<<
@@ -996,31 +1005,31 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
  */
   if (__pyx_v_status) {
 
-    /* "gdiplus.pyx":39
+    /* "gdiplus.pyx":41
  *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
  *     if status:
  *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)             # <<<<<<<<<<<<<<
  * 
  * cdef void save_bitmap_as_jpeg(HBITMAP handle,
  */
-    __pyx_t_2 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyInt_From_Gdiplus_3a__3a_Status(__pyx_v_status); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = PyUnicode_Format(__pyx_kp_u_GdipSaveImageToFile_d, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = PyUnicode_Format(__pyx_kp_u_GdipSaveImageToFile_d, __pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_GIVEREF(__pyx_t_1);
     PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1);
     __pyx_t_1 = 0;
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_RuntimeError, __pyx_t_2, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "gdiplus.pyx":38
+    /* "gdiplus.pyx":40
  * 
  *     status = GdipSaveImageToFile(bitmap, filename, encoder, &params)
  *     if status:             # <<<<<<<<<<<<<<
@@ -1047,7 +1056,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as(HBITMAP __pyx_v_handle, CLSID *__pyx
   __Pyx_RefNannyFinishContext();
 }
 
-/* "gdiplus.pyx":41
+/* "gdiplus.pyx":43
  *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
  * 
  * cdef void save_bitmap_as_jpeg(HBITMAP handle,             # <<<<<<<<<<<<<<
@@ -1060,7 +1069,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP __pyx_v_handle, LPCWSTR
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("save_bitmap_as_jpeg", 0);
 
-  /* "gdiplus.pyx":44
+  /* "gdiplus.pyx":46
  *                               LPCWSTR filename,
  *                               ULONG quality):
  *     cdef CLSID* encoder = &ImageEncoderJpegClsid             # <<<<<<<<<<<<<<
@@ -1069,7 +1078,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP __pyx_v_handle, LPCWSTR
  */
   __pyx_v_encoder = (&ImageEncoderJpegClsid);
 
-  /* "gdiplus.pyx":45
+  /* "gdiplus.pyx":47
  *                               ULONG quality):
  *     cdef CLSID* encoder = &ImageEncoderJpegClsid
  *     save_bitmap_as(handle, encoder, filename, quality)             # <<<<<<<<<<<<<<
@@ -1078,7 +1087,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP __pyx_v_handle, LPCWSTR
  */
   __pyx_f_7gdiplus_save_bitmap_as(__pyx_v_handle, __pyx_v_encoder, __pyx_v_filename, __pyx_v_quality);
 
-  /* "gdiplus.pyx":41
+  /* "gdiplus.pyx":43
  *         raise RuntimeError("GdipSaveImageToFile(%d)" % status)
  * 
  * cdef void save_bitmap_as_jpeg(HBITMAP handle,             # <<<<<<<<<<<<<<
@@ -1090,7 +1099,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_jpeg(HBITMAP __pyx_v_handle, LPCWSTR
   __Pyx_RefNannyFinishContext();
 }
 
-/* "gdiplus.pyx":47
+/* "gdiplus.pyx":49
  *     save_bitmap_as(handle, encoder, filename, quality)
  * 
  * cdef void save_bitmap_as_png(HBITMAP handle,             # <<<<<<<<<<<<<<
@@ -1103,7 +1112,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP __pyx_v_handle, LPCWSTR 
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("save_bitmap_as_png", 0);
 
-  /* "gdiplus.pyx":50
+  /* "gdiplus.pyx":52
  *                              LPCWSTR filename,
  *                              ULONG quality):
  *     cdef CLSID* encoder = &ImageEncoderPngClsid             # <<<<<<<<<<<<<<
@@ -1112,7 +1121,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP __pyx_v_handle, LPCWSTR 
  */
   __pyx_v_encoder = (&ImageEncoderPngClsid);
 
-  /* "gdiplus.pyx":51
+  /* "gdiplus.pyx":53
  *                              ULONG quality):
  *     cdef CLSID* encoder = &ImageEncoderPngClsid
  *     save_bitmap_as(handle, encoder, filename, quality)             # <<<<<<<<<<<<<<
@@ -1121,7 +1130,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP __pyx_v_handle, LPCWSTR 
  */
   __pyx_f_7gdiplus_save_bitmap_as(__pyx_v_handle, __pyx_v_encoder, __pyx_v_filename, __pyx_v_quality);
 
-  /* "gdiplus.pyx":47
+  /* "gdiplus.pyx":49
  *     save_bitmap_as(handle, encoder, filename, quality)
  * 
  * cdef void save_bitmap_as_png(HBITMAP handle,             # <<<<<<<<<<<<<<
@@ -1133,7 +1142,7 @@ static void __pyx_f_7gdiplus_save_bitmap_as_png(HBITMAP __pyx_v_handle, LPCWSTR 
   __Pyx_RefNannyFinishContext();
 }
 
-/* "gdiplus.pyx":53
+/* "gdiplus.pyx":55
  *     save_bitmap_as(handle, encoder, filename, quality)
  * 
  * cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality):             # <<<<<<<<<<<<<<
@@ -1155,7 +1164,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save_bitmap", 0);
 
-  /* "gdiplus.pyx":60
+  /* "gdiplus.pyx":62
  *         Py_ssize_t name_len
  * 
  *     name = PyUnicode_AsUTF8AndSize(filename, &name_len)             # <<<<<<<<<<<<<<
@@ -1164,7 +1173,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   __pyx_v_name = PyUnicode_AsUTF8AndSize(__pyx_v_filename, (&__pyx_v_name_len));
 
-  /* "gdiplus.pyx":62
+  /* "gdiplus.pyx":64
  *     name = PyUnicode_AsUTF8AndSize(filename, &name_len)
  * 
  *     uname_len = MultiByteToWideChar(CP_UTF8,             # <<<<<<<<<<<<<<
@@ -1173,7 +1182,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   __pyx_v_uname_len = MultiByteToWideChar(CP_UTF8, 0, ((LPCSTR)__pyx_v_name), __pyx_v_name_len, (&(__pyx_v_uname[0])), 0x400);
 
-  /* "gdiplus.pyx":68
+  /* "gdiplus.pyx":70
  *                                     &uname[0],
  *                                     MAX_FILE_NAME)
  *     if uname_len == 0:             # <<<<<<<<<<<<<<
@@ -1183,20 +1192,20 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
   __pyx_t_1 = ((__pyx_v_uname_len == 0) != 0);
   if (__pyx_t_1) {
 
-    /* "gdiplus.pyx":69
+    /* "gdiplus.pyx":71
  *                                     MAX_FILE_NAME)
  *     if uname_len == 0:
  *         raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
  * 
  *     uname[uname_len] = 0
  */
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "gdiplus.pyx":68
+    /* "gdiplus.pyx":70
  *                                     &uname[0],
  *                                     MAX_FILE_NAME)
  *     if uname_len == 0:             # <<<<<<<<<<<<<<
@@ -1205,7 +1214,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   }
 
-  /* "gdiplus.pyx":71
+  /* "gdiplus.pyx":73
  *         raise ValueError("save(): MultiByteToWideChar failed")
  * 
  *     uname[uname_len] = 0             # <<<<<<<<<<<<<<
@@ -1214,7 +1223,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   (__pyx_v_uname[__pyx_v_uname_len]) = 0;
 
-  /* "gdiplus.pyx":73
+  /* "gdiplus.pyx":75
  *     uname[uname_len] = 0
  * 
  *     if filename.endswith(".png"):             # <<<<<<<<<<<<<<
@@ -1223,12 +1232,12 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   if (unlikely(__pyx_v_filename == Py_None)) {
     PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%s'", "endswith");
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
-  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_png, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_png, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if ((__pyx_t_1 != 0)) {
 
-    /* "gdiplus.pyx":74
+    /* "gdiplus.pyx":76
  * 
  *     if filename.endswith(".png"):
  *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)             # <<<<<<<<<<<<<<
@@ -1237,7 +1246,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
     __pyx_f_7gdiplus_save_bitmap_as_png(((HBITMAP)__pyx_v_handle), (&(__pyx_v_uname[0])), __pyx_v_quality);
 
-    /* "gdiplus.pyx":73
+    /* "gdiplus.pyx":75
  *     uname[uname_len] = 0
  * 
  *     if filename.endswith(".png"):             # <<<<<<<<<<<<<<
@@ -1247,7 +1256,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
     goto __pyx_L4;
   }
 
-  /* "gdiplus.pyx":75
+  /* "gdiplus.pyx":77
  *     if filename.endswith(".png"):
  *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
  *     elif filename.endswith(".jpg"):             # <<<<<<<<<<<<<<
@@ -1256,12 +1265,12 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
   if (unlikely(__pyx_v_filename == Py_None)) {
     PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%s'", "endswith");
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
-  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_jpg, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyUnicode_Tailmatch(__pyx_v_filename, __pyx_kp_u_jpg, 0, PY_SSIZE_T_MAX, 1); if (unlikely(__pyx_t_1 == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   if ((__pyx_t_1 != 0)) {
 
-    /* "gdiplus.pyx":76
+    /* "gdiplus.pyx":78
  *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
  *     elif filename.endswith(".jpg"):
  *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)             # <<<<<<<<<<<<<<
@@ -1270,7 +1279,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  */
     __pyx_f_7gdiplus_save_bitmap_as_jpeg(((HBITMAP)__pyx_v_handle), (&(__pyx_v_uname[0])), __pyx_v_quality);
 
-    /* "gdiplus.pyx":75
+    /* "gdiplus.pyx":77
  *     if filename.endswith(".png"):
  *         save_bitmap_as_png(<HBITMAP>handle, &uname[0], quality)
  *     elif filename.endswith(".jpg"):             # <<<<<<<<<<<<<<
@@ -1280,7 +1289,7 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
     goto __pyx_L4;
   }
 
-  /* "gdiplus.pyx":78
+  /* "gdiplus.pyx":80
  *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
  *     else:
  *         raise ValueError("Unknown file extension")             # <<<<<<<<<<<<<<
@@ -1288,15 +1297,15 @@ static void __pyx_f_7gdiplus_save_bitmap(Py_ssize_t __pyx_v_handle, PyObject *__
  * # vim: set ts=8 sw=4 sts=4 tw=80 et:
  */
   /*else*/ {
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_L4:;
 
-  /* "gdiplus.pyx":53
+  /* "gdiplus.pyx":55
  *     save_bitmap_as(handle, encoder, filename, quality)
  * 
  * cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality):             # <<<<<<<<<<<<<<
@@ -1346,16 +1355,16 @@ static PyObject *__pyx_pw_7gdiplus_5save_bitmap(PyObject *__pyx_self, PyObject *
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_filename)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_quality)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, 2); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "save_bitmap") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "save_bitmap") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -1364,19 +1373,19 @@ static PyObject *__pyx_pw_7gdiplus_5save_bitmap(PyObject *__pyx_self, PyObject *
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
       values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
     }
-    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_handle == (Py_ssize_t)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_handle == (Py_ssize_t)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
     __pyx_v_filename = ((PyObject*)values[1]);
-    __pyx_v_quality = __Pyx_PyInt_As_ULONG(values[2]); if (unlikely((__pyx_v_quality == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_quality = __Pyx_PyInt_As_ULONG(values[2]); if (unlikely((__pyx_v_quality == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("save_bitmap", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("gdiplus.save_bitmap", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_r = __pyx_pf_7gdiplus_4save_bitmap(__pyx_self, __pyx_v_handle, __pyx_v_filename, __pyx_v_quality);
 
   /* function exit code */
@@ -1397,7 +1406,7 @@ static PyObject *__pyx_pf_7gdiplus_4save_bitmap(CYTHON_UNUSED PyObject *__pyx_se
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save_bitmap", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_7gdiplus_save_bitmap(__pyx_v_handle, __pyx_v_filename, __pyx_v_quality, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_7gdiplus_save_bitmap(__pyx_v_handle, __pyx_v_filename, __pyx_v_quality, 0)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1456,8 +1465,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_RuntimeError = __Pyx_GetBuiltinName(__pyx_n_s_RuntimeError); if (!__pyx_builtin_RuntimeError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -1467,25 +1476,25 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "gdiplus.pyx":69
+  /* "gdiplus.pyx":71
  *                                     MAX_FILE_NAME)
  *     if uname_len == 0:
  *         raise ValueError("save(): MultiByteToWideChar failed")             # <<<<<<<<<<<<<<
  * 
  *     uname[uname_len] = 0
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_save_MultiByteToWideChar_failed); if (unlikely(!__pyx_tuple_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_save_MultiByteToWideChar_failed); if (unlikely(!__pyx_tuple_)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple_);
   __Pyx_GIVEREF(__pyx_tuple_);
 
-  /* "gdiplus.pyx":78
+  /* "gdiplus.pyx":80
  *         save_bitmap_as_jpeg(<HBITMAP>handle, &uname[0], quality)
  *     else:
  *         raise ValueError("Unknown file extension")             # <<<<<<<<<<<<<<
  * 
  * # vim: set ts=8 sw=4 sts=4 tw=80 et:
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Unknown_file_extension); if (unlikely(!__pyx_tuple__2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_Unknown_file_extension); if (unlikely(!__pyx_tuple__2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
   __Pyx_RefNannyFinishContext();
