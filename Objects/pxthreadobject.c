@@ -110,10 +110,7 @@ PxThread_Main(LPVOID param)
     if (t->task_id) {
         if (!t->task_name)
             __debugbreak();
-        if (t->second_task_id) {
-            /* Not yet supported. */
-            __debugbreak();
-        } else {
+        else {
             HANDLE h = AvSetMmThreadCharacteristics(t->task_name,
                                                     &t->task_index);
             if (!h)
@@ -677,6 +674,32 @@ pxthread_set_thread_characteristics(PxThreadObject *t,
         if (!TaskIdToTaskName(t->task_id, &t->task_name)) {
             PyErr_SetString(PyExc_ValueError,
                             "thread_characteristics: invalid task ID");
+            return -1;
+        }
+        return 0;
+    } else if (PyUnicode_Check(o)) {
+        int success;
+        int kind = PyUnicode_KIND(o);
+        switch (kind) {
+            case PyUnicode_1BYTE_KIND:
+                success = TaskNameAToTaskId((LPCSTR)PyUnicode_1BYTE_DATA(o),
+                                            &t->task_id,
+                                            &t->task_name);
+                break;
+            case PyUnicode_2BYTE_KIND:
+                success = TaskNameToTaskId((LPCWSTR)PyUnicode_2BYTE_DATA(o),
+                                           &t->task_id,
+                                           &t->task_name);
+                break;
+            default:
+                PyErr_SetString(PyExc_ValueError,
+                                "thread_characteristics: only utf-8/utf-16 "
+                                "supported for string names");
+                return -1;
+        }
+        if (!success) {
+            PyErr_SetString(PyExc_ValueError,
+                            "thread_characteristics: invalid task name");
             return -1;
         }
         return 0;

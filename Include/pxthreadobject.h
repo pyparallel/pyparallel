@@ -140,16 +140,8 @@ typedef struct _PxThreadObject {
     HANDLE avrt_handle;
     HANDLE thread_handle;
     DWORD task_index;
-    union {
-        TASK_ID task_id;
-        LPCWSTR task_name;
-        struct {
-            TASK_ID first_task_id;
-            LPCWSTR first_task_name;
-            TASK_ID second_task_id;
-            LPCWSTR second_task_name;
-        };
-    };
+    TASK_ID task_id;
+    LPCWSTR task_name;
     AVRT_PRIORITY priority;
     ULONG system_responsiveness;
     DWORD interval;
