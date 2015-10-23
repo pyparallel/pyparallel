@@ -98,27 +98,27 @@ def quote_html(html):
 #===============================================================================
 class Fortune:
     _bytes = [
-        (b'fortune: No such file or directory',                                1),
+        (b'fortune: No such file or directory',                              1),
         (b"A computer scientist is someone who "
-         b"fixes things that aren't broken.",                                  2),
-        (b'After enough decimal places, nobody gives a damn.',                 3),
+         b"fixes things that aren't broken.",                                2),
+        (b'After enough decimal places, nobody gives a damn.',               3),
         (b'A bad random number generator: 1, 1, 1, 1, '
-         b'1, 4.33e+67, 1, 1, 1',                                              4),
+         b'1, 4.33e+67, 1, 1, 1',                                            4),
         (b'A computer program does what you tell it to do, '
-         b'not what you want it to do.',                                       5),
+         b'not what you want it to do.',                                     5),
         (b'Emacs is a nice operating system, but I prefer UNIX. '
-         b'\xe2\x80\x94 Tom Christaensen',                                     6),
-        (b'Any program that runs right is obsolete.',                          7),
+         b'\xe2\x80\x94 Tom Christaensen',                                   6),
+        (b'Any program that runs right is obsolete.',                        7),
         (b'A list is only as strong as its weakest link. '
-         b'\xe2\x80\x94 Donald Knuth',                                         8),
-        (b'Feature: A bug with seniority.',                                    9),
-        (b'Computers make very fast, very accurate mistakes.',                10),
+         b'\xe2\x80\x94 Donald Knuth',                                       8),
+        (b'Feature: A bug with seniority.',                                  9),
+        (b'Computers make very fast, very accurate mistakes.',              10),
         (b'<script>alert("This should not be '
-         b'displayed in a browser alert box.");</script>',                    11),
+         b'displayed in a browser alert box.");</script>',                  11),
         (b'\xe3\x83\x95\xe3\x83\xac\xe3\x83\xbc\xe3\x83\xa0'
          b'\xe3\x83\xaf\xe3\x83\xbc\xe3\x82\xaf\xe3\x81\xae'
          b'\xe3\x83\x99\xe3\x83\xb3\xe3\x83\x81\xe3\x83\x9e'
-         b'\xe3\x83\xbc\xe3\x82\xaf',                                         12),
+         b'\xe3\x83\xbc\xe3\x82\xaf',                                       12),
     ]
 
     fortunes = [ (r[0].decode('utf-8'), r[1]) for r in _bytes ]
@@ -190,7 +190,7 @@ class BaseHttpServer(HttpServer):
     #http11 = True
 
     connection = None
-    #connection_string = None
+    connection_string = None
     #odbc = None
 
     _id = None
