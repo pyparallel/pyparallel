@@ -451,19 +451,6 @@ static const char *__pyx_f[] = {
 
 /*--- Type declarations ---*/
 struct __pyx_obj_4user_Screenshot;
-struct __pyx_opt_args_4user_10Screenshot_save;
-
-/* "user.pyx":154
- *         return 1
- * 
- *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
- *         cdef:
- *             HANDLE h
- */
-struct __pyx_opt_args_4user_10Screenshot_save {
-  int __pyx_n;
-  ULONG quality;
-};
 
 /* "user.pyx":17
  * DEF MAX_FILE_NAME = 1024
@@ -491,7 +478,7 @@ struct __pyx_obj_4user_Screenshot {
 struct __pyx_vtabstruct_4user_Screenshot {
   void (*copy_to_clipboard)(struct __pyx_obj_4user_Screenshot *, int __pyx_skip_dispatch);
   BOOLEAN (*copy)(struct __pyx_obj_4user_Screenshot *, PCHAR, DWORD, PDWORD);
-  DWORD (*save)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args);
+  DWORD (*save)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch);
   DWORD (*write)(struct __pyx_obj_4user_Screenshot *, HANDLE, int __pyx_skip_dispatch);
 };
 static struct __pyx_vtabstruct_4user_Screenshot *__pyx_vtabptr_4user_Screenshot;
@@ -610,12 +597,6 @@ static void __Pyx_WriteUnraisable(const char *name, int clineno,
                                   int lineno, const char *filename,
                                   int full_traceback, int nogil);
 
-static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
-
-static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
-    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
-    const char* function_name);
-
 static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, int none_allowed,
     const char *name, int exact);
 
@@ -647,10 +628,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_LONG(LONG value);
 
 static PyObject* __pyx_convert__to_py_BITMAPINFOHEADER(BITMAPINFOHEADER s);
 static PyObject* __pyx_convert__to_py_BITMAP(BITMAP s);
-static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *);
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value);
-
 static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *);
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
@@ -665,7 +642,7 @@ static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 static void __pyx_f_4user_10Screenshot_copy_to_clipboard(struct __pyx_obj_4user_Screenshot *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PCHAR __pyx_v_buf, DWORD __pyx_v_buf_size, PDWORD __pyx_v_bytes_written); /* proto*/
-static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args); /* proto*/
+static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch); /* proto*/
 static DWORD __pyx_f_4user_10Screenshot_write(struct __pyx_obj_4user_Screenshot *__pyx_v_self, HANDLE __pyx_v_handle, int __pyx_skip_dispatch); /* proto*/
 
 /* Module declarations from 'types' */
@@ -705,12 +682,10 @@ static char __pyx_k_bmType[] = "bmType";
 static char __pyx_k_OSError[] = "OSError";
 static char __pyx_k_biWidth[] = "biWidth";
 static char __pyx_k_bmWidth[] = "bmWidth";
-static char __pyx_k_quality[] = "quality";
 static char __pyx_k_biHeight[] = "biHeight";
 static char __pyx_k_biPlanes[] = "biPlanes";
 static char __pyx_k_bmHeight[] = "bmHeight";
 static char __pyx_k_bmPlanes[] = "bmPlanes";
-static char __pyx_k_filename[] = "filename";
 static char __pyx_k_GetDIBits[] = "GetDIBits";
 static char __pyx_k_bfOffBits[] = "bfOffBits";
 static char __pyx_k_biClrUsed[] = "biClrUsed";
@@ -769,10 +744,8 @@ static PyObject *__pyx_n_s_bmType;
 static PyObject *__pyx_n_s_bmWidth;
 static PyObject *__pyx_n_s_bmWidthBytes;
 static PyObject *__pyx_n_s_copy_to_clipboard;
-static PyObject *__pyx_n_s_filename;
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_pyx_vtable;
-static PyObject *__pyx_n_s_quality;
 static PyObject *__pyx_n_s_save;
 static PyObject *__pyx_kp_u_save_MultiByteToWideChar_failed;
 static PyObject *__pyx_n_s_test;
@@ -781,7 +754,7 @@ static int __pyx_pf_4user_10Screenshot___cinit__(struct __pyx_obj_4user_Screensh
 static Py_ssize_t __pyx_pf_4user_10Screenshot_2__len__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static void __pyx_pf_4user_10Screenshot_4__dealloc__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_6copy_to_clipboard(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, ULONG __pyx_v_quality); /* proto */
+static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_10write(struct __pyx_obj_4user_Screenshot *__pyx_v_self, HANDLE __pyx_v_handle); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_6header___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_4user_10Screenshot_4info___get__(struct __pyx_obj_4user_Screenshot *__pyx_v_self); /* proto */
@@ -1917,7 +1890,7 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
  *         bytes_written[0] = self.dib_size
  *         return 1             # <<<<<<<<<<<<<<
  * 
- *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):
+ *     cpdef DWORD save(self, unicode filename):
  */
   __pyx_r = 1;
   goto __pyx_L0;
@@ -1942,14 +1915,13 @@ static BOOLEAN __pyx_f_4user_10Screenshot_copy(struct __pyx_obj_4user_Screenshot
 /* "user.pyx":154
  *         return 1
  * 
- *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
+ *     cpdef DWORD save(self, unicode filename):             # <<<<<<<<<<<<<<
  *         cdef:
  *             HANDLE h
  */
 
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args) {
-  ULONG __pyx_v_quality = ((ULONG)0x64);
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename); /*proto*/
+static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, int __pyx_skip_dispatch) {
   HANDLE __pyx_v_h;
   DWORD __pyx_v_total_bytes_written;
   WCHAR __pyx_v_uname[(0x400 + 1)];
@@ -1963,19 +1935,12 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   PyObject *__pyx_t_3 = NULL;
   PyObject *__pyx_t_4 = NULL;
   PyObject *__pyx_t_5 = NULL;
-  Py_ssize_t __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
-  DWORD __pyx_t_8;
-  int __pyx_t_9;
+  DWORD __pyx_t_6;
+  int __pyx_t_7;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save", 0);
-  if (__pyx_optional_args) {
-    if (__pyx_optional_args->__pyx_n > 0) {
-      __pyx_v_quality = __pyx_optional_args->quality;
-    }
-  }
   /* Check if called by wrapper */
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
@@ -1983,39 +1948,35 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
     __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_save); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4user_10Screenshot_9save)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_quality); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
-      __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
-      __pyx_t_6 = 0;
-      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_4))) {
-        __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
-        if (likely(__pyx_t_5)) {
-          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
-          __Pyx_INCREF(__pyx_t_5);
+      __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
+      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+        __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+        if (likely(__pyx_t_4)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+          __Pyx_INCREF(__pyx_t_4);
           __Pyx_INCREF(function);
-          __Pyx_DECREF_SET(__pyx_t_4, function);
-          __pyx_t_6 = 1;
+          __Pyx_DECREF_SET(__pyx_t_3, function);
         }
       }
-      __pyx_t_7 = PyTuple_New(2+__pyx_t_6); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_7);
-      if (__pyx_t_5) {
-        __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_5); __pyx_t_5 = NULL;
+      if (!__pyx_t_4) {
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_filename); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_2);
+      } else {
+        __pyx_t_5 = PyTuple_New(1+1); if (unlikely(!__pyx_t_5)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_5);
+        __Pyx_GIVEREF(__pyx_t_4); PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_4); __pyx_t_4 = NULL;
+        __Pyx_INCREF(__pyx_v_filename);
+        __Pyx_GIVEREF(__pyx_v_filename);
+        PyTuple_SET_ITEM(__pyx_t_5, 0+1, __pyx_v_filename);
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_5, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_GOTREF(__pyx_t_2);
+        __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       }
-      __Pyx_INCREF(__pyx_v_filename);
-      __Pyx_GIVEREF(__pyx_v_filename);
-      PyTuple_SET_ITEM(__pyx_t_7, 0+__pyx_t_6, __pyx_v_filename);
-      __Pyx_GIVEREF(__pyx_t_3);
-      PyTuple_SET_ITEM(__pyx_t_7, 1+__pyx_t_6, __pyx_t_3);
-      __pyx_t_3 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_7, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-      __Pyx_GOTREF(__pyx_t_2);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_8 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_8 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __pyx_t_6 = __Pyx_PyInt_As_DWORD(__pyx_t_2); if (unlikely((__pyx_t_6 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_r = __pyx_t_8;
+      __pyx_r = __pyx_t_6;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       goto __pyx_L0;
     }
@@ -2056,8 +2017,8 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  *             raise ValueError("save(): MultiByteToWideChar failed")
  * 
  */
-  __pyx_t_9 = ((__pyx_v_uname_len == 0) != 0);
-  if (__pyx_t_9) {
+  __pyx_t_7 = ((__pyx_v_uname_len == 0) != 0);
+  if (__pyx_t_7) {
 
     /* "user.pyx":172
  *                                         MAX_FILE_NAME)
@@ -2106,8 +2067,8 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
  *             raise OSError("CreateFile")
  * 
  */
-  __pyx_t_9 = ((!(__pyx_v_h != 0)) != 0);
-  if (__pyx_t_9) {
+  __pyx_t_7 = ((!(__pyx_v_h != 0)) != 0);
+  if (__pyx_t_7) {
 
     /* "user.pyx":184
  *                        <HANDLE>NULL)
@@ -2178,7 +2139,7 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   /* "user.pyx":154
  *         return 1
  * 
- *     cpdef DWORD save(self, unicode filename, ULONG quality = 100):             # <<<<<<<<<<<<<<
+ *     cpdef DWORD save(self, unicode filename):             # <<<<<<<<<<<<<<
  *         cdef:
  *             HANDLE h
  */
@@ -2190,7 +2151,6 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
   __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_7);
   __Pyx_WriteUnraisable("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
   __pyx_r = 0;
   __pyx_L0:;
@@ -2199,67 +2159,16 @@ static DWORD __pyx_f_4user_10Screenshot_save(struct __pyx_obj_4user_Screenshot *
 }
 
 /* Python wrapper */
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  PyObject *__pyx_v_filename = 0;
-  ULONG __pyx_v_quality;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename); /*proto*/
+static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObject *__pyx_v_filename) {
+  CYTHON_UNUSED int __pyx_lineno = 0;
+  CYTHON_UNUSED const char *__pyx_filename = NULL;
+  CYTHON_UNUSED int __pyx_clineno = 0;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("save (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_filename,&__pyx_n_s_quality,0};
-    PyObject* values[2] = {0,0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_filename)) != 0)) kw_args--;
-        else goto __pyx_L5_argtuple_error;
-        case  1:
-        if (kw_args > 0) {
-          PyObject* value = PyDict_GetItem(__pyx_kwds, __pyx_n_s_quality);
-          if (value) { values[1] = value; kw_args--; }
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "save") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-      }
-    } else {
-      switch (PyTuple_GET_SIZE(__pyx_args)) {
-        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-    }
-    __pyx_v_filename = ((PyObject*)values[0]);
-    if (values[1]) {
-      __pyx_v_quality = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_quality == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    } else {
-      __pyx_v_quality = ((ULONG)0x64);
-    }
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("save", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
   if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_filename), (&PyUnicode_Type), 1, "filename", 1))) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_r = __pyx_pf_4user_10Screenshot_8save(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self), __pyx_v_filename, __pyx_v_quality);
+  __pyx_r = __pyx_pf_4user_10Screenshot_8save(((struct __pyx_obj_4user_Screenshot *)__pyx_v_self), ((PyObject*)__pyx_v_filename));
 
   /* function exit code */
   goto __pyx_L0;
@@ -2270,29 +2179,24 @@ static PyObject *__pyx_pw_4user_10Screenshot_9save(PyObject *__pyx_v_self, PyObj
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename, ULONG __pyx_v_quality) {
+static PyObject *__pyx_pf_4user_10Screenshot_8save(struct __pyx_obj_4user_Screenshot *__pyx_v_self, PyObject *__pyx_v_filename) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
-  DWORD __pyx_t_1;
-  struct __pyx_opt_args_4user_10Screenshot_save __pyx_t_2;
-  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_1 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("save", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2.__pyx_n = 1;
-  __pyx_t_2.quality = __pyx_v_quality;
-  __pyx_t_1 = __pyx_vtabptr_4user_Screenshot->save(__pyx_v_self, __pyx_v_filename, 1, &__pyx_t_2); 
-  __pyx_t_3 = __Pyx_PyInt_From_DWORD(__pyx_t_1); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_r = __pyx_t_3;
-  __pyx_t_3 = 0;
+  __pyx_t_1 = __Pyx_PyInt_From_DWORD(__pyx_f_4user_10Screenshot_save(__pyx_v_self, __pyx_v_filename, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
   goto __pyx_L0;
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_1);
   __Pyx_AddTraceback("user.Screenshot.save", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
@@ -3133,7 +3037,7 @@ static PyObject *__pyx_getprop_4user_10Screenshot_memory(PyObject *o, CYTHON_UNU
 
 static PyMethodDef __pyx_methods_4user_Screenshot[] = {
   {"copy_to_clipboard", (PyCFunction)__pyx_pw_4user_10Screenshot_7copy_to_clipboard, METH_NOARGS, 0},
-  {"save", (PyCFunction)__pyx_pw_4user_10Screenshot_9save, METH_VARARGS|METH_KEYWORDS, 0},
+  {"save", (PyCFunction)__pyx_pw_4user_10Screenshot_9save, METH_O, 0},
   {"write", (PyCFunction)__pyx_pw_4user_10Screenshot_11write, METH_O, 0},
   {0, 0, 0, 0}
 };
@@ -3286,10 +3190,8 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_bmWidth, __pyx_k_bmWidth, sizeof(__pyx_k_bmWidth), 0, 0, 1, 1},
   {&__pyx_n_s_bmWidthBytes, __pyx_k_bmWidthBytes, sizeof(__pyx_k_bmWidthBytes), 0, 0, 1, 1},
   {&__pyx_n_s_copy_to_clipboard, __pyx_k_copy_to_clipboard, sizeof(__pyx_k_copy_to_clipboard), 0, 0, 1, 1},
-  {&__pyx_n_s_filename, __pyx_k_filename, sizeof(__pyx_k_filename), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
   {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
-  {&__pyx_n_s_quality, __pyx_k_quality, sizeof(__pyx_k_quality), 0, 0, 1, 1},
   {&__pyx_n_s_save, __pyx_k_save, sizeof(__pyx_k_save), 0, 0, 1, 1},
   {&__pyx_kp_u_save_MultiByteToWideChar_failed, __pyx_k_save_MultiByteToWideChar_failed, sizeof(__pyx_k_save_MultiByteToWideChar_failed), 0, 1, 0, 0},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
@@ -3499,7 +3401,7 @@ PyMODINIT_FUNC PyInit_user(void)
   __pyx_vtabptr_4user_Screenshot = &__pyx_vtable_4user_Screenshot;
   __pyx_vtable_4user_Screenshot.copy_to_clipboard = (void (*)(struct __pyx_obj_4user_Screenshot *, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_copy_to_clipboard;
   __pyx_vtable_4user_Screenshot.copy = (BOOLEAN (*)(struct __pyx_obj_4user_Screenshot *, PCHAR, DWORD, PDWORD))__pyx_f_4user_10Screenshot_copy;
-  __pyx_vtable_4user_Screenshot.save = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_4user_10Screenshot_save *__pyx_optional_args))__pyx_f_4user_10Screenshot_save;
+  __pyx_vtable_4user_Screenshot.save = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, PyObject *, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_save;
   __pyx_vtable_4user_Screenshot.write = (DWORD (*)(struct __pyx_obj_4user_Screenshot *, HANDLE, int __pyx_skip_dispatch))__pyx_f_4user_10Screenshot_write;
   if (PyType_Ready(&__pyx_type_4user_Screenshot) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_type_4user_Screenshot.tp_print = 0;
@@ -3962,120 +3864,6 @@ static void __Pyx_WriteUnraisable(const char *name, CYTHON_UNUSED int clineno,
 #endif
 }
 
-static void __Pyx_RaiseDoubleKeywordsError(
-    const char* func_name,
-    PyObject* kw_name)
-{
-    PyErr_Format(PyExc_TypeError,
-        #if PY_MAJOR_VERSION >= 3
-        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
-        #else
-        "%s() got multiple values for keyword argument '%s'", func_name,
-        PyString_AsString(kw_name));
-        #endif
-}
-
-static int __Pyx_ParseOptionalKeywords(
-    PyObject *kwds,
-    PyObject **argnames[],
-    PyObject *kwds2,
-    PyObject *values[],
-    Py_ssize_t num_pos_args,
-    const char* function_name)
-{
-    PyObject *key = 0, *value = 0;
-    Py_ssize_t pos = 0;
-    PyObject*** name;
-    PyObject*** first_kw_arg = argnames + num_pos_args;
-    while (PyDict_Next(kwds, &pos, &key, &value)) {
-        name = first_kw_arg;
-        while (*name && (**name != key)) name++;
-        if (*name) {
-            values[name-argnames] = value;
-            continue;
-        }
-        name = first_kw_arg;
-        #if PY_MAJOR_VERSION < 3
-        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
-            while (*name) {
-                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
-                        && _PyString_Eq(**name, key)) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    if ((**argname == key) || (
-                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
-                             && _PyString_Eq(**argname, key))) {
-                        goto arg_passed_twice;
-                    }
-                    argname++;
-                }
-            }
-        } else
-        #endif
-        if (likely(PyUnicode_Check(key))) {
-            while (*name) {
-                int cmp = (**name == key) ? 0 :
-                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
-                #endif
-                    PyUnicode_Compare(**name, key);
-                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                if (cmp == 0) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    int cmp = (**argname == key) ? 0 :
-                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
-                    #endif
-                        PyUnicode_Compare(**argname, key);
-                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                    if (cmp == 0) goto arg_passed_twice;
-                    argname++;
-                }
-            }
-        } else
-            goto invalid_keyword_type;
-        if (kwds2) {
-            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
-        } else {
-            goto invalid_keyword;
-        }
-    }
-    return 0;
-arg_passed_twice:
-    __Pyx_RaiseDoubleKeywordsError(function_name, key);
-    goto bad;
-invalid_keyword_type:
-    PyErr_Format(PyExc_TypeError,
-        "%.200s() keywords must be strings", function_name);
-    goto bad;
-invalid_keyword:
-    PyErr_Format(PyExc_TypeError,
-    #if PY_MAJOR_VERSION < 3
-        "%.200s() got an unexpected keyword argument '%.200s'",
-        function_name, PyString_AsString(key));
-    #else
-        "%s() got an unexpected keyword argument '%U'",
-        function_name, key);
-    #endif
-bad:
-    return -1;
-}
-
 static void __Pyx_RaiseArgumentTypeInvalid(const char* name, PyObject *obj, PyTypeObject *type) {
     PyErr_Format(PyExc_TypeError,
         "Argument '%.200s' has incorrect type (expected %.200s, got %.200s)",
@@ -4489,216 +4277,6 @@ static PyObject* __pyx_convert__to_py_BITMAPINFOHEADER(BITMAPINFOHEADER s) {
 #if CYTHON_USE_PYLONG_INTERNALS
   #include "longintrepr.h"
 #endif
-
-static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *x) {
-    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
-    const int is_unsigned = neg_one > const_zero;
-#if PY_MAJOR_VERSION < 3
-    if (likely(PyInt_Check(x))) {
-        if (sizeof(ULONG) < sizeof(long)) {
-            __PYX_VERIFY_RETURN_INT(ULONG, long, PyInt_AS_LONG(x))
-        } else {
-            long val = PyInt_AS_LONG(x);
-            if (is_unsigned && unlikely(val < 0)) {
-                goto raise_neg_overflow;
-            }
-            return (ULONG) val;
-        }
-    } else
-#endif
-    if (likely(PyLong_Check(x))) {
-        if (is_unsigned) {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (ULONG) 0;
-                case  1: __PYX_VERIFY_RETURN_INT(ULONG, digit, digits[0])
-                case 2:
-                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) >= 2 * PyLong_SHIFT) {
-                            return (ULONG) (((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) >= 3 * PyLong_SHIFT) {
-                            return (ULONG) (((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) >= 4 * PyLong_SHIFT) {
-                            return (ULONG) (((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
-                        }
-                    }
-                    break;
-            }
-#endif
-#if CYTHON_COMPILING_IN_CPYTHON
-            if (unlikely(Py_SIZE(x) < 0)) {
-                goto raise_neg_overflow;
-            }
-#else
-            {
-                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
-                if (unlikely(result < 0))
-                    return (ULONG) -1;
-                if (unlikely(result == 1))
-                    goto raise_neg_overflow;
-            }
-#endif
-            if (sizeof(ULONG) <= sizeof(unsigned long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned long, PyLong_AsUnsignedLong(x))
-            } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
-            }
-        } else {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (ULONG) 0;
-                case -1: __PYX_VERIFY_RETURN_INT(ULONG, sdigit, -(sdigit) digits[0])
-                case  1: __PYX_VERIFY_RETURN_INT(ULONG,  digit, +digits[0])
-                case -2:
-                    if (8 * sizeof(ULONG) - 1 > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
-                            return (ULONG) (((ULONG)-1)*(((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 2:
-                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
-                            return (ULONG) ((((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-                case -3:
-                    if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
-                            return (ULONG) (((ULONG)-1)*(((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
-                            return (ULONG) ((((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-                case -4:
-                    if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
-                            return (ULONG) (((ULONG)-1)*(((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
-                            return (ULONG) ((((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
-                        }
-                    }
-                    break;
-            }
-#endif
-            if (sizeof(ULONG) <= sizeof(long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONG, long, PyLong_AsLong(x))
-            } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONG, PY_LONG_LONG, PyLong_AsLongLong(x))
-            }
-        }
-        {
-#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
-            PyErr_SetString(PyExc_RuntimeError,
-                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
-#else
-            ULONG val;
-            PyObject *v = __Pyx_PyNumber_Int(x);
- #if PY_MAJOR_VERSION < 3
-            if (likely(v) && !PyLong_Check(v)) {
-                PyObject *tmp = v;
-                v = PyNumber_Long(tmp);
-                Py_DECREF(tmp);
-            }
- #endif
-            if (likely(v)) {
-                int one = 1; int is_little = (int)*(unsigned char *)&one;
-                unsigned char *bytes = (unsigned char *)&val;
-                int ret = _PyLong_AsByteArray((PyLongObject *)v,
-                                              bytes, sizeof(val),
-                                              is_little, !is_unsigned);
-                Py_DECREF(v);
-                if (likely(!ret))
-                    return val;
-            }
-#endif
-            return (ULONG) -1;
-        }
-    } else {
-        ULONG val;
-        PyObject *tmp = __Pyx_PyNumber_Int(x);
-        if (!tmp) return (ULONG) -1;
-        val = __Pyx_PyInt_As_ULONG(tmp);
-        Py_DECREF(tmp);
-        return val;
-    }
-raise_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to ULONG");
-    return (ULONG) -1;
-raise_neg_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to ULONG");
-    return (ULONG) -1;
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value) {
-    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(ULONG) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(ULONG) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(ULONG) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(ULONG),
-                                     little, !is_unsigned);
-    }
-}
 
 static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *x) {
     const DWORD neg_one = (DWORD) -1, const_zero = (DWORD) 0;

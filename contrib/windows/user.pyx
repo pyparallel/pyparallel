@@ -151,7 +151,7 @@ cdef class Screenshot:
         bytes_written[0] = self.dib_size
         return 1
 
-    cpdef DWORD save(self, unicode filename, ULONG quality = 100):
+    cpdef DWORD save(self, unicode filename):
         cdef:
             HANDLE h
             DWORD total_bytes_written = 0
