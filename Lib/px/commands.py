@@ -677,6 +677,35 @@ class RateLimitServerTest(TCPServerCommand):
             except KeyboardInterrupt:
                 server1.shutdown()
 
+class ScreenshotServerTest(TCPServerCommand):
+
+    port = None
+    class PortArg(NonEphemeralPortInvariant):
+        _help = 'port to listen on [default: %default]'
+        _default = 8080
+
+    ip = None
+    class IpArg(StringInvariant):
+        _help = 'IP address to listen on [default: %default]'
+        _default = IPADDR
+
+    def run(self):
+        ip = self.options.ip
+        port = int(self.options.port)
+
+        import parallel
+        from parallel.test import screenshot_test as sst
+
+        server1 = parallel.server(ip, port)
+        self._out("Running server on %s port %d ..." % (ip, port))
+        protocol = sst.ScreenshotServer
+        parallel.register(transport=server1, protocol=protocol)
+
+        try:
+            parallel.run()
+        except KeyboardInterrupt:
+            server1.shutdown()
+
 
 #===============================================================================
 # Testing
