@@ -35,6 +35,8 @@ extern "C" {
 #define PX_TIMERS_CS_SPINCOUNT 1000
 #define CHILDREN_SPINCOUNT 4000
 
+#define DISABLE_HEAP_REGISTRATION 1
+
 #define _LINE(n) #n
 
 Py_CACHE_ALIGN
@@ -280,66 +282,57 @@ PyMem_RawAlignedFree(void *p)
     _aligned_free(p);
 }
 
-void
-_PyParallel_MaybeFreeObject(void *vp)
-{
-    PyObject *o = (PyObject *)vp;
-    Context *oc;
-    PxSocket *os;
-    PxObject *ox;
-    HANDLE oh;
-
-    /* a = "active" */
-    PxSocket *as;
-    HANDLE ah;
-
-    /* Validate incoming object. */
-
-    if (!o)
-        __debugbreak();
-
-    if (!Py_PXCTX())
-        __debugbreak();
-
-    if (!Px_CLONED(o))
-        __debugbreak();
-
-    if (!_PyParallel_IsHeapOverrideActive())
-        __debugbreak();
-
-    ox = (PxObject *)o->px;
-    if (!ox)
-        __debugbreak();
-
-    oc = ox->ctx;
-    if (!oc)
-        __debugbreak();
-
-    os = (PxSocket *)oc->io_obj;
-    if (!os)
-        __debugbreak();
-
-    oh = os->heap_override;
-    if (!oh)
-        __debugbreak();
-
-    /* End of incoming object validation. */
-
-    /* Set up the active values. */
-    as = (PxSocket *)ctx->io_obj;
-    if (!as)
-        __debugbreak();
-
-    ah = as->heap_override;
-    if (!ah)
-        __debugbreak();
-
-    /* Verify the object came from the active heap override. */
-    if (oh != ah)
-        __debugbreak();
-
-    HeapFree(ah, 0, o);
-}
+//void
+//_PyParallel_MaybeFreeObject(void *vp)
+//{
+//    PyObject *o = (PyObject *)vp;
+//    Context *oc;
+//    PxSocket *os;
+//    HANDLE oh;
+//
+//    /* a = "active" */
+//    PxSocket *as;
+//    HANDLE ah;
+//
+//    /* Validate incoming object. */
+//
+//    if (!o)
+//        __debugbreak();
+//
+//    if (!Py_PXCTX())
+//        __debugbreak();
+//
+//    if (!Px_CLONED(o))
+//        __debugbreak();
+//
+//    if (!_PyParallel_IsHeapOverrideActive())
+//        __debugbreak();
+//
+//    os = (PxSocket *)oc->io_obj;
+//    if (!os)
+//        __debugbreak();
+//
+//    oh = os->heap_override;
+//    if (!oh)
+//        __debugbreak();
+//
+//    /* End of incoming object validation. */
+//
+//    /* Set up the active values. */
+//    as = (PxSocket *)ctx->io_obj;
+//    if (!as)
+//        __debugbreak();
+//
+//    ah = as->heap_override;
+//    if (!ah)
+//        __debugbreak();
+//
+//    /* Verify the object came from the active heap override. */
+//    if (oh != ah)
+//        __debugbreak();
+//
+//    HeapFree(ah, 0, o);
+//}
 
 /* 1 = success, 0 = failure */
 int
@@ -917,12 +910,18 @@ _PyHeap_EnsureReset(Heap *h)
 
     if (h->next != expected_next)
         __debugbreak();
+
+    if (h->num_px_deallocs)
+        __debugbreak();
+
+    if (!IsListEmpty(&h->px_deallocs))
+        __debugbreak();
 }
 
 void
 _PyHeap_Reset(Heap *h)
 {
-    size_t reset_offset = offsetof(Heap, px_deallocs);
+    size_t reset_offset = offsetof(Heap, px_deallocs_skipped);
     size_t aligned_sizeof_heap = Px_ALIGN(sizeof(Heap), Px_PTR_ALIGN_SIZE);
     void *reset_from;
     size_t reset_size;
@@ -934,6 +933,9 @@ _PyHeap_Reset(Heap *h)
 
     if (h->num_px_deallocs)
         /* Should have been dealt with by the time we're called. */
+        __debugbreak();
+
+    if (!IsListEmpty(&h->px_deallocs))
         __debugbreak();
 
     SecureZeroMemory(h->next, h->remaining);
@@ -979,29 +981,9 @@ _PyParallel_RegisterDealloc(PyObject *tp_or_obj)
         return NULL;
     }
 
-    /* I'm not sure how useful this particular code path will be
-     * (registering dealloc in a parallel thread for an object
-     *  also created in a parallel thread). */
-
-    /* Actually, let's just disable it for now -- it's not currently being
-     * used, and I can't be bothered figuring out the pointer offset logic
-     * for deriving the Object (which is appended to the px_deallocs list)
-     * from the PyObject pointer. */
     PyErr_SetString(PyExc_RuntimeError,
                     "register_dealloc() called from parallel thread");
     return NULL;
-
-    /*
-    Py_PXFLAGS(o) |= Py_PXFLAGS_DEALLOC;
-    c->h->num_px_deallocs++;
-    append_object(&c->h->px_deallocs, _Px_O_PTR()o->px);
-                                      ^^^^^^^^^^^^^^^^
-                                      This part, I can't be bothered figuring
-                                      out the correct pointer offset logic.
-    _register_dealloc(o);
-
-    Py_RETURN_NONE;
-    */
 }
 
 /* Returns the number of individual deallocs called (0 if none).
@@ -1010,14 +992,16 @@ unsigned int
 _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
 {
     Heap *s = snapshot;
-    Object *o;
-    Object *prev;
     PyObject *op;
+    PxObject *x;
     destructor dealloc;
-    Objects *list = &h->px_deallocs;
+    PLIST_ENTRY head, entry;
     unsigned int count = 0, deallocs = 0, skipped = 0;
 
     ODS(L"_PyHeap_DeallocObjects()\n");
+
+    if (is_snapshot > 1 || is_snapshot < 0)
+        __debugbreak();
 
     if (PyErr_Occurred())
         __debugbreak();
@@ -1030,38 +1014,47 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
             __debugbreak();
     }
 
-    /* If h->num_px_deallocs is zero, but list->first or list->last is set,
-     * make sure they come before the snapshot. */
-    if (!h->num_px_deallocs) {
-        if (!is_snapshot) {
-            if (list->first)
-                __debugbreak();
-            if (list->last)
-                __debugbreak();
-        } else {
-            op = list->first ? list->first->op : 0;
-            if (op && !Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s))
-                __debugbreak();
-            op = list->last ? list->last->op : 0;
-            if (op && !Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s))
-                __debugbreak();
+    head = &h->px_deallocs;
+
+    /* If h->num_px_deallocs is zero, but the list has entries, make sure they
+     * come before the snapshot if applicable. */
+    if (!h->num_px_deallocs && !IsListEmpty(head)) {
+        if (!is_snapshot)
+            /* If we're not a snapshot then the list should be empty. */
+            __debugbreak();
+        else {
+            entry = head->Flink;
+            do {
+                x = CONTAINING_RECORD(entry, PxObject, entry);
+                if (!x)
+                    __debugbreak();
+                op = x->object;
+                if (!op)
+                    __debugbreak();
+                if (!Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s))
+                    __debugbreak();
+                entry = entry->Flink;
+            } while (entry != head);
         }
         return 0;
     }
 
-    o = list->last;
+    entry = head->Blink;
     deallocs = h->num_px_deallocs;
     while (deallocs--) {
-        op = o->op;
+        x = CONTAINING_RECORD(entry, PxObject, entry);
+        if (!x)
+            __debugbreak();
+        op = x->object;
 
-        if (!Px_DEALLOC(o->op))
+        if (!Px_DEALLOC(op))
             __debugbreak();
 
         if (is_snapshot) {
             if (Px_PTR_IN_HEAP_BEFORE_SNAPSHOT(op, h, s)) {
                 skipped++;
-                list->last = prev = o->prev;
-                if (!prev)
+                entry = entry->Blink;
+                if (entry == head)
                     break;
                 else
                     continue;
@@ -1079,13 +1072,14 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
         if (!dealloc)
             __debugbreak();
 
-        list->last = prev = o->prev;
+        RemoveEntryList(entry);
+        x->object = NULL;
         ++count;
         (*dealloc)(op);
         --h->num_px_deallocs;
-        if (!prev)
+        if (IsListEmpty(head))
             break;
-        o = prev;
+        entry = head->Blink;
     }
 
     h->px_deallocs_skipped = skipped;
@@ -1098,6 +1092,16 @@ _PyHeap_DeallocObjects(Heap *h, Heap *snapshot, int is_snapshot)
         h->num_px_deallocs -= skipped;
         if (h->num_px_deallocs)
             /* Invariant broken. */
+            __debugbreak();
+    }
+
+    if (!IsListEmpty(head)) {
+        entry = head->Flink;
+        x = CONTAINING_RECORD(entry, PxObject, entry);
+        op = x->object;
+        if (!op)
+            __debugbreak();
+        if (Px_PTR_IN_HEAP_AFTER_SNAPSHOT(op, h, s))
             __debugbreak();
     }
 
@@ -1196,6 +1200,8 @@ _PxContext_Rewind(Context *c, Heap *snapshot)
                 if (!h->num_px_deallocs)
                     continue;
                 is_snapshot = (h->id == s->id);
+                if (is_snapshot > 1)
+                    __debugbreak();
                 actual_deallocs += _PyHeap_DeallocObjects(h, s, is_snapshot);
                 if (actual_deallocs == expected_deallocs)
                     /* Fast-path exit: no need to continue reversing through
@@ -1790,9 +1796,6 @@ _PyObject_Dealloc(PyObject *o)
 
     assert(Py_ORIG_TYPE(o));
 
-    if (Py_HAS_EVENT(o))
-        PyEvent_DESTROY(o);
-
     tp = Py_TYPE(o);
     mm = tp->tp_as_mapping;
     //sm = tp->tp_as_sequence;
@@ -1828,13 +1831,13 @@ _unprotect(PyObject *obj)
 {
     PyObject **dp;
     if (_protected(obj)) {
-        Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
-        obj->srw_lock = NULL;
+        //Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
+        //obj->srw_lock = NULL;
     }
     dp = _PyObject_GetDictPtr(obj);
     if (dp && _protected(*dp)) {
-        (*dp)->px_flags &= ~Py_PXFLAGS_RWLOCK;
-        (*dp)->srw_lock = NULL;
+        //(*dp)->px_flags &= ~Py_PXFLAGS_RWLOCK;
+        //(*dp)->srw_lock = NULL;
     }
 }
 
@@ -1898,12 +1901,13 @@ _async_try_write_lock(PyObject *self, PyObject *obj)
     Py_RETURN_BOOL(_try_write_lock(obj));
 }
 
-
+#if 0
 Object *
 _PyHeap_NewObject(Context *c)
 {
     return (Object *)_PyHeap_Malloc(c, sizeof(Object), 0, 0);
 }
+#endif
 
 #define _Px_READ_LOCK(o)    if (Py_HAS_RWLOCK(o)) _read_lock(o)
 #define _Px_READ_UNLOCK(o)  if (Py_HAS_RWLOCK(o)) _read_unlock(o)
@@ -1917,6 +1921,8 @@ _PyHeap_NewObject(Context *c)
 int
 _Px_TryPersist(PyObject *o)
 {
+    return 0;
+    /*
     BOOL pending;
     Context  *c;
     PxObject *x;
@@ -1950,6 +1956,7 @@ _Px_TryPersist(PyObject *o)
     }
 
     return 1;
+    */
 }
 
 
@@ -2351,8 +2358,10 @@ _PyEvent_TryCreate(PyObject *o)
             PyErr_SetNone(PyExc_WaitError);
         else if (!_PyObject_PrepOrigType(o, 0))
             goto done;
+        /*
         else if (!PyEvent_CREATE(o))
             PyErr_SetFromWindowsErr(0);
+         */
         else {
             Py_PXFLAGS(o) |= Py_PXFLAGS_EVENT;
             success = 1;
@@ -2393,146 +2402,151 @@ _Py_CheckCtrlC(void)
     return 0;
 }
 
-PyObject *
-_async_wait(PyObject *self, PyObject *o)
-{
-    DWORD result;
-    Px_PROTECTION_GUARD(o);
-    Py_INCREF(o);
-    if (!_PyEvent_TryCreate(o))
-        return NULL;
-
-    if (Py_PXCTX()) {
-        /* This should really be handled via a threadpool wait. */
-        result = WaitForSingleObject((HANDLE)o->event, INFINITE);
-    } else {
-        /* Stolen from _async_run_once(). */
-        if (!_Py_InstalledCtrlCHandler) {
-            if (!SetConsoleCtrlHandler(_Py_CtrlCHandlerRoutine, TRUE)) {
-                PyErr_SetFromWindowsErr(0);
-                return NULL;
-            }
-            _Py_InstalledCtrlCHandler = 1;
-        }
-
-        do {
-            result = WaitForSingleObject((HANDLE)o->event, 100);
-            if (PyErr_CheckSignals() || _Py_CheckCtrlC())
-                return NULL;
-            if (result == WAIT_TIMEOUT)
-                continue;
-            break;
-        } while (1);
-    }
-
-    if (result == WAIT_OBJECT_0)
-        Py_RETURN_NONE;
-
-    else if (result == WAIT_ABANDONED)
-        PyErr_SetString(PyExc_SystemError, "wait abandoned");
-
-    else if (result == WAIT_TIMEOUT)
-        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
-
-    else if (result == WAIT_FAILED)
-        PyErr_SetFromWindowsErr(0);
-
-    else
-        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
-
-    return NULL;
-}
-
-PyObject *
-_async_prewait(PyObject *self, PyObject *o)
-{
-    Px_PROTECTION_GUARD(o);
-    Py_INCREF(o);
-    if (!_PyEvent_TryCreate(o))
-        return NULL;
-
-    Py_INCREF(o);
-    return o;
-}
-
-PyObject *
-_async_signal(PyObject *self, PyObject *o)
-{
-    PyObject *result = NULL;
-    Px_PROTECTION_GUARD(o);
-    Py_INCREF(o);
-    _write_lock(o);
-
-    if (!Py_HAS_EVENT(o))
-        PyErr_SetNone(PyExc_NoWaitersError);
-    else if (!PyEvent_SIGNAL(o))
-        PyErr_SetFromWindowsErr(0);
-    else
-        result = Py_None;
-
-    _write_unlock(o);
-    Py_XINCREF(result);
-    return result;
-}
-
-PyObject *
-_async_signal_and_wait(PyObject *self, PyObject *args)
-{
-    PyObject *s, *w;
-    PyObject *result = NULL;
-    DWORD wait_result;
-
-    if (!PyArg_UnpackTuple(args, "signal_and_wait", 2, 2, &s, &w))
-        goto done;
-
-    Px_PROTECTION_GUARD(s);
-    Px_PROTECTION_GUARD(w);
-
-    if (s == w) {
-        PyErr_SetString(PyExc_WaitError,
-                        "signal and wait objects must differ");
-        goto done;
-    }
-
-    if (!_PyEvent_TryCreate(w))
-        goto done;
-
-    if (!Py_HAS_EVENT(s)) {
-        PyErr_SetNone(PyExc_NoWaitersError);
-        goto done;
-    }
-
-    Py_INCREF(s);
-    Py_INCREF(w);
-
-    wait_result = SignalObjectAndWait(Py_EVENT(s), Py_EVENT(w), INFINITE, 0);
-
-    if (wait_result == WAIT_OBJECT_0 || wait_result == WAIT_IO_COMPLETION)
-        result = Py_None;
-
-    else if (wait_result == WAIT_ABANDONED)
-        PyErr_SetString(PyExc_SystemError, "wait abandoned");
-
-    else if (wait_result == WAIT_TIMEOUT)
-        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
-
-    else if (wait_result == WAIT_FAILED)
-        PyErr_SetFromWindowsErr(0);
-
-    else
-        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
-
-    Py_DECREF(s);
-    Py_DECREF(w);
-
-done:
-    if (!result)
-        assert(PyErr_Occurred());
-    else
-        Py_INCREF(result);
-
-    return result;
-}
+//PyObject *
+//_async_wait(PyObject *self, PyObject *o)
+//{
+//    DWORD result;
+//    Px_PROTECTION_GUARD(o);
+//    Py_INCREF(o);
+//    __debugbreak();
+//
+//    if (!_PyEvent_TryCreate(o))
+//        return NULL;
+//
+//    if (Py_PXCTX()) {
+//        /* This should really be handled via a threadpool wait. */
+//        //result = WaitForSingleObject((HANDLE)o->event, INFINITE);
+//    } else {
+//        /* Stolen from _async_run_once(). */
+//        if (!_Py_InstalledCtrlCHandler) {
+//            if (!SetConsoleCtrlHandler(_Py_CtrlCHandlerRoutine, TRUE)) {
+//                PyErr_SetFromWindowsErr(0);
+//                return NULL;
+//            }
+//            _Py_InstalledCtrlCHandler = 1;
+//        }
+//
+//        do {
+//            //result = WaitForSingleObject((HANDLE)o->event, 100);
+//            if (PyErr_CheckSignals() || _Py_CheckCtrlC())
+//                return NULL;
+//            if (result == WAIT_TIMEOUT)
+//                continue;
+//            break;
+//        } while (1);
+//    }
+//
+//    if (result == WAIT_OBJECT_0)
+//        Py_RETURN_NONE;
+//
+//    else if (result == WAIT_ABANDONED)
+//        PyErr_SetString(PyExc_SystemError, "wait abandoned");
+//
+//    else if (result == WAIT_TIMEOUT)
+//        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
+//
+//    else if (result == WAIT_FAILED)
+//        PyErr_SetFromWindowsErr(0);
+//
+//    else
+//        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
+//
+//    return NULL;
+//}
+//
+//PyObject *
+//_async_prewait(PyObject *self, PyObject *o)
+//{
+//    Px_PROTECTION_GUARD(o);
+//    Py_INCREF(o);
+//    if (!_PyEvent_TryCreate(o))
+//        return NULL;
+//
+//    Py_INCREF(o);
+//    return o;
+//}
+//
+//PyObject *
+//_async_signal(PyObject *self, PyObject *o)
+//{
+//    PyObject *result = NULL;
+//    Px_PROTECTION_GUARD(o);
+//    Py_INCREF(o);
+//    _write_lock(o);
+//
+//    /*
+//    if (!Py_HAS_EVENT(o))
+//        PyErr_SetNone(PyExc_NoWaitersError);
+//    else if (!PyEvent_SIGNAL(o))
+//        PyErr_SetFromWindowsErr(0);
+//    else
+//        result = Py_None;
+//    */
+//
+//    _write_unlock(o);
+//    Py_XINCREF(result);
+//    return result;
+//}
+//
+//PyObject *
+//_async_signal_and_wait(PyObject *self, PyObject *args)
+//{
+//    PyObject *s, *w;
+//    PyObject *result = NULL;
+//    DWORD wait_result;
+//
+//    if (!PyArg_UnpackTuple(args, "signal_and_wait", 2, 2, &s, &w))
+//        goto done;
+//
+//    Px_PROTECTION_GUARD(s);
+//    Px_PROTECTION_GUARD(w);
+//
+//    if (s == w) {
+//        PyErr_SetString(PyExc_WaitError,
+//                        "signal and wait objects must differ");
+//        goto done;
+//    }
+//
+//    if (!_PyEvent_TryCreate(w))
+//        goto done;
+//
+//    if (!Py_HAS_EVENT(s)) {
+//        PyErr_SetNone(PyExc_NoWaitersError);
+//        goto done;
+//    }
+//
+//    Py_INCREF(s);
+//    Py_INCREF(w);
+//
+//    //wait_result = SignalObjectAndWait(Py_EVENT(s), Py_EVENT(w), INFINITE, 0);
+//    __debugbreak();
+//
+//    if (wait_result == WAIT_OBJECT_0 || wait_result == WAIT_IO_COMPLETION)
+//        result = Py_None;
+//
+//    else if (wait_result == WAIT_ABANDONED)
+//        PyErr_SetString(PyExc_SystemError, "wait abandoned");
+//
+//    else if (wait_result == WAIT_TIMEOUT)
+//        PyErr_SetString(PyExc_SystemError, "infinite wait timed out?");
+//
+//    else if (wait_result == WAIT_FAILED)
+//        PyErr_SetFromWindowsErr(0);
+//
+//    else
+//        PyErr_SetString(PyExc_SystemError, "unexpected result from wait");
+//
+//    Py_DECREF(s);
+//    Py_DECREF(w);
+//
+//done:
+//    if (!result)
+//        assert(PyErr_Occurred());
+//    else
+//        Py_INCREF(result);
+//
+//    return result;
+//}
 
 
 PyObject *
@@ -2545,20 +2559,20 @@ _protect(PyObject *obj)
     if (!_protected(obj)) {
         if (!_PyObject_PrepOrigType(obj, 0))
             return NULL;
-        InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
-        Py_PXFLAGS(obj) |= Py_PXFLAGS_RWLOCK;
+        //InitializeSRWLock((PSRWLOCK)&(obj->srw_lock));
+        //Py_PXFLAGS(obj) |= Py_PXFLAGS_RWLOCK;
     }
 
     dp = _PyObject_GetDictPtr(obj);
     if (dp && *dp && !_protected(*dp)) {
         if (!_PyObject_PrepOrigType(*dp, 0)) {
             /* Manually undo the protection we applied above. */
-            Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
-            obj->srw_lock = NULL;
+            //Py_PXFLAGS(obj) &= ~Py_PXFLAGS_RWLOCK;
+            //obj->srw_lock = NULL;
             return NULL;
         }
-        InitializeSRWLock((PSRWLOCK)&((*dp)->srw_lock));
-        Py_PXFLAGS((*dp)) |= Py_PXFLAGS_RWLOCK;
+        //InitializeSRWLock((PSRWLOCK)&((*dp)->srw_lock));
+        //Py_PXFLAGS((*dp)) |= Py_PXFLAGS_RWLOCK;
     }
     return obj;
 }
@@ -2572,8 +2586,8 @@ _PyParallel_ProtectObject(PyObject *o)
 PyObject *
 _async_protect(PyObject *self, PyObject *obj)
 {
-    Py_INCREF(obj);
     /*
+    Py_INCREF(obj);
     if (Py_ISPX(obj)) {
         PyErr_SetNone(PyExc_ProtectionError);
         return NULL;
@@ -2645,6 +2659,7 @@ PxPages_Find(PxPages *pages, void *p)
 void
 _PxPages_AddHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
 {
+#ifndef DISABLE_HEAP_REGISTRATION
     PxPages *x;
     HASH_FIND_INT(*pages, value, x);
     if (x) {
@@ -2660,11 +2675,13 @@ _PxPages_AddHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
         x->base = *value;
         HASH_ADD_INT(*pages, base, x);
     }
+#endif
 }
 
 void
 _PxPages_RemoveHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
 {
+#ifndef DISABLE_HEAP_REGISTRATION
     PxPages *x;
     HASH_FIND_INT(*pages, value, x);
     assert(x);
@@ -2681,6 +2698,7 @@ _PxPages_RemoveHeapPage(PxPages **pages, Px_UINTPTR *value, Heap *h)
         x->heaps[1] = NULL;
         x->count = 1;
     }
+#endif
 }
 
 void
@@ -2707,6 +2725,9 @@ void
 _PxState_RegisterHeap(PxState *px, Heap *h, Context *c)
 {
     int i;
+#ifdef DISABLE_HEAP_REGISTRATION
+    return;
+#endif
 
     AcquireSRWLockExclusive(&px->pages_srwlock);
 
@@ -2731,6 +2752,7 @@ _PxState_RegisterHeap(PxState *px, Heap *h, Context *c)
 void
 _PxContext_UnregisterHeaps(Context *c)
 {
+#ifndef DISABLE_HEAP_REGISTRATION
     Heap    *h;
     PxState *px;
     int      i, heap_count = 0;
@@ -2766,6 +2788,7 @@ _PxContext_UnregisterHeaps(Context *c)
             break;
     }
     ReleaseSRWLockExclusive(&px->pages_srwlock);
+#endif
 }
 
 void
@@ -2876,7 +2899,7 @@ _Px_MemorySignature(void *m)
 
     signature = _MEMSIG_UNKNOWN;
 
-#ifdef Py_DEBUG
+#if defined(Py_DEBUG) && !defined(DISABLE_HEAP_REGISTRATION)
     AcquireSRWLockShared(&px->pages_srwlock);
     if (PxPages_Find(px->pages, m))
         signature = _MEMSIG_PX;
@@ -2920,14 +2943,20 @@ _Px_ObjectSignature(void *m)
     }
 
     if (s == (Py_uintptr_t)_Py_NOT_PARALLEL) {
+#if 0
         assert(y->px == _Py_NOT_PARALLEL);
+#endif
         signature = _OBJSIG_PY;
         goto done;
     }
 
     if (s == (Py_uintptr_t)_Py_IS_PARALLEL) {
+#if 0
         assert(y->px != NULL);
+#ifdef Py_DEBUG
         assert(Py_ASPX(y)->signature == _PxObjectSignature);
+#endif
+#endif
         signature = _OBJSIG_PX;
         goto done;
     }
@@ -2946,7 +2975,6 @@ unsigned long
 _Px_SafeObjectSignatureTest(void *m)
 {
     PyObject     *y;
-    PxObject     *x;
     Py_uintptr_t  s;
     int is_py;
     int is_px;
@@ -2982,7 +3010,8 @@ _Px_SafeObjectSignatureTest(void *m)
         goto done;
     }
 
-    is_px = -1;
+    is_px = (s == (Py_uintptr_t)_Py_IS_PARALLEL);
+#if 0
     x = Py_ASPX(y);
     __try {
         is_px = (x->signature == _PxObjectSignature);
@@ -2993,6 +3022,7 @@ _Px_SafeObjectSignatureTest(void *m)
     ) {
         is_px = 0;
     }
+#endif
 
     assert(is_px != -1);
 
@@ -3121,7 +3151,7 @@ _PyParallel_GuardMem(const char *function,
             }
             assert(s & _MEMSIG_PY);
         } else {
-#ifdef Py_DEBUG
+#if defined(Py_DEBUG) && !defined(DISABLE_HEAP_REGISTRATION)
             if (!(s & _MEMSIG_PX)) {
                 PxState *px = PXSTATE();
                 AcquireSRWLockShared(&px->pages_srwlock);
@@ -3271,7 +3301,11 @@ Heap_Init(Context *c, size_t n, int page_size)
         h->group = h->sle_prev->group;
     }
 
-    assert(h);
+    /* Check for wrap-arounds... */
+    if (h->id < 0)
+        __debugbreak();
+    if (h->group < 0)
+        __debugbreak();
 
     h->page_size = page_size;
     h->pages = size / page_size;
@@ -3285,8 +3319,7 @@ Heap_Init(Context *c, size_t n, int page_size)
     h->remaining = size;
     c->h = h;
     h->ctx = c;
-    h->px_deallocs.first = NULL;
-    h->px_deallocs.last = NULL;
+    InitializeListHead(&h->px_deallocs);
     h->sle_next = (Heap *)_PyHeap_Malloc(c, sizeof(Heap), 0, 0);
     assert(h->sle_next);
 #ifdef Py_DEBUG
@@ -3458,12 +3491,12 @@ _PyHeapOverride_Malloc(size_t n, size_t align)
 void *
 _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 {
-    void  *next;
+    void  *base, *start;
     Heap  *h;
     size_t alignment_diff;
     size_t alignment = align;
     size_t requested_size = n;
-    size_t aligned_size;
+    size_t aligned_size, total_size, padding;
 
     if (!c) {
         Context *tls_ctx = ctx;
@@ -3499,39 +3532,43 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 begin:
     h = c->h;
 
-    if (alignment > h->next_alignment)
-        alignment_diff = Px_PTR_ALIGN(alignment - h->next_alignment);
-    else
-        alignment_diff = 0;
-
     aligned_size = Px_ALIGN(n, alignment);
+    total_size = sizeof(size_t) + aligned_size;
+    if (total_size > h->remaining)
+        goto try_realloc;
 
-    if (aligned_size < (h->remaining-alignment_diff)) {
-        if (alignment_diff) {
-            h->remaining -= alignment_diff;
-            h->allocated += alignment_diff;
-            h->alignment_mismatches++;
-            h->bytes_wasted += (short)alignment_diff;
-            h->next = Px_PTR_ADD(h->next, alignment_diff);
-            assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
-        }
-
-        h->allocated += aligned_size;
-        h->remaining -= aligned_size;
-        h->mallocs++;
-        h->bytes_wasted += (short)(aligned_size - requested_size);
-
-        next = h->next;
-        h->next = Px_PTR_ADD(h->next, aligned_size);
-        h->next_alignment = Px_GET_ALIGNMENT(h->next);
-
-        assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
-        assert(_Py_IS_ALIGNED(h->base, alignment));
-        assert(Px_GET_ALIGNMENT(next) >= alignment);
-        last_context_heap_malloc_addr = next;
-        return next;
+    padding = 0;
+    base = h->next;
+    while (1) {
+        base = Px_PTR_ADD(base, padding);
+        start = Px_PTR_ADD(base, sizeof(size_t));
+        if (_Py_IS_ALIGNED(start, alignment))
+            break;
+        padding += sizeof(size_t);
+        if (padding + total_size > h->remaining)
+            goto try_realloc;
     }
 
+    total_size += padding;
+
+    if (total_size > h->remaining)
+        __debugbreak();
+
+    h->allocated += total_size;
+    h->remaining -= total_size;
+    ++h->mallocs;
+
+    if (padding)
+        memset(h->next, 0xCC, padding);
+
+    /* Store the aligned size sizeof(size_t) bytes before the "start"
+     * address we're returning from the allocator. */
+    *((size_t *)base) = aligned_size;
+    h->next = Px_PTR_ADD(h->next, total_size);
+    last_context_heap_malloc_addr = start;
+    return start;
+
+try_realloc:
     /* If h->sle_next->size is non-zero, it means the next heap in the list
      * has already been allocated.  This happens when a context heap snapshot
      * is taken, a heap resize occurs (i.e. the code path below this logic is
@@ -3549,7 +3586,7 @@ begin:
         return PyErr_NoMemory();
 
     /* Force a resize. */
-    if (!_PyHeap_Init(c, _PyParallel_NewHeapSize(aligned_size)))
+    if (!_PyHeap_Init(c, _PyParallel_NewHeapSize(total_size)))
         return PyErr_NoMemory();
 
     goto begin;
@@ -3605,6 +3642,8 @@ _PyHeap_Realloc(Context *c, void *p, size_t n, size_t a, int no_heap_realloc)
 {
     void  *r;
     Heap  *h;
+    size_t *base = (size_t *)Px_PTR_SUB(p, sizeof(size_t));
+    size_t count = (p ? min(*base, n) : n);
 
     if (Px_TLS_HEAP_ACTIVE)
         return _PyTLSHeap_Realloc(p, n);
@@ -3616,7 +3655,7 @@ _PyHeap_Realloc(Context *c, void *p, size_t n, size_t a, int no_heap_realloc)
     if (!p)
         return r;
     h->mem_reallocs++;
-    memcpy(r, p, n);
+    memcpy(r, p, count);
     return r;
 }
 
@@ -3658,20 +3697,13 @@ _PyHeap_Free(Context *c, void *p)
     h->frees++;
 }
 
-#define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
-#define _Px_O_OFFSET(n) \
-    (Px_PTR_ALIGN((_Px_X_OFFSET(n)) + (Px_PTR_ALIGN(sizeof(PxObject)))))
 
+#define _Px_X_OFFSET(n) (Px_PTR_ALIGN(n))
 #define _Px_X_PTR(p, n) \
     ((PxObject *)(Px_PTR_ALIGN(Px_PTR_ALIGNED_ADD((p), _Px_X_OFFSET((n))))))
-
-#define _Px_O_PTR(p, n) \
-    ((Object *)(Px_PTR_ALIGN(Px_PTR_ALIGNED_ADD((p), _Px_O_OFFSET((n))))))
-
 #define _Px_SZ(n) (Px_PTR_ALIGN(      \
     Px_PTR_ALIGN(n)                 + \
-    Px_PTR_ALIGN(sizeof(PxObject))  + \
-    Px_PTR_ALIGN(sizeof(Object))      \
+    Px_PTR_ALIGN(sizeof(PxObject))    \
 ))
 
 #define _Px_VSZ(t, n) (Px_PTR_ALIGN( \
@@ -3693,15 +3725,15 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
      *      anything, so we're, in effect, just copying the existing object.
      */
     TLS      *t = &tls;
-    PyObject *n;
-    PxObject *x;
-    Object   *o;
+    PyObject *n; /* New PyObject being created/initialized. */
+    PxObject *x; /* New PxObject being created/initialized. */
     size_t    object_size;
     size_t    total_size;
     size_t    bytes_to_copy;
     int       init_type;
     int       is_varobj = -1;
     int       is_heap_override_active = _PyParallel_IsHeapOverrideActive();
+    int       is_dealloc = (tp->tp_flags & Py_TPFLAGS_PX_DEALLOC);
 
 #define _INIT_NEW       1
 #define _INIT_INIT      2
@@ -3718,7 +3750,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
         if (!n)
             return PyErr_NoMemory();
         x = _Px_X_PTR(n, object_size);
-        o = _Px_O_PTR(n, object_size);
 
         Py_TYPE(n) = tp;
         if (is_varobj = (tp->tp_itemsize > 0)) {
@@ -3735,12 +3766,11 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             assert(tp);
             Px_GUARD_MEM(p);
 
-            /* Need to manually allocate x + o storage. */
+            /* Need to manually allocate x. */
             x = (PxObject *)_PyHeap_Malloc(c, _Px_SZ(0), 0, 0);
             if (!x)
                 return PyErr_NoMemory();
 
-            o = _Px_O_PTR(x, 0);
             n = p;
 
             Py_TYPE(n) = tp;
@@ -3772,7 +3802,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             if (!n)
                 return PyErr_NoMemory();
             x = _Px_X_PTR(n, object_size);
-            o = _Px_O_PTR(n, object_size);
 
             /* Just do a blanket copy of everything rather than trying to
              * isolate the underlying VarObject ob_items.  It doesn't matter
@@ -3788,15 +3817,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
             Py_TYPE(n) = tp;
             Py_SIZE(n) = nitems;
 
-            if (Py_PXOBJ(p)) {
-                /* XXX do we really need to do this?  (Original line of
-                 * thinking was that we might need to treat the object
-                 * differently down the track (i.e. during cleanup) if
-                 * it was resized.) */
-                Py_ASPX(p)->resized_to = n;
-                x->resized_from = p;
-            }
-
             c->h->resizes++;
         }
     }
@@ -3806,19 +3826,35 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     assert(Py_TYPE(n) == tp);
     assert(is_varobj == 0 || is_varobj == 1);
 
-    Py_EVENT(n) = NULL;
+    //Py_EVENT(n) = NULL;
     Py_PXFLAGS(n) |= Py_PXFLAGS_ISPX;
-    Py_ORIG_TYPE(n) = NULL;
+    //Py_ORIG_TYPE(n) = NULL;
 
     if (is_varobj)
         assert(Py_SIZE(n) == nitems);
 
-    n->px = x;
+    x->object = n;
+    //n->px = x;
     n->is_px = _Py_IS_PARALLEL;
-    n->srw_lock = NULL;
+    //n->srw_lock = NULL;
 
-    x->ctx = c;
-    x->signature = _PxObjectSignature;
+    //x->ctx = c;
+    //x->signature = _PxObjectSignature;
+
+    if (is_dealloc) {
+        if (Px_ISMIMIC(n))
+            __debugbreak();
+        if (Px_TLS_HEAP_ACTIVE)
+            __debugbreak();
+        if (is_heap_override_active)
+            __debugbreak();
+
+        Py_PXFLAGS(n) |= Py_PXFLAGS_DEALLOC;
+        /* If you change this logic, check _PyParallel_RegisterDealloc(). */
+        c->h->num_px_deallocs++;
+        InsertTailList(&c->h->px_deallocs, &x->entry);
+        return n;
+    }
 
     if (Px_ISMIMIC(n))
         goto end;
@@ -3829,37 +3865,6 @@ init_object(Context *c, PyObject *p, PyTypeObject *tp, Py_ssize_t nitems)
     if (is_heap_override_active) {
         Py_PXFLAGS(n) |= Py_PXFLAGS_CLONED;
         goto end;
-    }
-
-    o->op = n;
-
-    if (tp->tp_flags & Py_TPFLAGS_PX_DEALLOC) {
-        Py_PXFLAGS(n) |= Py_PXFLAGS_DEALLOC;
-        /* If you change this logic, check _PyParallel_RegisterDealloc(). */
-        c->h->num_px_deallocs++;
-        append_object(&c->h->px_deallocs, o);
-        goto end;
-    }
-
-    /* Skip the remaining linked list stuff for now, it's not being used. */
-    goto end;
-
-    append_object((is_varobj ? &c->varobjs : &c->objects), o);
-
-    if (!c->ob_first) {
-        c->ob_first = n;
-        c->ob_last  = n;
-        n->_ob_next = NULL;
-        n->_ob_prev = NULL;
-    } else {
-        PyObject *last;
-        assert(!c->ob_first->_ob_prev);
-        assert(!c->ob_last->_ob_next);
-        last = c->ob_last;
-        last->_ob_next = n;
-        n->_ob_prev = last;
-        n->_ob_next = NULL;
-        c->ob_last = n;
     }
 
 end:
@@ -3912,7 +3917,7 @@ VarObject_Resize(PyObject *v, Py_ssize_t nitems, Context *c)
     return (PyVarObject *)init_object(c, v, NULL, nitems);
 }
 
-#ifdef Py_DEBUG
+#if defined(Py_DEBUG) && !defined(DISABLE_HEAP_REGISTRATION)
 void *
 _PxObject_Realloc(void *p, size_t nbytes)
 {
@@ -7009,7 +7014,8 @@ _async_submit_wait(PyObject *self, PyObject *args)
     if (!_PyEvent_TryCreate(c->waitobj))
         goto free_context;
 
-    SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
+    //SetThreadpoolWait(c->tp_wait, Py_EVENT(c->waitobj), NULL);
+    __debugbreak();
 
     InterlockedIncrement64(&(px->waits_submitted));
     InterlockedIncrement(&(px->waits_pending));
@@ -7923,8 +7929,10 @@ _Px_NewReference(PyObject *op)
 #ifdef Py_DEBUG
     if (!_Px_TEST(op))
         printf("\n_Px_NewReference(op) -> failed _Px_TEST!\n");
+#if 0
     if (!Py_ASPX(op))
         printf("\n_Px_NewReference: no px object!\n");
+#endif
 #endif
 
     assert(op->is_px != _Py_NOT_PARALLEL);
@@ -7949,7 +7957,7 @@ _Px_Dealloc(PyObject *op)
 {
     Px_GUARD_OBJ(op);
     Px_GUARD();
-    assert(Py_ASPX(op)->ctx == ctx);
+    //assert(Py_ASPX(op)->ctx == ctx);
     ctx->h->deallocs++;
 }
 
@@ -8183,6 +8191,7 @@ PxSocket_ParseHttpRequest(PxSocket *s)
     PyObject *d;
     PyObject *retval = NULL;
     PyObject *key, *value;
+    void *base, *start;
     size_t dict_size = 0;
     int i = 0;
 
@@ -8197,7 +8206,7 @@ PxSocket_ParseHttpRequest(PxSocket *s)
      * dedicating all of the remaining amount to the header processing (which
      * will only use as much as it needs). */
 restart:
-    r->bytes_allocated = h->remaining;
+    r->bytes_allocated = h->remaining-sizeof(size_t);
     r->num_headers_allocated = r->bytes_allocated / HTTP_HEADER_SIZE;
     if (r->num_headers_allocated < MINIMUM_HTTP_HEADERS) {
         size_t old_remaining = h->remaining;
@@ -8214,7 +8223,10 @@ restart:
         goto restart;
     }
 
-    r->headers = (struct phr_header *)h->next;
+    base = h->next;
+    start = Px_PTR_ADD(base, sizeof(size_t));
+
+    r->headers = (struct phr_header *)start;
     r->num_headers_used = r->num_headers_allocated;
 
     result = phr_parse_request(
@@ -8237,7 +8249,7 @@ restart:
 
     r->header_len = result;
     r->bytes_used = r->num_headers_used * HTTP_HEADER_SIZE;
-    if (r->bytes_used > r->bytes_allocated)
+    if (r->bytes_used > r->bytes_allocated-sizeof(size_t))
         __debugbreak();
 
     /* Manually adjust the heap/stats based on bytes used.  Make sure it aligns
@@ -8246,13 +8258,13 @@ restart:
     /* (We should really expose a new API that facilitates this heap interaction
      * (that is, reserving the entire amount of allocated memory that is left,
      * then committing the amount that we actually ended up using).) */
-    h->allocated += r->bytes_used;
-    h->remaining -= r->bytes_used;
+    h->allocated += r->bytes_used+sizeof(size_t);
+    h->remaining -= r->bytes_used+sizeof(size_t);
     h->mallocs++;
 
+    *((size_t *)base) = r->bytes_used;
+    h->next = Px_PTR_ADD(start, r->bytes_used);
     last_context_heap_malloc_addr = h->next;
-    h->next = Px_PTR_ADD(h->next, r->bytes_used);
-    h->next_alignment = Px_GET_ALIGNMENT(h->next);
 
     assert(Px_PTR_ADD(h->base, h->allocated) == h->next);
 
@@ -14556,7 +14568,7 @@ PyDoc_STRVAR(_async__init_ujson_doc, "init ujson");
 PyMethodDef _async_methods[] = {
     _ASYNC_V(map),
     _ASYNC_N(run),
-    _ASYNC_O(wait),
+    //_ASYNC_O(wait),
     _ASYNC_V(read),
     _ASYNC_K(dict),
     _ASYNC_K(list),
@@ -14570,13 +14582,13 @@ PyMethodDef _async_methods[] = {
     { "stderr", (PyCFunction)_async_stderr, METH_O, _async_stderr_doc },
     _ASYNC_O(_close),
     _ASYNC_N(gmtime),
-    _ASYNC_O(signal),
+    //_ASYNC_O(signal),
     _ASYNC_K(client),
     _ASYNC_K(server),
     _ASYNC_O(protect),
     //_ASYNC_O(wait_any),
     //_ASYNC_O(wait_all),
-    _ASYNC_O(prewait),
+    //_ASYNC_O(prewait),
     _ASYNC_O(_address),
     _ASYNC_O(_rawfile),
     _ASYNC_K(register),
@@ -14613,7 +14625,7 @@ PyMethodDef _async_methods[] = {
     _ASYNC_O(try_read_lock),
     _ASYNC_O(try_write_lock),
     _ASYNC_V(submit_write_io),
-    _ASYNC_V(signal_and_wait),
+    //_ASYNC_V(signal_and_wait),
     _ASYNC_N(active_contexts),
     _ASYNC_N(active_io_loops),
     _ASYNC_O(register_dealloc),

@@ -91,6 +91,7 @@ extern "C" {
 
 #define Px_PTR(p)           ((Px_UINTPTR)(p))
 #define Px_PTR_ADD(p, n)    ((void *)((Px_PTR(p)) + (Px_PTR(n))))
+#define Px_PTR_SUB(p, n)    ((void *)((Px_PTR(p)) - (Px_PTR(n))))
 
 #define Px_PTR_ALIGNED_ADD(p, n) \
     (Px_PTR_ALIGN(Px_PTR_ADD(p, Px_PTR_ALIGN(n))))

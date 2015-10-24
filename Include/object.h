@@ -52,7 +52,7 @@ whose size is determined when the object is allocated.
 */
 
 /* Py_DEBUG implies Py_TRACE_REFS */
-#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS)
+#if defined(Py_DEBUG) && !defined(Py_TRACE_REFS) && !defined(WITH_PARALLEL)
 #define Py_TRACE_REFS
 #endif
 
@@ -79,31 +79,19 @@ whose size is determined when the object is allocated.
 #define _PyObject_EXTRA_INIT
 #endif /* Py_TRACE_REFS */
 #else /* !WITH_PARALLEL */
-/* We use _ob_next/_ob_prev in parallel contexts, so if we're WITH_PARALLEL,
- * we always include these two pointers, regardless of Py_TRACE_REFS. */
 
 #define _Py_NOT_PARALLEL ((void *)_Py_DEADBEEF)
 #define _Py_IS_PARALLEL  ((void *)_Px_DEADBEEF)
 
 #define _PyObject_HEAD_EXTRA            \
     void   *is_px;                      \
-    void   *px;                         \
     size_t  px_flags;                   \
-    void   *srw_lock;                   \
-    void   *event;                      \
-    void   *orig_type;                  \
-    struct _object *_ob_next;           \
-    struct _object *_ob_prev;
+    struct _typeobject *orig_type;
 
 #define _PyObject_EXTRA_INIT            \
     (void *)_Py_NOT_PARALLEL,           \
-    (void *)_Py_NOT_PARALLEL,           \
     Py_PXFLAGS_ISPY,                    \
-    NULL,                               \
-    NULL,                               \
-    NULL,                               \
-    (struct _object *)_Py_NOT_PARALLEL, \
-    (struct _object *)_Py_NOT_PARALLEL,
+    NULL,
 
 #endif /* WITH_PARALLEL */
 

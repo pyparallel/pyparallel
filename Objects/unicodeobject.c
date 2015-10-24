@@ -1566,12 +1566,12 @@ unicode_modifiable(PyObject *unicode)
         if (Py_ISPY(unicode))
             return 0;
         else {
-            assert(Px_TEST_OBJ(unicode));
+            //assert(Px_TEST_OBJ(unicode));
             return 1;
         }
     } else {
         if (!Py_ISPY(unicode)) {
-            assert(Px_TEST_OBJ(unicode));
+            //assert(Px_TEST_OBJ(unicode));
             return 0;
         }
     }

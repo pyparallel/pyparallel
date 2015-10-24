@@ -42,25 +42,13 @@ _Py_GetRefTotal(void)
    These are used by the individual routines for object creation.
    Do not call them otherwise, they do not initialize the object! */
 
+#ifndef WITH_PARALLEL
 #ifdef Py_TRACE_REFS
 /* Head of circular doubly-linked list of all objects.  These are linked
  * together via the _ob_prev and _ob_next members of a PyObject, which
  * exist only in a Py_TRACE_REFS build.
  */
-#ifndef WITH_PARALLEL
 static PyObject refchain = {&refchain, &refchain};
-#else
-static PyObject refchain = {
-    _Py_NOT_PARALLEL,
-    _Py_NOT_PARALLEL,
-    Py_PXFLAGS_ISPY,
-    NULL,
-    NULL,
-    NULL,
-    &refchain,
-    &refchain
-};
-#endif
 
 /* Insert op at the front of the list of all objects.  If force is true,
  * op is added even if _ob_prev and _ob_next are non-NULL already.  If
@@ -93,6 +81,7 @@ _Py_AddToAllObjects(PyObject *op, int force)
     }
 }
 #endif  /* Py_TRACE_REFS */
+#endif
 
 #ifdef COUNT_ALLOCS
 Py_TLS static PyTypeObject *type_list;
@@ -229,16 +218,22 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 void
 Py_IncRef(PyObject *o)
 {
-    Py_GUARD_OBJ(o);
-    Px_VOID_OP(o);
+#ifdef Py_DEBUG
+    PyPx_GUARD_OBJ(o);
+#endif
+    if (Py_PXCTX())
+        return;
     Py_XINCREF(o);
 }
 
 void
 Py_DecRef(PyObject *o)
 {
-    Py_GUARD_OBJ(o);
-    Px_VOID_OP(o);
+#ifdef Py_DEBUG
+    PyPx_GUARD_OBJ(o);
+#endif
+    if (Py_PXCTX())
+        return;
     Py_XDECREF(o);
 }
 
@@ -1851,12 +1846,8 @@ _Py_VerifyObjectHead(PyObject *op)
     assert(Py_TYPE(op));
     assert(op->ob_refcnt == 1);
     assert(op->is_px    == _Py_NOT_PARALLEL);
-    assert(op->px       == _Py_NOT_PARALLEL);
-    assert(op->srw_lock == NULL);
-#ifndef Py_TRACE_REFS
-    assert(op->_ob_next == _Py_NOT_PARALLEL);
-    assert(op->_ob_prev == _Py_NOT_PARALLEL);
-#else
+    assert(op->orig_type == NULL);
+#ifdef Py_TRACE_REFS
     assert(op->_ob_next == NULL);
     assert(op->_ob_prev == NULL);
 #endif

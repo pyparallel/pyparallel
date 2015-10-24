@@ -163,68 +163,6 @@ typedef struct _RBUF {
 /* 29 = len('Tue, 15 Nov 2010 08:12:31 GMT') */
 #define GMTIME_STRLEN 29+1 /* 1 = '\0' */
 
-typedef struct _cpuinfo {
-    struct _core {
-        int logical;
-        int physical;
-    } core;
-    struct _cache {
-        int l1;
-        int l2;
-    } cache;
-} cpuinfo;
-
-typedef struct _Object Object;
-
-typedef struct _Object {
-    Object   *prev;
-    Object   *next;
-    PyObject *op;
-} Object;
-
-typedef struct _Objects {
-    Object *first;
-    Object *last;
-} Objects;
-
-static __inline
-void
-append_object(Objects *list, Object *o)
-{
-    Object *n;
-    if (!list->first) {
-        list->first = o;
-        list->last = o;
-        o->prev = NULL;
-    } else {
-        n = list->last;
-        n->next = o;
-        o->prev = n;
-        list->last = o;
-    }
-    o->next = NULL;
-}
-
-static __inline
-void
-remove_object(Objects *list, Object *o)
-{
-    Object *prev = o->prev;
-    Object *next = o->next;
-
-    if (list->first == o)
-        list->first = next;
-
-    if (list->last == o)
-        list->last = prev;
-
-    if (prev)
-        prev->next = next;
-
-    if (next)
-        next->prev = prev;
-}
-
 #define _PxHeap_HEAD_EXTRA                  \
     PyObject_HEAD                           \
     Heap       *sle_prev;                   \
@@ -237,8 +175,8 @@ remove_object(Objects *list, Object *o)
     size_t      size;                       \
     size_t      allocated;                  \
     size_t      remaining;                  \
-    short       group;                      \
-    short       id;                         \
+    int         group;                      \
+    int         id;                         \
     Context    *ctx;
 
 #define PxHeap_HEAD PxHeap heap_base;
@@ -249,7 +187,7 @@ typedef struct _PxHeapHead {
 
 typedef struct _PyParallelHeap {
     _PxHeap_HEAD_EXTRA
-    Objects   px_deallocs;
+    LIST_ENTRY px_deallocs;
     short     num_px_deallocs;
     short     px_deallocs_skipped;
     short     objects;
@@ -481,7 +419,7 @@ int _PyParallel_InitPxState(PyThreadState *tstate, int destroy);
     PyThreadState *tstate;          \
     PyThreadState *pstate;          \
     PTP_CALLBACK_INSTANCE instance; \
-    short heap_groups;              \
+    int heap_groups;                \
     int flags;
 
 #define PxContext_HEAD  PxContext ctx_base;
@@ -583,10 +521,6 @@ typedef struct _PyParallelContext {
 
     volatile long refcnt;
 
-    Objects objects;
-    Objects varobjs;
-    Objects events;
-
     size_t leaked_bytes;
     size_t leak_count;
     void *last_leak;
@@ -617,14 +551,15 @@ typedef struct _PyParallelIOContext {
 
 } PyParallelIOContext, IOContext;
 
-
 typedef struct _PxObject {
-    Context     *ctx;
-    size_t       size;
-    PyObject    *resized_to;
-    PyObject    *resized_from;
+    LIST_ENTRY   entry;
+    PyObject    *object;
+#if 0
     INIT_ONCE    persist;
+#ifdef Py_DEBUG
     size_t       signature;
+#endif
+#endif
 } PxObject;
 
 #define Px_CTXFLAGS(c)      (((Context *)c)->flags)
@@ -1465,7 +1400,7 @@ __inline
 PyObject *
 _read_lock(PyObject *obj)
 {
-    AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    //AcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
     return obj;
 }
 #define READ_LOCK(o) (_read_lock((PyObject *)o))
@@ -1474,7 +1409,7 @@ __inline
 PyObject *
 _read_unlock(PyObject *obj)
 {
-    ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    //ReleaseSRWLockShared((PSRWLOCK)&(obj->srw_lock));
     return obj;
 }
 #define READ_UNLOCK(o) (_read_unlock((PyObject *)o))
@@ -1483,7 +1418,8 @@ __inline
 char
 _try_read_lock(PyObject *obj)
 {
-    return TryAcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    //return TryAcquireSRWLockShared((PSRWLOCK)&(obj->srw_lock));
+    return 1;
 }
 #define TRY_READ_LOCK(o) (_try_read_lock((PyObject *)o))
 
@@ -1491,7 +1427,7 @@ __inline
 PyObject *
 _write_lock(PyObject *obj)
 {
-    AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    //AcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
     return obj;
 }
 #define WRITE_LOCK(o) (_write_lock((PyObject *)o))
@@ -1500,7 +1436,7 @@ __inline
 PyObject *
 _write_unlock(PyObject *obj)
 {
-    ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    //ReleaseSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
     return obj;
 }
 #define WRITE_UNLOCK(o) (_write_unlock((PyObject *)o))
@@ -1509,10 +1445,10 @@ __inline
 char
 _try_write_lock(PyObject *obj)
 {
-    return TryAcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    //return TryAcquireSRWLockExclusive((PSRWLOCK)&(obj->srw_lock));
+    return 1;
 }
 #define TRY_WRITE_LOCK(o) (_try_write_lock((PyObject *)o))
-
 
 #define DO_SEND_COMPLETE() do {                                          \
     PxSocket_HandleCallback(c, "send_complete", "(On)", s, s->send_id);  \
