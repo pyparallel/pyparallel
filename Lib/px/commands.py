@@ -662,20 +662,18 @@ class RateLimitServerTest(TCPServerCommand):
         ip = self.options.ip
         port = int(self.options.port)
 
-        miscdir = join_path(dirname(__file__), '../../examples/misc')
-        with chdir(miscdir):
-            import parallel
-            from parallel.test import ratelimit_test as rlt
+        import parallel
+        from parallel.test import ratelimit_test as rlt
 
-            server1 = parallel.server(ip, port)
-            self._out("Running server on %s port %d ..." % (ip, port))
-            protocol = rlt.RateLimitedServer
-            parallel.register(transport=server1, protocol=protocol)
+        server1 = parallel.server(ip, port)
+        self._out("Running server on %s port %d ..." % (ip, port))
+        protocol = rlt.RateLimitedServer
+        parallel.register(transport=server1, protocol=protocol)
 
-            try:
-                parallel.run()
-            except KeyboardInterrupt:
-                server1.shutdown()
+        try:
+            parallel.run()
+        except KeyboardInterrupt:
+            server1.shutdown()
 
 class ScreenshotServerTest(TCPServerCommand):
 
