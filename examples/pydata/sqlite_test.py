@@ -5,8 +5,19 @@ import json
 import ujson
 import sqlite3
 import pyodbc
+import datetime
 
 import parallel
+
+from parallel import (
+    timer,
+    gmtime,
+    sys_stats,
+    socket_stats,
+    memory_stats,
+    context_stats,
+    thread_seq_id,
+)
 
 from parallel.http.server import (
     text_response,
@@ -20,6 +31,22 @@ from parallel.http.server import (
 #===============================================================================
 # Classes
 #===============================================================================
+def update_sys_stats():
+    return ujson.dumps(sys_stats())
+
+def update_stats(t):
+    return ujson.dumps({
+        'count': t.count,
+        'timestamp': gmtime(),
+        'memory': dict(memory_stats()),
+        'contexts': dict(context_stats()),
+        'thread': thread_seq_id(),
+    }).encode('utf-8')
+
+t = timer(datetime.timedelta(milliseconds=1), 1000, update_stats)
+t.args = (t,)
+#t.start()
+
 class Foo(HttpServer):
     http11 = True
     dbname = 'geo.db'
@@ -28,6 +55,9 @@ class Foo(HttpServer):
 
     def json(self, transport, data):
         return { 'message': 'Hello, world!\n' }
+
+    def stats(self, transport, data):
+        return t.data or b''
 
     def countries(self, transport, data):
         db = sqlite3.connect(self.dbname)
