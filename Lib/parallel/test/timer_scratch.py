@@ -8,7 +8,7 @@ from parallel import (
     socket_stats,
     memory_stats,
     context_stats,
-    thread_seq_id,    
+    thread_seq_id,
 )
 
 from parallel.http.server import (
