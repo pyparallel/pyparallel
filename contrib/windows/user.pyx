@@ -1,6 +1,16 @@
 
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
+cdef extern from *:
+    void __debugbreak()
+    object PyErr_NoMemory()
+
+    ctypedef struct PyBytesObject:
+        Py_ssize_t ob_size
+        char ob_sval[1]
+
+    PyBytesObject* PyBytes_New(Py_ssize_t size)
+
 cdef extern from "../../Include/unicodeobject.h":
     char* PyUnicode_AsUTF8AndSize(object, Py_ssize_t *)
 
@@ -143,13 +153,33 @@ cdef class Screenshot:
             bytes_written[0] = self.dib_size
             return 0
 
-        RtlCopyMemory(buf[0], <PVOID>&self.header, header_size)
-        RtlCopyMemory(buf[header_size], <PVOID>&self.header, info_size)
-        RtlCopyMemory(buf[bitmap_offset], <PVOID>self.buf, self.bitmap_size)
+        RtlCopyMemory(<PVOID>&buf[0],
+                      <PVOID>&self.header,
+                      header_size)
+
+        RtlCopyMemory(<PVOID>&buf[header_size],
+                      <PVOID>&self.info,
+                      info_size)
+
+        RtlCopyMemory(<PVOID>&buf[bitmap_offset],
+                      <PVOID>self.buf,
+                      self.bitmap_size)
 
         assert(bitmap_offset + self.bitmap_size == self.dib_size)
         bytes_written[0] = self.dib_size
         return 1
+
+    cpdef object __bytes__(self):
+        cdef:
+            DWORD bytes_written
+            PyBytesObject *obj
+
+        obj = PyBytes_New(self.dib_size)
+        if not obj:
+            return PyErr_NoMemory()
+
+        self.copy(<PCHAR>&obj.ob_sval, self.dib_size, &bytes_written)
+        return <object>obj
 
     cpdef DWORD save(self, unicode filename):
         cdef:
