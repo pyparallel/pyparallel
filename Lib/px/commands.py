@@ -1035,28 +1035,32 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
             data = f.read()
 
         #dbg.set_trace()
+        data = data.replace(b'++Py_REFCNT(', b'Py_INCREF(') \
+                   .replace(b'--Py_REFCNT(', b'Py_DECREF(')
+
+        #data = data.replace(b' Py_INCREF(', b' Py_IncRef(') \
+        #           .replace(b' Py_DECREF(', b' Py_DecRef(')
+
+        #dbg.set_trace()
         ix = data.find(self.src)
         if ix == -1:
             ix = data.find(self.dst)
-            if ix != -1:
-                self._out("Already patched: %s" % path)
-                return
-            msg = (
-                "Failed to find target string in path %s "
-                "(try copying the backup %s back to %s)" % (
-                    path,
-                    backup,
-                    path,
+            if ix == -1:
+                msg = (
+                    "Failed to find target string in path %s "
+                    "(try copying the backup %s back to %s)" % (
+                        path,
+                        backup,
+                        path,
+                    )
                 )
-            )
-            raise CommandError(msg)
+                raise CommandError(msg)
 
         with open(backup, 'wb') as f:
             f.write(data)
 
         #dbg.set_trace()
         new_data = data.replace(self.src, self.dst)
-        assert(new_data != data)
 
         with open(path, 'wb') as f:
             f.write(new_data)

@@ -20175,9 +20175,9 @@ static void __pyx_tp_dealloc_6datrie_BaseTrie(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
+    Py_INCREF(o);
     __pyx_pw_6datrie_8BaseTrie_3__dealloc__(o);
-    --Py_REFCNT(o);
+    Py_DECREF(o);
     PyErr_Restore(etype, eval, etb);
   }
   Py_CLEAR(p->alpha_map);
@@ -20524,9 +20524,9 @@ static void __pyx_tp_dealloc_6datrie__TrieState(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
+    Py_INCREF(o);
     __pyx_pw_6datrie_10_TrieState_3__dealloc__(o);
-    --Py_REFCNT(o);
+    Py_DECREF(o);
     PyErr_Restore(etype, eval, etb);
   }
   Py_CLEAR(p->_trie);
@@ -20804,9 +20804,9 @@ static void __pyx_tp_dealloc_6datrie__TrieIterator(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
+    Py_INCREF(o);
     __pyx_pw_6datrie_13_TrieIterator_3__dealloc__(o);
-    --Py_REFCNT(o);
+    Py_DECREF(o);
     PyErr_Restore(etype, eval, etb);
   }
   Py_CLEAR(p->_root);
@@ -21068,9 +21068,9 @@ static void __pyx_tp_dealloc_6datrie_AlphaMap(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    ++Py_REFCNT(o);
+    Py_INCREF(o);
     __pyx_pw_6datrie_8AlphaMap_3__dealloc__(o);
-    --Py_REFCNT(o);
+    Py_DECREF(o);
     PyErr_Restore(etype, eval, etb);
   }
   (*Py_TYPE(o)->tp_free)(o);
