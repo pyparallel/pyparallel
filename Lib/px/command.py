@@ -16,7 +16,8 @@ class PxCommand(InvariantAwareCommand):
     pass
 
 class TCPServerCommand(PxCommand):
-    pass
+    server = None
+    protocol = None
 
 class TCPClientCommand(PxCommand):
     pass

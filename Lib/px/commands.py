@@ -486,8 +486,11 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
                 return
 
             self._out("Running server on %s port %d ..." % (ip, port))
-            server = parallel.server(ip, port)
-            parallel.register(transport=server, protocol=protocol)
+            self.protocol = protocol
+            self.server = parallel.server(ip, port)
+            parallel.register(transport=self.server, protocol=protocol)
+            if self.interactive:
+                return self
             try:
                 parallel.run()
             except KeyboardInterrupt:
@@ -694,15 +697,16 @@ class ScreenshotServerTest(TCPServerCommand):
         import parallel
         from parallel.test import screenshot_test as sst
 
-        server1 = parallel.server(ip, port)
+        self.server = parallel.server(ip, port)
         self._out("Running server on %s port %d ..." % (ip, port))
-        protocol = sst.ScreenshotServer
-        parallel.register(transport=server1, protocol=protocol)
-
+        self.protocol = sst.ScreenshotServer
+        parallel.register(transport=self.server, protocol=self.protocol)
+        if self.interactive:
+            return self
         try:
             parallel.run()
         except KeyboardInterrupt:
-            server1.shutdown()
+            self.server.shutdown()
 
 
 #===============================================================================
