@@ -1016,6 +1016,9 @@ class PyDirectory(Directory):
         if filename.startswith(('dbghelp', 'dbgeng')):
             return
 
+        if 'setuptools' in pdbpath:
+            return
+
         print "%s -> %s" % (filename, pdbname)
         if not exists(pdbpath):
             import pdb
@@ -1243,7 +1246,15 @@ def add_files(db):
                 continue
             if subdir is None:
                 abs_name = os.path.join(lib.absolute, name)
-                assert os.path.isfile(abs_name), abs_name
+                if not os.path.isfile(abs_name):
+                    if name in ('sqlite3', 'pxodbc'):
+                        # These are both git submodules so they won't have
+                        # manifest entries.
+                        continue
+                    import pdb
+                    dbg = pdb.Pdb()
+                    dbg.set_trace()
+                    print("Error! %s is not a file" % abs_name)
                 if name == 'README':
                     lib.add_file("README.txt", src="README")
                 else:

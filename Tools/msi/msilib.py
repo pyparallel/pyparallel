@@ -335,13 +335,22 @@ def add_tables(db, module):
         add_data(db, table, getattr(module, table))
 
 def make_id(str):
+    orig_str = str
     #str = str.replace(".", "_") # colons are allowed
     str = str.replace(" ", "_")
     str = str.replace("-", "_")
     str = str.replace("+", "_")
     if str[0] in string.digits:
         str = "_"+str
-    assert re.match("^[A-Za-z_][A-Za-z0-9_.]*$", str), "FILE"+str
+    if not re.match("^[A-Za-z_][A-Za-z0-9_.]*$", str):
+        print("make_id regex failed; orig_str: '%s', str: '%s'" % (
+            orig_str,
+            str,
+        ))
+        import pdb
+        dbg = pdb.Pdb()
+        dbg.set_trace()
+        assert re.match("^[A-Za-z_][A-Za-z0-9_.]*$", str), "FILE"+str
     return str
 
 def gen_uuid():
