@@ -1,8 +1,16 @@
 diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
-index 8b5c42f..9af3e3e 100644
+index 8b5c42f..cbe80d2 100644
 --- a/PCbuild/pythoncore.vcxproj
 +++ b/PCbuild/pythoncore.vcxproj
-@@ -158,6 +158,7 @@
+@@ -123,6 +123,7 @@
+     <Import Project="pyproject.props" />
+     <Import Project="x64.props" />
+   </ImportGroup>
++  <Import Project="cython.props" />
+   <PropertyGroup Label="UserMacros" />
+   <PropertyGroup>
+     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+@@ -158,6 +159,7 @@
      <TargetName Condition="'$(Configuration)|$(Platform)'=='PGInstrument|x64'">$(PyDllName)</TargetName>
      <TargetName Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'">$(PyDllName)</TargetName>
      <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PyDllName)</TargetName>
@@ -10,7 +18,7 @@ index 8b5c42f..9af3e3e 100644
    </PropertyGroup>
    <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
      <ClCompile>
-@@ -165,6 +166,8 @@
+@@ -165,6 +167,8 @@
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -19,7 +27,7 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -201,6 +204,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -201,6 +205,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -28,7 +36,15 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -236,6 +241,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -212,6 +218,7 @@ IF %ERRORLEVEL% NEQ 0 (
+       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
+     </PreLinkEvent>
+     <Link>
++      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
+       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+       <BaseAddress>0x1e000000</BaseAddress>
+@@ -236,6 +243,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -37,7 +53,7 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -274,6 +281,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -274,6 +283,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
@@ -46,7 +62,15 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -306,6 +315,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -285,6 +296,7 @@ IF %ERRORLEVEL% NEQ 0 (
+       <Command>"$(SolutionDir)make_buildinfo.exe" Debug "$(IntDir)"</Command>
+     </PreLinkEvent>
+     <Link>
++      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
+       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+       <BaseAddress>0x1e000000</BaseAddress>
+@@ -306,6 +318,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -55,7 +79,7 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -342,6 +353,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -342,6 +356,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -64,7 +88,15 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -375,6 +388,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -353,6 +369,7 @@ IF %ERRORLEVEL% NEQ 0 (
+       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
+     </PreLinkEvent>
+     <Link>
++      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
+       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+       <BaseAddress>0x1e000000</BaseAddress>
+@@ -375,6 +392,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -73,7 +105,7 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -411,6 +426,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -411,6 +430,8 @@ IF %ERRORLEVEL% NEQ 0 (
        <AdditionalIncludeDirectories>..\Python;..\Modules\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
        <PreprocessorDefinitions>_USRDLL;Py_BUILD_CORE;Py_ENABLE_SHARED;WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
        <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -82,7 +114,34 @@ index 8b5c42f..9af3e3e 100644
      </ClCompile>
      <ResourceCompile>
        <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-@@ -565,6 +582,17 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -422,6 +443,7 @@ IF %ERRORLEVEL% NEQ 0 (
+       <Command>"$(SolutionDir)make_buildinfo.exe" Release "$(IntDir)"</Command>
+     </PreLinkEvent>
+     <Link>
++      <AdditionalLibraryDirectories>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</AdditionalLibraryDirectories>
+       <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
+       <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+       <BaseAddress>0x1e000000</BaseAddress>
+@@ -439,6 +461,18 @@ IF %ERRORLEVEL% NEQ 0 (
+     </PreBuildEvent>
+   </ItemDefinitionGroup>
+   <ItemGroup>
++    <CythonFile Include="..\contrib\windows\avrt.pyx" />
++    <CythonFile Include="..\contrib\windows\adv.pyx" />
++    <CythonFile Include="..\contrib\windows\user.pyx" />
++    <CythonFile Include="..\contrib\windows\rtl.pyx" />
++    <CythonFile Include="..\contrib\windows\processthreads.pyx" />
++    <CythonFile Include="..\contrib\windows\error.pyx" />
++    <CythonFile Include="..\contrib\windows\base.pyx" />
++  </ItemGroup>
++  <ItemGroup>
++    <CythonCppFile Include="..\contrib\windows\gdiplus.pyx" />
++  </ItemGroup>
++  <ItemGroup>
+     <ClInclude Include="..\Include\abstract.h" />
+     <ClInclude Include="..\Include\accu.h" />
+     <ClInclude Include="..\Include\asdl.h" />
+@@ -565,8 +599,36 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClInclude Include="..\Python\condvar.h" />
      <ClInclude Include="..\Python\importdl.h" />
      <ClInclude Include="..\Python\thread_nt.h" />
@@ -93,22 +152,42 @@ index 8b5c42f..9af3e3e 100644
 +    <ClInclude Include="..\Include\pyparallel_http.h" />
 +    <ClInclude Include="..\Include\pxlist.h" />
 +    <ClInclude Include="..\Include\pxtimerobject.h" />
++    <ClInclude Include="..\Include\pxthreadobject.h" />
 +    <ClInclude Include="..\Include\statics.h" />
 +    <ClInclude Include="..\Include\ultrajson.h" />
 +    <ClInclude Include="..\Python\ujson_py_defines.h" />
 +    <ClInclude Include="..\Python\ujson_version.h" />
++    <ClInclude Include="..\contrib\windows\processthreads.h" />
++    <ClInclude Include="..\contrib\windows\error.h" />
++    <ClInclude Include="..\contrib\windows\_gdiplus.h" />
++    <ClInclude Include="..\contrib\windows\_adv.h" />
++    <ClInclude Include="..\contrib\windows\_avrt.h" />
    </ItemGroup>
    <ItemGroup>
++    <ClCompile Include="..\contrib\windows\_loader.c" />
++    <ClCompile Include="..\contrib\windows\_gdiplus.cpp" />
++    <ClCompile Include="..\contrib\windows\_avrt.c" />
++    <ClCompile Include="..\contrib\windows\gdiplus.cpp" />
++    <ClCompile Include="..\contrib\windows\base.c" />
++    <ClCompile Include="..\contrib\windows\error.c" />
++    <ClCompile Include="..\contrib\windows\processthreads.c" />
++    <ClCompile Include="..\contrib\windows\rtl.c" />
++    <ClCompile Include="..\contrib\windows\user.c" />
++    <ClCompile Include="..\contrib\windows\adv.c" />
++    <ClCompile Include="..\contrib\windows\avrt.c" />
      <ClCompile Include="..\Modules\_bisectmodule.c" />
-@@ -674,6 +702,7 @@ IF %ERRORLEVEL% NEQ 0 (
+     <ClCompile Include="..\Modules\_codecsmodule.c" />
+     <ClCompile Include="..\Modules\_collectionsmodule.c" />
+@@ -674,6 +736,8 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClCompile Include="..\Objects\unicodectype.c" />
      <ClCompile Include="..\Objects\unicodeobject.c" />
      <ClCompile Include="..\Objects\weakrefobject.c" />
 +    <ClCompile Include="..\Objects\pxtimerobject.c" />
++    <ClCompile Include="..\Objects\pxthreadobject.c" />
      <ClCompile Include="..\Parser\acceler.c" />
      <ClCompile Include="..\Parser\bitset.c" />
      <ClCompile Include="..\Parser\firstsets.c" />
-@@ -736,6 +765,16 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -736,6 +800,16 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClCompile Include="..\Python\sysmodule.c" />
      <ClCompile Include="..\Python\thread.c" />
      <ClCompile Include="..\Python\traceback.c" />

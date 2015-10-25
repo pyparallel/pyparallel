@@ -1,5 +1,5 @@
 diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
-index 0300753..ccdc22b 100644
+index 0300753..dbddf5d 100644
 --- a/Objects/unicodeobject.c
 +++ b/Objects/unicodeobject.c
 @@ -42,6 +42,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
@@ -55,12 +55,12 @@ index 0300753..ccdc22b 100644
 +        if (Py_ISPY(unicode))
 +            return 0;
 +        else {
-+            assert(Px_TEST_OBJ(unicode));
++            //assert(Px_TEST_OBJ(unicode));
 +            return 1;
 +        }
 +    } else {
 +        if (!Py_ISPY(unicode)) {
-+            assert(Px_TEST_OBJ(unicode));
++            //assert(Px_TEST_OBJ(unicode));
 +            return 0;
 +        }
 +    }

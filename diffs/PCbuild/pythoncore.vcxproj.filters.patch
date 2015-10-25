@@ -1,8 +1,27 @@
 diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.filters
-index 5647feb..7732f58 100644
+index 5647feb..77035c9 100644
 --- a/PCbuild/pythoncore.vcxproj.filters
 +++ b/PCbuild/pythoncore.vcxproj.filters
-@@ -408,9 +408,42 @@
+@@ -31,6 +31,18 @@
+     <Filter Include="Resource Files">
+       <UniqueIdentifier>{c3e03a5c-56c7-45fd-8543-e5d2326b907d}</UniqueIdentifier>
+     </Filter>
++    <Filter Include="Windows">
++      <UniqueIdentifier>{93b1c18f-8790-47c8-9aa5-a624e02fbee6}</UniqueIdentifier>
++    </Filter>
++    <Filter Include="Windows\Cython">
++      <UniqueIdentifier>{8a8876c5-a1d4-4667-b627-9e68e9864146}</UniqueIdentifier>
++    </Filter>
++    <Filter Include="Windows\Generated">
++      <UniqueIdentifier>{4969894b-4ea1-4ec6-ae6a-d975ee35f289}</UniqueIdentifier>
++    </Filter>
++    <Filter Include="Windows\Cython++">
++      <UniqueIdentifier>{9b82735b-f99c-4c4a-910f-e2441d50f802}</UniqueIdentifier>
++    </Filter>
+   </ItemGroup>
+   <ItemGroup>
+     <ClInclude Include="..\Include\abstract.h">
+@@ -408,9 +420,63 @@
      <ClInclude Include="..\Python\ceval_gil.h">
        <Filter>Python</Filter>
      </ClInclude>
@@ -19,6 +38,9 @@ index 5647feb..7732f58 100644
 +      <Filter>Include</Filter>
 +    </ClInclude>
 +    <ClInclude Include="..\Include\pxtimerobject.h">
++      <Filter>Include</Filter>
++    </ClInclude>
++    <ClInclude Include="..\Include\pxthreadobject.h">
 +      <Filter>Include</Filter>
 +    </ClInclude>
      <ClInclude Include="..\Include\namespaceobject.h">
@@ -42,20 +64,41 @@ index 5647feb..7732f58 100644
 +    <ClInclude Include="..\Python\ujson_py_defines.h">
 +      <Filter>Include</Filter>
 +    </ClInclude>
++    <ClInclude Include="..\contrib\windows\_wdm.h">
++      <Filter>Windows</Filter>
++    </ClInclude>
++    <ClInclude Include="..\contrib\windows\_adv.h">
++      <Filter>Windows</Filter>
++    </ClInclude>
++    <ClInclude Include="..\contrib\windows\_avrt.h">
++      <Filter>Windows</Filter>
++    </ClInclude>
++    <ClInclude Include="..\contrib\windows\_gdiplus.h">
++      <Filter>Windows</Filter>
++    </ClInclude>
++    <ClInclude Include="..\contrib\windows\processthreads.h">
++      <Filter>Windows\Generated</Filter>
++    </ClInclude>
++    <ClInclude Include="..\contrib\windows\error.h">
++      <Filter>Windows\Generated</Filter>
++    </ClInclude>
    </ItemGroup>
    <ItemGroup>
      <ClCompile Include="..\Modules\_bisectmodule.c">
-@@ -728,6 +761,9 @@
+@@ -728,6 +794,12 @@
      <ClCompile Include="..\Objects\weakrefobject.c">
        <Filter>Objects</Filter>
      </ClCompile>
 +    <ClCompile Include="..\Objects\pxtimerobject.c">
 +      <Filter>Objects</Filter>
 +    </ClCompile>
++    <ClCompile Include="..\Objects\pxthreadobject.c">
++      <Filter>Objects</Filter>
++    </ClCompile>
      <ClCompile Include="..\Parser\acceler.c">
        <Filter>Parser</Filter>
      </ClCompile>
-@@ -917,9 +953,39 @@
+@@ -917,13 +989,104 @@
      <ClCompile Include="..\Modules\_winapi.c">
        <Filter>PC</Filter>
      </ClCompile>
@@ -92,6 +135,71 @@ index 5647feb..7732f58 100644
 +    <ClCompile Include="..\Python\ultrajsonenc.c">
 +      <Filter>Python</Filter>
 +    </ClCompile>
++    <ClCompile Include="..\contrib\windows\avrt.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\adv.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\base.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\_loader.c">
++      <Filter>Windows</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\_gdiplus.cpp">
++      <Filter>Windows</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\_avrt.c">
++      <Filter>Windows</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\gdiplus.cpp">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\error.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\rtl.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\user.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\processthreads.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
    </ItemGroup>
    <ItemGroup>
      <ResourceCompile Include="..\PC\python_nt.rc">
+       <Filter>Resource Files</Filter>
+     </ResourceCompile>
+   </ItemGroup>
++  <ItemGroup>
++    <CythonFile Include="..\contrib\windows\avrt.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\adv.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\base.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\user.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\error.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\processthreads.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\rtl.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++  </ItemGroup>
++  <ItemGroup>
++    <CythonCppFile Include="..\contrib\windows\gdiplus.pyx">
++      <Filter>Windows\Cython++</Filter>
++    </CythonCppFile>
++  </ItemGroup>
+ </Project>

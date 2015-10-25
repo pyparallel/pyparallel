@@ -1,13 +1,14 @@
 diff --git a/Include/bytesobject.h b/Include/bytesobject.h
-index d7c7ffd..bb206cd 100644
+index d7c7ffd..6e81714 100644
 --- a/Include/bytesobject.h
 +++ b/Include/bytesobject.h
-@@ -67,6 +67,9 @@ PyAPI_FUNC(PyObject *) PyBytes_DecodeEscape(const char *, Py_ssize_t,
+@@ -67,6 +67,10 @@ PyAPI_FUNC(PyObject *) PyBytes_DecodeEscape(const char *, Py_ssize_t,
  						   const char *, Py_ssize_t,
  						   const char *);
  
 +PyAPI_FUNC(PyObject *) PyBytes_CopyObject(PyObject *b);
 +PyAPI_FUNC(PyBytesObject *) PyBytes_Copy(PyBytesObject *b);
++PyAPI_FUNC(PyBytesObject *) PyBytes_New(Py_ssize_t size);
 +
  /* Macro, trading safety for speed */
  #ifndef Py_LIMITED_API

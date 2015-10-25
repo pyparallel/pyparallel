@@ -1,5 +1,5 @@
 diff --git a/PCbuild/pcbuild.sln b/PCbuild/pcbuild.sln
-index d6a022f..1c4b7b9 100644
+index d6a022f..d2c30a8 100644
 --- a/PCbuild/pcbuild.sln
 +++ b/PCbuild/pcbuild.sln
 @@ -74,10 +74,20 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pywlauncher", "pywlauncher.

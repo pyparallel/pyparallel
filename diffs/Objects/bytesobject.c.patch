@@ -1,5 +1,5 @@
 diff --git a/Objects/bytesobject.c b/Objects/bytesobject.c
-index 9dcb74e..1afba04 100644
+index 9dcb74e..a9f7b3d 100644
 --- a/Objects/bytesobject.c
 +++ b/Objects/bytesobject.c
 @@ -26,7 +26,7 @@ _getbuffer(PyObject *obj, Py_buffer *view)
@@ -22,7 +22,7 @@ index 9dcb74e..1afba04 100644
      /* share short strings */
      if (size == 0) {
          nullstring = op;
-@@ -111,6 +115,7 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
+@@ -111,9 +115,33 @@ PyBytes_FromStringAndSize(const char *str, Py_ssize_t size)
          characters[*str & UCHAR_MAX] = op;
          Py_INCREF(op);
      }
@@ -30,7 +30,33 @@ index 9dcb74e..1afba04 100644
      return (PyObject *) op;
  }
  
-@@ -149,6 +154,10 @@ PyBytes_FromString(const char *str)
++PyBytesObject *
++PyBytes_New(Py_ssize_t size)
++{
++    PyBytesObject *o;
++    if (size < 0) {
++        PyErr_SetString(PyExc_SystemError,
++            "Negative size passed to PyBytes_New");
++        return NULL;
++    }
++
++    if (size > PY_SSIZE_T_MAX - PyBytesObject_SIZE) {
++        PyErr_SetString(PyExc_OverflowError,
++                        "byte string is too large");
++        return NULL;
++    }
++
++    o = PyObject_NEW_VAR(PyBytesObject, &PyBytes_Type, size);
++    if (!o)
++        return NULL;
++
++    return o;
++}
++
+ PyObject *
+ PyBytes_FromString(const char *str)
+ {
+@@ -149,6 +177,10 @@ PyBytes_FromString(const char *str)
      PyObject_INIT_VAR(op, &PyBytes_Type, size);
      op->ob_shash = -1;
      Py_MEMCPY(op->ob_sval, str, size+1);
@@ -41,7 +67,7 @@ index 9dcb74e..1afba04 100644
      /* share short strings */
      if (size == 0) {
          nullstring = op;
-@@ -157,6 +166,7 @@ PyBytes_FromString(const char *str)
+@@ -157,6 +189,7 @@ PyBytes_FromString(const char *str)
          characters[*str & UCHAR_MAX] = op;
          Py_INCREF(op);
      }
@@ -49,7 +75,7 @@ index 9dcb74e..1afba04 100644
      return (PyObject *) op;
  }
  
-@@ -2835,8 +2845,46 @@ PyTypeObject PyBytes_Type = {
+@@ -2835,8 +2868,46 @@ PyTypeObject PyBytes_Type = {
      0,                                          /* tp_alloc */
      bytes_new,                                  /* tp_new */
      PyObject_Del,                               /* tp_free */
@@ -96,7 +122,7 @@ index 9dcb74e..1afba04 100644
  void
  PyBytes_Concat(register PyObject **pv, register PyObject *w)
  {
-@@ -2887,6 +2935,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
+@@ -2887,6 +2958,8 @@ _PyBytes_Resize(PyObject **pv, Py_ssize_t newsize)
          PyErr_BadInternalCall();
          return -1;
      }
@@ -105,7 +131,7 @@ index 9dcb74e..1afba04 100644
      /* XXX UNREF/NEWREF interface should be more symmetrical */
      _Py_DEC_REFTOTAL;
      _Py_ForgetReference(v);
-@@ -2909,6 +2959,8 @@ void
+@@ -2909,6 +2982,8 @@ void
  PyBytes_Fini(void)
  {
      int i;
