@@ -280,7 +280,7 @@ PxTimer_IsSet(PxTimerObject *t)
  * The pxtimer_init() method is responsible for translating the Python
  * construction to the relevant duetime/period/window parts. */
 PyObject *
-pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
+pxtimer_alloc(PyTypeObject *subtype, Py_ssize_t nitems)
 {
     Context *c, *x = PxContext_GetActive();
     PxState *px;
@@ -290,7 +290,7 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
     if (nitems != 0)
         __debugbreak();
 
-    if (type != &PxTimer_Type)
+    if (subtype != &PxTimer_Type)
         __debugbreak();
 
     c = PxContext_New(0);
@@ -323,7 +323,7 @@ pxtimer_alloc(PyTypeObject *type, Py_ssize_t nitems)
     c->io_obj = (PyObject *)t;
     c->io_type = Px_IOTYPE_TIMER;
 
-    if (!PxContext_InitObject(c, c->io_obj, type, 0))
+    if (!PxContext_InitObject(c, c->io_obj, subtype, 0))
         PxTimer_FATAL();
 
     t->last_ctx_heap = c->h;
@@ -374,16 +374,14 @@ end:
 }
 
 PyObject *
-pxtimer_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+pxtimer_new(PyTypeObject *subtype, PyObject *args, PyObject *kwds)
 {
     PxTimerObject *t;
 
-    t = (PxTimerObject *)type->tp_alloc(type, 0);
+    t = (PxTimerObject *)pxtimer_alloc(subtype, 0);
     if (!t)
         return NULL;
 
-    /* Do we need to do anything else here?  Seems like we could let the
-     * generic PyType_GenericNew() handle all of this functionality. */
     return (PyObject *)t;
 }
 
@@ -862,8 +860,7 @@ PyTypeObject PxTimer_Type = {
     0,                                          /* tp_getattro */
     0,                                          /* tp_setattro */
     0,                                          /* tp_as_buffer */
-    Py_TPFLAGS_DEFAULT      |
-        Py_TPFLAGS_BASETYPE,                    /* tp_flags */
+    Py_TPFLAGS_DEFAULT,                         /* tp_flags */
     "Parallel Timer Object",                    /* tp_doc */
     0,                                          /* tp_traverse */
     0,                                          /* tp_clear */
