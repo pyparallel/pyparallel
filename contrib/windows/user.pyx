@@ -37,6 +37,11 @@ cdef class Screenshot:
         HDC memory
 
     def __cinit__(self):
+        cdef:
+            int width = GetSystemMetrics(SM_CXSCREEN)
+            int height = GetSystemMetrics(SM_CYSCREEN)
+            WORD bit_count = 32
+
         SecureZeroMemory(&self.info, sizeof(self.info))
         SecureZeroMemory(&self.header, sizeof(self.header))
         SecureZeroMemory(&self.bitmap, sizeof(self.bitmap))
@@ -53,54 +58,19 @@ cdef class Screenshot:
         if not self.memory:
             raise RuntimeError("CreateCompatibleDC")
 
-        cdef int width = GetSystemMetrics(SM_CXSCREEN)
-        cdef int height = GetSystemMetrics(SM_CYSCREEN)
         self.handle = CreateCompatibleBitmap(self.screen, width, height)
         if not self.handle:
             raise RuntimeError("CreateCompatibleBitmap")
 
-        SelectObject(self.memory, self.handle)
-
-        cdef BOOL result
-        result = BitBlt(self.memory,
-                        0, 0,
-                        width,
-                        height,
-                        self.screen,
-                        0, 0,
-                        SRCCOPY)
-        if not result:
-            raise RuntimeError("BitBlt")
-
-        GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)
-
-        cdef WORD bit_count = 32
-
         self.info.biSize = sizeof(BITMAPINFOHEADER)
-        self.info.biWidth = self.bitmap.bmWidth
-        self.info.biHeight = self.bitmap.bmHeight
+        self.info.biWidth = width
+        self.info.biHeight = height
         self.info.biPlanes = 1
         self.info.biBitCount = bit_count
         self.info.biCompression = BI_RGB
 
-        assert(width == self.info.biWidth)
-        assert(height == self.info.biHeight)
-
         self.bitmap_size = (((width * bit_count + 31) // 32) * 4 * height)
         self.buf = <PCHAR>PyMem_Malloc(self.bitmap_size)
-
-        cdef DWORD retval
-        retval = GetDIBits(self.memory,
-                           self.handle,
-                           0,
-                           <UINT>height,
-                           <LPVOID>self.buf,
-                           <LPBITMAPINFO>&self.info,
-                           DIB_RGB_COLORS)
-        if not retval:
-            raise RuntimeError("GetDIBits")
-        if retval == ERROR_INVALID_PARAMETER:
-            raise RuntimeError("GetDIBits: Invalid Parameter")
 
         self.dib_size = (
             self.bitmap_size +
@@ -117,6 +87,47 @@ cdef class Screenshot:
         self.header.bfType = 0x4d42 # BM
         self.header.bfReserved1 = 0
         self.header.bfReserved2 = 0
+
+        self.refresh()
+
+    property width:
+        def __get__(self):
+            return self.info.biWidth
+
+    property height:
+        def __get__(self):
+            return self.info.biHeight
+
+    cpdef void refresh(self):
+        cdef:
+            BOOL result
+            DWORD retval
+
+        SelectObject(self.memory, self.handle)
+
+        result = BitBlt(self.memory,
+                        0, 0,
+                        self.width,
+                        self.height,
+                        self.screen,
+                        0, 0,
+                        SRCCOPY)
+        if not result:
+            raise RuntimeError("BitBlt")
+
+        GetObject(self.handle, sizeof(BITMAP), <LPVOID>&self.bitmap)
+
+        retval = GetDIBits(self.memory,
+                           self.handle,
+                           0,
+                           <UINT>self.height,
+                           <LPVOID>self.buf,
+                           <LPBITMAPINFO>&self.info,
+                           DIB_RGB_COLORS)
+        if not retval:
+            raise RuntimeError("GetDIBits")
+        if retval == ERROR_INVALID_PARAMETER:
+            raise RuntimeError("GetDIBits: Invalid Parameter")
 
     def __len__(self):
         return self.dib_size

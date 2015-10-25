@@ -42,10 +42,10 @@ save_bitmap(screenshot.handle, "screenshot.jpg", quality=100)
 save_bitmap(screenshot.handle, "screenshot.png", quality=100)
 
 def update_screenshot():
-    screenshot = Screenshot()
+    screenshot.refresh()
     return bytes(screenshot)
 
-t = timer(datetime.timedelta(milliseconds=15), 15, update_screenshot)
+t = timer(datetime.timedelta(milliseconds=15), 200, update_screenshot)
 t.start()
 
 #===============================================================================
