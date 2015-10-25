@@ -1019,10 +1019,20 @@ class PyDirectory(Directory):
         if 'setuptools' in pdbpath:
             return
 
+        if 'python_icon' in pdbpath:
+            return
+
         print "%s -> %s" % (filename, pdbname)
         if not exists(pdbpath):
             import pdb
             dbg = pdb.Pdb()
+            print("If you see this breakpoint, an .exe or .dll file has been "
+                  "found, but no corresponding .pdb file can be found; this "
+                  "could be an error, and the .pdb should exist, or, as in "
+                  "most cases, there's no corresponding .pdb, so you can just "
+                  "edit this file (Tools/msi.py) and add an exclusion stmt "
+                  "above (many examples ~10 lines up).\n\n"
+                  "Next steps: try `print pdbpath`")
             dbg.set_trace()
 
         Directory.add_file(self, pdbname, **kw)
