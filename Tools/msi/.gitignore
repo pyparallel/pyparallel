@@ -3,3 +3,7 @@ msisupport.exp
 LICENSE.txt
 manifest.txt
 *.zip
+merge.log
+msisupport.dll
+msisupport.lib
+msisupport.obj
