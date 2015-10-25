@@ -39,6 +39,7 @@ PCbuild/Win32-temp-*
 PCbuild/amd64/
 PCbuild/*.user
 PCbuild/*.suo
+PCbuild/Win32-pgo*
 .purify
 Parser/pgen
 __pycache__
