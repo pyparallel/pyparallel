@@ -181,6 +181,8 @@ class Command(ImplicitContextSensitiveObject):
 
     def __init__(self, istream=None, ostream=None, estream=None):
 
+        self.interactive = False
+
         self.istream = istream or DummyStream
         self.ostream = ostream or DummyStream
         self.estream = estream or DummyStream
