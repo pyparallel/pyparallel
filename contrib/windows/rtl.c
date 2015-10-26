@@ -447,13 +447,14 @@ static const char *__pyx_filename;
 
 static const char *__pyx_f[] = {
   "rtl.pyx",
+  "rtl.pxd",
 };
 
 /*--- Type declarations ---*/
 struct __pyx_obj_3rtl_Bitmap;
 
-/* "rtl.pyx":7
- * from rtl cimport *
+/* "rtl.pxd":126
+ * 
  * 
  * cdef class Bitmap:             # <<<<<<<<<<<<<<
  *     cdef:
@@ -467,6 +468,14 @@ struct __pyx_obj_3rtl_Bitmap {
 };
 
 
+
+/* "rtl.pyx":7
+ * from rtl cimport *
+ * 
+ * cdef class Bitmap:             # <<<<<<<<<<<<<<
+ *     def __cinit__(self, ULONG number_of_bits):
+ *         cdef:
+ */
 
 struct __pyx_vtabstruct_3rtl_Bitmap {
   ULONG (*num_clear_bits)(struct __pyx_obj_3rtl_Bitmap *, int __pyx_skip_dispatch);
@@ -751,9 +760,9 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_14allocated_size___get__(struct __pyx_obj
 static int __pyx_pf_3rtl_6Bitmap_14allocated_size_2__set__(struct __pyx_obj_3rtl_Bitmap *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static PyObject *__pyx_tp_new_3rtl_Bitmap(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 
-/* "rtl.pyx":12
- *         public ULONG allocated_size
+/* "rtl.pyx":8
  * 
+ * cdef class Bitmap:
  *     def __cinit__(self, ULONG number_of_bits):             # <<<<<<<<<<<<<<
  *         cdef:
  *             PULONG buf
@@ -787,18 +796,18 @@ static int __pyx_pw_3rtl_6Bitmap_1__cinit__(PyObject *__pyx_v_self, PyObject *__
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 1) {
       goto __pyx_L5_argtuple_error;
     } else {
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
     }
-    __pyx_v_number_of_bits = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_of_bits == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_of_bits = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_of_bits == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -823,7 +832,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__cinit__", 0);
 
-  /* "rtl.pyx":18
+  /* "rtl.pyx":14
  *             ULONG allocated_size
  * 
  *         num_bytes = number_of_bits >> 3             # <<<<<<<<<<<<<<
@@ -832,7 +841,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   __pyx_v_num_bytes = (__pyx_v_number_of_bits >> 3);
 
-  /* "rtl.pyx":19
+  /* "rtl.pyx":15
  * 
  *         num_bytes = number_of_bits >> 3
  *         allocated_size = (num_bytes + sizeof(ULONG)) & ~(sizeof(ULONG)-1)             # <<<<<<<<<<<<<<
@@ -841,7 +850,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   __pyx_v_allocated_size = ((__pyx_v_num_bytes + (sizeof(ULONG))) & (~((sizeof(ULONG)) - 1)));
 
-  /* "rtl.pyx":20
+  /* "rtl.pyx":16
  *         num_bytes = number_of_bits >> 3
  *         allocated_size = (num_bytes + sizeof(ULONG)) & ~(sizeof(ULONG)-1)
  *         buf = <PULONG>PyMem_Malloc(allocated_size)             # <<<<<<<<<<<<<<
@@ -850,7 +859,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   __pyx_v_buf = ((PULONG)PyMem_Malloc(__pyx_v_allocated_size));
 
-  /* "rtl.pyx":21
+  /* "rtl.pyx":17
  *         allocated_size = (num_bytes + sizeof(ULONG)) & ~(sizeof(ULONG)-1)
  *         buf = <PULONG>PyMem_Malloc(allocated_size)
  *         if not buf:             # <<<<<<<<<<<<<<
@@ -860,16 +869,16 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
   __pyx_t_1 = ((!(__pyx_v_buf != 0)) != 0);
   if (__pyx_t_1) {
 
-    /* "rtl.pyx":22
+    /* "rtl.pyx":18
  *         buf = <PULONG>PyMem_Malloc(allocated_size)
  *         if not buf:
  *             raise MemoryError()             # <<<<<<<<<<<<<<
  * 
  *         self.allocated_size = allocated_size
  */
-    PyErr_NoMemory(); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    PyErr_NoMemory(); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
 
-    /* "rtl.pyx":21
+    /* "rtl.pyx":17
  *         allocated_size = (num_bytes + sizeof(ULONG)) & ~(sizeof(ULONG)-1)
  *         buf = <PULONG>PyMem_Malloc(allocated_size)
  *         if not buf:             # <<<<<<<<<<<<<<
@@ -878,7 +887,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   }
 
-  /* "rtl.pyx":24
+  /* "rtl.pyx":20
  *             raise MemoryError()
  * 
  *         self.allocated_size = allocated_size             # <<<<<<<<<<<<<<
@@ -887,7 +896,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   __pyx_v_self->allocated_size = __pyx_v_allocated_size;
 
-  /* "rtl.pyx":25
+  /* "rtl.pyx":21
  * 
  *         self.allocated_size = allocated_size
  *         RtlInitializeBitMap(&self.bitmap, buf, number_of_bits)             # <<<<<<<<<<<<<<
@@ -896,7 +905,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   RtlInitializeBitMap((&__pyx_v_self->bitmap), __pyx_v_buf, __pyx_v_number_of_bits);
 
-  /* "rtl.pyx":26
+  /* "rtl.pyx":22
  *         self.allocated_size = allocated_size
  *         RtlInitializeBitMap(&self.bitmap, buf, number_of_bits)
  *         RtlClearAllBits(&self.bitmap)             # <<<<<<<<<<<<<<
@@ -905,9 +914,9 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   RtlClearAllBits((&__pyx_v_self->bitmap));
 
-  /* "rtl.pyx":12
- *         public ULONG allocated_size
+  /* "rtl.pyx":8
  * 
+ * cdef class Bitmap:
  *     def __cinit__(self, ULONG number_of_bits):             # <<<<<<<<<<<<<<
  *         cdef:
  *             PULONG buf
@@ -924,7 +933,7 @@ static int __pyx_pf_3rtl_6Bitmap___cinit__(struct __pyx_obj_3rtl_Bitmap *__pyx_v
   return __pyx_r;
 }
 
-/* "rtl.pyx":28
+/* "rtl.pyx":24
  *         RtlClearAllBits(&self.bitmap)
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -947,7 +956,7 @@ static void __pyx_pf_3rtl_6Bitmap_2__dealloc__(struct __pyx_obj_3rtl_Bitmap *__p
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__dealloc__", 0);
 
-  /* "rtl.pyx":29
+  /* "rtl.pyx":25
  * 
  *     def __dealloc__(self):
  *         PyMem_Free(self.bitmap.Buffer)             # <<<<<<<<<<<<<<
@@ -956,7 +965,7 @@ static void __pyx_pf_3rtl_6Bitmap_2__dealloc__(struct __pyx_obj_3rtl_Bitmap *__p
  */
   PyMem_Free(__pyx_v_self->bitmap.Buffer);
 
-  /* "rtl.pyx":28
+  /* "rtl.pyx":24
  *         RtlClearAllBits(&self.bitmap)
  * 
  *     def __dealloc__(self):             # <<<<<<<<<<<<<<
@@ -968,7 +977,7 @@ static void __pyx_pf_3rtl_6Bitmap_2__dealloc__(struct __pyx_obj_3rtl_Bitmap *__p
   __Pyx_RefNannyFinishContext();
 }
 
-/* "rtl.pyx":31
+/* "rtl.pyx":27
  *         PyMem_Free(self.bitmap.Buffer)
  * 
  *     cpdef ULONG num_clear_bits(self):             # <<<<<<<<<<<<<<
@@ -993,7 +1002,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_clear_bits(struct __pyx_obj_3rtl_Bitmap *_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_num_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_num_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_5num_clear_bits)) {
       __Pyx_INCREF(__pyx_t_1);
@@ -1008,14 +1017,14 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_clear_bits(struct __pyx_obj_3rtl_Bitmap *_
         }
       }
       if (__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       } else {
-        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_5 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_5 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_5 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_5 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_5;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1024,7 +1033,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_clear_bits(struct __pyx_obj_3rtl_Bitmap *_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":32
+  /* "rtl.pyx":28
  * 
  *     cpdef ULONG num_clear_bits(self):
  *         return RtlNumberOfClearBits(&self.bitmap)             # <<<<<<<<<<<<<<
@@ -1034,7 +1043,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_clear_bits(struct __pyx_obj_3rtl_Bitmap *_
   __pyx_r = RtlNumberOfClearBits((&__pyx_v_self->bitmap));
   goto __pyx_L0;
 
-  /* "rtl.pyx":31
+  /* "rtl.pyx":27
  *         PyMem_Free(self.bitmap.Buffer)
  * 
  *     cpdef ULONG num_clear_bits(self):             # <<<<<<<<<<<<<<
@@ -1077,7 +1086,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_4num_clear_bits(struct __pyx_obj_3rtl_Bit
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("num_clear_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_num_clear_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 31; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_num_clear_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1094,7 +1103,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_4num_clear_bits(struct __pyx_obj_3rtl_Bit
   return __pyx_r;
 }
 
-/* "rtl.pyx":34
+/* "rtl.pyx":30
  *         return RtlNumberOfClearBits(&self.bitmap)
  * 
  *     cpdef ULONG num_set_bits(self):             # <<<<<<<<<<<<<<
@@ -1119,7 +1128,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_set_bits(struct __pyx_obj_3rtl_Bitmap *__p
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_num_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_num_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_7num_set_bits)) {
       __Pyx_INCREF(__pyx_t_1);
@@ -1134,14 +1143,14 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_set_bits(struct __pyx_obj_3rtl_Bitmap *__p
         }
       }
       if (__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       } else {
-        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_5 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_5 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_5 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_5 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_5;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1150,7 +1159,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_set_bits(struct __pyx_obj_3rtl_Bitmap *__p
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":35
+  /* "rtl.pyx":31
  * 
  *     cpdef ULONG num_set_bits(self):
  *         return RtlNumberOfSetBits(&self.bitmap)             # <<<<<<<<<<<<<<
@@ -1160,7 +1169,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_num_set_bits(struct __pyx_obj_3rtl_Bitmap *__p
   __pyx_r = RtlNumberOfSetBits((&__pyx_v_self->bitmap));
   goto __pyx_L0;
 
-  /* "rtl.pyx":34
+  /* "rtl.pyx":30
  *         return RtlNumberOfClearBits(&self.bitmap)
  * 
  *     cpdef ULONG num_set_bits(self):             # <<<<<<<<<<<<<<
@@ -1203,7 +1212,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_6num_set_bits(struct __pyx_obj_3rtl_Bitma
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("num_set_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_num_set_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_num_set_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1220,7 +1229,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_6num_set_bits(struct __pyx_obj_3rtl_Bitma
   return __pyx_r;
 }
 
-/* "rtl.pyx":37
+/* "rtl.pyx":33
  *         return RtlNumberOfSetBits(&self.bitmap)
  * 
  *     cpdef BOOLEAN check_bit(self, ULONG bit_position):             # <<<<<<<<<<<<<<
@@ -1247,10 +1256,10 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_check_bit(struct __pyx_obj_3rtl_Bitmap *__py
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_check_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_check_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_9check_bit)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_position); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_position); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -1264,22 +1273,22 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_check_bit(struct __pyx_obj_3rtl_Bitmap *__py
         }
       }
       if (!__pyx_t_5) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_6);
         __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
         __Pyx_GIVEREF(__pyx_t_3);
         PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
         __pyx_t_3 = 0;
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_7 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_7 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_7 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_7 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_7;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1288,7 +1297,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_check_bit(struct __pyx_obj_3rtl_Bitmap *__py
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":38
+  /* "rtl.pyx":34
  * 
  *     cpdef BOOLEAN check_bit(self, ULONG bit_position):
  *         return RtlCheckBit(&self.bitmap, bit_position)             # <<<<<<<<<<<<<<
@@ -1298,7 +1307,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_check_bit(struct __pyx_obj_3rtl_Bitmap *__py
   __pyx_r = RtlCheckBit((&__pyx_v_self->bitmap), __pyx_v_bit_position);
   goto __pyx_L0;
 
-  /* "rtl.pyx":37
+  /* "rtl.pyx":33
  *         return RtlNumberOfSetBits(&self.bitmap)
  * 
  *     cpdef BOOLEAN check_bit(self, ULONG bit_position):             # <<<<<<<<<<<<<<
@@ -1332,7 +1341,7 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_9check_bit(PyObject *__pyx_v_self, PyObje
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("check_bit (wrapper)", 0);
   assert(__pyx_arg_bit_position); {
-    __pyx_v_bit_position = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_position); if (unlikely((__pyx_v_bit_position == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_bit_position = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_position); if (unlikely((__pyx_v_bit_position == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -1356,7 +1365,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_8check_bit(struct __pyx_obj_3rtl_Bitmap *
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("check_bit", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_check_bit(__pyx_v_self, __pyx_v_bit_position, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_check_bit(__pyx_v_self, __pyx_v_bit_position, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1373,7 +1382,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_8check_bit(struct __pyx_obj_3rtl_Bitmap *
   return __pyx_r;
 }
 
-/* "rtl.pyx":40
+/* "rtl.pyx":36
  *         return RtlCheckBit(&self.bitmap, bit_position)
  * 
  *     cpdef BOOLEAN test_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -1400,10 +1409,10 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_test_bit(struct __pyx_obj_3rtl_Bitmap *__pyx
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_test_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_test_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_11test_bit)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -1417,22 +1426,22 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_test_bit(struct __pyx_obj_3rtl_Bitmap *__pyx
         }
       }
       if (!__pyx_t_5) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_6);
         __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
         __Pyx_GIVEREF(__pyx_t_3);
         PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
         __pyx_t_3 = 0;
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_7 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_7 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_7 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_7 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_7;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1441,7 +1450,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_test_bit(struct __pyx_obj_3rtl_Bitmap *__pyx
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":41
+  /* "rtl.pyx":37
  * 
  *     cpdef BOOLEAN test_bit(self, ULONG bit_number):
  *         return RtlTestBit(&self.bitmap, bit_number)             # <<<<<<<<<<<<<<
@@ -1451,7 +1460,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_test_bit(struct __pyx_obj_3rtl_Bitmap *__pyx
   __pyx_r = RtlTestBit((&__pyx_v_self->bitmap), __pyx_v_bit_number);
   goto __pyx_L0;
 
-  /* "rtl.pyx":40
+  /* "rtl.pyx":36
  *         return RtlCheckBit(&self.bitmap, bit_position)
  * 
  *     cpdef BOOLEAN test_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -1485,7 +1494,7 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_11test_bit(PyObject *__pyx_v_self, PyObje
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("test_bit (wrapper)", 0);
   assert(__pyx_arg_bit_number); {
-    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -1509,7 +1518,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_10test_bit(struct __pyx_obj_3rtl_Bitmap *
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("test_bit", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_test_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_test_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 36; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1526,7 +1535,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_10test_bit(struct __pyx_obj_3rtl_Bitmap *
   return __pyx_r;
 }
 
-/* "rtl.pyx":43
+/* "rtl.pyx":39
  *         return RtlTestBit(&self.bitmap, bit_number)
  * 
  *     cpdef BOOLEAN are_bits_clear(self, ULONG starting_index, ULONG length):             # <<<<<<<<<<<<<<
@@ -1555,12 +1564,12 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_clear(struct __pyx_obj_3rtl_Bitmap 
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_are_bits_clear); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_are_bits_clear); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_13are_bits_clear)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_length); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_length); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -1575,7 +1584,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_clear(struct __pyx_obj_3rtl_Bitmap 
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -1586,11 +1595,11 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_clear(struct __pyx_obj_3rtl_Bitmap 
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_9 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_9 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1599,7 +1608,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_clear(struct __pyx_obj_3rtl_Bitmap 
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":44
+  /* "rtl.pyx":40
  * 
  *     cpdef BOOLEAN are_bits_clear(self, ULONG starting_index, ULONG length):
  *         return RtlAreBitsClear(&self.bitmap, starting_index, length)             # <<<<<<<<<<<<<<
@@ -1609,7 +1618,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_clear(struct __pyx_obj_3rtl_Bitmap 
   __pyx_r = RtlAreBitsClear((&__pyx_v_self->bitmap), __pyx_v_starting_index, __pyx_v_length);
   goto __pyx_L0;
 
-  /* "rtl.pyx":43
+  /* "rtl.pyx":39
  *         return RtlTestBit(&self.bitmap, bit_number)
  * 
  *     cpdef BOOLEAN are_bits_clear(self, ULONG starting_index, ULONG length):             # <<<<<<<<<<<<<<
@@ -1664,11 +1673,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_13are_bits_clear(PyObject *__pyx_v_self, 
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_length)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("are_bits_clear", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("are_bits_clear", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "are_bits_clear") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "are_bits_clear") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1676,12 +1685,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_13are_bits_clear(PyObject *__pyx_v_self, 
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_length = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_length == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_length = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_length == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("are_bits_clear", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("are_bits_clear", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.are_bits_clear", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1703,7 +1712,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_12are_bits_clear(struct __pyx_obj_3rtl_Bi
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("are_bits_clear", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_are_bits_clear(__pyx_v_self, __pyx_v_starting_index, __pyx_v_length, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_are_bits_clear(__pyx_v_self, __pyx_v_starting_index, __pyx_v_length, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1720,7 +1729,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_12are_bits_clear(struct __pyx_obj_3rtl_Bi
   return __pyx_r;
 }
 
-/* "rtl.pyx":46
+/* "rtl.pyx":42
  *         return RtlAreBitsClear(&self.bitmap, starting_index, length)
  * 
  *     cpdef BOOLEAN are_bits_set(self, ULONG starting_index, ULONG length):             # <<<<<<<<<<<<<<
@@ -1749,12 +1758,12 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_set(struct __pyx_obj_3rtl_Bitmap *_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_are_bits_set); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_are_bits_set); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_15are_bits_set)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_length); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_length); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -1769,7 +1778,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_set(struct __pyx_obj_3rtl_Bitmap *_
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -1780,11 +1789,11 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_set(struct __pyx_obj_3rtl_Bitmap *_
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_9 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_CHAR(__pyx_t_2); if (unlikely((__pyx_t_9 == (BOOLEAN)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -1793,7 +1802,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_set(struct __pyx_obj_3rtl_Bitmap *_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":47
+  /* "rtl.pyx":43
  * 
  *     cpdef BOOLEAN are_bits_set(self, ULONG starting_index, ULONG length):
  *         return RtlAreBitsSet(&self.bitmap, starting_index, length)             # <<<<<<<<<<<<<<
@@ -1803,7 +1812,7 @@ static BOOLEAN __pyx_f_3rtl_6Bitmap_are_bits_set(struct __pyx_obj_3rtl_Bitmap *_
   __pyx_r = RtlAreBitsSet((&__pyx_v_self->bitmap), __pyx_v_starting_index, __pyx_v_length);
   goto __pyx_L0;
 
-  /* "rtl.pyx":46
+  /* "rtl.pyx":42
  *         return RtlAreBitsClear(&self.bitmap, starting_index, length)
  * 
  *     cpdef BOOLEAN are_bits_set(self, ULONG starting_index, ULONG length):             # <<<<<<<<<<<<<<
@@ -1858,11 +1867,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_15are_bits_set(PyObject *__pyx_v_self, Py
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_length)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("are_bits_set", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("are_bits_set", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "are_bits_set") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "are_bits_set") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -1870,12 +1879,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_15are_bits_set(PyObject *__pyx_v_self, Py
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_length = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_length == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_length = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_length == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("are_bits_set", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("are_bits_set", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.are_bits_set", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1897,7 +1906,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_14are_bits_set(struct __pyx_obj_3rtl_Bitm
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("are_bits_set", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_are_bits_set(__pyx_v_self, __pyx_v_starting_index, __pyx_v_length, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_CHAR(__pyx_f_3rtl_6Bitmap_are_bits_set(__pyx_v_self, __pyx_v_starting_index, __pyx_v_length, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -1914,7 +1923,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_14are_bits_set(struct __pyx_obj_3rtl_Bitm
   return __pyx_r;
 }
 
-/* "rtl.pyx":49
+/* "rtl.pyx":45
  *         return RtlAreBitsSet(&self.bitmap, starting_index, length)
  * 
  *     cpdef void clear_all_bits(self):             # <<<<<<<<<<<<<<
@@ -1937,7 +1946,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_all_bits(struct __pyx_obj_3rtl_Bitmap *__
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_all_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_all_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_17clear_all_bits)) {
       __Pyx_INCREF(__pyx_t_1);
@@ -1952,10 +1961,10 @@ static void __pyx_f_3rtl_6Bitmap_clear_all_bits(struct __pyx_obj_3rtl_Bitmap *__
         }
       }
       if (__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       } else {
-        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -1966,7 +1975,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_all_bits(struct __pyx_obj_3rtl_Bitmap *__
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":50
+  /* "rtl.pyx":46
  * 
  *     cpdef void clear_all_bits(self):
  *         RtlClearAllBits(&self.bitmap)             # <<<<<<<<<<<<<<
@@ -1975,7 +1984,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_all_bits(struct __pyx_obj_3rtl_Bitmap *__
  */
   RtlClearAllBits((&__pyx_v_self->bitmap));
 
-  /* "rtl.pyx":49
+  /* "rtl.pyx":45
  *         return RtlAreBitsSet(&self.bitmap, starting_index, length)
  * 
  *     cpdef void clear_all_bits(self):             # <<<<<<<<<<<<<<
@@ -2017,7 +2026,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_16clear_all_bits(struct __pyx_obj_3rtl_Bi
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("clear_all_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_all_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_all_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2034,7 +2043,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_16clear_all_bits(struct __pyx_obj_3rtl_Bi
   return __pyx_r;
 }
 
-/* "rtl.pyx":52
+/* "rtl.pyx":48
  *         RtlClearAllBits(&self.bitmap)
  * 
  *     cpdef void clear_bits(self, ULONG starting_index, ULONG number_to_clear):             # <<<<<<<<<<<<<<
@@ -2061,12 +2070,12 @@ static void __pyx_f_3rtl_6Bitmap_clear_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_19clear_bits)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_clear); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_clear); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -2081,7 +2090,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -2092,7 +2101,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -2103,7 +2112,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":53
+  /* "rtl.pyx":49
  * 
  *     cpdef void clear_bits(self, ULONG starting_index, ULONG number_to_clear):
  *         RtlClearBits(&self.bitmap, starting_index, number_to_clear)             # <<<<<<<<<<<<<<
@@ -2112,7 +2121,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_
  */
   RtlClearBits((&__pyx_v_self->bitmap), __pyx_v_starting_index, __pyx_v_number_to_clear);
 
-  /* "rtl.pyx":52
+  /* "rtl.pyx":48
  *         RtlClearAllBits(&self.bitmap)
  * 
  *     cpdef void clear_bits(self, ULONG starting_index, ULONG number_to_clear):             # <<<<<<<<<<<<<<
@@ -2166,11 +2175,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_19clear_bits(PyObject *__pyx_v_self, PyOb
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_number_to_clear)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("clear_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("clear_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "clear_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "clear_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2178,12 +2187,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_19clear_bits(PyObject *__pyx_v_self, PyOb
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_number_to_clear = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_number_to_clear == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_clear = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_number_to_clear == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("clear_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("clear_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.clear_bits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2205,7 +2214,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_18clear_bits(struct __pyx_obj_3rtl_Bitmap
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("clear_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_bits(__pyx_v_self, __pyx_v_starting_index, __pyx_v_number_to_clear, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_bits(__pyx_v_self, __pyx_v_starting_index, __pyx_v_number_to_clear, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2222,7 +2231,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_18clear_bits(struct __pyx_obj_3rtl_Bitmap
   return __pyx_r;
 }
 
-/* "rtl.pyx":55
+/* "rtl.pyx":51
  *         RtlClearBits(&self.bitmap, starting_index, number_to_clear)
  * 
  *     cpdef void clear_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -2247,10 +2256,10 @@ static void __pyx_f_3rtl_6Bitmap_clear_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_clear_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_21clear_bit)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -2264,17 +2273,17 @@ static void __pyx_f_3rtl_6Bitmap_clear_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v
         }
       }
       if (!__pyx_t_5) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_6);
         __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
         __Pyx_GIVEREF(__pyx_t_3);
         PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
         __pyx_t_3 = 0;
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       }
@@ -2286,7 +2295,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":56
+  /* "rtl.pyx":52
  * 
  *     cpdef void clear_bit(self, ULONG bit_number):
  *         RtlClearBit(&self.bitmap, bit_number)             # <<<<<<<<<<<<<<
@@ -2295,7 +2304,7 @@ static void __pyx_f_3rtl_6Bitmap_clear_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v
  */
   RtlClearBit((&__pyx_v_self->bitmap), __pyx_v_bit_number);
 
-  /* "rtl.pyx":55
+  /* "rtl.pyx":51
  *         RtlClearBits(&self.bitmap, starting_index, number_to_clear)
  * 
  *     cpdef void clear_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -2328,7 +2337,7 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_21clear_bit(PyObject *__pyx_v_self, PyObj
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("clear_bit (wrapper)", 0);
   assert(__pyx_arg_bit_number); {
-    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -2352,7 +2361,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_20clear_bit(struct __pyx_obj_3rtl_Bitmap 
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("clear_bit", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_clear_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2369,7 +2378,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_20clear_bit(struct __pyx_obj_3rtl_Bitmap 
   return __pyx_r;
 }
 
-/* "rtl.pyx":58
+/* "rtl.pyx":54
  *         RtlClearBit(&self.bitmap, bit_number)
  * 
  *     cpdef ULONG find_clear_bits(self, ULONG number_to_find, ULONG hint_index):             # <<<<<<<<<<<<<<
@@ -2398,12 +2407,12 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits(struct __pyx_obj_3rtl_Bitmap *
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_clear_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_23find_clear_bits)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -2418,7 +2427,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits(struct __pyx_obj_3rtl_Bitmap *
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -2429,11 +2438,11 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits(struct __pyx_obj_3rtl_Bitmap *
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2442,7 +2451,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits(struct __pyx_obj_3rtl_Bitmap *
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":59
+  /* "rtl.pyx":55
  * 
  *     cpdef ULONG find_clear_bits(self, ULONG number_to_find, ULONG hint_index):
  *         return RtlFindClearBits(&self.bitmap, number_to_find, hint_index)             # <<<<<<<<<<<<<<
@@ -2452,7 +2461,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits(struct __pyx_obj_3rtl_Bitmap *
   __pyx_r = RtlFindClearBits((&__pyx_v_self->bitmap), __pyx_v_number_to_find, __pyx_v_hint_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":58
+  /* "rtl.pyx":54
  *         RtlClearBit(&self.bitmap, bit_number)
  * 
  *     cpdef ULONG find_clear_bits(self, ULONG number_to_find, ULONG hint_index):             # <<<<<<<<<<<<<<
@@ -2507,11 +2516,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_23find_clear_bits(PyObject *__pyx_v_self,
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_hint_index)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("find_clear_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("find_clear_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_clear_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_clear_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2519,12 +2528,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_23find_clear_bits(PyObject *__pyx_v_self,
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("find_clear_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("find_clear_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.find_clear_bits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2546,7 +2555,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_22find_clear_bits(struct __pyx_obj_3rtl_B
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find_clear_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_clear_bits(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_clear_bits(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2563,7 +2572,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_22find_clear_bits(struct __pyx_obj_3rtl_B
   return __pyx_r;
 }
 
-/* "rtl.pyx":61
+/* "rtl.pyx":57
  *         return RtlFindClearBits(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef ULONG find_clear_bits_and_set(self, ULONG number_to_find,             # <<<<<<<<<<<<<<
@@ -2592,12 +2601,12 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(struct __pyx_obj_3rtl_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_clear_bits_and_set); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_clear_bits_and_set); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_25find_clear_bits_and_set)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -2612,7 +2621,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(struct __pyx_obj_3rtl_
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -2623,11 +2632,11 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(struct __pyx_obj_3rtl_
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2636,7 +2645,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(struct __pyx_obj_3rtl_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":63
+  /* "rtl.pyx":59
  *     cpdef ULONG find_clear_bits_and_set(self, ULONG number_to_find,
  *                                               ULONG hint_index):
  *         return RtlFindClearBitsAndSet(&self.bitmap, number_to_find, hint_index)             # <<<<<<<<<<<<<<
@@ -2646,7 +2655,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(struct __pyx_obj_3rtl_
   __pyx_r = RtlFindClearBitsAndSet((&__pyx_v_self->bitmap), __pyx_v_number_to_find, __pyx_v_hint_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":61
+  /* "rtl.pyx":57
  *         return RtlFindClearBits(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef ULONG find_clear_bits_and_set(self, ULONG number_to_find,             # <<<<<<<<<<<<<<
@@ -2701,11 +2710,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_25find_clear_bits_and_set(PyObject *__pyx
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_hint_index)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("find_clear_bits_and_set", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("find_clear_bits_and_set", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_clear_bits_and_set") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_clear_bits_and_set") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -2713,12 +2722,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_25find_clear_bits_and_set(PyObject *__pyx
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 62; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("find_clear_bits_and_set", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("find_clear_bits_and_set", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.find_clear_bits_and_set", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2740,7 +2749,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_24find_clear_bits_and_set(struct __pyx_ob
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find_clear_bits_and_set", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_clear_bits_and_set(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2757,7 +2766,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_24find_clear_bits_and_set(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "rtl.pyx":65
+/* "rtl.pyx":61
  *         return RtlFindClearBitsAndSet(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef void set_all_bits(self):             # <<<<<<<<<<<<<<
@@ -2780,7 +2789,7 @@ static void __pyx_f_3rtl_6Bitmap_set_all_bits(struct __pyx_obj_3rtl_Bitmap *__py
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_all_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_all_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_27set_all_bits)) {
       __Pyx_INCREF(__pyx_t_1);
@@ -2795,10 +2804,10 @@ static void __pyx_f_3rtl_6Bitmap_set_all_bits(struct __pyx_obj_3rtl_Bitmap *__py
         }
       }
       if (__pyx_t_4) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       } else {
-        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       }
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
@@ -2809,7 +2818,7 @@ static void __pyx_f_3rtl_6Bitmap_set_all_bits(struct __pyx_obj_3rtl_Bitmap *__py
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":66
+  /* "rtl.pyx":62
  * 
  *     cpdef void set_all_bits(self):
  *         RtlSetAllBits(&self.bitmap)             # <<<<<<<<<<<<<<
@@ -2818,7 +2827,7 @@ static void __pyx_f_3rtl_6Bitmap_set_all_bits(struct __pyx_obj_3rtl_Bitmap *__py
  */
   RtlSetAllBits((&__pyx_v_self->bitmap));
 
-  /* "rtl.pyx":65
+  /* "rtl.pyx":61
  *         return RtlFindClearBitsAndSet(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef void set_all_bits(self):             # <<<<<<<<<<<<<<
@@ -2860,7 +2869,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_26set_all_bits(struct __pyx_obj_3rtl_Bitm
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("set_all_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_all_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_all_bits(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 61; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -2877,7 +2886,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_26set_all_bits(struct __pyx_obj_3rtl_Bitm
   return __pyx_r;
 }
 
-/* "rtl.pyx":68
+/* "rtl.pyx":64
  *         RtlSetAllBits(&self.bitmap)
  * 
  *     cpdef void set_bits(self, ULONG starting_index, ULONG number_to_set):             # <<<<<<<<<<<<<<
@@ -2904,12 +2913,12 @@ static void __pyx_f_3rtl_6Bitmap_set_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_v_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_29set_bits)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_starting_index); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_set); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_set); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -2924,7 +2933,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_v_
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -2935,7 +2944,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_v_
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
@@ -2946,7 +2955,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_v_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":69
+  /* "rtl.pyx":65
  * 
  *     cpdef void set_bits(self, ULONG starting_index, ULONG number_to_set):
  *         RtlSetBits(&self.bitmap, starting_index, number_to_set)             # <<<<<<<<<<<<<<
@@ -2955,7 +2964,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bits(struct __pyx_obj_3rtl_Bitmap *__pyx_v_
  */
   RtlSetBits((&__pyx_v_self->bitmap), __pyx_v_starting_index, __pyx_v_number_to_set);
 
-  /* "rtl.pyx":68
+  /* "rtl.pyx":64
  *         RtlSetAllBits(&self.bitmap)
  * 
  *     cpdef void set_bits(self, ULONG starting_index, ULONG number_to_set):             # <<<<<<<<<<<<<<
@@ -3009,11 +3018,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_29set_bits(PyObject *__pyx_v_self, PyObje
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_number_to_set)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("set_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("set_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "set_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3021,12 +3030,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_29set_bits(PyObject *__pyx_v_self, PyObje
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_number_to_set = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_number_to_set == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_starting_index = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_starting_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_set = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_number_to_set == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("set_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("set_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.set_bits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3048,7 +3057,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_28set_bits(struct __pyx_obj_3rtl_Bitmap *
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("set_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_bits(__pyx_v_self, __pyx_v_starting_index, __pyx_v_number_to_set, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_bits(__pyx_v_self, __pyx_v_starting_index, __pyx_v_number_to_set, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3065,7 +3074,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_28set_bits(struct __pyx_obj_3rtl_Bitmap *
   return __pyx_r;
 }
 
-/* "rtl.pyx":71
+/* "rtl.pyx":67
  *         RtlSetBits(&self.bitmap, starting_index, number_to_set)
  * 
  *     cpdef void set_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -3090,10 +3099,10 @@ static void __pyx_f_3rtl_6Bitmap_set_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v_s
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_set_bit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_31set_bit)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_bit_number); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_4 = __pyx_t_1; __pyx_t_5 = NULL;
@@ -3107,17 +3116,17 @@ static void __pyx_f_3rtl_6Bitmap_set_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v_s
         }
       }
       if (!__pyx_t_5) {
-        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __Pyx_GOTREF(__pyx_t_2);
       } else {
-        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_6 = PyTuple_New(1+1); if (unlikely(!__pyx_t_6)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_6);
         __Pyx_GIVEREF(__pyx_t_5); PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5); __pyx_t_5 = NULL;
         __Pyx_GIVEREF(__pyx_t_3);
         PyTuple_SET_ITEM(__pyx_t_6, 0+1, __pyx_t_3);
         __pyx_t_3 = 0;
-        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
       }
@@ -3129,7 +3138,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v_s
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":72
+  /* "rtl.pyx":68
  * 
  *     cpdef void set_bit(self, ULONG bit_number):
  *         RtlSetBit(&self.bitmap, bit_number)             # <<<<<<<<<<<<<<
@@ -3138,7 +3147,7 @@ static void __pyx_f_3rtl_6Bitmap_set_bit(struct __pyx_obj_3rtl_Bitmap *__pyx_v_s
  */
   RtlSetBit((&__pyx_v_self->bitmap), __pyx_v_bit_number);
 
-  /* "rtl.pyx":71
+  /* "rtl.pyx":67
  *         RtlSetBits(&self.bitmap, starting_index, number_to_set)
  * 
  *     cpdef void set_bit(self, ULONG bit_number):             # <<<<<<<<<<<<<<
@@ -3171,7 +3180,7 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_31set_bit(PyObject *__pyx_v_self, PyObjec
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("set_bit (wrapper)", 0);
   assert(__pyx_arg_bit_number); {
-    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_bit_number = __Pyx_PyInt_As_ULONG(__pyx_arg_bit_number); if (unlikely((__pyx_v_bit_number == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -3195,7 +3204,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_30set_bit(struct __pyx_obj_3rtl_Bitmap *_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("set_bit", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 71; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_3rtl_6Bitmap_set_bit(__pyx_v_self, __pyx_v_bit_number, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3212,7 +3221,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_30set_bit(struct __pyx_obj_3rtl_Bitmap *_
   return __pyx_r;
 }
 
-/* "rtl.pyx":74
+/* "rtl.pyx":70
  *         RtlSetBit(&self.bitmap, bit_number)
  * 
  *     cpdef ULONG find_set_bits(self, ULONG number_to_find, ULONG hint_index):             # <<<<<<<<<<<<<<
@@ -3241,12 +3250,12 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits(struct __pyx_obj_3rtl_Bitmap *__
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_set_bits); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_33find_set_bits)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -3261,7 +3270,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits(struct __pyx_obj_3rtl_Bitmap *__
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -3272,11 +3281,11 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits(struct __pyx_obj_3rtl_Bitmap *__
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3285,7 +3294,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits(struct __pyx_obj_3rtl_Bitmap *__
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":75
+  /* "rtl.pyx":71
  * 
  *     cpdef ULONG find_set_bits(self, ULONG number_to_find, ULONG hint_index):
  *         return RtlFindSetBits(&self.bitmap, number_to_find, hint_index)             # <<<<<<<<<<<<<<
@@ -3295,7 +3304,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits(struct __pyx_obj_3rtl_Bitmap *__
   __pyx_r = RtlFindSetBits((&__pyx_v_self->bitmap), __pyx_v_number_to_find, __pyx_v_hint_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":74
+  /* "rtl.pyx":70
  *         RtlSetBit(&self.bitmap, bit_number)
  * 
  *     cpdef ULONG find_set_bits(self, ULONG number_to_find, ULONG hint_index):             # <<<<<<<<<<<<<<
@@ -3350,11 +3359,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_33find_set_bits(PyObject *__pyx_v_self, P
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_hint_index)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("find_set_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("find_set_bits", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_set_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_set_bits") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3362,12 +3371,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_33find_set_bits(PyObject *__pyx_v_self, P
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("find_set_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("find_set_bits", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.find_set_bits", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3389,7 +3398,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_32find_set_bits(struct __pyx_obj_3rtl_Bit
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find_set_bits", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_set_bits(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_set_bits(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3406,7 +3415,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_32find_set_bits(struct __pyx_obj_3rtl_Bit
   return __pyx_r;
 }
 
-/* "rtl.pyx":77
+/* "rtl.pyx":73
  *         return RtlFindSetBits(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef ULONG find_set_bits_and_clear(self, ULONG number_to_find,             # <<<<<<<<<<<<<<
@@ -3435,12 +3444,12 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(struct __pyx_obj_3rtl_
   if (unlikely(__pyx_skip_dispatch)) ;
   /* Check if overridden in Python */
   else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_set_bits_and_clear); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_find_set_bits_and_clear); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     __Pyx_GOTREF(__pyx_t_1);
     if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_3rtl_6Bitmap_35find_set_bits_and_clear)) {
-      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_3 = __Pyx_PyInt_From_ULONG(__pyx_v_number_to_find); if (unlikely(!__pyx_t_3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_3);
-      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_4 = __Pyx_PyInt_From_ULONG(__pyx_v_hint_index); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_4);
       __Pyx_INCREF(__pyx_t_1);
       __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
@@ -3455,7 +3464,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(struct __pyx_obj_3rtl_
           __pyx_t_7 = 1;
         }
       }
-      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_8 = PyTuple_New(2+__pyx_t_7); if (unlikely(!__pyx_t_8)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_8);
       if (__pyx_t_6) {
         __Pyx_GIVEREF(__pyx_t_6); PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_6); __pyx_t_6 = NULL;
@@ -3466,11 +3475,11 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(struct __pyx_obj_3rtl_
       PyTuple_SET_ITEM(__pyx_t_8, 1+__pyx_t_7, __pyx_t_4);
       __pyx_t_3 = 0;
       __pyx_t_4 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_8, NULL); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __pyx_t_9 = __Pyx_PyInt_As_ULONG(__pyx_t_2); if (unlikely((__pyx_t_9 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_r = __pyx_t_9;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -3479,7 +3488,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(struct __pyx_obj_3rtl_
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   }
 
-  /* "rtl.pyx":79
+  /* "rtl.pyx":75
  *     cpdef ULONG find_set_bits_and_clear(self, ULONG number_to_find,
  *                                               ULONG hint_index):
  *         return RtlFindSetBitsAndClear(&self.bitmap, number_to_find, hint_index)             # <<<<<<<<<<<<<<
@@ -3489,7 +3498,7 @@ static ULONG __pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(struct __pyx_obj_3rtl_
   __pyx_r = RtlFindSetBitsAndClear((&__pyx_v_self->bitmap), __pyx_v_number_to_find, __pyx_v_hint_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":77
+  /* "rtl.pyx":73
  *         return RtlFindSetBits(&self.bitmap, number_to_find, hint_index)
  * 
  *     cpdef ULONG find_set_bits_and_clear(self, ULONG number_to_find,             # <<<<<<<<<<<<<<
@@ -3544,11 +3553,11 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_35find_set_bits_and_clear(PyObject *__pyx
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_hint_index)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("find_set_bits_and_clear", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+          __Pyx_RaiseArgtupleInvalid("find_set_bits_and_clear", 1, 2, 2, 1); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_set_bits_and_clear") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "find_set_bits_and_clear") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -3556,12 +3565,12 @@ static PyObject *__pyx_pw_3rtl_6Bitmap_35find_set_bits_and_clear(PyObject *__pyx
       values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
       values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
     }
-    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_number_to_find = __Pyx_PyInt_As_ULONG(values[0]); if (unlikely((__pyx_v_number_to_find == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    __pyx_v_hint_index = __Pyx_PyInt_As_ULONG(values[1]); if (unlikely((__pyx_v_hint_index == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("find_set_bits_and_clear", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __Pyx_RaiseArgtupleInvalid("find_set_bits_and_clear", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
   __pyx_L3_error:;
   __Pyx_AddTraceback("rtl.Bitmap.find_set_bits_and_clear", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3583,7 +3592,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_34find_set_bits_and_clear(struct __pyx_ob
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("find_set_bits_and_clear", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_f_3rtl_6Bitmap_find_set_bits_and_clear(__pyx_v_self, __pyx_v_number_to_find, __pyx_v_hint_index, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3600,7 +3609,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_34find_set_bits_and_clear(struct __pyx_ob
   return __pyx_r;
 }
 
-/* "rtl.pyx":81
+/* "rtl.pyx":77
  *         return RtlFindSetBitsAndClear(&self.bitmap, number_to_find, hint_index)
  * 
  *     cdef ULONG _find_first_run_clear(self, PULONG starting_index):             # <<<<<<<<<<<<<<
@@ -3613,7 +3622,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_first_run_clear(struct __pyx_obj_3rtl_Bi
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("_find_first_run_clear", 0);
 
-  /* "rtl.pyx":82
+  /* "rtl.pyx":78
  * 
  *     cdef ULONG _find_first_run_clear(self, PULONG starting_index):
  *         return RtlFindFirstRunClear(&self.bitmap, starting_index)             # <<<<<<<<<<<<<<
@@ -3623,7 +3632,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_first_run_clear(struct __pyx_obj_3rtl_Bi
   __pyx_r = RtlFindFirstRunClear((&__pyx_v_self->bitmap), __pyx_v_starting_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":81
+  /* "rtl.pyx":77
  *         return RtlFindSetBitsAndClear(&self.bitmap, number_to_find, hint_index)
  * 
  *     cdef ULONG _find_first_run_clear(self, PULONG starting_index):             # <<<<<<<<<<<<<<
@@ -3637,7 +3646,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_first_run_clear(struct __pyx_obj_3rtl_Bi
   return __pyx_r;
 }
 
-/* "rtl.pyx":84
+/* "rtl.pyx":80
  *         return RtlFindFirstRunClear(&self.bitmap, starting_index)
  * 
  *     cdef ULONG _find_last_backward_run_clear(self, ULONG from_index,             # <<<<<<<<<<<<<<
@@ -3650,7 +3659,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_last_backward_run_clear(struct __pyx_obj
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("_find_last_backward_run_clear", 0);
 
-  /* "rtl.pyx":86
+  /* "rtl.pyx":82
  *     cdef ULONG _find_last_backward_run_clear(self, ULONG from_index,
  *                                                    PULONG starting_run_index):
  *         return RtlFindLastBackwardRunClear(&self.bitmap,             # <<<<<<<<<<<<<<
@@ -3660,7 +3669,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_last_backward_run_clear(struct __pyx_obj
   __pyx_r = RtlFindLastBackwardRunClear((&__pyx_v_self->bitmap), __pyx_v_from_index, __pyx_v_starting_run_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":84
+  /* "rtl.pyx":80
  *         return RtlFindFirstRunClear(&self.bitmap, starting_index)
  * 
  *     cdef ULONG _find_last_backward_run_clear(self, ULONG from_index,             # <<<<<<<<<<<<<<
@@ -3674,7 +3683,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_last_backward_run_clear(struct __pyx_obj
   return __pyx_r;
 }
 
-/* "rtl.pyx":90
+/* "rtl.pyx":86
  *                                            starting_run_index)
  * 
  *     cdef ULONG _find_longest_run_clear(self, PULONG starting_index):             # <<<<<<<<<<<<<<
@@ -3687,7 +3696,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_longest_run_clear(struct __pyx_obj_3rtl_
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("_find_longest_run_clear", 0);
 
-  /* "rtl.pyx":91
+  /* "rtl.pyx":87
  * 
  *     cdef ULONG _find_longest_run_clear(self, PULONG starting_index):
  *         return RtlFindLongestRunClear(&self.bitmap, starting_index)             # <<<<<<<<<<<<<<
@@ -3697,7 +3706,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_longest_run_clear(struct __pyx_obj_3rtl_
   __pyx_r = RtlFindLongestRunClear((&__pyx_v_self->bitmap), __pyx_v_starting_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":90
+  /* "rtl.pyx":86
  *                                            starting_run_index)
  * 
  *     cdef ULONG _find_longest_run_clear(self, PULONG starting_index):             # <<<<<<<<<<<<<<
@@ -3711,7 +3720,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_longest_run_clear(struct __pyx_obj_3rtl_
   return __pyx_r;
 }
 
-/* "rtl.pyx":93
+/* "rtl.pyx":89
  *         return RtlFindLongestRunClear(&self.bitmap, starting_index)
  * 
  *     cdef ULONG _find_next_forward_run_clear(self, ULONG from_index,             # <<<<<<<<<<<<<<
@@ -3724,7 +3733,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_next_forward_run_clear(struct __pyx_obj_
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("_find_next_forward_run_clear", 0);
 
-  /* "rtl.pyx":95
+  /* "rtl.pyx":91
  *     cdef ULONG _find_next_forward_run_clear(self, ULONG from_index,
  *                                                   PULONG starting_index):
  *         return RtlFindNextForwardRunClear(&self.bitmap,             # <<<<<<<<<<<<<<
@@ -3734,7 +3743,7 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_next_forward_run_clear(struct __pyx_obj_
   __pyx_r = RtlFindNextForwardRunClear((&__pyx_v_self->bitmap), __pyx_v_from_index, __pyx_v_starting_index);
   goto __pyx_L0;
 
-  /* "rtl.pyx":93
+  /* "rtl.pyx":89
  *         return RtlFindLongestRunClear(&self.bitmap, starting_index)
  * 
  *     cdef ULONG _find_next_forward_run_clear(self, ULONG from_index,             # <<<<<<<<<<<<<<
@@ -3748,12 +3757,12 @@ static ULONG __pyx_f_3rtl_6Bitmap__find_next_forward_run_clear(struct __pyx_obj_
   return __pyx_r;
 }
 
-/* "rtl.pyx":10
+/* "rtl.pxd":129
  *     cdef:
  *         RTL_BITMAP bitmap
  *         public ULONG allocated_size             # <<<<<<<<<<<<<<
  * 
- *     def __cinit__(self, ULONG number_of_bits):
+ *     cpdef ULONG num_clear_bits(self)
  */
 
 /* Python wrapper */
@@ -3778,7 +3787,7 @@ static PyObject *__pyx_pf_3rtl_6Bitmap_14allocated_size___get__(struct __pyx_obj
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_v_self->allocated_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_From_ULONG(__pyx_v_self->allocated_size); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3816,7 +3825,7 @@ static int __pyx_pf_3rtl_6Bitmap_14allocated_size_2__set__(struct __pyx_obj_3rtl
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_1 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_v_self->allocated_size = __pyx_t_1;
 
   /* function exit code */
@@ -4015,7 +4024,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
   __pyx_L1_error:;
   return -1;

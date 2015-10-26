@@ -205,7 +205,11 @@ cdef extern from *:
     ctypedef CRITICAL_SECTION* PCRITICAL_SECTION
     ctypedef CRITICAL_SECTION* LPCRITICAL_SECTION
 
-    ctypedef BOOL (__stdcall *PINIT_ONCE_FN)(PINIT_ONCE InitOnce, PVOID Parameter, PVOID *Context)
+    ctypedef BOOL (__stdcall *PINIT_ONCE_FN)(
+        PINIT_ONCE InitOnce,
+        PVOID Parameter,
+        PVOID *Context
+    )
 
     ctypedef enum LOGICAL_PROCESSOR_RELATIONSHIP:
         RelationProcessorCore       = 0
@@ -539,4 +543,4 @@ cdef extern from *:
         Py_ssize_t NumberOfBytes
     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
 
-# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
+# vim: set ts=8 sw=4 sts=4 tw=80 et nospell:                                   #

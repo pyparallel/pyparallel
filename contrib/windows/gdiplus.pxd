@@ -35,7 +35,11 @@ cdef extern from * namespace "Gdiplus":
         ProfileNotFound             = 21
     ctypedef Status GpStatus
 
-    ctypedef void (__stdcall *DebugEventProc)(DebugEventLevel level, CHAR *message)
+    ctypedef void (__stdcall *DebugEventProc)(
+        DebugEventLevel level,
+        CHAR *message
+    )
+
     ctypedef Status (__stdcall *NotificationHookProc)(ULONG_PTR *token)
     ctypedef Status (__stdcall *NotificationUnhookProc)(ULONG_PTR *token)
 
@@ -49,7 +53,11 @@ cdef extern from * namespace "Gdiplus":
         NotificationHookProc    NotificationHook
         NotificationUnhookProc  NotificationUnhook
 
-    Status GdiplusStartup(ULONG_PTR *token, const GdiplusStartupInput *input, GdiplusStartupOutput *output)
+    Status GdiplusStartup(
+        ULONG_PTR *token,
+        const GdiplusStartupInput *input,
+        GdiplusStartupOutput *output
+    )
 
     void GdiplusShutdown(ULONG_PTR token)
 
@@ -87,8 +95,18 @@ cdef extern from * namespace "Gdiplus":
 
 
 cdef extern from * namespace "Gdiplus::DllExports":
-    GpStatus GdipCreateBitmapFromHBITMAP(HBITMAP hbm, HPALETTE hpal, GpBitmap** bitmap)
-    GpStatus GdipSaveImageToFile(GpImage *image, const WCHAR* filename, CLSID* clsidEncoder, EncoderParameters* encoderParams)
+    GpStatus GdipCreateBitmapFromHBITMAP(
+        HBITMAP hbm,
+        HPALETTE hpal,
+        GpBitmap** bitmap
+    )
+
+    GpStatus GdipSaveImageToFile(
+        GpImage *image,
+        const WCHAR* filename,
+        CLSID* clsidEncoder,
+        EncoderParameters* encoderParams
+    )
 
 cdef extern from "_gdiplus.h":
     ULONG_PTR gdiplus_startup()
@@ -99,10 +117,10 @@ cdef extern from "_gdiplus.h":
     CLSID ImageEncoderTiffClsid
     CLSID ImageEncoderPngClsid
 
-#cdef void save_bitmap_as(void *handle, CLSID* encoder, LPCWSTR filename, ULONG quality)
+cpdef void save_bitmap(
+    Py_ssize_t handle,
+    unicode filename,
+    ULONG quality
+)
 
-#cdef void save_bitmap_as_jpeg(void *handle, LPCWSTR filename, ULONG quality)
-#cdef void save_bitmap_as_png(void *handle, LPCWSTR filename, ULONG quality)
-cpdef void save_bitmap(Py_ssize_t handle, unicode filename, ULONG quality)
-
-# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
+# vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

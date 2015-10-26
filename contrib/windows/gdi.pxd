@@ -8,13 +8,31 @@ cdef extern from *:
     HGDIOBJ __stdcall SelectObject(HDC hdc, HGDIOBJ h)
     int GetObject(HGDIOBJ hgdiobj, int cbBuffer, LPVOID lpvObject)
 
-    BOOL __stdcall BitBlt(HDC hdc, int x, int y, int cx, int cy, int hdcSrc, int x1, int y1, DWORD rop)
+    BOOL __stdcall BitBlt(
+        HDC hdc,
+        int x,
+        int y,
+        int cx,
+        int cy,
+        int hdcSrc,
+        int x1,
+        int y1,
+        DWORD rop
+    )
     int SRCCOPY
 
     BOOL __stdcall DeleteDC(HDC hdc)
     BOOL __stdcall DeleteObject(HGDIOBJ ho)
 
-    int GetDIBits(HDC hdc, HBITMAP hbmp, UINT uStartScan, UINT cScanLines, LPVOID lpvBits, LPBITMAPINFO lpbi, UINT uUsage)
+    int GetDIBits(
+        HDC hdc,
+        HBITMAP hbmp,
+        UINT uStartScan,
+        UINT cScanLines,
+        LPVOID lpvBits,
+        LPBITMAPINFO lpbi,
+        UINT uUsage
+    )
     UINT DIB_RGB_COLORS
     DWORD ERROR_INVALID_PARAMETER
 

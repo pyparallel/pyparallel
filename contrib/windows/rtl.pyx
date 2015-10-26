@@ -5,10 +5,6 @@ include "wdm.pxi"
 from rtl cimport *
 
 cdef class Bitmap:
-    cdef:
-        RTL_BITMAP bitmap
-        public ULONG allocated_size
-
     def __cinit__(self, ULONG number_of_bits):
         cdef:
             PULONG buf
@@ -96,4 +92,4 @@ cdef class Bitmap:
                                           from_index,
                                           starting_index)
 
-# vim: set ts=8 sw=4 sts=4 tw=80 et:
+# vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

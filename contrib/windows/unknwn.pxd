@@ -7,4 +7,4 @@ cdef extern from "<Unknwn.h>":
         HRESULT QueryInterface(REFIID riid, void **ppvObject)
         ULONG Release()
 
-# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
+# vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

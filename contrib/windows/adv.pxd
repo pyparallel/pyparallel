@@ -31,4 +31,4 @@ cdef extern from *:
         OPERATION_END_PARAMETERS    end
     ctypedef OPERATION_PARAMS* POPERATION_PARAMETERS
 
-# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
+# vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

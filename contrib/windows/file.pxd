@@ -6,8 +6,25 @@ cdef extern from *:
     void GetSystemTimeAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
     void GetSystemTimePreciseAsFileTime(LPFILETIME lpSystemTimeAsFileTime)
 
-    HANDLE __stdcall CreateFile(LPCTSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
-    HANDLE __stdcall CreateFileW(LPCTSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
+    HANDLE __stdcall CreateFile(
+        LPCTSTR lpFileName,
+        DWORD dwDesiredAccess,
+        DWORD dwShareMode,
+        LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+        DWORD dwCreationDisposition,
+        DWORD dwFlagsAndAttributes,
+        HANDLE hTemplateFile
+    )
+
+    HANDLE __stdcall CreateFileW(
+        LPCWSTR lpFileName,
+        DWORD dwDesiredAccess,
+        DWORD dwShareMode,
+        LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+        DWORD dwCreationDisposition,
+        DWORD dwFlagsAndAttributes,
+        HANDLE hTemplateFile
+    )
 
     DWORD CREATE_ALWAYS
     DWORD CREATE_NEW
@@ -18,7 +35,13 @@ cdef extern from *:
     DWORD GENERIC_WRITE
     DWORD FILE_ATTRIBUTE_NORMAL
 
-    BOOL __stdcall WriteFile(HANDLE hFile, LPCVOID lpBuffer, DWORD nNumberOfBytesToWrite, LPDWORD lpNumberOfBytesWritten, LPOVERLAPPED lpOverlapped)
+    BOOL __stdcall WriteFile(
+        HANDLE hFile,
+        LPCVOID lpBuffer,
+        DWORD nNumberOfBytesToWrite,
+        LPDWORD lpNumberOfBytesWritten,
+        LPOVERLAPPED lpOverlapped
+    )
 
 # vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
 

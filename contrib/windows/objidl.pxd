@@ -36,14 +36,37 @@ cdef extern from "<Objidl.h>":
     cdef cppclass IStream(ISequentialStream):
         HRESULT Clone(IStream **ppstm)
         HRESULT Commit(DWORD grfCommitFlags)
-        HRESULT CopyTo(IStream *pstm, ULARGE_INTEGER cb, ULARGE_INTEGER *pcbRead, ULARGE_INTEGER *pcbWritten)
-        HRESULT LockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType)
+
+        HRESULT CopyTo(
+            IStream *pstm,
+            ULARGE_INTEGER cb,
+            ULARGE_INTEGER *pcbRead,
+            ULARGE_INTEGER *pcbWritten
+        )
+
+        HRESULT LockRegion(
+            ULARGE_INTEGER libOffset,
+            ULARGE_INTEGER cb,
+            DWORD dwLockType
+        )
+
         HRESULT Read(void const *pv, ULONG cb, ULONG *pcbRead)
         HRESULT Revert()
-        HRESULT Seek(ULARGE_INTEGER dlibMove, DWORD dwOrigin, ULARGE_INTEGER *plibNewPosition)
+
+        HRESULT Seek(
+            ULARGE_INTEGER dlibMove,
+            DWORD dwOrigin,
+            ULARGE_INTEGER *plibNewPosition
+        )
+
         HRESULT SetSize(ULARGE_INTEGER libNewSize)
         HRESULT Stat(STATSTG *pstatstg)
-        HRESULT UnlockRegion(ULARGE_INTEGER libOffset, ULARGE_INTEGER cb, DWORD dwLockType)
+        HRESULT UnlockRegion(
+            ULARGE_INTEGER libOffset,
+            ULARGE_INTEGER cb,
+            DWORD dwLockType
+        )
+
         HRESULT Write(void const *pv, ULONG cb, ULONG *pcbWritten)
 
-# vim:set ts=8 sw=4 sts=4 tw=0 et nospell:
+# vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

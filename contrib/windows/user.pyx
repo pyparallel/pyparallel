@@ -20,7 +20,6 @@ from file cimport *
 from user cimport *
 from gdi cimport *
 from string cimport *
-from rtl cimport *
 
 DEF MAX_FILE_NAME = 1024
 
@@ -164,17 +163,17 @@ cdef class Screenshot:
             bytes_written[0] = self.dib_size
             return 0
 
-        RtlCopyMemory(<PVOID>&buf[0],
-                      <PVOID>&self.header,
-                      header_size)
+        CopyMemory(<PVOID>&buf[0],
+                   <const void *>&self.header,
+                   header_size)
 
-        RtlCopyMemory(<PVOID>&buf[header_size],
-                      <PVOID>&self.info,
-                      info_size)
+        CopyMemory(<PVOID>&buf[header_size],
+                   <const void *>&self.info,
+                   info_size)
 
-        RtlCopyMemory(<PVOID>&buf[bitmap_offset],
-                      <PVOID>self.buf,
-                      self.bitmap_size)
+        CopyMemory(<PVOID>&buf[bitmap_offset],
+                   <const void *>self.buf,
+                   self.bitmap_size)
 
         assert(bitmap_offset + self.bitmap_size == self.dib_size)
         bytes_written[0] = self.dib_size
