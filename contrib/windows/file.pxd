@@ -132,7 +132,7 @@ cdef extern from *:
     BOOL __stdcall GetDiskFreeSpaceEx(
         LPCTSTR lpDirectoryName,
         PULARGE_INTEGER lpFreeBytesAvailable,
-        PULARGE_INTERGER lpTotalNumberOfBytes,
+        PULARGE_INTEGER lpTotalNumberOfBytes,
         PULARGE_INTEGER lpTotalNumberOfFreeBytes
     )
 

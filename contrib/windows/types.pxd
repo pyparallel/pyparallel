@@ -13,6 +13,7 @@ cdef extern from *:
     ctypedef short SHORT
     ctypedef unsigned short USHORT
     ctypedef unsigned short WORD
+    ctypedef WORD *PWORD
     ctypedef WORD ATOM
     ctypedef USHORT WCHAR
     ctypedef WCHAR* PWSTR
@@ -26,6 +27,7 @@ cdef extern from *:
     ctypedef const WCHAR* LPCWSTR
     ctypedef float FLOAT
     ctypedef FLOAT* PFLOAT
+    ctypedef int INT
     ctypedef int INT32
     ctypedef long long INT64
     ctypedef Py_ssize_t INT_PTR
@@ -33,8 +35,10 @@ cdef extern from *:
     ctypedef unsigned int UINT32
     ctypedef unsigned long long UINT64
     ctypedef unsigned long long SIZE_T
+    ctypedef SIZE_T *PSIZE_T
     ctypedef Py_ssize_t UINT_PTR
     ctypedef long LONG
+    ctypedef LONG *PLONG
     ctypedef long LONG32
     ctypedef long long LONGLONG
     ctypedef long long LONG64
@@ -47,13 +51,18 @@ cdef extern from *:
     ctypedef ULONG* PULONG
     ctypedef unsigned long long ULONGLONG
     ctypedef unsigned long long ULONG64
+    ctypedef ULONGLONG DWORDLONG
+    ctypedef ULONGLONG* PDWORDLONG
     ctypedef ULONG64* PULONG64
     ctypedef ULONGLONG* PULONGLONG
     ctypedef unsigned long DWORD
     ctypedef DWORD* PDWORD
     ctypedef DWORD* LPDWORD
+    ctypedef DWORD* DWORD_PTR
     ctypedef unsigned int DWORD32
     ctypedef unsigned long long DWORD64
+    ctypedef long long WORD64
+    ctypedef WORD64 *PWORD64
     ctypedef long long __int64
     ctypedef Py_ssize_t PVOID
     ctypedef Py_ssize_t LPVOID
@@ -68,6 +77,7 @@ cdef extern from *:
     ctypedef HANDLE HRGN
     ctypedef HANDLE HGDIOBJ
     ctypedef HANDLE HMODULE
+    ctypedef HANDLE *PHANDLE
 
     ctypedef void* _HANDLE
     ctypedef _HANDLE _HBITMAP
@@ -115,6 +125,7 @@ cdef extern from *:
         WORD wProcessorLevel
         WORD wProcessorRevision
     ctypedef SYSTEM_INFO *PSYSTEM_INFO
+    ctypedef SYSTEM_INFO *LPSYSTEM_INFO
 
     ctypedef enum PROCESSOR_ARCHITECTURE:
         PROCESSOR_ARCHITECTURE_AMD64    = 9
@@ -240,6 +251,8 @@ cdef extern from *:
         DWORD HighPart
         _ULARGE_INTEGER u
         ULONGLONG QuadPart
+    ctypedef ULARGE_INTEGER *PULARGE_INTEGER
+    ctypedef ULARGE_INTEGER *LPULARGE_INTEGER
 
     ctypedef struct _LARGE_INTEGER:
         DWORD LowPart
@@ -250,6 +263,8 @@ cdef extern from *:
         LONG  HighPart
         _LARGE_INTEGER u
         LONGLONG QuadPart
+    ctypedef LARGE_INTEGER *PLARGE_INTEGER
+    ctypedef LARGE_INTEGER *LPLARGE_INTEGER
 
     ctypedef struct UNICODE_STRING:
         USHORT Length
@@ -502,7 +517,9 @@ cdef extern from *:
         LPVOID lpOverlapped
     )
 
-    ctypedef DWORD (__stdcall *LPTHREAD_START_ROUTINE(LPVOID lpThreadParameter)
+    ctypedef DWORD (__stdcall *LPTHREAD_START_ROUTINE)(
+        LPVOID lpThreadParameter
+    )
 
     ctypedef struct SIZE:
         LONG cx
@@ -643,10 +660,10 @@ cdef extern from *:
         Py_ssize_t NumberOfBytes
     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
 
-    ctypedef union FILE_SEGMENT_ARRAY:
+    ctypedef union FILE_SEGMENT_ELEMENT:
         PVOID64 Buffer
         ULONGLONG Alignment
-    ctypedef FILE_SEGMENT_ARRAY* PFILE_SEGMENT_ARRAY
+    ctypedef FILE_SEGMENT_ELEMENT* PFILE_SEGMENT_ELEMENT
 
     ctypedef enum FILE_MAPPING:
         FILE_MAP_ALL_ACCESS
@@ -750,7 +767,7 @@ cdef extern from *:
         MEM_DECOMMIT        = 0x4000
         MEM_RELEASE         = 0x8000
 
-    typedef struct MEMORYSTATUSEX:
+    ctypedef struct MEMORYSTATUSEX:
         DWORD     dwLength
         DWORD     dwMemoryLoad
         DWORDLONG ullTotalPhys
@@ -766,6 +783,35 @@ cdef extern from *:
         ULONG Version;
         ULONG Flags;
     ctypedef HEAP_OPTIMIZE_RESOURCES_INFORMATION *PHEAP_OPTIMIZE_RESOURCES_INFORMATION
+
+    ctypedef struct M128A:
+        ULONGLONG Low
+        LONGLONG High
+    ctypedef M128A *PM128A
+
+    ctypedef struct XSAVE_FORMAT:
+        USHORT ControlWord
+        USHORT StatusWord
+        UCHAR TagWord
+        UCHAR Reserved1
+        USHORT ErrorOpcode
+        ULONG ErrorOffset
+        USHORT ErrorSelector
+        USHORT Reserved2
+        ULONG DataOffset
+        USHORT DataSelector
+        USHORT Reserved3
+        ULONG MxCsr
+        ULONG MxCsr_Mask
+        M128A FloatRegisters[8]
+    IF UNAME_MACHINE[-2:] == 'x64':
+        M128A XmmRegisters[16]
+        UCHAR Reserved4[96]
+    ELSE:
+        M128A XmmRegisters[8]
+        UCHAR Reserved4[224]
+    ctypedef XSAVE_FORMAT *PXSAVE_FORMAT
+    ctypedef XSAVE_FORMAT XMM_SAVE_AREA32
 
     ctypedef struct CONTEXT:
         DWORD64 P1Home
@@ -833,14 +879,14 @@ cdef extern from *:
         DWORD64 LastExceptionToRip
         DWORD64 LastExceptionFromRip
     ctypedef CONTEXT *PCONTEXT
+    ctypedef CONTEXT *LPCONTEXT
 
     ctypedef struct LDT_ENTRY:
-        WORD  LimitLow;
-        WORD  BaseLow;
-        BYTE BaseMid;
-        BYTE Flags1;
-        BYTE Flags2;
-        BYTE BaseHi;
+        WORD  LimitLow
+        WORD  BaseLow
+        BYTE BaseMid
+        BYTE Flags1
+        BYTE Flags2
         DWORD Type
         DWORD Dpl
         DWORD Pres
@@ -851,27 +897,28 @@ cdef extern from *:
         DWORD Granularity
         DWORD BaseHi
     ctypedef LDT_ENTRY *PLDT_ENTRY
+    ctypedef LDT_ENTRY *LPLDT_ENTRY
+
+    ctypedef struct RIO_BUFFERID_t:
+        pass
+    ctypedef RIO_BUFFERID_t *RIO_BUFFERID
+    ctypedef RIO_BUFFERID *PRIO_BUFFERID
+
+    ctypedef struct RIO_CQ_t:
+        pass
+    ctypedef RIO_CQ_t *RIO_CQ
+    ctypedef RIO_CQ *PRIO_CQ
+
+    ctypedef struct RIO_RQ_t:
+        pass
+    ctypedef RIO_RQ_t *RIO_RQ
+    ctypedef RIO_RQ *PRIO_RQ
 
     ctypedef struct RIO_BUF:
         RIO_BUFFERID BufferId
         ULONG Offset
         ULONG Length
     ctypedef RIO_BUF *PRIO_BUF
-
-    ctypedef struct RIO_BUFFERID_t:
-        pass
-    ctypedef RIO_BUFFERID *RIO_BUFFERID_t
-    ctypedef RIO_BUFFERID *PRIO_BUFFERID
-
-    ctypedef struct RIO_CQ_t:
-        pass
-    ctypedef RIO_CQ *RIO_CQ_t
-    ctypedef RIO_CQ *PRIO_CQ
-
-    ctypedef struct RIO_RQ_t:
-        pass
-    ctypedef RIO_RQ *RIO_RQ_t
-    ctypedef RIO_RQ *PRIO_RQ
 
     ctypedef struct WSACMSGHDR:
         UINT cmsg_len
@@ -882,8 +929,37 @@ cdef extern from *:
         USHORT sa_family
         CHAR   sa_data[14]
 
+    ctypedef struct _S_un_b:
+        UCHAR s_b1
+        UCHAR s_b2
+        UCHAR s_b3
+        UCHAR s_b4
+
+    ctypedef struct _S_un_w:
+        USHORT s_w1
+        USHORT s_w2
+
+    ctypedef union _S_un:
+        _S_un_b S_un_b
+        _S_un_w S_un_w
+        ULONG S_addr
+
     ctypedef struct IN_ADDR:
-        pass
+        _S_un S_un
+        UCHAR s_b1
+        UCHAR s_b2
+        UCHAR s_b3
+        UCHAR s_b4
+        USHORT s_w1
+        USHORT s_w2
+        ULONG s_addr
+        UCHAR s_host
+        UCHAR s_net
+        USHORT s_imp
+        UCHAR s_impno
+        UCHAR s_lh
+    ctypedef IN_ADDR *PIN_ADDR
+    ctypedef IN_ADDR *LPIN_ADDR
 
     ctypedef SHORT ADDRESS_FAMILY
     ctypedef struct SOCKADDR_IN:
@@ -908,18 +984,53 @@ cdef extern from *:
     ctypedef struct RIO_NOTIFICATION_COMPLETION:
         RIO_NOTIFICATION_COMPLETION_TYPE Type
         HANDLE EventHandle
-        BOOL NotifyReset
+        BOOL   NotifyReset
         HANDLE IocpHandle
-        PVOID CompletionKey
-        PVOID Overlapped
+        PVOID  CompletionKey
+        PVOID  Overlapped
     ctypedef RIO_NOTIFICATION_COMPLETION *PRIO_NOTIFICATION_COMPLETION
 
     ctypedef struct RIORESULT:
         LONG Status
         ULONG BytesTransferred
-        ULONGULONG SocketContext
-        ULONGULONG RequestContext
+        ULONGLONG SocketContext
+        ULONGLONG RequestContext
     ctypedef RIORESULT *PRIORESULT
+
+    ctypedef struct TRANSMIT_FILE_BUFFERS:
+        PVOID Head
+        DWORD HeadLength
+        PVOID Tail
+        DWORD TailLength
+    ctypedef TRANSMIT_FILE_BUFFERS *PTRANSMIT_FILE_BUFFERS
+
+    ctypedef enum KPROFILE_SOURCE:
+        ProfileTime
+        ProfileAlignmentFixup
+        ProfileTotalIssues
+        ProfilePipelineDry
+        ProfileLoadInstructions
+        ProfilePipelineFrozen
+        ProfileBranchInstructions
+        ProfileTotalNonissues
+        ProfileDcacheMisses
+        ProfileIcacheMisses
+        ProfileCacheMisses
+        ProfileBranchMispredictions
+        ProfileStoreInstructions
+        ProfileFpInstructions
+        ProfileIntegerInstructions
+        Profile2Issue
+        Profile3Issue
+        Profile4Issue
+        ProfileSpecialInstructions
+        ProfileTotalCycles
+        ProfileIcacheIssues
+        ProfileDcacheAccesses
+        ProfileMemoryBarrierCycles
+        ProfileLoadLinkedIssues
+        ProfileMaximum
+
 
 
     DWORD CREATE_ALWAYS

@@ -262,7 +262,7 @@ cdef extern from *:
         PDWORD lpflOldProtect
     )
 
-    BOOL __stdcall VirtualProtect(
+    BOOL __stdcall VirtualProtectEx(
         HANDLE hProcess,
         LPVOID lpAddress,
         SIZE_T dwSize,
