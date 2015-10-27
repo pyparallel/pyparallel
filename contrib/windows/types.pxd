@@ -9,6 +9,7 @@ cdef extern from *:
     ctypedef CHAR BOOLEAN
     ctypedef unsigned char UCHAR
     ctypedef UCHAR BYTE
+    ctypedef UCHAR* PUCHAR
     ctypedef short SHORT
     ctypedef unsigned short USHORT
     ctypedef unsigned short WORD
@@ -31,6 +32,7 @@ cdef extern from *:
     ctypedef unsigned int UINT
     ctypedef unsigned int UINT32
     ctypedef unsigned long long UINT64
+    ctypedef unsigned long long SIZE_T
     ctypedef Py_ssize_t UINT_PTR
     ctypedef long LONG
     ctypedef long LONG32
@@ -40,6 +42,7 @@ cdef extern from *:
     ctypedef unsigned long ULONG
     ctypedef ULONG ACCESS_MASK
     ctypedef Py_ssize_t ULONG_PTR
+    ctypedef Py_ssize_t PULONG_PTR
     ctypedef ULONG_PTR KAFFINITY
     ctypedef ULONG* PULONG
     ctypedef unsigned long long ULONGLONG
@@ -54,6 +57,7 @@ cdef extern from *:
     ctypedef long long __int64
     ctypedef Py_ssize_t PVOID
     ctypedef Py_ssize_t LPVOID
+    ctypedef unsigned long long PVOID64
     ctypedef const void * LPCVOID
     ctypedef PVOID INIT_ONCE
     ctypedef PVOID* PINIT_ONCE
@@ -63,6 +67,7 @@ cdef extern from *:
     ctypedef HANDLE HWND
     ctypedef HANDLE HRGN
     ctypedef HANDLE HGDIOBJ
+    ctypedef HANDLE HMODULE
 
     ctypedef void* _HANDLE
     ctypedef _HANDLE _HBITMAP
@@ -96,6 +101,86 @@ cdef extern from *:
         DWORD dwThreadId
     ctypedef PROCESS_INFORMATION* PPROCESS_INFORMATION
 
+    ctypedef struct SYSTEM_INFO:
+        DWORD dwOemId
+        WORD wProcessorArchitecture
+        WORD wReserved
+        DWORD dwPageSize
+        LPVOID lpMinimumApplicationAddress
+        LPVOID lpMaximumApplicationAddress
+        DWORD_PTR dwActiveProcessorMask
+        DWORD dwNumberOfProcessors
+        DWORD dwProcessorType
+        DWORD dwAllocationGranularity
+        WORD wProcessorLevel
+        WORD wProcessorRevision
+    ctypedef SYSTEM_INFO *PSYSTEM_INFO
+
+    ctypedef enum PROCESSOR_ARCHITECTURE:
+        PROCESSOR_ARCHITECTURE_AMD64    = 9
+        PROCESSOR_ARCHITECTURE_ARM      = 5
+        PROCESSOR_ARCHITECTURE_IA64     = 6
+        PROCESSOR_ARCHITECTURE_INTEL    = 0
+        PROCESSOR_ARCHITECTURE_UNKNOWN  = 0xffff
+
+    ctypedef struct PERFORMANCE_INFORMATION:
+        DWORD  cb
+        SIZE_T CommitTotal
+        SIZE_T CommitLimit
+        SIZE_T CommitPeak
+        SIZE_T PhysicalTotal
+        SIZE_T PhysicalAvailable
+        SIZE_T SystemCache
+        SIZE_T KernelTotal
+        SIZE_T KernelPaged
+        SIZE_T KernelNonpaged
+        SIZE_T PageSize
+        DWORD  HandleCount
+        DWORD  ProcessCount
+        DWORD  ThreadCount
+    ctypedef PERFORMANCE_INFORMATION *PPERFORMANCE_INFORMATION
+
+    ctypedef struct PROCESS_MEMORY_COUNTERS:
+        DWORD  cb
+        DWORD  PageFaultCount
+        SIZE_T PeakWorkingSetSize
+        SIZE_T WorkingSetSize
+        SIZE_T QuotaPeakPagedPoolUsage
+        SIZE_T QuotaPagedPoolUsage
+        SIZE_T QuotaPeakNonPagedPoolUsage
+        SIZE_T QuotaNonPagedPoolUsage
+        SIZE_T PagefileUsage
+        SIZE_T PeakPagefileUsage
+    ctypedef PROCESS_MEMORY_COUNTERS *PPROCESS_MEMORY_COUNTERS
+
+    ctypedef struct PROCESS_MEMORY_COUNTERS_EX:
+        DWORD  cb
+        DWORD  PageFaultCount
+        SIZE_T PeakWorkingSetSize
+        SIZE_T WorkingSetSize
+        SIZE_T QuotaPeakPagedPoolUsage
+        SIZE_T QuotaPagedPoolUsage
+        SIZE_T QuotaPeakNonPagedPoolUsage
+        SIZE_T QuotaNonPagedPoolUsage
+        SIZE_T PagefileUsage
+        SIZE_T PeakPagefileUsage
+        SIZE_T PrivateUsage
+    ctypedef PROCESS_MEMORY_COUNTERS_EX *PPROCESS_MEMORY_COUNTERS_EX
+
+    ctypedef struct ENUM_PAGE_FILE_INFORMATION:
+        DWORD  cb
+        DWORD  Reserved
+        SIZE_T TotalSize
+        SIZE_T TotalInUse
+        SIZE_T PeakUsage
+    ctypedef ENUM_PAGE_FILE_INFORMATION *PENUM_PAGE_FILE_INFORMATION
+
+    ctypedef struct MODULEINFO:
+        LPVOID lpBaseOfDll
+        DWORD SizeOfImage
+        LPVOID EntryPoint
+    ctypedef MODULEINFO *PMODULEINFO
+
     ctypedef enum PROCESS_INFORMATION_CLASS:
         ProcessBasicInformation             = 0
         ProcessQuotaLimits                  = 1
@@ -127,7 +212,6 @@ cdef extern from *:
     ctypedef struct SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION:
         DWORD64 CycleTime
     ctypedef SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION* PSYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION
-
 
     ctypedef struct MEMORY_PRIORITY_INFORMATION:
         ULONG MemoryPriority
@@ -404,6 +488,22 @@ cdef extern from *:
         HANDLE hEvent
     ctypedef OVERLAPPED* LPOVERLAPPED
 
+    ctypedef struct OVERLAPPED_ENTRY:
+        ULONG_PTR lpCompletionKey
+        LPOVERLAPPED lpOverlapped
+        ULONG_PTR Internal
+        DWORD dwNumberOfBytesTransferred
+    ctypedef OVERLAPPED_ENTRY *POVERLAPPED_ENTRY
+    ctypedef OVERLAPPED_ENTRY *LPOVERLAPPED_ENTRY
+
+    ctypedef void (*LPOVERLAPPED_COMPLETION_ROUTINE)(
+        DWORD dwErrorCode,
+        DWORD dwNumberOfBytesTransferred,
+        LPVOID lpOverlapped
+    )
+
+    ctypedef DWORD (__stdcall *LPTHREAD_START_ROUTINE(LPVOID lpThreadParameter)
+
     ctypedef struct SIZE:
         LONG cx
         LONG cy
@@ -543,4 +643,291 @@ cdef extern from *:
         Py_ssize_t NumberOfBytes
     ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
 
+    ctypedef union FILE_SEGMENT_ARRAY:
+        PVOID64 Buffer
+        ULONGLONG Alignment
+    ctypedef FILE_SEGMENT_ARRAY* PFILE_SEGMENT_ARRAY
+
+    ctypedef enum FILE_MAPPING:
+        FILE_MAP_ALL_ACCESS
+        FILE_MAP_COPY
+        FILE_MAP_READ
+        FILE_MAP_WRITE
+    DWORD FILE_MAP_EXECUTE
+
+    ctypedef enum PAGE_PROTECTION:
+        PAGE_EXECUTE_READ           = 0x20
+        PAGE_EXECUTE_READWRITE      = 0x40
+        PAGE_EXECUTE_WRITECOPY      = 0x80
+        PAGE_READONLY               = 0x02
+        PAGE_READWRITE              = 0x04
+        PAGE_WRITECOPY              = 0x08
+
+    ctypedef enum SECURITY_ATTRIBUTES:
+        SEC_COMMIT                  = 0x8000000
+        SEC_IMAGE                   = 0x1000000
+        SEC_IMAGE_NO_EXECUTE        = 0x11000000
+        SEC_LARGE_PAGES             = 0x80000000
+        SEC_NOCACHE                 = 0x10000000
+        SEC_RESERVE                 = 0x4000000
+        SEC_WRITECOMBINE            = 0x40000000
+
+    ctypedef enum NUMA_NODE_PREFERRED:
+        NUMA_NO_PREFERRED_NODE = 0xffffffff
+
+    ctypedef enum FILE_INFO_BY_HANDLE_CLASS:
+        FileBasicInfo                   = 0
+        FileStandardInfo                = 1
+        FileNameInfo                    = 2
+        FileRenameInfo                  = 3
+        FileDispositionInfo             = 4
+        FileAllocationInfo              = 5
+        FileEndOfFileInfo               = 6
+        FileStreamInfo                  = 7
+        FileCompressionInfo             = 8
+        FileAttributeTagInfo            = 9
+        FileIdBothDirectoryInfo         = 10
+        FileIdBothDirectoryRestartInfo  = 11
+        FileIoPriorityHintInfo          = 12
+        FileRemoteProtocolInfo          = 13
+        FileFullDirectoryInfo           = 14
+        FileFullDirectoryRestartInfo    = 15
+        FileStorageInfo                 = 16
+        FileAlignmentInfo               = 17
+        FileIdInfo                      = 18
+        FileIdExtdDirectoryInfo         = 19
+        FileIdExtdDirectoryRestartInfo  = 20
+        MaximumFileInfoByHandlesClass
+    ctypedef FILE_INFO_BY_HANDLE_CLASS *PFILE_INFO_BY_HANDLE_CLASS
+
+    ctypedef struct FILE_BASIC_INFO:
+        LARGE_INTEGER CreationTime
+        LARGE_INTEGER LastAccessTime
+        LARGE_INTEGER LastWriteTime
+        LARGE_INTEGER ChangeTime
+        DWORD         FileAttributes
+    ctypedef FILE_BASIC_INFO *PFILE_BASIC_INFO
+
+    ctypedef struct FILE_ALIGNMENT_INFO:
+        ULONG AlignmentRequirement
+    ctypedef FILE_ALIGNMENT_INFO *PFILE_ALIGNMENT_INFO
+
+    ctypedef struct BY_HANDLE_FILE_INFORMATION:
+        DWORD    dwFileAttributes
+        FILETIME ftCreationTime
+        FILETIME ftLastAccessTime
+        FILETIME ftLastWriteTime
+        DWORD    dwVolumeSerialNumber
+        DWORD    nFileSizeHigh
+        DWORD    nFileSizeLow
+        DWORD    nNumberOfLinks
+        DWORD    nFileIndexHigh
+        DWORD    nFileIndexLow
+    ctypedef BY_HANDLE_FILE_INFORMATION *PBY_HANDLE_FILE_INFORMATION
+    ctypedef BY_HANDLE_FILE_INFORMATION *LPBY_HANDLE_FILE_INFORMATION
+
+    ctypedef struct MEMORY_BASIC_INFORMATION:
+        PVOID  BaseAddress
+        PVOID  AllocationBase
+        DWORD  AllocationProtect
+        SIZE_T RegionSize
+        DWORD  State
+        DWORD  Protect
+        DWORD  Type
+    ctypedef MEMORY_BASIC_INFORMATION *PMEMORY_BASIC_INFORMATION
+
+    ctypedef enum MEMORY_ALLOCATION_TYPE:
+        MEM_COMMIT          = 0x00001000
+        MEM_RESERVE         = 0x00002000
+        MEM_RESET           = 0x00080000
+        MEM_RESET_UNDO      = 0x1000000
+        MEM_LARGE_PAGES     = 0x20000000
+        MEM_PHYSICAL        = 0x00400000
+        MEM_TOP_DOWN        = 0x00100000
+        MEM_WRITE_WATCH     = 0x00200000
+
+    ctypedef enum MEMORY_FREE_TYPE:
+        MEM_DECOMMIT        = 0x4000
+        MEM_RELEASE         = 0x8000
+
+    typedef struct MEMORYSTATUSEX:
+        DWORD     dwLength
+        DWORD     dwMemoryLoad
+        DWORDLONG ullTotalPhys
+        DWORDLONG ullAvailPhys
+        DWORDLONG ullTotalPageFile
+        DWORDLONG ullAvailPageFile
+        DWORDLONG ullTotalVirtual
+        DWORDLONG ullAvailVirtual
+        DWORDLONG ullAvailExtendedVirtual
+    ctypedef MEMORYSTATUSEX *LPMEMORYSTATUSEX
+
+    ctypedef struct HEAP_OPTIMIZE_RESOURCES_INFORMATION:
+        ULONG Version;
+        ULONG Flags;
+    ctypedef HEAP_OPTIMIZE_RESOURCES_INFORMATION *PHEAP_OPTIMIZE_RESOURCES_INFORMATION
+
+    ctypedef struct CONTEXT:
+        DWORD64 P1Home
+        DWORD64 P2Home
+        DWORD64 P3Home
+        DWORD64 P4Home
+        DWORD64 P5Home
+        DWORD64 P6Home
+        DWORD ContextFlags
+        DWORD MxCsr
+        WORD SegCs
+        WORD SegDs
+        WORD SegEs
+        WORD SegFs
+        WORD SegGs
+        WORD SegSs
+        DWORD EFlags
+        DWORD64 Dr0
+        DWORD64 Dr1
+        DWORD64 Dr2
+        DWORD64 Dr3
+        DWORD64 Dr6
+        DWORD64 Dr7
+        DWORD64 Rax
+        DWORD64 Rcx
+        DWORD64 Rdx
+        DWORD64 Rbx
+        DWORD64 Rsp
+        DWORD64 Rbp
+        DWORD64 Rsi
+        DWORD64 Rdi
+        DWORD64 R8
+        DWORD64 R9
+        DWORD64 R10
+        DWORD64 R11
+        DWORD64 R12
+        DWORD64 R13
+        DWORD64 R14
+        DWORD64 R15
+        DWORD64 Rip
+        XMM_SAVE_AREA32 FltSave
+        M128A Header[2]
+        M128A Legacy[8]
+        M128A Xmm0
+        M128A Xmm1
+        M128A Xmm2
+        M128A Xmm3
+        M128A Xmm4
+        M128A Xmm5
+        M128A Xmm6
+        M128A Xmm7
+        M128A Xmm8
+        M128A Xmm9
+        M128A Xmm10
+        M128A Xmm11
+        M128A Xmm12
+        M128A Xmm13
+        M128A Xmm14
+        M128A Xmm15
+        M128A VectorRegister[26]
+        DWORD64 VectorControl
+        DWORD64 DebugControl
+        DWORD64 LastBranchToRip
+        DWORD64 LastBranchFromRip
+        DWORD64 LastExceptionToRip
+        DWORD64 LastExceptionFromRip
+    ctypedef CONTEXT *PCONTEXT
+
+    ctypedef struct LDT_ENTRY:
+        WORD  LimitLow;
+        WORD  BaseLow;
+        BYTE BaseMid;
+        BYTE Flags1;
+        BYTE Flags2;
+        BYTE BaseHi;
+        DWORD Type
+        DWORD Dpl
+        DWORD Pres
+        DWORD LimitHi
+        DWORD Sys
+        DWORD Reserved_0
+        DWORD Default_Big
+        DWORD Granularity
+        DWORD BaseHi
+    ctypedef LDT_ENTRY *PLDT_ENTRY
+
+    ctypedef struct RIO_BUF:
+        RIO_BUFFERID BufferId
+        ULONG Offset
+        ULONG Length
+    ctypedef RIO_BUF *PRIO_BUF
+
+    ctypedef struct RIO_BUFFERID_t:
+        pass
+    ctypedef RIO_BUFFERID *RIO_BUFFERID_t
+    ctypedef RIO_BUFFERID *PRIO_BUFFERID
+
+    ctypedef struct RIO_CQ_t:
+        pass
+    ctypedef RIO_CQ *RIO_CQ_t
+    ctypedef RIO_CQ *PRIO_CQ
+
+    ctypedef struct RIO_RQ_t:
+        pass
+    ctypedef RIO_RQ *RIO_RQ_t
+    ctypedef RIO_RQ *PRIO_RQ
+
+    ctypedef struct WSACMSGHDR:
+        UINT cmsg_len
+        INT  cmsg_level
+        INT  cmsg_type
+
+    ctypedef struct SOCKADDR:
+        USHORT sa_family
+        CHAR   sa_data[14]
+
+    ctypedef struct IN_ADDR:
+        pass
+
+    ctypedef SHORT ADDRESS_FAMILY
+    ctypedef struct SOCKADDR_IN:
+        ADDRESS_FAMILY sa_family
+        CHAR sa_data[14]
+        IN_ADDR sin_addr
+        CHAR sin_zero[8]
+
+    ctypedef struct SOCKADDR_IN6:
+        pass
+
+    ctypedef union SOCKADDR_INET:
+        SOCKADDR_IN Ipv4
+        SOCKADDR_IN6 Ipv6
+        ADDRESS_FAMILY si_family
+    ctypedef SOCKADDR_INET *PSOCKADDR_INET
+
+    ctypedef enum RIO_NOTIFICATION_COMPLETION_TYPE:
+        RIO_EVENT_COMPLETION = 1
+        RIO_IOCP_COMPLETION  = 2
+
+    ctypedef struct RIO_NOTIFICATION_COMPLETION:
+        RIO_NOTIFICATION_COMPLETION_TYPE Type
+        HANDLE EventHandle
+        BOOL NotifyReset
+        HANDLE IocpHandle
+        PVOID CompletionKey
+        PVOID Overlapped
+    ctypedef RIO_NOTIFICATION_COMPLETION *PRIO_NOTIFICATION_COMPLETION
+
+    ctypedef struct RIORESULT:
+        LONG Status
+        ULONG BytesTransferred
+        ULONGULONG SocketContext
+        ULONGULONG RequestContext
+    ctypedef RIORESULT *PRIORESULT
+
+
+    DWORD CREATE_ALWAYS
+    DWORD CREATE_NEW
+    DWORD OPEN_ALWAYS
+    DWORD OPEN_EXISTING
+    DWORD TRUNCATE_EXISTING
+
+    DWORD GENERIC_WRITE
+    DWORD FILE_ATTRIBUTE_NORMAL
 # vim: set ts=8 sw=4 sts=4 tw=80 et nospell:                                   #

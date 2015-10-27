@@ -50,4 +50,16 @@ cdef extern from "<windows.h>":
         PDWORD pdwHandleCount
     )
 
+    BOOL __stdcall SetProcessWorkingSetSize(
+        HANDLE hProcess,
+        SIZE_T dwMinimumWorkingSetSize,
+        SIZE_T dwMaximumWorkingSetSize
+    )
+
+    BOOL __stdcall GetProcessWorkingSetSize(
+        HANDLE hProcess,
+        PSIZE_T lpMinimumWorkingSetSize,
+        PSIZE_T lpMaximumWorkingSetSize
+    )
+
 # vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #
