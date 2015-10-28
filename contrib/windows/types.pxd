@@ -82,6 +82,10 @@ cdef extern from *:
     ctypedef void* _HANDLE
     ctypedef _HANDLE _HBITMAP
 
+    ctypedef INT_PTR (__stdcall *FARPROC)()
+    ctypedef INT_PTR (__stdcall *NEARPROC)()
+    ctypedef INT_PTR (__stdcall *PROC)()
+
     ctypedef struct IID:
         unsigned long x
         unsigned short s1
@@ -783,6 +787,42 @@ cdef extern from *:
         ULONG Version;
         ULONG Flags;
     ctypedef HEAP_OPTIMIZE_RESOURCES_INFORMATION *PHEAP_OPTIMIZE_RESOURCES_INFORMATION
+
+    ctypedef struct TP_POOL:
+        pass
+    ctypedef TP_POOL *PTP_POOL
+
+    ctypedef struct TP_IO:
+        pass
+    ctypedef TP_IO *PTP_IO
+
+    ctypedef struct TP_CALLBACK_ENVIRON:
+        pass
+    ctypedef TP_CALLBACK_ENVIRON *PTP_CALLBACK_ENVIRON
+
+    ctypedef struct TP_CALLBACK_INSTANCE:
+        pass
+    ctypedef TP_CALLBACK_INSTANCE *PTP_CALLBACK_INSTANCE
+
+    void __stdcall IoCompletionCallback(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PVOID                 Overlapped,
+        ULONG                 IoResult,
+        ULONG_PTR             NumberOfBytesTransferred,
+        PTP_IO                Io
+    )
+
+    ctypedef void (__stdcall *LPFN_IoCompletionCallback)(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PVOID                 Overlapped,
+        ULONG                 IoResult,
+        ULONG_PTR             NumberOfBytesTransferred,
+        PTP_IO                Io
+    )
+    ctypedef LPFN_IoCompletionCallback PTP_WIN32_IO_CALLBACK
+
 
     ctypedef struct M128A:
         ULONGLONG Low
