@@ -15,6 +15,7 @@ cdef extern from "../../Include/unicodeobject.h":
     char* PyUnicode_AsUTF8AndSize(object, Py_ssize_t *)
 
 include "windows.pxi"
+from constants cimport *
 from base cimport *
 from file cimport *
 from user cimport *

@@ -23,9 +23,15 @@
 int
 _load_cython_windows_modules(PyObject *m)
 {
-    _LOAD(processthreads);
+    _LOAD(base);
+    _LOAD(types);
+    _LOAD(constants);
     _LOAD(rtl);
+    _LOAD(processthreads);
     _LOAD(user);
+    _LOAD(adv);
+    _LOAD(avrt);
+    _LOAD(threadpool);
     _LOAD_CPP(gdiplus);
     return 1;
 }

@@ -1022,6 +1022,9 @@
     <ClCompile Include="..\Python\ultrajsonenc.c">
       <Filter>Python</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\threadpool.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\avrt.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1029,6 +1032,12 @@
       <Filter>Windows\Generated</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\base.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
+    <ClCompile Include="..\contrib\windows\types.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
+    <ClCompile Include="..\contrib\windows\constants.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\_loader.c">
@@ -1062,6 +1071,9 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\threadpool.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
     <CythonFile Include="..\contrib\windows\avrt.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
@@ -1069,6 +1081,12 @@
       <Filter>Windows\Cython</Filter>
     </CythonFile>
     <CythonFile Include="..\contrib\windows\base.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\types.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\constants.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
     <CythonFile Include="..\contrib\windows\user.pyx">

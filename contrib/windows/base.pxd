@@ -80,6 +80,8 @@ cdef extern from *:
         PULONGLONG AvailableBytes
     )
 
+    void GetCurrentProcessorNumberEx(PPROCESSOR_NUMBER ProcNum)
+
     BOOL GetLogicalProcessorInformationEx(
         LOGICAL_PROCESSOR_RELATIONSHIP RelationshipType,
         PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX Buffer,

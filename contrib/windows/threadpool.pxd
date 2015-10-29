@@ -39,7 +39,7 @@ cdef extern from *:
     )
 
     PTP_CLEANUP_GROUP __stdcall CreateThreadpoolCleanupGroup()
-    ctypedef PTP_CLEANUP_GROUP (__stdcall *LPFN_CreateThreadpoolCleanupGroup())
+    ctypedef PTP_CLEANUP_GROUP (__stdcall *LPFN_CreateThreadpoolCleanupGroup)()
 
     void SetThreadpoolCallbackCleanupGroup(
         PTP_CALLBACK_ENVIRON              pcbe,
@@ -298,6 +298,7 @@ cdef class Threadpool:
         PTP_CALLBACK_ENVIRON pcbe
 
     cdef PTP_IO create_threadpool_io(
+        self,
         HANDLE fl,
         PTP_WIN32_IO_CALLBACK pfnio,
         PVOID pv

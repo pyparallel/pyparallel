@@ -1,4 +1,3 @@
-
 from cpython.mem cimport PyMem_Malloc, PyMem_Free
 
 include "wdm.pxi"

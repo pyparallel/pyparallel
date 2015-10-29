@@ -131,13 +131,6 @@ cdef extern from *:
     ctypedef SYSTEM_INFO *PSYSTEM_INFO
     ctypedef SYSTEM_INFO *LPSYSTEM_INFO
 
-    ctypedef enum PROCESSOR_ARCHITECTURE:
-        PROCESSOR_ARCHITECTURE_AMD64    = 9
-        PROCESSOR_ARCHITECTURE_ARM      = 5
-        PROCESSOR_ARCHITECTURE_IA64     = 6
-        PROCESSOR_ARCHITECTURE_INTEL    = 0
-        PROCESSOR_ARCHITECTURE_UNKNOWN  = 0xffff
-
     ctypedef struct PERFORMANCE_INFORMATION:
         DWORD  cb
         SIZE_T CommitTotal
@@ -757,20 +750,6 @@ cdef extern from *:
         DWORD  Type
     ctypedef MEMORY_BASIC_INFORMATION *PMEMORY_BASIC_INFORMATION
 
-    ctypedef enum MEMORY_ALLOCATION_TYPE:
-        MEM_COMMIT          = 0x00001000
-        MEM_RESERVE         = 0x00002000
-        MEM_RESET           = 0x00080000
-        MEM_RESET_UNDO      = 0x1000000
-        MEM_LARGE_PAGES     = 0x20000000
-        MEM_PHYSICAL        = 0x00400000
-        MEM_TOP_DOWN        = 0x00100000
-        MEM_WRITE_WATCH     = 0x00200000
-
-    ctypedef enum MEMORY_FREE_TYPE:
-        MEM_DECOMMIT        = 0x4000
-        MEM_RELEASE         = 0x8000
-
     ctypedef struct MEMORYSTATUSEX:
         DWORD     dwLength
         DWORD     dwMemoryLoad
@@ -788,6 +767,10 @@ cdef extern from *:
         ULONG Flags;
     ctypedef HEAP_OPTIMIZE_RESOURCES_INFORMATION *PHEAP_OPTIMIZE_RESOURCES_INFORMATION
 
+    ctypedef struct TP_CALLBACK_INSTANCE:
+        pass
+    ctypedef TP_CALLBACK_INSTANCE *PTP_CALLBACK_INSTANCE
+
     ctypedef struct TP_POOL:
         pass
     ctypedef TP_POOL *PTP_POOL
@@ -796,13 +779,34 @@ cdef extern from *:
         pass
     ctypedef TP_IO *PTP_IO
 
+    ctypedef struct TP_TIMER:
+        pass
+    ctypedef TP_TIMER *PTP_TIMER
+
+    ctypedef struct TP_WORK:
+        pass
+    ctypedef TP_WORK *PTP_WORK
+
+    ctypedef struct TP_WAIT:
+        pass
+    ctypedef TP_WAIT *PTP_WAIT
+    ctypedef DWORD TP_WAIT_RESULT
+
     ctypedef struct TP_CALLBACK_ENVIRON:
         pass
     ctypedef TP_CALLBACK_ENVIRON *PTP_CALLBACK_ENVIRON
 
-    ctypedef struct TP_CALLBACK_INSTANCE:
+    ctypedef struct TP_CALLBACK_PRIORITY:
         pass
-    ctypedef TP_CALLBACK_INSTANCE *PTP_CALLBACK_INSTANCE
+    ctypedef TP_CALLBACK_PRIORITY *PTP_CALLBACK_PRIORITY
+
+    ctypedef struct TP_CLEANUP_GROUP:
+        pass
+    ctypedef TP_CLEANUP_GROUP *PTP_CLEANUP_GROUP
+
+    ctypedef struct TP_CLEANUP_GROUP_CANCEL_CALLBACK:
+        pass
+    ctypedef TP_CLEANUP_GROUP_CANCEL_CALLBACK *PTP_CLEANUP_GROUP_CANCEL_CALLBACK
 
     void __stdcall IoCompletionCallback(
         PTP_CALLBACK_INSTANCE Instance,
@@ -812,7 +816,6 @@ cdef extern from *:
         ULONG_PTR             NumberOfBytesTransferred,
         PTP_IO                Io
     )
-
     ctypedef void (__stdcall *LPFN_IoCompletionCallback)(
         PTP_CALLBACK_INSTANCE Instance,
         PVOID                 Context,
@@ -822,6 +825,44 @@ cdef extern from *:
         PTP_IO                Io
     )
     ctypedef LPFN_IoCompletionCallback PTP_WIN32_IO_CALLBACK
+
+    void __stdcall TimerCallback(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_TIMER             Timer
+    )
+    ctypedef void (__stdcall *LPFN_TimerCallback)(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_TIMER             Timer
+    )
+    ctypedef LPFN_TimerCallback PTP_TIMER_CALLBACK
+
+    void __stdcall WorkCallback(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_WORK              Work
+    )
+    ctypedef void (__stdcall *LPFN_WorkCallback)(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_WORK              Work
+    )
+    ctypedef LPFN_WorkCallback PTP_WORK_CALLBACK
+
+    void __stdcall WaitCallback(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_WAIT              Wait,
+        TP_WAIT_RESULT        WaitResult
+    )
+    ctypedef void (__stdcall *LPFN_WaitCallback)(
+        PTP_CALLBACK_INSTANCE Instance,
+        PVOID                 Context,
+        PTP_WAIT              Wait,
+        TP_WAIT_RESULT        WaitResult
+    )
+    ctypedef LPFN_WaitCallback PTP_WAIT_CALLBACK
 
 
     ctypedef struct M128A:
@@ -1071,14 +1112,4 @@ cdef extern from *:
         ProfileLoadLinkedIssues
         ProfileMaximum
 
-
-
-    DWORD CREATE_ALWAYS
-    DWORD CREATE_NEW
-    DWORD OPEN_ALWAYS
-    DWORD OPEN_EXISTING
-    DWORD TRUNCATE_EXISTING
-
-    DWORD GENERIC_WRITE
-    DWORD FILE_ATTRIBUTE_NORMAL
 # vim: set ts=8 sw=4 sts=4 tw=80 et nospell:                                   #
