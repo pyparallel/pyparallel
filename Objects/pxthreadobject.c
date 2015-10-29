@@ -664,6 +664,24 @@ pxthread_set_exception_handler(PxThreadObject *t, PyObject *o, void *closure)
     return 0;
 }
 
+PyObject *
+pxthread_get_thread_handle(PxThreadObject *t, void *closure)
+{
+    return PyLong_FromVoidPtr(t->thread_handle);
+}
+
+PyObject *
+pxthread_get_avrt_handle(PxThreadObject *t, void *closure)
+{
+    return PyLong_FromVoidPtr(t->avrt_handle);
+}
+
+PyObject *
+pxthread_get_thread_id(PxThreadObject *t, void *closure)
+{
+    return PyLong_FromLong(t->thread_id);
+}
+
 int
 pxthread_set_thread_characteristics(PxThreadObject *t,
                                     PyObject *o,
@@ -922,6 +940,25 @@ static PyGetSetDef PxThread_GetSetList[] = {
         "if this thread has multimedia characteristics set, this will return "
         "a value between 10 and 100 percent, indicating how responsive the "
         "system currently is",
+    },
+    {
+        "thread_handle",
+        (getter)pxthread_get_thread_handle,
+        (setter)NULL,
+        "the HANDLE of the underlying thread",
+    },
+    {
+        "avrt_handle",
+        (getter)pxthread_get_avrt_handle,
+        (setter)NULL,
+        "if a multimedia thread characteristic has been set, this will return "
+        "the Avrt-specific thread HANDLE",
+    },
+    {
+        "thread_id",
+        (getter)pxthread_get_thread_id,
+        (setter)NULL,
+        "ID of the current thread (as returned by GetCurrentThreadId())",
     },
     { NULL },
 };
