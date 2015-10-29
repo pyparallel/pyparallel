@@ -11446,7 +11446,17 @@ serverclient:
         goto setnonblock;
 
 create_socket:
-    s->sock_fd = socket(s->sock_family, s->sock_type, s->sock_proto);
+    s->sock_flags = WSA_FLAG_OVERLAPPED;
+    if (_PyParallel_RegisteredIOAvailable)
+        s->sock_flags |= WSA_FLAG_REGISTERED_IO;
+    s->sock_fd = WSASocket(
+        s->sock_family,
+        s->sock_type,
+        s->sock_proto,
+        NULL,
+        0,
+        s->sock_flags
+    );
     if (s->sock_fd == INVALID_SOCKET)
         PxSocket_WSAERROR("socket()");
 

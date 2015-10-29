@@ -897,6 +897,7 @@ typedef struct _PxSocket {
     int sock_proto;             /* Protocol type, usually 0 */
     double sock_timeout;        /* Operation timeout in seconds; */
     long sock_seq_id;
+    DWORD sock_flags;
 
     struct addrinfo local_addrinfo;
     struct addrinfo remote_addrinfo;
