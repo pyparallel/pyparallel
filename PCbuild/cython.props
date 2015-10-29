@@ -4,12 +4,12 @@
     <Message Text="Found: @(CythonFile->'%(CythonFile.Identity)'"/>
   </Target>
   <Target Name="Cython" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).c')">
-    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail --timestamps"
+    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail"
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
     <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonFile.RelativeDir)%(Filename).c" WorkingDirectory="$(ProjectDir).."/>
   </Target>
-  <Target Name="CythonForce" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).c')">
-    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail"
+  <Target Name="CythonFast" Inputs="@(CythonFile)" Outputs="@(CythonFile->'%(Filename).c')">
+    <Exec Command="cython -3 %(Filename).pyx -w . -I . --fast-fail --timestamps"
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
     <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonFile.RelativeDir)%(Filename).c" WorkingDirectory="$(ProjectDir).."/>
   </Target>
@@ -18,12 +18,12 @@
       WorkingDirectory="%(CythonFile.RelativeDir)"/>
   </Target>
   <Target Name="CythonCpp" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
-    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --timestamps -o %(Filename).cpp"
+    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail -o %(Filename).cpp"
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
     <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonCppFile.RelativeDir)%(Filename).cpp" WorkingDirectory="$(ProjectDir).."/>
   </Target>
-  <Target Name="CythonCppForce" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
-    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --lenient -o %(Filename).cpp"
+  <Target Name="CythonCppFast" Inputs="@(CythonCppFile)" Outputs="@(CythonCppFile->'%(Filename).cpp')">
+    <Exec Command="cython -3 --cplus %(Filename).pyx -w . -I . --fast-fail --timestamps -o %(Filename).cpp"
       WorkingDirectory="%(CythonCppFile.RelativeDir)"/>
     <Exec Command="px patch-cython-generated-file --path $(ProjectDir)%(CythonCppFile.RelativeDir)%(Filename).cpp" WorkingDirectory="$(ProjectDir).."/>
   </Target>
