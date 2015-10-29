@@ -234,8 +234,8 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__processthreads
-#define __PYX_HAVE_API__processthreads
+#define __PYX_HAVE__threadpool
+#define __PYX_HAVE_API__threadpool
 #include <windows.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -445,28 +445,39 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "processthreads.pyx",
+  "threadpool.pyx",
 };
 
 /*--- Type declarations ---*/
-struct __pyx_obj_14processthreads_ThreadTime;
+struct __pyx_obj_10threadpool_Threadpool;
 
-/* "processthreads.pyx":6
- * #include "processthreads.pxi"
+/* "threadpool.pxd":296
+ *     )
  * 
- * cdef class ThreadTime:             # <<<<<<<<<<<<<<
- *     cdef public:
- *         HANDLE handle
+ * cdef class Threadpool:             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         PTP_CALLBACK_ENVIRON pcbe
  */
-struct __pyx_obj_14processthreads_ThreadTime {
+struct __pyx_obj_10threadpool_Threadpool {
   PyObject_HEAD
-  HANDLE handle;
-  ULONGLONG creation;
-  ULONGLONG exit;
-  ULONGLONG kernel;
-  ULONGLONG user;
+  struct __pyx_vtabstruct_10threadpool_Threadpool *__pyx_vtab;
+  PTP_CALLBACK_ENVIRON pcbe;
 };
 
+
+
+/* "threadpool.pyx":8
+ * from threadpool cimport *
+ * 
+ * cdef class Threadpool:             # <<<<<<<<<<<<<<
+ * 
+ *     cdef PTP_IO create_threadpool_io(self, HANDLE fl,
+ */
+
+struct __pyx_vtabstruct_10threadpool_Threadpool {
+  PTP_IO (*create_threadpool_io)(struct __pyx_obj_10threadpool_Threadpool *, HANDLE, PTP_WIN32_IO_CALLBACK, PVOID);
+};
+static struct __pyx_vtabstruct_10threadpool_Threadpool *__pyx_vtabptr_10threadpool_Threadpool;
 
 /* --- Runtime support code (head) --- */
 #ifndef CYTHON_REFNANNY
@@ -531,54 +542,7 @@ struct __pyx_obj_14processthreads_ThreadTime {
 #define __Pyx_CLEAR(r)    do { PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);} while(0)
 #define __Pyx_XCLEAR(r)   do { if((r) != NULL) {PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);}} while(0)
 
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name) {
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_getattro))
-        return tp->tp_getattro(obj, attr_name);
-#if PY_MAJOR_VERSION < 3
-    if (likely(tp->tp_getattr))
-        return tp->tp_getattr(obj, PyString_AS_STRING(attr_name));
-#endif
-    return PyObject_GetAttr(obj, attr_name);
-}
-#else
-#define __Pyx_PyObject_GetAttrStr(o,n) PyObject_GetAttr(o,n)
-#endif
-
-static PyObject *__Pyx_GetBuiltinName(PyObject *name);
-
-static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
-
-static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
-    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
-    const char* function_name);
-
-static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
-    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
-#else
-#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
-#endif
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
-#endif
-
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
-#else
-#define __Pyx_PyObject_CallNoArg(func) __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL)
-#endif
-
-static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb);
-static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb);
-
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+static int __Pyx_SetVtable(PyObject *dict, void *vtable);
 
 typedef struct {
     int code_line;
@@ -597,10 +561,6 @@ static void __pyx_insert_code_object(int code_line, PyCodeObject* code_object);
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONGLONG(ULONGLONG value);
-
-static CYTHON_INLINE ULONGLONG __Pyx_PyInt_As_ULONGLONG(PyObject *);
-
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
@@ -611,40 +571,29 @@ static int __Pyx_check_binary_version(void);
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
+static PTP_IO __pyx_f_10threadpool_10Threadpool_create_threadpool_io(CYTHON_UNUSED struct __pyx_obj_10threadpool_Threadpool *__pyx_v_self, CYTHON_UNUSED HANDLE __pyx_v_fl, CYTHON_UNUSED PTP_WIN32_IO_CALLBACK __pyx_v_pfnio, CYTHON_UNUSED PVOID __pyx_v_pv); /* proto*/
 
 /* Module declarations from 'types' */
 
-/* Module declarations from 'processthreads' */
-static PyTypeObject *__pyx_ptype_14processthreads_ThreadTime = 0;
-static CYTHON_INLINE ULONGLONG __pyx_f_14processthreads_FileTimeToUnsignedLongLong(PFILETIME); /*proto*/
-#define __Pyx_MODULE_NAME "processthreads"
-int __pyx_module_is_main_processthreads = 0;
+/* Module declarations from 'base' */
 
-/* Implementation of 'processthreads' */
-static PyObject *__pyx_builtin_OSError;
+/* Module declarations from 'file' */
+
+/* Module declarations from 'string' */
+
+/* Module declarations from 'threadpool' */
+static PyTypeObject *__pyx_ptype_10threadpool_Threadpool = 0;
+#define __Pyx_MODULE_NAME "threadpool"
+int __pyx_module_is_main_threadpool = 0;
+
+/* Implementation of 'threadpool' */
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
-static char __pyx_k_handle[] = "handle";
-static char __pyx_k_OSError[] = "OSError";
-static char __pyx_k_refresh[] = "refresh";
-static PyObject *__pyx_n_s_OSError;
-static PyObject *__pyx_n_s_handle;
+static char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static PyObject *__pyx_n_s_main;
-static PyObject *__pyx_n_s_refresh;
+static PyObject *__pyx_n_s_pyx_vtable;
 static PyObject *__pyx_n_s_test;
-static int __pyx_pf_14processthreads_10ThreadTime___cinit__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, HANDLE __pyx_v_handle); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_2refresh(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_6handle___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static int __pyx_pf_14processthreads_10ThreadTime_6handle_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_8creation___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static int __pyx_pf_14processthreads_10ThreadTime_8creation_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_4exit___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static int __pyx_pf_14processthreads_10ThreadTime_4exit_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_6kernel___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static int __pyx_pf_14processthreads_10ThreadTime_6kernel_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_4user___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self); /* proto */
-static int __pyx_pf_14processthreads_10ThreadTime_4user_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_tp_new_14processthreads_ThreadTime(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_10threadpool_Threadpool(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 
 /* "windows.pxi":4
  *     pass
@@ -654,7 +603,7 @@ static PyObject *__pyx_tp_new_14processthreads_ThreadTime(PyTypeObject *t, PyObj
  *     ul.LowPart = filetime.dwLowDateTime
  */
 
-static CYTHON_INLINE ULONGLONG __pyx_f_14processthreads_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
+static CYTHON_INLINE ULONGLONG __pyx_f_10threadpool_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
   ULARGE_INTEGER __pyx_v_ul;
   ULONGLONG __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -705,687 +654,46 @@ static CYTHON_INLINE ULONGLONG __pyx_f_14processthreads_FileTimeToUnsignedLongLo
   return __pyx_r;
 }
 
-/* "processthreads.pyx":14
- *         ULONGLONG user
+/* "threadpool.pyx":10
+ * cdef class Threadpool:
  * 
- *     def __cinit__(self, HANDLE handle = -2):             # <<<<<<<<<<<<<<
- *         self.handle = handle
- *         self.refresh()
+ *     cdef PTP_IO create_threadpool_io(self, HANDLE fl,             # <<<<<<<<<<<<<<
+ *                                      PTP_WIN32_IO_CALLBACK pfnio,
+ *                                      PVOID pv):
  */
 
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  HANDLE __pyx_v_handle;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  int __pyx_r;
+static PTP_IO __pyx_f_10threadpool_10Threadpool_create_threadpool_io(CYTHON_UNUSED struct __pyx_obj_10threadpool_Threadpool *__pyx_v_self, CYTHON_UNUSED HANDLE __pyx_v_fl, CYTHON_UNUSED PTP_WIN32_IO_CALLBACK __pyx_v_pfnio, CYTHON_UNUSED PVOID __pyx_v_pv) {
+  PTP_IO __pyx_r;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
-  {
-    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_handle,0};
-    PyObject* values[1] = {0};
-    if (unlikely(__pyx_kwds)) {
-      Py_ssize_t kw_args;
-      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
-      switch (pos_args) {
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = PyDict_Size(__pyx_kwds);
-      switch (pos_args) {
-        case  0:
-        if (kw_args > 0) {
-          PyObject* value = PyDict_GetItem(__pyx_kwds, __pyx_n_s_handle);
-          if (value) { values[0] = value; kw_args--; }
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-      }
-    } else {
-      switch (PyTuple_GET_SIZE(__pyx_args)) {
-        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-    }
-    if (values[0]) {
-      __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_handle == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-    } else {
-      __pyx_v_handle = ((HANDLE)-2L);
-    }
-  }
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 0, 1, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
-  __pyx_L3_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return -1;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime___cinit__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), __pyx_v_handle);
+  __Pyx_RefNannySetupContext("create_threadpool_io", 0);
 
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime___cinit__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, HANDLE __pyx_v_handle) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__cinit__", 0);
-
-  /* "processthreads.pyx":15
+  /* "threadpool.pyx":13
+ *                                      PTP_WIN32_IO_CALLBACK pfnio,
+ *                                      PVOID pv):
+ *         return <PTP_IO>NULL;             # <<<<<<<<<<<<<<
  * 
- *     def __cinit__(self, HANDLE handle = -2):
- *         self.handle = handle             # <<<<<<<<<<<<<<
- *         self.refresh()
  * 
  */
-  __pyx_v_self->handle = __pyx_v_handle;
+  __pyx_r = ((PTP_IO)NULL);
+  goto __pyx_L0;
 
-  /* "processthreads.pyx":16
- *     def __cinit__(self, HANDLE handle = -2):
- *         self.handle = handle
- *         self.refresh()             # <<<<<<<<<<<<<<
+  /* "threadpool.pyx":10
+ * cdef class Threadpool:
  * 
- *     def refresh(self):
- */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_refresh); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = NULL;
-  if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_3)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_3);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-    }
-  }
-  if (__pyx_t_3) {
-    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  } else {
-    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  }
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-  /* "processthreads.pyx":14
- *         ULONGLONG user
- * 
- *     def __cinit__(self, HANDLE handle = -2):             # <<<<<<<<<<<<<<
- *         self.handle = handle
- *         self.refresh()
+ *     cdef PTP_IO create_threadpool_io(self, HANDLE fl,             # <<<<<<<<<<<<<<
+ *                                      PTP_WIN32_IO_CALLBACK pfnio,
+ *                                      PVOID pv):
  */
 
   /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_AddTraceback("processthreads.ThreadTime.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
+static struct __pyx_vtabstruct_10threadpool_Threadpool __pyx_vtable_10threadpool_Threadpool;
 
-/* "processthreads.pyx":18
- *         self.refresh()
- * 
- *     def refresh(self):             # <<<<<<<<<<<<<<
- *         cdef:
- *             BOOL success
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("refresh (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_2refresh(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_2refresh(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  BOOL __pyx_v_success;
-  FILETIME __pyx_v_creation;
-  FILETIME __pyx_v_exit;
-  FILETIME __pyx_v_kernel;
-  FILETIME __pyx_v_user;
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  PyObject *__pyx_t_2 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("refresh", 0);
-
-  /* "processthreads.pyx":25
- *             FILETIME kernel
- *             FILETIME user
- *         success = GetThreadTimes(self.handle, &creation, &exit, &kernel, &user)             # <<<<<<<<<<<<<<
- *         if not success:
- *             raise OSError()
- */
-  __pyx_v_success = GetThreadTimes(__pyx_v_self->handle, (&__pyx_v_creation), (&__pyx_v_exit), (&__pyx_v_kernel), (&__pyx_v_user));
-
-  /* "processthreads.pyx":26
- *             FILETIME user
- *         success = GetThreadTimes(self.handle, &creation, &exit, &kernel, &user)
- *         if not success:             # <<<<<<<<<<<<<<
- *             raise OSError()
- *         self.creation = FileTimeToUnsignedLongLong(&creation)
- */
-  __pyx_t_1 = ((!(__pyx_v_success != 0)) != 0);
-  if (__pyx_t_1) {
-
-    /* "processthreads.pyx":27
- *         success = GetThreadTimes(self.handle, &creation, &exit, &kernel, &user)
- *         if not success:
- *             raise OSError()             # <<<<<<<<<<<<<<
- *         self.creation = FileTimeToUnsignedLongLong(&creation)
- *         self.exit = FileTimeToUnsignedLongLong(&exit)
- */
-    __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_builtin_OSError); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_Raise(__pyx_t_2, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-
-    /* "processthreads.pyx":26
- *             FILETIME user
- *         success = GetThreadTimes(self.handle, &creation, &exit, &kernel, &user)
- *         if not success:             # <<<<<<<<<<<<<<
- *             raise OSError()
- *         self.creation = FileTimeToUnsignedLongLong(&creation)
- */
-  }
-
-  /* "processthreads.pyx":28
- *         if not success:
- *             raise OSError()
- *         self.creation = FileTimeToUnsignedLongLong(&creation)             # <<<<<<<<<<<<<<
- *         self.exit = FileTimeToUnsignedLongLong(&exit)
- *         self.kernel = FileTimeToUnsignedLongLong(&kernel)
- */
-  __pyx_v_self->creation = __pyx_f_14processthreads_FileTimeToUnsignedLongLong((&__pyx_v_creation));
-
-  /* "processthreads.pyx":29
- *             raise OSError()
- *         self.creation = FileTimeToUnsignedLongLong(&creation)
- *         self.exit = FileTimeToUnsignedLongLong(&exit)             # <<<<<<<<<<<<<<
- *         self.kernel = FileTimeToUnsignedLongLong(&kernel)
- *         self.user = FileTimeToUnsignedLongLong(&user)
- */
-  __pyx_v_self->exit = __pyx_f_14processthreads_FileTimeToUnsignedLongLong((&__pyx_v_exit));
-
-  /* "processthreads.pyx":30
- *         self.creation = FileTimeToUnsignedLongLong(&creation)
- *         self.exit = FileTimeToUnsignedLongLong(&exit)
- *         self.kernel = FileTimeToUnsignedLongLong(&kernel)             # <<<<<<<<<<<<<<
- *         self.user = FileTimeToUnsignedLongLong(&user)
- */
-  __pyx_v_self->kernel = __pyx_f_14processthreads_FileTimeToUnsignedLongLong((&__pyx_v_kernel));
-
-  /* "processthreads.pyx":31
- *         self.exit = FileTimeToUnsignedLongLong(&exit)
- *         self.kernel = FileTimeToUnsignedLongLong(&kernel)
- *         self.user = FileTimeToUnsignedLongLong(&user)             # <<<<<<<<<<<<<<
- */
-  __pyx_v_self->user = __pyx_f_14processthreads_FileTimeToUnsignedLongLong((&__pyx_v_user));
-
-  /* "processthreads.pyx":18
- *         self.refresh()
- * 
- *     def refresh(self):             # <<<<<<<<<<<<<<
- *         cdef:
- *             BOOL success
- */
-
-  /* function exit code */
-  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_AddTraceback("processthreads.ThreadTime.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "processthreads.pyx":8
- * cdef class ThreadTime:
- *     cdef public:
- *         HANDLE handle             # <<<<<<<<<<<<<<
- *         ULONGLONG creation
- *         ULONGLONG exit
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_6handle_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_6handle_1__get__(PyObject *__pyx_v_self) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_6handle___get__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_6handle___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 0);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->handle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("processthreads.ThreadTime.handle.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_6handle_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_6handle_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_6handle_2__set__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime_6handle_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  HANDLE __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyIndex_AsSsize_t(__pyx_v_value); if (unlikely((__pyx_t_1 == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_v_self->handle = __pyx_t_1;
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.handle.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "processthreads.pyx":9
- *     cdef public:
- *         HANDLE handle
- *         ULONGLONG creation             # <<<<<<<<<<<<<<
- *         ULONGLONG exit
- *         ULONGLONG kernel
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_8creation_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_8creation_1__get__(PyObject *__pyx_v_self) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_8creation___get__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_8creation___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 0);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONGLONG(__pyx_v_self->creation); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("processthreads.ThreadTime.creation.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_8creation_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_8creation_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_8creation_2__set__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime_8creation_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  ULONGLONG __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyInt_As_ULONGLONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_v_self->creation = __pyx_t_1;
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.creation.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "processthreads.pyx":10
- *         HANDLE handle
- *         ULONGLONG creation
- *         ULONGLONG exit             # <<<<<<<<<<<<<<
- *         ULONGLONG kernel
- *         ULONGLONG user
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_4exit_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_4exit_1__get__(PyObject *__pyx_v_self) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_4exit___get__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_4exit___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 0);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONGLONG(__pyx_v_self->exit); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("processthreads.ThreadTime.exit.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_4exit_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_4exit_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_4exit_2__set__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime_4exit_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  ULONGLONG __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyInt_As_ULONGLONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_v_self->exit = __pyx_t_1;
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.exit.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "processthreads.pyx":11
- *         ULONGLONG creation
- *         ULONGLONG exit
- *         ULONGLONG kernel             # <<<<<<<<<<<<<<
- *         ULONGLONG user
- * 
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_6kernel_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_6kernel_1__get__(PyObject *__pyx_v_self) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_6kernel___get__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_6kernel___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 0);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONGLONG(__pyx_v_self->kernel); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("processthreads.ThreadTime.kernel.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_6kernel_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_6kernel_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_6kernel_2__set__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime_6kernel_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  ULONGLONG __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyInt_As_ULONGLONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_v_self->kernel = __pyx_t_1;
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.kernel.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "processthreads.pyx":12
- *         ULONGLONG exit
- *         ULONGLONG kernel
- *         ULONGLONG user             # <<<<<<<<<<<<<<
- * 
- *     def __cinit__(self, HANDLE handle = -2):
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_4user_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_14processthreads_10ThreadTime_4user_1__get__(PyObject *__pyx_v_self) {
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_4user___get__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_14processthreads_10ThreadTime_4user___get__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 0);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_ULONGLONG(__pyx_v_self->user); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("processthreads.ThreadTime.user.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* Python wrapper */
-static int __pyx_pw_14processthreads_10ThreadTime_4user_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_14processthreads_10ThreadTime_4user_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_r = __pyx_pf_14processthreads_10ThreadTime_4user_2__set__(((struct __pyx_obj_14processthreads_ThreadTime *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_14processthreads_10ThreadTime_4user_2__set__(struct __pyx_obj_14processthreads_ThreadTime *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  ULONGLONG __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__set__", 0);
-  __pyx_t_1 = __Pyx_PyInt_As_ULONGLONG(__pyx_v_value); if (unlikely((__pyx_t_1 == (ULONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_v_self->user = __pyx_t_1;
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("processthreads.ThreadTime.user.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_tp_new_14processthreads_ThreadTime(PyTypeObject *t, PyObject *a, PyObject *k) {
+static PyObject *__pyx_tp_new_10threadpool_Threadpool(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  struct __pyx_obj_10threadpool_Threadpool *p;
   PyObject *o;
   if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
     o = (*t->tp_alloc)(t, 0);
@@ -1393,13 +701,12 @@ static PyObject *__pyx_tp_new_14processthreads_ThreadTime(PyTypeObject *t, PyObj
     o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
   }
   if (unlikely(!o)) return 0;
-  if (unlikely(__pyx_pw_14processthreads_10ThreadTime_1__cinit__(o, a, k) < 0)) {
-    Py_DECREF(o); o = 0;
-  }
+  p = ((struct __pyx_obj_10threadpool_Threadpool *)o);
+  p->__pyx_vtab = __pyx_vtabptr_10threadpool_Threadpool;
   return o;
 }
 
-static void __pyx_tp_dealloc_14processthreads_ThreadTime(PyObject *o) {
+static void __pyx_tp_dealloc_10threadpool_Threadpool(PyObject *o) {
   #if PY_VERSION_HEX >= 0x030400a1
   if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
     if (PyObject_CallFinalizerFromDealloc(o)) return;
@@ -1408,96 +715,12 @@ static void __pyx_tp_dealloc_14processthreads_ThreadTime(PyObject *o) {
   (*Py_TYPE(o)->tp_free)(o);
 }
 
-static PyObject *__pyx_getprop_14processthreads_10ThreadTime_handle(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_14processthreads_10ThreadTime_6handle_1__get__(o);
-}
-
-static int __pyx_setprop_14processthreads_10ThreadTime_handle(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
-  if (v) {
-    return __pyx_pw_14processthreads_10ThreadTime_6handle_3__set__(o, v);
-  }
-  else {
-    PyErr_SetString(PyExc_NotImplementedError, "__del__");
-    return -1;
-  }
-}
-
-static PyObject *__pyx_getprop_14processthreads_10ThreadTime_creation(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_14processthreads_10ThreadTime_8creation_1__get__(o);
-}
-
-static int __pyx_setprop_14processthreads_10ThreadTime_creation(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
-  if (v) {
-    return __pyx_pw_14processthreads_10ThreadTime_8creation_3__set__(o, v);
-  }
-  else {
-    PyErr_SetString(PyExc_NotImplementedError, "__del__");
-    return -1;
-  }
-}
-
-static PyObject *__pyx_getprop_14processthreads_10ThreadTime_exit(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_14processthreads_10ThreadTime_4exit_1__get__(o);
-}
-
-static int __pyx_setprop_14processthreads_10ThreadTime_exit(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
-  if (v) {
-    return __pyx_pw_14processthreads_10ThreadTime_4exit_3__set__(o, v);
-  }
-  else {
-    PyErr_SetString(PyExc_NotImplementedError, "__del__");
-    return -1;
-  }
-}
-
-static PyObject *__pyx_getprop_14processthreads_10ThreadTime_kernel(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_14processthreads_10ThreadTime_6kernel_1__get__(o);
-}
-
-static int __pyx_setprop_14processthreads_10ThreadTime_kernel(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
-  if (v) {
-    return __pyx_pw_14processthreads_10ThreadTime_6kernel_3__set__(o, v);
-  }
-  else {
-    PyErr_SetString(PyExc_NotImplementedError, "__del__");
-    return -1;
-  }
-}
-
-static PyObject *__pyx_getprop_14processthreads_10ThreadTime_user(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_14processthreads_10ThreadTime_4user_1__get__(o);
-}
-
-static int __pyx_setprop_14processthreads_10ThreadTime_user(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
-  if (v) {
-    return __pyx_pw_14processthreads_10ThreadTime_4user_3__set__(o, v);
-  }
-  else {
-    PyErr_SetString(PyExc_NotImplementedError, "__del__");
-    return -1;
-  }
-}
-
-static PyMethodDef __pyx_methods_14processthreads_ThreadTime[] = {
-  {"refresh", (PyCFunction)__pyx_pw_14processthreads_10ThreadTime_3refresh, METH_NOARGS, 0},
-  {0, 0, 0, 0}
-};
-
-static struct PyGetSetDef __pyx_getsets_14processthreads_ThreadTime[] = {
-  {(char *)"handle", __pyx_getprop_14processthreads_10ThreadTime_handle, __pyx_setprop_14processthreads_10ThreadTime_handle, 0, 0},
-  {(char *)"creation", __pyx_getprop_14processthreads_10ThreadTime_creation, __pyx_setprop_14processthreads_10ThreadTime_creation, 0, 0},
-  {(char *)"exit", __pyx_getprop_14processthreads_10ThreadTime_exit, __pyx_setprop_14processthreads_10ThreadTime_exit, 0, 0},
-  {(char *)"kernel", __pyx_getprop_14processthreads_10ThreadTime_kernel, __pyx_setprop_14processthreads_10ThreadTime_kernel, 0, 0},
-  {(char *)"user", __pyx_getprop_14processthreads_10ThreadTime_user, __pyx_setprop_14processthreads_10ThreadTime_user, 0, 0},
-  {0, 0, 0, 0, 0}
-};
-
-static PyTypeObject __pyx_type_14processthreads_ThreadTime = {
+static PyTypeObject __pyx_type_10threadpool_Threadpool = {
   PyVarObject_HEAD_INIT(0, 0)
-  "processthreads.ThreadTime", /*tp_name*/
-  sizeof(struct __pyx_obj_14processthreads_ThreadTime), /*tp_basicsize*/
+  "threadpool.Threadpool", /*tp_name*/
+  sizeof(struct __pyx_obj_10threadpool_Threadpool), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_14processthreads_ThreadTime, /*tp_dealloc*/
+  __pyx_tp_dealloc_10threadpool_Threadpool, /*tp_dealloc*/
   0, /*tp_print*/
   0, /*tp_getattr*/
   0, /*tp_setattr*/
@@ -1525,9 +748,9 @@ static PyTypeObject __pyx_type_14processthreads_ThreadTime = {
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
   0, /*tp_iternext*/
-  __pyx_methods_14processthreads_ThreadTime, /*tp_methods*/
+  0, /*tp_methods*/
   0, /*tp_members*/
-  __pyx_getsets_14processthreads_ThreadTime, /*tp_getset*/
+  0, /*tp_getset*/
   0, /*tp_base*/
   0, /*tp_dict*/
   0, /*tp_descr_get*/
@@ -1535,7 +758,7 @@ static PyTypeObject __pyx_type_14processthreads_ThreadTime = {
   0, /*tp_dictoffset*/
   0, /*tp_init*/
   0, /*tp_alloc*/
-  __pyx_tp_new_14processthreads_ThreadTime, /*tp_new*/
+  __pyx_tp_new_10threadpool_Threadpool, /*tp_new*/
   0, /*tp_free*/
   0, /*tp_is_gc*/
   0, /*tp_bases*/
@@ -1561,7 +784,7 @@ static struct PyModuleDef __pyx_moduledef = {
   #else
     PyModuleDef_HEAD_INIT,
   #endif
-    "processthreads",
+    "threadpool",
     0, /* m_doc */
     -1, /* m_size */
     __pyx_methods /* m_methods */,
@@ -1573,18 +796,13 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
-  {&__pyx_n_s_OSError, __pyx_k_OSError, sizeof(__pyx_k_OSError), 0, 0, 1, 1},
-  {&__pyx_n_s_handle, __pyx_k_handle, sizeof(__pyx_k_handle), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
-  {&__pyx_n_s_refresh, __pyx_k_refresh, sizeof(__pyx_k_refresh), 0, 0, 1, 1},
+  {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_OSError = __Pyx_GetBuiltinName(__pyx_n_s_OSError); if (!__pyx_builtin_OSError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
-  __pyx_L1_error:;
-  return -1;
 }
 
 static int __Pyx_InitCachedConstants(void) {
@@ -1602,11 +820,11 @@ static int __Pyx_InitGlobals(void) {
 }
 
 #if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC initprocessthreads(void); /*proto*/
-PyMODINIT_FUNC initprocessthreads(void)
+PyMODINIT_FUNC initthreadpool(void); /*proto*/
+PyMODINIT_FUNC initthreadpool(void)
 #else
-PyMODINIT_FUNC PyInit_processthreads(void); /*proto*/
-PyMODINIT_FUNC PyInit_processthreads(void)
+PyMODINIT_FUNC PyInit_threadpool(void); /*proto*/
+PyMODINIT_FUNC PyInit_threadpool(void)
 #endif
 {
   PyObject *__pyx_t_1 = NULL;
@@ -1623,7 +841,7 @@ PyMODINIT_FUNC PyInit_processthreads(void)
           Py_FatalError("failed to import 'refnanny' module");
   }
   #endif
-  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_processthreads(void)", 0);
+  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_threadpool(void)", 0);
   if (__Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -1651,7 +869,7 @@ PyMODINIT_FUNC PyInit_processthreads(void)
   #endif
   /*--- Module creation code ---*/
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4("processthreads", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4("threadpool", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -1668,14 +886,14 @@ PyMODINIT_FUNC PyInit_processthreads(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_processthreads) {
+  if (__pyx_module_is_main_threadpool) {
     if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "processthreads")) {
-      if (unlikely(PyDict_SetItemString(modules, "processthreads", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "threadpool")) {
+      if (unlikely(PyDict_SetItemString(modules, "threadpool", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -1687,10 +905,13 @@ PyMODINIT_FUNC PyInit_processthreads(void)
   /*--- Variable export code ---*/
   /*--- Function export code ---*/
   /*--- Type init code ---*/
-  if (PyType_Ready(&__pyx_type_14processthreads_ThreadTime) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 6; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_type_14processthreads_ThreadTime.tp_print = 0;
-  if (PyObject_SetAttrString(__pyx_m, "ThreadTime", (PyObject *)&__pyx_type_14processthreads_ThreadTime) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 6; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_ptype_14processthreads_ThreadTime = &__pyx_type_14processthreads_ThreadTime;
+  __pyx_vtabptr_10threadpool_Threadpool = &__pyx_vtable_10threadpool_Threadpool;
+  __pyx_vtable_10threadpool_Threadpool.create_threadpool_io = (PTP_IO (*)(struct __pyx_obj_10threadpool_Threadpool *, HANDLE, PTP_WIN32_IO_CALLBACK, PVOID))__pyx_f_10threadpool_10Threadpool_create_threadpool_io;
+  if (PyType_Ready(&__pyx_type_10threadpool_Threadpool) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_10threadpool_Threadpool.tp_print = 0;
+  if (__Pyx_SetVtable(__pyx_type_10threadpool_Threadpool.tp_dict, __pyx_vtabptr_10threadpool_Threadpool) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttrString(__pyx_m, "Threadpool", (PyObject *)&__pyx_type_10threadpool_Threadpool) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_10threadpool_Threadpool = &__pyx_type_10threadpool_Threadpool;
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
   /*--- Function import code ---*/
@@ -1699,11 +920,11 @@ PyMODINIT_FUNC PyInit_processthreads(void)
   if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "processthreads.pyx":2
+  /* "threadpool.pyx":2
  * 
  * include "windows.pxi"             # <<<<<<<<<<<<<<
- * from processthreads cimport *
- * #include "processthreads.pxi"
+ * from base cimport *
+ * from file cimport *
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
@@ -1717,11 +938,11 @@ PyMODINIT_FUNC PyInit_processthreads(void)
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init processthreads", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init threadpool", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init processthreads");
+    PyErr_SetString(PyExc_ImportError, "init threadpool");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -1749,435 +970,22 @@ end:
 }
 #endif
 
-static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
-    PyObject* result = __Pyx_PyObject_GetAttrStr(__pyx_b, name);
-    if (unlikely(!result)) {
-        PyErr_Format(PyExc_NameError,
-#if PY_MAJOR_VERSION >= 3
-            "name '%U' is not defined", name);
+static int __Pyx_SetVtable(PyObject *dict, void *vtable) {
+#if PY_VERSION_HEX >= 0x02070000
+    PyObject *ob = PyCapsule_New(vtable, 0, 0);
 #else
-            "name '%.200s' is not defined", PyString_AS_STRING(name));
+    PyObject *ob = PyCObject_FromVoidPtr(vtable, 0);
 #endif
-    }
-    return result;
-}
-
-static void __Pyx_RaiseDoubleKeywordsError(
-    const char* func_name,
-    PyObject* kw_name)
-{
-    PyErr_Format(PyExc_TypeError,
-        #if PY_MAJOR_VERSION >= 3
-        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
-        #else
-        "%s() got multiple values for keyword argument '%s'", func_name,
-        PyString_AsString(kw_name));
-        #endif
-}
-
-static int __Pyx_ParseOptionalKeywords(
-    PyObject *kwds,
-    PyObject **argnames[],
-    PyObject *kwds2,
-    PyObject *values[],
-    Py_ssize_t num_pos_args,
-    const char* function_name)
-{
-    PyObject *key = 0, *value = 0;
-    Py_ssize_t pos = 0;
-    PyObject*** name;
-    PyObject*** first_kw_arg = argnames + num_pos_args;
-    while (PyDict_Next(kwds, &pos, &key, &value)) {
-        name = first_kw_arg;
-        while (*name && (**name != key)) name++;
-        if (*name) {
-            values[name-argnames] = value;
-            continue;
-        }
-        name = first_kw_arg;
-        #if PY_MAJOR_VERSION < 3
-        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
-            while (*name) {
-                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
-                        && _PyString_Eq(**name, key)) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    if ((**argname == key) || (
-                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
-                             && _PyString_Eq(**argname, key))) {
-                        goto arg_passed_twice;
-                    }
-                    argname++;
-                }
-            }
-        } else
-        #endif
-        if (likely(PyUnicode_Check(key))) {
-            while (*name) {
-                int cmp = (**name == key) ? 0 :
-                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
-                #endif
-                    PyUnicode_Compare(**name, key);
-                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                if (cmp == 0) {
-                    values[name-argnames] = value;
-                    break;
-                }
-                name++;
-            }
-            if (*name) continue;
-            else {
-                PyObject*** argname = argnames;
-                while (argname != first_kw_arg) {
-                    int cmp = (**argname == key) ? 0 :
-                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
-                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
-                    #endif
-                        PyUnicode_Compare(**argname, key);
-                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
-                    if (cmp == 0) goto arg_passed_twice;
-                    argname++;
-                }
-            }
-        } else
-            goto invalid_keyword_type;
-        if (kwds2) {
-            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
-        } else {
-            goto invalid_keyword;
-        }
-    }
+    if (!ob)
+        goto bad;
+    if (PyDict_SetItem(dict, __pyx_n_s_pyx_vtable, ob) < 0)
+        goto bad;
+    Py_DECREF(ob);
     return 0;
-arg_passed_twice:
-    __Pyx_RaiseDoubleKeywordsError(function_name, key);
-    goto bad;
-invalid_keyword_type:
-    PyErr_Format(PyExc_TypeError,
-        "%.200s() keywords must be strings", function_name);
-    goto bad;
-invalid_keyword:
-    PyErr_Format(PyExc_TypeError,
-    #if PY_MAJOR_VERSION < 3
-        "%.200s() got an unexpected keyword argument '%.200s'",
-        function_name, PyString_AsString(key));
-    #else
-        "%s() got an unexpected keyword argument '%U'",
-        function_name, key);
-    #endif
 bad:
+    Py_XDECREF(ob);
     return -1;
 }
-
-static void __Pyx_RaiseArgtupleInvalid(
-    const char* func_name,
-    int exact,
-    Py_ssize_t num_min,
-    Py_ssize_t num_max,
-    Py_ssize_t num_found)
-{
-    Py_ssize_t num_expected;
-    const char *more_or_less;
-    if (num_found < num_min) {
-        num_expected = num_min;
-        more_or_less = "at least";
-    } else {
-        num_expected = num_max;
-        more_or_less = "at most";
-    }
-    if (exact) {
-        more_or_less = "exactly";
-    }
-    PyErr_Format(PyExc_TypeError,
-                 "%.200s() takes %.8s %" CYTHON_FORMAT_SSIZE_T "d positional argument%.1s (%" CYTHON_FORMAT_SSIZE_T "d given)",
-                 func_name, more_or_less, num_expected,
-                 (num_expected == 1) ? "" : "s", num_found);
-}
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
-    PyObject *result;
-    ternaryfunc call = func->ob_type->tp_call;
-    if (unlikely(!call))
-        return PyObject_Call(func, arg, kw);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = (*call)(func, arg, kw);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
-    PyObject *self, *result;
-    PyCFunction cfunc;
-    cfunc = PyCFunction_GET_FUNCTION(func);
-    self = PyCFunction_GET_SELF(func);
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    result = cfunc(self, arg);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_New(1);
-    if (unlikely(!args)) return NULL;
-    Py_INCREF(arg);
-    PyTuple_SET_ITEM(args, 0, arg);
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
-    return result;
-}
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-#ifdef __Pyx_CyFunction_USED
-    if (likely(PyCFunction_Check(func) || PyObject_TypeCheck(func, __pyx_CyFunctionType))) {
-#else
-    if (likely(PyCFunction_Check(func))) {
-#endif
-        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
-            return __Pyx_PyObject_CallMethO(func, arg);
-        }
-    }
-    return __Pyx__PyObject_CallOneArg(func, arg);
-}
-#else
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *result;
-    PyObject *args = PyTuple_Pack(1, arg);
-    if (unlikely(!args)) return NULL;
-    result = __Pyx_PyObject_Call(func, args, NULL);
-    Py_DECREF(args);
-    return result;
-}
-#endif
-
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
-#ifdef __Pyx_CyFunction_USED
-    if (likely(PyCFunction_Check(func) || PyObject_TypeCheck(func, __pyx_CyFunctionType))) {
-#else
-    if (likely(PyCFunction_Check(func))) {
-#endif
-        if (likely(PyCFunction_GET_FLAGS(func) & METH_NOARGS)) {
-            return __Pyx_PyObject_CallMethO(func, NULL);
-        }
-    }
-    return __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL);
-}
-#endif
-
-static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb) {
-#if CYTHON_COMPILING_IN_CPYTHON
-    PyObject *tmp_type, *tmp_value, *tmp_tb;
-    PyThreadState *tstate = PyThreadState_GET();
-    tmp_type = tstate->curexc_type;
-    tmp_value = tstate->curexc_value;
-    tmp_tb = tstate->curexc_traceback;
-    tstate->curexc_type = type;
-    tstate->curexc_value = value;
-    tstate->curexc_traceback = tb;
-    Py_XDECREF(tmp_type);
-    Py_XDECREF(tmp_value);
-    Py_XDECREF(tmp_tb);
-#else
-    PyErr_Restore(type, value, tb);
-#endif
-}
-static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb) {
-#if CYTHON_COMPILING_IN_CPYTHON
-    PyThreadState *tstate = PyThreadState_GET();
-    *type = tstate->curexc_type;
-    *value = tstate->curexc_value;
-    *tb = tstate->curexc_traceback;
-    tstate->curexc_type = 0;
-    tstate->curexc_value = 0;
-    tstate->curexc_traceback = 0;
-#else
-    PyErr_Fetch(type, value, tb);
-#endif
-}
-
-#if PY_MAJOR_VERSION < 3
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
-                        CYTHON_UNUSED PyObject *cause) {
-    Py_XINCREF(type);
-    if (!value || value == Py_None)
-        value = NULL;
-    else
-        Py_INCREF(value);
-    if (!tb || tb == Py_None)
-        tb = NULL;
-    else {
-        Py_INCREF(tb);
-        if (!PyTraceBack_Check(tb)) {
-            PyErr_SetString(PyExc_TypeError,
-                "raise: arg 3 must be a traceback or None");
-            goto raise_error;
-        }
-    }
-    if (PyType_Check(type)) {
-#if CYTHON_COMPILING_IN_PYPY
-        if (!value) {
-            Py_INCREF(Py_None);
-            value = Py_None;
-        }
-#endif
-        PyErr_NormalizeException(&type, &value, &tb);
-    } else {
-        if (value) {
-            PyErr_SetString(PyExc_TypeError,
-                "instance exception may not have a separate value");
-            goto raise_error;
-        }
-        value = type;
-        type = (PyObject*) Py_TYPE(type);
-        Py_INCREF(type);
-        if (!PyType_IsSubtype((PyTypeObject *)type, (PyTypeObject *)PyExc_BaseException)) {
-            PyErr_SetString(PyExc_TypeError,
-                "raise: exception class must be a subclass of BaseException");
-            goto raise_error;
-        }
-    }
-    __Pyx_ErrRestore(type, value, tb);
-    return;
-raise_error:
-    Py_XDECREF(value);
-    Py_XDECREF(type);
-    Py_XDECREF(tb);
-    return;
-}
-#else
-static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
-    PyObject* owned_instance = NULL;
-    if (tb == Py_None) {
-        tb = 0;
-    } else if (tb && !PyTraceBack_Check(tb)) {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: arg 3 must be a traceback or None");
-        goto bad;
-    }
-    if (value == Py_None)
-        value = 0;
-    if (PyExceptionInstance_Check(type)) {
-        if (value) {
-            PyErr_SetString(PyExc_TypeError,
-                "instance exception may not have a separate value");
-            goto bad;
-        }
-        value = type;
-        type = (PyObject*) Py_TYPE(value);
-    } else if (PyExceptionClass_Check(type)) {
-        PyObject *instance_class = NULL;
-        if (value && PyExceptionInstance_Check(value)) {
-            instance_class = (PyObject*) Py_TYPE(value);
-            if (instance_class != type) {
-                int is_subclass = PyObject_IsSubclass(instance_class, type);
-                if (!is_subclass) {
-                    instance_class = NULL;
-                } else if (unlikely(is_subclass == -1)) {
-                    goto bad;
-                } else {
-                    type = instance_class;
-                }
-            }
-        }
-        if (!instance_class) {
-            PyObject *args;
-            if (!value)
-                args = PyTuple_New(0);
-            else if (PyTuple_Check(value)) {
-                Py_INCREF(value);
-                args = value;
-            } else
-                args = PyTuple_Pack(1, value);
-            if (!args)
-                goto bad;
-            owned_instance = PyObject_Call(type, args, NULL);
-            Py_DECREF(args);
-            if (!owned_instance)
-                goto bad;
-            value = owned_instance;
-            if (!PyExceptionInstance_Check(value)) {
-                PyErr_Format(PyExc_TypeError,
-                             "calling %R should have returned an instance of "
-                             "BaseException, not %R",
-                             type, Py_TYPE(value));
-                goto bad;
-            }
-        }
-    } else {
-        PyErr_SetString(PyExc_TypeError,
-            "raise: exception class must be a subclass of BaseException");
-        goto bad;
-    }
-#if PY_VERSION_HEX >= 0x03030000
-    if (cause) {
-#else
-    if (cause && cause != Py_None) {
-#endif
-        PyObject *fixed_cause;
-        if (cause == Py_None) {
-            fixed_cause = NULL;
-        } else if (PyExceptionClass_Check(cause)) {
-            fixed_cause = PyObject_CallObject(cause, NULL);
-            if (fixed_cause == NULL)
-                goto bad;
-        } else if (PyExceptionInstance_Check(cause)) {
-            fixed_cause = cause;
-            Py_INCREF(fixed_cause);
-        } else {
-            PyErr_SetString(PyExc_TypeError,
-                            "exception causes must derive from "
-                            "BaseException");
-            goto bad;
-        }
-        PyException_SetCause(value, fixed_cause);
-    }
-    PyErr_SetObject(type, value);
-    if (tb) {
-#if CYTHON_COMPILING_IN_PYPY
-        PyObject *tmp_type, *tmp_value, *tmp_tb;
-        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
-        Py_INCREF(tb);
-        PyErr_Restore(tmp_type, tmp_value, tb);
-        Py_XDECREF(tmp_tb);
-#else
-        PyThreadState *tstate = PyThreadState_GET();
-        PyObject* tmp_tb = tstate->curexc_traceback;
-        if (tb != tmp_tb) {
-            Py_INCREF(tb);
-            tstate->curexc_traceback = tb;
-            Py_XDECREF(tmp_tb);
-        }
-#endif
-    }
-bad:
-    Py_XDECREF(owned_instance);
-    return;
-}
-#endif
 
 static int __pyx_bisect_code_objects(__Pyx_CodeObjectCacheEntry* entries, int count, int code_line) {
     int start = 0, mid = 0, end = count - 1;
@@ -2317,12 +1125,22 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename) {
     PyCodeObject *py_code = 0;
     PyFrameObject *py_frame = 0;
+#ifdef WITH_PARALLEL
+    if (!Py_PXCTX())
+        py_code = __pyx_find_code_object(c_line ? c_line : py_line);
+#else
     py_code = __pyx_find_code_object(c_line ? c_line : py_line);
+#endif
     if (!py_code) {
         py_code = __Pyx_CreateCodeObjectForTraceback(
             funcname, c_line, py_line, filename);
         if (!py_code) goto bad;
+#ifdef WITH_PARALLEL
+        if (!Py_PXCTX())
+            __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
+#else
         __pyx_insert_code_object(c_line ? c_line : py_line, py_code);
+#endif
     }
     py_frame = PyFrame_New(
         PyThreadState_GET(), /*PyThreadState *tstate,*/
@@ -2338,28 +1156,28 @@ bad:
     Py_XDECREF(py_frame);
 }
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONGLONG(ULONGLONG value) {
-    const ULONGLONG neg_one = (ULONGLONG) -1, const_zero = (ULONGLONG) 0;
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
+    const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(ULONGLONG) < sizeof(long)) {
+        if (sizeof(long) < sizeof(long)) {
             return PyInt_FromLong((long) value);
-        } else if (sizeof(ULONGLONG) <= sizeof(unsigned long)) {
+        } else if (sizeof(long) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(ULONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
         }
     } else {
-        if (sizeof(ULONGLONG) <= sizeof(long)) {
+        if (sizeof(long) <= sizeof(long)) {
             return PyInt_FromLong((long) value);
-        } else if (sizeof(ULONGLONG) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
         }
     }
     {
         int one = 1; int little = (int)*(unsigned char *)&one;
         unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(ULONGLONG),
+        return _PyLong_FromByteArray(bytes, sizeof(long),
                                      little, !is_unsigned);
     }
 }
@@ -2388,216 +1206,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONGLONG(ULONGLONG value) {
 #if CYTHON_USE_PYLONG_INTERNALS
   #include "longintrepr.h"
 #endif
-
-static CYTHON_INLINE ULONGLONG __Pyx_PyInt_As_ULONGLONG(PyObject *x) {
-    const ULONGLONG neg_one = (ULONGLONG) -1, const_zero = (ULONGLONG) 0;
-    const int is_unsigned = neg_one > const_zero;
-#if PY_MAJOR_VERSION < 3
-    if (likely(PyInt_Check(x))) {
-        if (sizeof(ULONGLONG) < sizeof(long)) {
-            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, PyInt_AS_LONG(x))
-        } else {
-            long val = PyInt_AS_LONG(x);
-            if (is_unsigned && unlikely(val < 0)) {
-                goto raise_neg_overflow;
-            }
-            return (ULONGLONG) val;
-        }
-    } else
-#endif
-    if (likely(PyLong_Check(x))) {
-        if (is_unsigned) {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (ULONGLONG) 0;
-                case  1: __PYX_VERIFY_RETURN_INT(ULONGLONG, digit, digits[0])
-                case 2:
-                    if (8 * sizeof(ULONGLONG) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) >= 2 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(ULONGLONG) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) >= 3 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(ULONGLONG) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) >= 4 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
-                        }
-                    }
-                    break;
-            }
-#endif
-#if CYTHON_COMPILING_IN_CPYTHON
-            if (unlikely(Py_SIZE(x) < 0)) {
-                goto raise_neg_overflow;
-            }
-#else
-            {
-                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
-                if (unlikely(result < 0))
-                    return (ULONGLONG) -1;
-                if (unlikely(result == 1))
-                    goto raise_neg_overflow;
-            }
-#endif
-            if (sizeof(ULONGLONG) <= sizeof(unsigned long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, unsigned long, PyLong_AsUnsignedLong(x))
-            } else if (sizeof(ULONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
-            }
-        } else {
-#if CYTHON_USE_PYLONG_INTERNALS
-            const digit* digits = ((PyLongObject*)x)->ob_digit;
-            switch (Py_SIZE(x)) {
-                case  0: return (ULONGLONG) 0;
-                case -1: __PYX_VERIFY_RETURN_INT(ULONGLONG, sdigit, -(sdigit) digits[0])
-                case  1: __PYX_VERIFY_RETURN_INT(ULONGLONG,  digit, +digits[0])
-                case -2:
-                    if (8 * sizeof(ULONGLONG) - 1 > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((ULONGLONG)-1)*(((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 2:
-                    if (8 * sizeof(ULONGLONG) > 1 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
-                            return (ULONGLONG) ((((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-                case -3:
-                    if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((ULONGLONG)-1)*(((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 3:
-                    if (8 * sizeof(ULONGLONG) > 2 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
-                            return (ULONGLONG) ((((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-                case -4:
-                    if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 4 * PyLong_SHIFT) {
-                            return (ULONGLONG) (((ULONGLONG)-1)*(((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-                case 4:
-                    if (8 * sizeof(ULONGLONG) > 3 * PyLong_SHIFT) {
-                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
-                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
-                        } else if (8 * sizeof(ULONGLONG) - 1 > 4 * PyLong_SHIFT) {
-                            return (ULONGLONG) ((((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
-                        }
-                    }
-                    break;
-            }
-#endif
-            if (sizeof(ULONGLONG) <= sizeof(long)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, long, PyLong_AsLong(x))
-            } else if (sizeof(ULONGLONG) <= sizeof(PY_LONG_LONG)) {
-                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, PY_LONG_LONG, PyLong_AsLongLong(x))
-            }
-        }
-        {
-#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
-            PyErr_SetString(PyExc_RuntimeError,
-                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
-#else
-            ULONGLONG val;
-            PyObject *v = __Pyx_PyNumber_Int(x);
- #if PY_MAJOR_VERSION < 3
-            if (likely(v) && !PyLong_Check(v)) {
-                PyObject *tmp = v;
-                v = PyNumber_Long(tmp);
-                Py_DECREF(tmp);
-            }
- #endif
-            if (likely(v)) {
-                int one = 1; int is_little = (int)*(unsigned char *)&one;
-                unsigned char *bytes = (unsigned char *)&val;
-                int ret = _PyLong_AsByteArray((PyLongObject *)v,
-                                              bytes, sizeof(val),
-                                              is_little, !is_unsigned);
-                Py_DECREF(v);
-                if (likely(!ret))
-                    return val;
-            }
-#endif
-            return (ULONGLONG) -1;
-        }
-    } else {
-        ULONGLONG val;
-        PyObject *tmp = __Pyx_PyNumber_Int(x);
-        if (!tmp) return (ULONGLONG) -1;
-        val = __Pyx_PyInt_As_ULONGLONG(tmp);
-        Py_DECREF(tmp);
-        return val;
-    }
-raise_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "value too large to convert to ULONGLONG");
-    return (ULONGLONG) -1;
-raise_neg_overflow:
-    PyErr_SetString(PyExc_OverflowError,
-        "can't convert negative value to ULONGLONG");
-    return (ULONGLONG) -1;
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
-    const long neg_one = (long) -1, const_zero = (long) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(long) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(long) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(long) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(long),
-                                     little, !is_unsigned);
-    }
-}
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
     const long neg_one = (long) -1, const_zero = (long) 0;

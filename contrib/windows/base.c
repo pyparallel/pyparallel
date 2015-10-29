@@ -236,6 +236,7 @@ static CYTHON_INLINE float __PYX_NAN() {
 
 #define __PYX_HAVE__base
 #define __PYX_HAVE_API__base
+#include <windows.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -445,9 +446,84 @@ static const char *__pyx_filename;
 
 static const char *__pyx_f[] = {
   "base.pyx",
+  "stringsource",
 };
 
 /*--- Type declarations ---*/
+struct __pyx_obj_4base_ProcessorNumber;
+struct __pyx_obj_4base_Context;
+struct __pyx_obj_4base_IOCounters;
+
+/* "base.pyx":9
+ * cimport processthreads as pt
+ * 
+ * cdef class ProcessorNumber:             # <<<<<<<<<<<<<<
+ *     cdef readonly:
+ *         PROCESSOR_NUMBER pn
+ */
+struct __pyx_obj_4base_ProcessorNumber {
+  PyObject_HEAD
+  PROCESSOR_NUMBER pn;
+};
+
+
+/* "base.pyx":24
+ *             return self.pn.Number
+ * 
+ * cdef class Context:             # <<<<<<<<<<<<<<
+ *     cdef public:
+ *         HANDLE handle
+ */
+struct __pyx_obj_4base_Context {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_4base_Context *__pyx_vtab;
+  HANDLE handle;
+  CONTEXT ctx;
+};
+
+
+/* "base.pyx":41
+ *             raise OSError("GetThreadContext")
+ * 
+ * cdef class IOCounters:             # <<<<<<<<<<<<<<
+ *     cdef readonly:
+ *         HANDLE handle
+ */
+struct __pyx_obj_4base_IOCounters {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_4base_IOCounters *__pyx_vtab;
+  HANDLE handle;
+  IO_COUNTERS counters;
+};
+
+
+
+/* "base.pyx":24
+ *             return self.pn.Number
+ * 
+ * cdef class Context:             # <<<<<<<<<<<<<<
+ *     cdef public:
+ *         HANDLE handle
+ */
+
+struct __pyx_vtabstruct_4base_Context {
+  void (*refresh)(struct __pyx_obj_4base_Context *, int __pyx_skip_dispatch);
+};
+static struct __pyx_vtabstruct_4base_Context *__pyx_vtabptr_4base_Context;
+
+
+/* "base.pyx":41
+ *             raise OSError("GetThreadContext")
+ * 
+ * cdef class IOCounters:             # <<<<<<<<<<<<<<
+ *     cdef readonly:
+ *         HANDLE handle
+ */
+
+struct __pyx_vtabstruct_4base_IOCounters {
+  void (*refresh)(struct __pyx_obj_4base_IOCounters *, int __pyx_skip_dispatch);
+};
+static struct __pyx_vtabstruct_4base_IOCounters *__pyx_vtabptr_4base_IOCounters;
 
 /* --- Runtime support code (head) --- */
 #ifndef CYTHON_REFNANNY
@@ -512,6 +588,70 @@ static const char *__pyx_f[] = {
 #define __Pyx_CLEAR(r)    do { PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);} while(0)
 #define __Pyx_XCLEAR(r)   do { if((r) != NULL) {PyObject* tmp = ((PyObject*)(r)); r = NULL; __Pyx_DECREF(tmp);}} while(0)
 
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStr(PyObject* obj, PyObject* attr_name) {
+    PyTypeObject* tp = Py_TYPE(obj);
+    if (likely(tp->tp_getattro))
+        return tp->tp_getattro(obj, attr_name);
+#if PY_MAJOR_VERSION < 3
+    if (likely(tp->tp_getattr))
+        return tp->tp_getattr(obj, PyString_AS_STRING(attr_name));
+#endif
+    return PyObject_GetAttr(obj, attr_name);
+}
+#else
+#define __Pyx_PyObject_GetAttrStr(o,n) PyObject_GetAttr(o,n)
+#endif
+
+static PyObject *__Pyx_GetBuiltinName(PyObject *name);
+
+static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
+    Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
+
+static CYTHON_INLINE int __Pyx_CheckKeywordStrings(PyObject *kwdict, const char* function_name, int kw_allowed);
+
+static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
+
+static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject **argnames[],\
+    PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,\
+    const char* function_name);
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw);
+#else
+#define __Pyx_PyObject_Call(func, arg, kw) PyObject_Call(func, arg, kw)
+#endif
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
+#endif
+
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
+#else
+#define __Pyx_PyObject_CallNoArg(func) __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL)
+#endif
+
+static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb);
+static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb);
+
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
+
+static void __Pyx_WriteUnraisable(const char *name, int clineno,
+                                  int lineno, const char *filename,
+                                  int full_traceback, int nogil);
+
+static CYTHON_INLINE void __Pyx_ExceptionSave(PyObject **type, PyObject **value, PyObject **tb);
+static void __Pyx_ExceptionReset(PyObject *type, PyObject *value, PyObject *tb);
+
+static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb);
+
+#include <string.h>
+
+static int __Pyx_SetVtable(PyObject *dict, void *vtable);
+
 typedef struct {
     int code_line;
     PyCodeObject* code_object;
@@ -529,6 +669,45 @@ static void __pyx_insert_code_object(int code_line, PyCodeObject* code_object);
 static void __Pyx_AddTraceback(const char *funcname, int c_line,
                                int py_line, const char *filename);
 
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_WORD(WORD value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_UCHAR(UCHAR value);
+
+static PyObject* __pyx_convert__to_py_PROCESSOR_NUMBER(PROCESSOR_NUMBER s);
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_DWORD64(DWORD64 value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_DWORD(DWORD value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_USHORT(USHORT value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONGLONG(ULONGLONG value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_LONGLONG(LONGLONG value);
+
+static PyObject* __pyx_convert__to_py_M128A(M128A s);
+static PyObject* __pyx_convert__to_py_XSAVE_FORMAT(XSAVE_FORMAT s);
+static PyObject* __pyx_convert__to_py_CONTEXT(CONTEXT s);
+static PyObject* __pyx_convert__to_py_IO_COUNTERS(IO_COUNTERS s);
+static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *);
+
+static CYTHON_INLINE DWORD64 __Pyx_PyInt_As_DWORD64(PyObject *);
+
+static CYTHON_INLINE WORD __Pyx_PyInt_As_WORD(PyObject *);
+
+static CYTHON_INLINE USHORT __Pyx_PyInt_As_USHORT(PyObject *);
+
+static CYTHON_INLINE UCHAR __Pyx_PyInt_As_UCHAR(PyObject *);
+
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *);
+
+static CYTHON_INLINE ULONGLONG __Pyx_PyInt_As_ULONGLONG(PyObject *);
+
+static CYTHON_INLINE LONGLONG __Pyx_PyInt_As_LONGLONG(PyObject *);
+
+static CYTHON_INLINE size_t __Pyx_PyInt_As_size_t(PyObject *);
+
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
@@ -539,18 +718,10727 @@ static int __Pyx_check_binary_version(void);
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
+static void __pyx_f_4base_7Context_refresh(struct __pyx_obj_4base_Context *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
+static void __pyx_f_4base_10IOCounters_refresh(struct __pyx_obj_4base_IOCounters *__pyx_v_self, int __pyx_skip_dispatch); /* proto*/
 
 /* Module declarations from 'types' */
 
+/* Module declarations from 'constants' */
+
+/* Module declarations from 'processthreads' */
+
 /* Module declarations from 'base' */
+static PyTypeObject *__pyx_ptype_4base_ProcessorNumber = 0;
+static PyTypeObject *__pyx_ptype_4base_Context = 0;
+static PyTypeObject *__pyx_ptype_4base_IOCounters = 0;
+static CYTHON_INLINE PyObject *__Pyx_carray_to_py_M128A(M128A *, Py_ssize_t); /*proto*/
+static CYTHON_INLINE PyObject *__Pyx_carray_to_tuple_M128A(M128A *, Py_ssize_t); /*proto*/
+static M128A __pyx_convert__from_py_M128A(PyObject *); /*proto*/
+static int __Pyx_carray_from_py_M128A(PyObject *, M128A *, Py_ssize_t); /*proto*/
+static XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(PyObject *); /*proto*/
+static CONTEXT __pyx_convert__from_py_CONTEXT(PyObject *); /*proto*/
 #define __Pyx_MODULE_NAME "base"
 int __pyx_module_is_main_base = 0;
 
 /* Implementation of 'base' */
+static PyObject *__pyx_builtin_OSError;
+static PyObject *__pyx_builtin_range;
+static PyObject *__pyx_builtin_TypeError;
+static PyObject *__pyx_builtin_KeyError;
+static PyObject *__pyx_builtin_ValueError;
+static PyObject *__pyx_builtin_OverflowError;
+static PyObject *__pyx_builtin_enumerate;
+static PyObject *__pyx_builtin_IndexError;
+static char __pyx_k_R8[] = "R8";
+static char __pyx_k_R9[] = "R9";
+static char __pyx_k_Dr0[] = "Dr0";
+static char __pyx_k_Dr1[] = "Dr1";
+static char __pyx_k_Dr2[] = "Dr2";
+static char __pyx_k_Dr3[] = "Dr3";
+static char __pyx_k_Dr6[] = "Dr6";
+static char __pyx_k_Dr7[] = "Dr7";
+static char __pyx_k_Low[] = "Low";
+static char __pyx_k_R10[] = "R10";
+static char __pyx_k_R11[] = "R11";
+static char __pyx_k_R12[] = "R12";
+static char __pyx_k_R13[] = "R13";
+static char __pyx_k_R14[] = "R14";
+static char __pyx_k_R15[] = "R15";
+static char __pyx_k_Rax[] = "Rax";
+static char __pyx_k_Rbp[] = "Rbp";
+static char __pyx_k_Rbx[] = "Rbx";
+static char __pyx_k_Rcx[] = "Rcx";
+static char __pyx_k_Rdi[] = "Rdi";
+static char __pyx_k_Rdx[] = "Rdx";
+static char __pyx_k_Rip[] = "Rip";
+static char __pyx_k_Rsi[] = "Rsi";
+static char __pyx_k_Rsp[] = "Rsp";
+static char __pyx_k_High[] = "High";
+static char __pyx_k_Xmm0[] = "Xmm0";
+static char __pyx_k_Xmm1[] = "Xmm1";
+static char __pyx_k_Xmm2[] = "Xmm2";
+static char __pyx_k_Xmm3[] = "Xmm3";
+static char __pyx_k_Xmm4[] = "Xmm4";
+static char __pyx_k_Xmm5[] = "Xmm5";
+static char __pyx_k_Xmm6[] = "Xmm6";
+static char __pyx_k_Xmm7[] = "Xmm7";
+static char __pyx_k_Xmm8[] = "Xmm8";
+static char __pyx_k_Xmm9[] = "Xmm9";
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
+static char __pyx_k_Group[] = "Group";
+static char __pyx_k_MxCsr[] = "MxCsr";
+static char __pyx_k_SegCs[] = "SegCs";
+static char __pyx_k_SegDs[] = "SegDs";
+static char __pyx_k_SegEs[] = "SegEs";
+static char __pyx_k_SegFs[] = "SegFs";
+static char __pyx_k_SegGs[] = "SegGs";
+static char __pyx_k_SegSs[] = "SegSs";
+static char __pyx_k_Xmm10[] = "Xmm10";
+static char __pyx_k_Xmm11[] = "Xmm11";
+static char __pyx_k_Xmm12[] = "Xmm12";
+static char __pyx_k_Xmm13[] = "Xmm13";
+static char __pyx_k_Xmm14[] = "Xmm14";
+static char __pyx_k_Xmm15[] = "Xmm15";
+static char __pyx_k_flags[] = "flags";
+static char __pyx_k_range[] = "range";
+static char __pyx_k_EFlags[] = "EFlags";
+static char __pyx_k_Header[] = "Header";
+static char __pyx_k_Legacy[] = "Legacy";
+static char __pyx_k_Number[] = "Number";
+static char __pyx_k_P1Home[] = "P1Home";
+static char __pyx_k_P2Home[] = "P2Home";
+static char __pyx_k_P3Home[] = "P3Home";
+static char __pyx_k_P4Home[] = "P4Home";
+static char __pyx_k_P5Home[] = "P5Home";
+static char __pyx_k_P6Home[] = "P6Home";
+static char __pyx_k_handle[] = "handle";
+static char __pyx_k_FltSave[] = "FltSave";
+static char __pyx_k_OSError[] = "OSError";
+static char __pyx_k_TagWord[] = "TagWord";
+static char __pyx_k_hThread[] = "hThread";
+static char __pyx_k_refresh[] = "refresh";
+static char __pyx_k_KeyError[] = "KeyError";
+static char __pyx_k_Reserved[] = "Reserved";
+static char __pyx_k_Reserved1[] = "Reserved1";
+static char __pyx_k_Reserved2[] = "Reserved2";
+static char __pyx_k_Reserved3[] = "Reserved3";
+static char __pyx_k_TypeError[] = "TypeError";
+static char __pyx_k_a_mapping[] = "a mapping";
+static char __pyx_k_enumerate[] = "enumerate";
+static char __pyx_k_DataOffset[] = "DataOffset";
+static char __pyx_k_IndexError[] = "IndexError";
+static char __pyx_k_MxCsr_Mask[] = "MxCsr_Mask";
+static char __pyx_k_StatusWord[] = "StatusWord";
+static char __pyx_k_ValueError[] = "ValueError";
+static char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
+static char __pyx_k_ControlWord[] = "ControlWord";
+static char __pyx_k_ErrorOffset[] = "ErrorOffset";
+static char __pyx_k_ErrorOpcode[] = "ErrorOpcode";
+static char __pyx_k_ContextFlags[] = "ContextFlags";
+static char __pyx_k_DataSelector[] = "DataSelector";
+static char __pyx_k_DebugControl[] = "DebugControl";
+static char __pyx_k_ErrorSelector[] = "ErrorSelector";
+static char __pyx_k_OverflowError[] = "OverflowError";
+static char __pyx_k_VectorControl[] = "VectorControl";
+static char __pyx_k_FloatRegisters[] = "FloatRegisters";
+static char __pyx_k_VectorRegister[] = "VectorRegister";
+static char __pyx_k_LastBranchToRip[] = "LastBranchToRip";
+static char __pyx_k_GetThreadContext[] = "GetThreadContext";
+static char __pyx_k_LastBranchFromRip[] = "LastBranchFromRip";
+static char __pyx_k_ReadTransferCount[] = "ReadTransferCount";
+static char __pyx_k_LastExceptionToRip[] = "LastExceptionToRip";
+static char __pyx_k_OtherTransferCount[] = "OtherTransferCount";
+static char __pyx_k_ReadOperationCount[] = "ReadOperationCount";
+static char __pyx_k_WriteTransferCount[] = "WriteTransferCount";
+static char __pyx_k_OtherOperationCount[] = "OtherOperationCount";
+static char __pyx_k_WriteOperationCount[] = "WriteOperationCount";
+static char __pyx_k_GetProcessIoCounters[] = "GetProcessIoCounters";
+static char __pyx_k_LastExceptionFromRip[] = "LastExceptionFromRip";
+static char __pyx_k_Expected_16s_got_200s[] = "Expected %.16s, got %.200s";
+static char __pyx_k_No_value_specified_for_struct_at[] = "No value specified for struct attribute 'Low'";
+static char __pyx_k_not_enough_values_found_during_a[] = "not enough values found during array assignment, expected %zd, got %zd";
+static char __pyx_k_too_many_values_found_during_arr[] = "too many values found during array assignment, expected %zd";
+static char __pyx_k_No_value_specified_for_struct_at_2[] = "No value specified for struct attribute 'High'";
+static char __pyx_k_No_value_specified_for_struct_at_3[] = "No value specified for struct attribute 'ControlWord'";
+static char __pyx_k_No_value_specified_for_struct_at_4[] = "No value specified for struct attribute 'StatusWord'";
+static char __pyx_k_No_value_specified_for_struct_at_5[] = "No value specified for struct attribute 'TagWord'";
+static char __pyx_k_No_value_specified_for_struct_at_6[] = "No value specified for struct attribute 'Reserved1'";
+static char __pyx_k_No_value_specified_for_struct_at_7[] = "No value specified for struct attribute 'ErrorOpcode'";
+static char __pyx_k_No_value_specified_for_struct_at_8[] = "No value specified for struct attribute 'ErrorOffset'";
+static char __pyx_k_No_value_specified_for_struct_at_9[] = "No value specified for struct attribute 'ErrorSelector'";
+static char __pyx_k_No_value_specified_for_struct_at_10[] = "No value specified for struct attribute 'Reserved2'";
+static char __pyx_k_No_value_specified_for_struct_at_11[] = "No value specified for struct attribute 'DataOffset'";
+static char __pyx_k_No_value_specified_for_struct_at_12[] = "No value specified for struct attribute 'DataSelector'";
+static char __pyx_k_No_value_specified_for_struct_at_13[] = "No value specified for struct attribute 'Reserved3'";
+static char __pyx_k_No_value_specified_for_struct_at_14[] = "No value specified for struct attribute 'MxCsr'";
+static char __pyx_k_No_value_specified_for_struct_at_15[] = "No value specified for struct attribute 'MxCsr_Mask'";
+static char __pyx_k_No_value_specified_for_struct_at_16[] = "No value specified for struct attribute 'FloatRegisters'";
+static char __pyx_k_No_value_specified_for_struct_at_17[] = "No value specified for struct attribute 'P1Home'";
+static char __pyx_k_No_value_specified_for_struct_at_18[] = "No value specified for struct attribute 'P2Home'";
+static char __pyx_k_No_value_specified_for_struct_at_19[] = "No value specified for struct attribute 'P3Home'";
+static char __pyx_k_No_value_specified_for_struct_at_20[] = "No value specified for struct attribute 'P4Home'";
+static char __pyx_k_No_value_specified_for_struct_at_21[] = "No value specified for struct attribute 'P5Home'";
+static char __pyx_k_No_value_specified_for_struct_at_22[] = "No value specified for struct attribute 'P6Home'";
+static char __pyx_k_No_value_specified_for_struct_at_23[] = "No value specified for struct attribute 'ContextFlags'";
+static char __pyx_k_No_value_specified_for_struct_at_24[] = "No value specified for struct attribute 'SegCs'";
+static char __pyx_k_No_value_specified_for_struct_at_25[] = "No value specified for struct attribute 'SegDs'";
+static char __pyx_k_No_value_specified_for_struct_at_26[] = "No value specified for struct attribute 'SegEs'";
+static char __pyx_k_No_value_specified_for_struct_at_27[] = "No value specified for struct attribute 'SegFs'";
+static char __pyx_k_No_value_specified_for_struct_at_28[] = "No value specified for struct attribute 'SegGs'";
+static char __pyx_k_No_value_specified_for_struct_at_29[] = "No value specified for struct attribute 'SegSs'";
+static char __pyx_k_No_value_specified_for_struct_at_30[] = "No value specified for struct attribute 'EFlags'";
+static char __pyx_k_No_value_specified_for_struct_at_31[] = "No value specified for struct attribute 'Dr0'";
+static char __pyx_k_No_value_specified_for_struct_at_32[] = "No value specified for struct attribute 'Dr1'";
+static char __pyx_k_No_value_specified_for_struct_at_33[] = "No value specified for struct attribute 'Dr2'";
+static char __pyx_k_No_value_specified_for_struct_at_34[] = "No value specified for struct attribute 'Dr3'";
+static char __pyx_k_No_value_specified_for_struct_at_35[] = "No value specified for struct attribute 'Dr6'";
+static char __pyx_k_No_value_specified_for_struct_at_36[] = "No value specified for struct attribute 'Dr7'";
+static char __pyx_k_No_value_specified_for_struct_at_37[] = "No value specified for struct attribute 'Rax'";
+static char __pyx_k_No_value_specified_for_struct_at_38[] = "No value specified for struct attribute 'Rcx'";
+static char __pyx_k_No_value_specified_for_struct_at_39[] = "No value specified for struct attribute 'Rdx'";
+static char __pyx_k_No_value_specified_for_struct_at_40[] = "No value specified for struct attribute 'Rbx'";
+static char __pyx_k_No_value_specified_for_struct_at_41[] = "No value specified for struct attribute 'Rsp'";
+static char __pyx_k_No_value_specified_for_struct_at_42[] = "No value specified for struct attribute 'Rbp'";
+static char __pyx_k_No_value_specified_for_struct_at_43[] = "No value specified for struct attribute 'Rsi'";
+static char __pyx_k_No_value_specified_for_struct_at_44[] = "No value specified for struct attribute 'Rdi'";
+static char __pyx_k_No_value_specified_for_struct_at_45[] = "No value specified for struct attribute 'R8'";
+static char __pyx_k_No_value_specified_for_struct_at_46[] = "No value specified for struct attribute 'R9'";
+static char __pyx_k_No_value_specified_for_struct_at_47[] = "No value specified for struct attribute 'R10'";
+static char __pyx_k_No_value_specified_for_struct_at_48[] = "No value specified for struct attribute 'R11'";
+static char __pyx_k_No_value_specified_for_struct_at_49[] = "No value specified for struct attribute 'R12'";
+static char __pyx_k_No_value_specified_for_struct_at_50[] = "No value specified for struct attribute 'R13'";
+static char __pyx_k_No_value_specified_for_struct_at_51[] = "No value specified for struct attribute 'R14'";
+static char __pyx_k_No_value_specified_for_struct_at_52[] = "No value specified for struct attribute 'R15'";
+static char __pyx_k_No_value_specified_for_struct_at_53[] = "No value specified for struct attribute 'Rip'";
+static char __pyx_k_No_value_specified_for_struct_at_54[] = "No value specified for struct attribute 'FltSave'";
+static char __pyx_k_No_value_specified_for_struct_at_55[] = "No value specified for struct attribute 'Header'";
+static char __pyx_k_No_value_specified_for_struct_at_56[] = "No value specified for struct attribute 'Legacy'";
+static char __pyx_k_No_value_specified_for_struct_at_57[] = "No value specified for struct attribute 'Xmm0'";
+static char __pyx_k_No_value_specified_for_struct_at_58[] = "No value specified for struct attribute 'Xmm1'";
+static char __pyx_k_No_value_specified_for_struct_at_59[] = "No value specified for struct attribute 'Xmm2'";
+static char __pyx_k_No_value_specified_for_struct_at_60[] = "No value specified for struct attribute 'Xmm3'";
+static char __pyx_k_No_value_specified_for_struct_at_61[] = "No value specified for struct attribute 'Xmm4'";
+static char __pyx_k_No_value_specified_for_struct_at_62[] = "No value specified for struct attribute 'Xmm5'";
+static char __pyx_k_No_value_specified_for_struct_at_63[] = "No value specified for struct attribute 'Xmm6'";
+static char __pyx_k_No_value_specified_for_struct_at_64[] = "No value specified for struct attribute 'Xmm7'";
+static char __pyx_k_No_value_specified_for_struct_at_65[] = "No value specified for struct attribute 'Xmm8'";
+static char __pyx_k_No_value_specified_for_struct_at_66[] = "No value specified for struct attribute 'Xmm9'";
+static char __pyx_k_No_value_specified_for_struct_at_67[] = "No value specified for struct attribute 'Xmm10'";
+static char __pyx_k_No_value_specified_for_struct_at_68[] = "No value specified for struct attribute 'Xmm11'";
+static char __pyx_k_No_value_specified_for_struct_at_69[] = "No value specified for struct attribute 'Xmm12'";
+static char __pyx_k_No_value_specified_for_struct_at_70[] = "No value specified for struct attribute 'Xmm13'";
+static char __pyx_k_No_value_specified_for_struct_at_71[] = "No value specified for struct attribute 'Xmm14'";
+static char __pyx_k_No_value_specified_for_struct_at_72[] = "No value specified for struct attribute 'Xmm15'";
+static char __pyx_k_No_value_specified_for_struct_at_73[] = "No value specified for struct attribute 'VectorRegister'";
+static char __pyx_k_No_value_specified_for_struct_at_74[] = "No value specified for struct attribute 'VectorControl'";
+static char __pyx_k_No_value_specified_for_struct_at_75[] = "No value specified for struct attribute 'DebugControl'";
+static char __pyx_k_No_value_specified_for_struct_at_76[] = "No value specified for struct attribute 'LastBranchToRip'";
+static char __pyx_k_No_value_specified_for_struct_at_77[] = "No value specified for struct attribute 'LastBranchFromRip'";
+static char __pyx_k_No_value_specified_for_struct_at_78[] = "No value specified for struct attribute 'LastExceptionToRip'";
+static char __pyx_k_No_value_specified_for_struct_at_79[] = "No value specified for struct attribute 'LastExceptionFromRip'";
+static PyObject *__pyx_n_s_ContextFlags;
+static PyObject *__pyx_n_s_ControlWord;
+static PyObject *__pyx_n_s_DataOffset;
+static PyObject *__pyx_n_s_DataSelector;
+static PyObject *__pyx_n_s_DebugControl;
+static PyObject *__pyx_n_s_Dr0;
+static PyObject *__pyx_n_s_Dr1;
+static PyObject *__pyx_n_s_Dr2;
+static PyObject *__pyx_n_s_Dr3;
+static PyObject *__pyx_n_s_Dr6;
+static PyObject *__pyx_n_s_Dr7;
+static PyObject *__pyx_n_s_EFlags;
+static PyObject *__pyx_n_s_ErrorOffset;
+static PyObject *__pyx_n_s_ErrorOpcode;
+static PyObject *__pyx_n_s_ErrorSelector;
+static PyObject *__pyx_n_s_FloatRegisters;
+static PyObject *__pyx_n_s_FltSave;
+static PyObject *__pyx_n_u_GetProcessIoCounters;
+static PyObject *__pyx_n_u_GetThreadContext;
+static PyObject *__pyx_n_s_Group;
+static PyObject *__pyx_n_s_Header;
+static PyObject *__pyx_n_s_High;
+static PyObject *__pyx_n_s_IndexError;
+static PyObject *__pyx_n_s_KeyError;
+static PyObject *__pyx_n_s_LastBranchFromRip;
+static PyObject *__pyx_n_s_LastBranchToRip;
+static PyObject *__pyx_n_s_LastExceptionFromRip;
+static PyObject *__pyx_n_s_LastExceptionToRip;
+static PyObject *__pyx_n_s_Legacy;
+static PyObject *__pyx_n_s_Low;
+static PyObject *__pyx_n_s_MxCsr;
+static PyObject *__pyx_n_s_MxCsr_Mask;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_10;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_11;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_12;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_13;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_14;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_15;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_16;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_17;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_18;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_19;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_2;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_20;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_21;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_22;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_23;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_24;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_25;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_26;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_27;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_28;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_29;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_3;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_30;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_31;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_32;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_33;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_34;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_35;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_36;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_37;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_38;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_39;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_4;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_40;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_41;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_42;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_43;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_44;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_45;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_46;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_47;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_48;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_49;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_5;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_50;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_51;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_52;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_53;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_54;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_55;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_56;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_57;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_58;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_59;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_6;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_60;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_61;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_62;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_63;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_64;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_65;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_66;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_67;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_68;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_69;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_7;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_70;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_71;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_72;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_73;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_74;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_75;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_76;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_77;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_78;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_79;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_8;
+static PyObject *__pyx_kp_s_No_value_specified_for_struct_at_9;
+static PyObject *__pyx_n_s_Number;
+static PyObject *__pyx_n_s_OSError;
+static PyObject *__pyx_n_s_OtherOperationCount;
+static PyObject *__pyx_n_s_OtherTransferCount;
+static PyObject *__pyx_n_s_OverflowError;
+static PyObject *__pyx_n_s_P1Home;
+static PyObject *__pyx_n_s_P2Home;
+static PyObject *__pyx_n_s_P3Home;
+static PyObject *__pyx_n_s_P4Home;
+static PyObject *__pyx_n_s_P5Home;
+static PyObject *__pyx_n_s_P6Home;
+static PyObject *__pyx_n_s_R10;
+static PyObject *__pyx_n_s_R11;
+static PyObject *__pyx_n_s_R12;
+static PyObject *__pyx_n_s_R13;
+static PyObject *__pyx_n_s_R14;
+static PyObject *__pyx_n_s_R15;
+static PyObject *__pyx_n_s_R8;
+static PyObject *__pyx_n_s_R9;
+static PyObject *__pyx_n_s_Rax;
+static PyObject *__pyx_n_s_Rbp;
+static PyObject *__pyx_n_s_Rbx;
+static PyObject *__pyx_n_s_Rcx;
+static PyObject *__pyx_n_s_Rdi;
+static PyObject *__pyx_n_s_Rdx;
+static PyObject *__pyx_n_s_ReadOperationCount;
+static PyObject *__pyx_n_s_ReadTransferCount;
+static PyObject *__pyx_n_s_Reserved;
+static PyObject *__pyx_n_s_Reserved1;
+static PyObject *__pyx_n_s_Reserved2;
+static PyObject *__pyx_n_s_Reserved3;
+static PyObject *__pyx_n_s_Rip;
+static PyObject *__pyx_n_s_Rsi;
+static PyObject *__pyx_n_s_Rsp;
+static PyObject *__pyx_n_s_SegCs;
+static PyObject *__pyx_n_s_SegDs;
+static PyObject *__pyx_n_s_SegEs;
+static PyObject *__pyx_n_s_SegFs;
+static PyObject *__pyx_n_s_SegGs;
+static PyObject *__pyx_n_s_SegSs;
+static PyObject *__pyx_n_s_StatusWord;
+static PyObject *__pyx_n_s_TagWord;
+static PyObject *__pyx_n_s_TypeError;
+static PyObject *__pyx_n_s_ValueError;
+static PyObject *__pyx_n_s_VectorControl;
+static PyObject *__pyx_n_s_VectorRegister;
+static PyObject *__pyx_n_s_WriteOperationCount;
+static PyObject *__pyx_n_s_WriteTransferCount;
+static PyObject *__pyx_n_s_Xmm0;
+static PyObject *__pyx_n_s_Xmm1;
+static PyObject *__pyx_n_s_Xmm10;
+static PyObject *__pyx_n_s_Xmm11;
+static PyObject *__pyx_n_s_Xmm12;
+static PyObject *__pyx_n_s_Xmm13;
+static PyObject *__pyx_n_s_Xmm14;
+static PyObject *__pyx_n_s_Xmm15;
+static PyObject *__pyx_n_s_Xmm2;
+static PyObject *__pyx_n_s_Xmm3;
+static PyObject *__pyx_n_s_Xmm4;
+static PyObject *__pyx_n_s_Xmm5;
+static PyObject *__pyx_n_s_Xmm6;
+static PyObject *__pyx_n_s_Xmm7;
+static PyObject *__pyx_n_s_Xmm8;
+static PyObject *__pyx_n_s_Xmm9;
+static PyObject *__pyx_n_s_enumerate;
+static PyObject *__pyx_n_s_flags;
+static PyObject *__pyx_n_s_hThread;
+static PyObject *__pyx_n_s_handle;
 static PyObject *__pyx_n_s_main;
+static PyObject *__pyx_n_s_pyx_vtable;
+static PyObject *__pyx_n_s_range;
+static PyObject *__pyx_n_s_refresh;
 static PyObject *__pyx_n_s_test;
+static int __pyx_pf_4base_15ProcessorNumber___cinit__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_15ProcessorNumber_5group___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_15ProcessorNumber_6number___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_15ProcessorNumber_2pn___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self); /* proto */
+static int __pyx_pf_4base_7Context___cinit__(struct __pyx_obj_4base_Context *__pyx_v_self, HANDLE __pyx_v_hThread, DWORD __pyx_v_flags); /* proto */
+static PyObject *__pyx_pf_4base_7Context_2refresh(struct __pyx_obj_4base_Context *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_7Context_6handle___get__(struct __pyx_obj_4base_Context *__pyx_v_self); /* proto */
+static int __pyx_pf_4base_7Context_6handle_2__set__(struct __pyx_obj_4base_Context *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_4base_7Context_3ctx___get__(struct __pyx_obj_4base_Context *__pyx_v_self); /* proto */
+static int __pyx_pf_4base_7Context_3ctx_2__set__(struct __pyx_obj_4base_Context *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_4base_10IOCounters___cinit__(struct __pyx_obj_4base_IOCounters *__pyx_v_self, HANDLE __pyx_v_handle); /* proto */
+static PyObject *__pyx_pf_4base_10IOCounters_2refresh(struct __pyx_obj_4base_IOCounters *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_10IOCounters_6handle___get__(struct __pyx_obj_4base_IOCounters *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_4base_10IOCounters_8counters___get__(struct __pyx_obj_4base_IOCounters *__pyx_v_self); /* proto */
+static PyObject *__pyx_tp_new_4base_ProcessorNumber(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_4base_Context(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_4base_IOCounters(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static HANDLE __pyx_k_;
+static DWORD __pyx_k__2;
+static PyObject *__pyx_tuple__3;
+static PyObject *__pyx_tuple__4;
+static PyObject *__pyx_tuple__5;
+static PyObject *__pyx_tuple__6;
+static PyObject *__pyx_tuple__7;
+static PyObject *__pyx_tuple__8;
+static PyObject *__pyx_tuple__9;
+static PyObject *__pyx_tuple__10;
+static PyObject *__pyx_tuple__11;
+static PyObject *__pyx_tuple__12;
+static PyObject *__pyx_tuple__13;
+static PyObject *__pyx_tuple__14;
+static PyObject *__pyx_tuple__15;
+static PyObject *__pyx_tuple__16;
+static PyObject *__pyx_tuple__17;
+static PyObject *__pyx_tuple__18;
+static PyObject *__pyx_tuple__19;
+static PyObject *__pyx_tuple__20;
+static PyObject *__pyx_tuple__21;
+static PyObject *__pyx_tuple__22;
+static PyObject *__pyx_tuple__23;
+static PyObject *__pyx_tuple__24;
+static PyObject *__pyx_tuple__25;
+static PyObject *__pyx_tuple__26;
+static PyObject *__pyx_tuple__27;
+static PyObject *__pyx_tuple__28;
+static PyObject *__pyx_tuple__29;
+static PyObject *__pyx_tuple__30;
+static PyObject *__pyx_tuple__31;
+static PyObject *__pyx_tuple__32;
+static PyObject *__pyx_tuple__33;
+static PyObject *__pyx_tuple__34;
+static PyObject *__pyx_tuple__35;
+static PyObject *__pyx_tuple__36;
+static PyObject *__pyx_tuple__37;
+static PyObject *__pyx_tuple__38;
+static PyObject *__pyx_tuple__39;
+static PyObject *__pyx_tuple__40;
+static PyObject *__pyx_tuple__41;
+static PyObject *__pyx_tuple__42;
+static PyObject *__pyx_tuple__43;
+static PyObject *__pyx_tuple__44;
+static PyObject *__pyx_tuple__45;
+static PyObject *__pyx_tuple__46;
+static PyObject *__pyx_tuple__47;
+static PyObject *__pyx_tuple__48;
+static PyObject *__pyx_tuple__49;
+static PyObject *__pyx_tuple__50;
+static PyObject *__pyx_tuple__51;
+static PyObject *__pyx_tuple__52;
+static PyObject *__pyx_tuple__53;
+static PyObject *__pyx_tuple__54;
+static PyObject *__pyx_tuple__55;
+static PyObject *__pyx_tuple__56;
+static PyObject *__pyx_tuple__57;
+static PyObject *__pyx_tuple__58;
+static PyObject *__pyx_tuple__59;
+static PyObject *__pyx_tuple__60;
+static PyObject *__pyx_tuple__61;
+static PyObject *__pyx_tuple__62;
+static PyObject *__pyx_tuple__63;
+static PyObject *__pyx_tuple__64;
+static PyObject *__pyx_tuple__65;
+static PyObject *__pyx_tuple__66;
+static PyObject *__pyx_tuple__67;
+static PyObject *__pyx_tuple__68;
+static PyObject *__pyx_tuple__69;
+static PyObject *__pyx_tuple__70;
+static PyObject *__pyx_tuple__71;
+static PyObject *__pyx_tuple__72;
+static PyObject *__pyx_tuple__73;
+static PyObject *__pyx_tuple__74;
+static PyObject *__pyx_tuple__75;
+static PyObject *__pyx_tuple__76;
+static PyObject *__pyx_tuple__77;
+static PyObject *__pyx_tuple__78;
+static PyObject *__pyx_tuple__79;
+static PyObject *__pyx_tuple__80;
+static PyObject *__pyx_tuple__81;
+static PyObject *__pyx_tuple__82;
+static PyObject *__pyx_tuple__83;
+static PyObject *__pyx_tuple__84;
+
+/* "windows.pxi":4
+ *     pass
+ * 
+ * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
+ *     cdef ULARGE_INTEGER ul
+ *     ul.LowPart = filetime.dwLowDateTime
+ */
+
+static CYTHON_INLINE ULONGLONG __pyx_f_4base_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
+  ULARGE_INTEGER __pyx_v_ul;
+  ULONGLONG __pyx_r;
+  __Pyx_RefNannyDeclarations
+  DWORD __pyx_t_1;
+  __Pyx_RefNannySetupContext("FileTimeToUnsignedLongLong", 0);
+
+  /* "windows.pxi":6
+ * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):
+ *     cdef ULARGE_INTEGER ul
+ *     ul.LowPart = filetime.dwLowDateTime             # <<<<<<<<<<<<<<
+ *     ul.HighPart = filetime.dwHighDateTime
+ *     return ul.QuadPart
+ */
+  __pyx_t_1 = __pyx_v_filetime->dwLowDateTime;
+  __pyx_v_ul.LowPart = __pyx_t_1;
+
+  /* "windows.pxi":7
+ *     cdef ULARGE_INTEGER ul
+ *     ul.LowPart = filetime.dwLowDateTime
+ *     ul.HighPart = filetime.dwHighDateTime             # <<<<<<<<<<<<<<
+ *     return ul.QuadPart
+ * 
+ */
+  __pyx_t_1 = __pyx_v_filetime->dwHighDateTime;
+  __pyx_v_ul.HighPart = __pyx_t_1;
+
+  /* "windows.pxi":8
+ *     ul.LowPart = filetime.dwLowDateTime
+ *     ul.HighPart = filetime.dwHighDateTime
+ *     return ul.QuadPart             # <<<<<<<<<<<<<<
+ * 
+ * # vim:set ts=8 sw=4 sts=4 tw=80 et nospell syntax=cython:                      #
+ */
+  __pyx_r = __pyx_v_ul.QuadPart;
+  goto __pyx_L0;
+
+  /* "windows.pxi":4
+ *     pass
+ * 
+ * cdef inline ULONGLONG FileTimeToUnsignedLongLong(PFILETIME filetime):             # <<<<<<<<<<<<<<
+ *     cdef ULARGE_INTEGER ul
+ *     ul.LowPart = filetime.dwLowDateTime
+ */
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":13
+ *         PROCESSOR_NUMBER pn
+ * 
+ *     def __cinit__(self):             # <<<<<<<<<<<<<<
+ *         base.GetCurrentProcessorNumberEx(&self.pn)
+ * 
+ */
+
+/* Python wrapper */
+static int __pyx_pw_4base_15ProcessorNumber_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_4base_15ProcessorNumber_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
+  if (unlikely(PyTuple_GET_SIZE(__pyx_args) > 0)) {
+    __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 0, 0, PyTuple_GET_SIZE(__pyx_args)); return -1;}
+  if (unlikely(__pyx_kwds) && unlikely(PyDict_Size(__pyx_kwds) > 0) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__cinit__", 0))) return -1;
+  __pyx_r = __pyx_pf_4base_15ProcessorNumber___cinit__(((struct __pyx_obj_4base_ProcessorNumber *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_4base_15ProcessorNumber___cinit__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__", 0);
+
+  /* "base.pyx":14
+ * 
+ *     def __cinit__(self):
+ *         base.GetCurrentProcessorNumberEx(&self.pn)             # <<<<<<<<<<<<<<
+ * 
+ *     property group:
+ */
+  GetCurrentProcessorNumberEx((&__pyx_v_self->pn));
+
+  /* "base.pyx":13
+ *         PROCESSOR_NUMBER pn
+ * 
+ *     def __cinit__(self):             # <<<<<<<<<<<<<<
+ *         base.GetCurrentProcessorNumberEx(&self.pn)
+ * 
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":17
+ * 
+ *     property group:
+ *         def __get__(self):             # <<<<<<<<<<<<<<
+ *             return self.pn.Group
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_15ProcessorNumber_5group_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_15ProcessorNumber_5group_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_15ProcessorNumber_5group___get__(((struct __pyx_obj_4base_ProcessorNumber *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_15ProcessorNumber_5group___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+
+  /* "base.pyx":18
+ *     property group:
+ *         def __get__(self):
+ *             return self.pn.Group             # <<<<<<<<<<<<<<
+ * 
+ *     property number:
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_WORD(__pyx_v_self->pn.Group); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "base.pyx":17
+ * 
+ *     property group:
+ *         def __get__(self):             # <<<<<<<<<<<<<<
+ *             return self.pn.Group
+ * 
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.ProcessorNumber.group.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":21
+ * 
+ *     property number:
+ *         def __get__(self):             # <<<<<<<<<<<<<<
+ *             return self.pn.Number
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_15ProcessorNumber_6number_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_15ProcessorNumber_6number_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_15ProcessorNumber_6number___get__(((struct __pyx_obj_4base_ProcessorNumber *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_15ProcessorNumber_6number___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+
+  /* "base.pyx":22
+ *     property number:
+ *         def __get__(self):
+ *             return self.pn.Number             # <<<<<<<<<<<<<<
+ * 
+ * cdef class Context:
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_UCHAR(__pyx_v_self->pn.Number); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "base.pyx":21
+ * 
+ *     property number:
+ *         def __get__(self):             # <<<<<<<<<<<<<<
+ *             return self.pn.Number
+ * 
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.ProcessorNumber.number.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":11
+ * cdef class ProcessorNumber:
+ *     cdef readonly:
+ *         PROCESSOR_NUMBER pn             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_15ProcessorNumber_2pn_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_15ProcessorNumber_2pn_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_15ProcessorNumber_2pn___get__(((struct __pyx_obj_4base_ProcessorNumber *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_15ProcessorNumber_2pn___get__(struct __pyx_obj_4base_ProcessorNumber *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_convert__to_py_PROCESSOR_NUMBER(__pyx_v_self->pn); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.ProcessorNumber.pn.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":29
+ *         CONTEXT ctx
+ * 
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,             # <<<<<<<<<<<<<<
+ *                         DWORD flags = CONTEXT_FULL):
+ *         self.handle = hThread
+ */
+
+/* Python wrapper */
+static int __pyx_pw_4base_7Context_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_4base_7Context_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  HANDLE __pyx_v_hThread;
+  DWORD __pyx_v_flags;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_hThread,&__pyx_n_s_flags,0};
+    PyObject* values[2] = {0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (kw_args > 0) {
+          PyObject* value = PyDict_GetItem(__pyx_kwds, __pyx_n_s_hThread);
+          if (value) { values[0] = value; kw_args--; }
+        }
+        case  1:
+        if (kw_args > 0) {
+          PyObject* value = PyDict_GetItem(__pyx_kwds, __pyx_n_s_flags);
+          if (value) { values[1] = value; kw_args--; }
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else {
+      switch (PyTuple_GET_SIZE(__pyx_args)) {
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+    }
+    if (values[0]) {
+      __pyx_v_hThread = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_hThread == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    } else {
+      __pyx_v_hThread = __pyx_k_;
+    }
+    if (values[1]) {
+      __pyx_v_flags = __Pyx_PyInt_As_DWORD(values[1]); if (unlikely((__pyx_v_flags == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+    } else {
+      __pyx_v_flags = __pyx_k__2;
+    }
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 0, 2, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("base.Context.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return -1;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_4base_7Context___cinit__(((struct __pyx_obj_4base_Context *)__pyx_v_self), __pyx_v_hThread, __pyx_v_flags);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_4base_7Context___cinit__(struct __pyx_obj_4base_Context *__pyx_v_self, HANDLE __pyx_v_hThread, DWORD __pyx_v_flags) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__", 0);
+
+  /* "base.pyx":31
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,
+ *                         DWORD flags = CONTEXT_FULL):
+ *         self.handle = hThread             # <<<<<<<<<<<<<<
+ *         self.ctx.ContextFlags = flags
+ *         self.refresh()
+ */
+  __pyx_v_self->handle = __pyx_v_hThread;
+
+  /* "base.pyx":32
+ *                         DWORD flags = CONTEXT_FULL):
+ *         self.handle = hThread
+ *         self.ctx.ContextFlags = flags             # <<<<<<<<<<<<<<
+ *         self.refresh()
+ * 
+ */
+  __pyx_v_self->ctx.ContextFlags = __pyx_v_flags;
+
+  /* "base.pyx":33
+ *         self.handle = hThread
+ *         self.ctx.ContextFlags = flags
+ *         self.refresh()             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef void refresh(self):
+ */
+  ((struct __pyx_vtabstruct_4base_Context *)__pyx_v_self->__pyx_vtab)->refresh(__pyx_v_self, 0);
+
+  /* "base.pyx":29
+ *         CONTEXT ctx
+ * 
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,             # <<<<<<<<<<<<<<
+ *                         DWORD flags = CONTEXT_FULL):
+ *         self.handle = hThread
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":35
+ *         self.refresh()
+ * 
+ *     cpdef void refresh(self):             # <<<<<<<<<<<<<<
+ *         if not self.handle:
+ *             return
+ */
+
+static PyObject *__pyx_pw_4base_7Context_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static void __pyx_f_4base_7Context_refresh(struct __pyx_obj_4base_Context *__pyx_v_self, int __pyx_skip_dispatch) {
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  int __pyx_t_5;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("refresh", 0);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_refresh); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4base_7Context_3refresh)) {
+      __Pyx_INCREF(__pyx_t_1);
+      __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
+      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+        __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+        if (likely(__pyx_t_4)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+          __Pyx_INCREF(__pyx_t_4);
+          __Pyx_INCREF(function);
+          __Pyx_DECREF_SET(__pyx_t_3, function);
+        }
+      }
+      if (__pyx_t_4) {
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      } else {
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      }
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      goto __pyx_L0;
+    }
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  }
+
+  /* "base.pyx":36
+ * 
+ *     cpdef void refresh(self):
+ *         if not self.handle:             # <<<<<<<<<<<<<<
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):
+ */
+  __pyx_t_5 = ((!(__pyx_v_self->handle != 0)) != 0);
+  if (__pyx_t_5) {
+
+    /* "base.pyx":37
+ *     cpdef void refresh(self):
+ *         if not self.handle:
+ *             return             # <<<<<<<<<<<<<<
+ *         if not base.GetThreadContext(self.handle, &self.ctx):
+ *             raise OSError("GetThreadContext")
+ */
+    goto __pyx_L0;
+
+    /* "base.pyx":36
+ * 
+ *     cpdef void refresh(self):
+ *         if not self.handle:             # <<<<<<<<<<<<<<
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):
+ */
+  }
+
+  /* "base.pyx":38
+ *         if not self.handle:
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):             # <<<<<<<<<<<<<<
+ *             raise OSError("GetThreadContext")
+ * 
+ */
+  __pyx_t_5 = ((!(GetThreadContext(__pyx_v_self->handle, (&__pyx_v_self->ctx)) != 0)) != 0);
+  if (__pyx_t_5) {
+
+    /* "base.pyx":39
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):
+ *             raise OSError("GetThreadContext")             # <<<<<<<<<<<<<<
+ * 
+ * cdef class IOCounters:
+ */
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_OSError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "base.pyx":38
+ *         if not self.handle:
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):             # <<<<<<<<<<<<<<
+ *             raise OSError("GetThreadContext")
+ * 
+ */
+  }
+
+  /* "base.pyx":35
+ *         self.refresh()
+ * 
+ *     cpdef void refresh(self):             # <<<<<<<<<<<<<<
+ *         if not self.handle:
+ *             return
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_WriteUnraisable("base.Context.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_7Context_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyObject *__pyx_pw_4base_7Context_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("refresh (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_7Context_2refresh(((struct __pyx_obj_4base_Context *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_7Context_2refresh(struct __pyx_obj_4base_Context *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("refresh", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_4base_7Context_refresh(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.Context.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":26
+ * cdef class Context:
+ *     cdef public:
+ *         HANDLE handle             # <<<<<<<<<<<<<<
+ *         CONTEXT ctx
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_7Context_6handle_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_7Context_6handle_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_7Context_6handle___get__(((struct __pyx_obj_4base_Context *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_7Context_6handle___get__(struct __pyx_obj_4base_Context *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->handle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.Context.handle.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_4base_7Context_6handle_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_4base_7Context_6handle_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_7Context_6handle_2__set__(((struct __pyx_obj_4base_Context *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_4base_7Context_6handle_2__set__(struct __pyx_obj_4base_Context *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  HANDLE __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  __pyx_t_1 = __Pyx_PyIndex_AsSsize_t(__pyx_v_value); if (unlikely((__pyx_t_1 == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_self->handle = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("base.Context.handle.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":27
+ *     cdef public:
+ *         HANDLE handle
+ *         CONTEXT ctx             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_7Context_3ctx_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_7Context_3ctx_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_7Context_3ctx___get__(((struct __pyx_obj_4base_Context *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_7Context_3ctx___get__(struct __pyx_obj_4base_Context *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_convert__to_py_CONTEXT(__pyx_v_self->ctx); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.Context.ctx.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_4base_7Context_3ctx_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_4base_7Context_3ctx_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_7Context_3ctx_2__set__(((struct __pyx_obj_4base_Context *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_4base_7Context_3ctx_2__set__(struct __pyx_obj_4base_Context *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  CONTEXT __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 0);
+  __pyx_t_1 = __pyx_convert__from_py_CONTEXT(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_self->ctx = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("base.Context.ctx.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":46
+ *         IO_COUNTERS counters
+ * 
+ *     def __cinit__(self, HANDLE handle):             # <<<<<<<<<<<<<<
+ *         self.handle = handle
+ *         self.refresh()
+ */
+
+/* Python wrapper */
+static int __pyx_pw_4base_10IOCounters_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_4base_10IOCounters_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  HANDLE __pyx_v_handle;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_handle,0};
+    PyObject* values[1] = {0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_handle)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "__cinit__") < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 1) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+    }
+    __pyx_v_handle = __Pyx_PyIndex_AsSsize_t(values[0]); if (unlikely((__pyx_v_handle == (HANDLE)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, PyTuple_GET_SIZE(__pyx_args)); {__pyx_filename = __pyx_f[0]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("base.IOCounters.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return -1;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_4base_10IOCounters___cinit__(((struct __pyx_obj_4base_IOCounters *)__pyx_v_self), __pyx_v_handle);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_4base_10IOCounters___cinit__(struct __pyx_obj_4base_IOCounters *__pyx_v_self, HANDLE __pyx_v_handle) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__cinit__", 0);
+
+  /* "base.pyx":47
+ * 
+ *     def __cinit__(self, HANDLE handle):
+ *         self.handle = handle             # <<<<<<<<<<<<<<
+ *         self.refresh()
+ * 
+ */
+  __pyx_v_self->handle = __pyx_v_handle;
+
+  /* "base.pyx":48
+ *     def __cinit__(self, HANDLE handle):
+ *         self.handle = handle
+ *         self.refresh()             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef void refresh(self):
+ */
+  ((struct __pyx_vtabstruct_4base_IOCounters *)__pyx_v_self->__pyx_vtab)->refresh(__pyx_v_self, 0);
+
+  /* "base.pyx":46
+ *         IO_COUNTERS counters
+ * 
+ *     def __cinit__(self, HANDLE handle):             # <<<<<<<<<<<<<<
+ *         self.handle = handle
+ *         self.refresh()
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":50
+ *         self.refresh()
+ * 
+ *     cpdef void refresh(self):             # <<<<<<<<<<<<<<
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):
+ *             raise OSError("GetProcessIoCounters")
+ */
+
+static PyObject *__pyx_pw_4base_10IOCounters_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static void __pyx_f_4base_10IOCounters_refresh(struct __pyx_obj_4base_IOCounters *__pyx_v_self, int __pyx_skip_dispatch) {
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  int __pyx_t_5;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("refresh", 0);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely(Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0)) {
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_refresh); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    if (!PyCFunction_Check(__pyx_t_1) || (PyCFunction_GET_FUNCTION(__pyx_t_1) != (PyCFunction)__pyx_pw_4base_10IOCounters_3refresh)) {
+      __Pyx_INCREF(__pyx_t_1);
+      __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
+      if (CYTHON_COMPILING_IN_CPYTHON && unlikely(PyMethod_Check(__pyx_t_3))) {
+        __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+        if (likely(__pyx_t_4)) {
+          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+          __Pyx_INCREF(__pyx_t_4);
+          __Pyx_INCREF(function);
+          __Pyx_DECREF_SET(__pyx_t_3, function);
+        }
+      }
+      if (__pyx_t_4) {
+        __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+        __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      } else {
+        __pyx_t_2 = __Pyx_PyObject_CallNoArg(__pyx_t_3); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      }
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+      __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      goto __pyx_L0;
+    }
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  }
+
+  /* "base.pyx":51
+ * 
+ *     cpdef void refresh(self):
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):             # <<<<<<<<<<<<<<
+ *             raise OSError("GetProcessIoCounters")
+ * 
+ */
+  __pyx_t_5 = ((!(GetProcessIoCounters(__pyx_v_self->handle, (&__pyx_v_self->counters)) != 0)) != 0);
+  if (__pyx_t_5) {
+
+    /* "base.pyx":52
+ *     cpdef void refresh(self):
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):
+ *             raise OSError("GetProcessIoCounters")             # <<<<<<<<<<<<<<
+ * 
+ * #def GetCurrentProcess():
+ */
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_OSError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+
+    /* "base.pyx":51
+ * 
+ *     cpdef void refresh(self):
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):             # <<<<<<<<<<<<<<
+ *             raise OSError("GetProcessIoCounters")
+ * 
+ */
+  }
+
+  /* "base.pyx":50
+ *         self.refresh()
+ * 
+ *     cpdef void refresh(self):             # <<<<<<<<<<<<<<
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):
+ *             raise OSError("GetProcessIoCounters")
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_WriteUnraisable("base.IOCounters.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename, 0, 0);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_10IOCounters_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused); /*proto*/
+static PyObject *__pyx_pw_4base_10IOCounters_3refresh(PyObject *__pyx_v_self, CYTHON_UNUSED PyObject *unused) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("refresh (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_10IOCounters_2refresh(((struct __pyx_obj_4base_IOCounters *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_10IOCounters_2refresh(struct __pyx_obj_4base_IOCounters *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("refresh", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_void_to_None(__pyx_f_4base_10IOCounters_refresh(__pyx_v_self, 1)); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.IOCounters.refresh", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":43
+ * cdef class IOCounters:
+ *     cdef readonly:
+ *         HANDLE handle             # <<<<<<<<<<<<<<
+ *         IO_COUNTERS counters
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_10IOCounters_6handle_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_10IOCounters_6handle_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_10IOCounters_6handle___get__(((struct __pyx_obj_4base_IOCounters *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_10IOCounters_6handle___get__(struct __pyx_obj_4base_IOCounters *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyInt_FromSsize_t(__pyx_v_self->handle); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.IOCounters.handle.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "base.pyx":44
+ *     cdef readonly:
+ *         HANDLE handle
+ *         IO_COUNTERS counters             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self, HANDLE handle):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_4base_10IOCounters_8counters_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_4base_10IOCounters_8counters_1__get__(PyObject *__pyx_v_self) {
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_r = __pyx_pf_4base_10IOCounters_8counters___get__(((struct __pyx_obj_4base_IOCounters *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_4base_10IOCounters_8counters___get__(struct __pyx_obj_4base_IOCounters *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 0);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __pyx_convert__to_py_IO_COUNTERS(__pyx_v_self->counters); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("base.IOCounters.counters.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "carray.to_py":112
+ * 
+ * @cname("__Pyx_carray_to_py_M128A")
+ * cdef inline list __Pyx_carray_to_py_M128A(M128A *v, Py_ssize_t length):             # <<<<<<<<<<<<<<
+ *     cdef size_t i
+ *     cdef object value
+ */
+
+static CYTHON_INLINE PyObject *__Pyx_carray_to_py_M128A(M128A *__pyx_v_v, Py_ssize_t __pyx_v_length) {
+  size_t __pyx_v_i;
+  PyObject *__pyx_v_value = 0;
+  PyObject *__pyx_v_l = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  size_t __pyx_t_2;
+  size_t __pyx_t_3;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__Pyx_carray_to_py_M128A", 0);
+
+  /* "carray.to_py":115
+ *     cdef size_t i
+ *     cdef object value
+ *     l = PyList_New(length)             # <<<<<<<<<<<<<<
+ *     for i in range(<size_t>length):
+ *         value = v[i]
+ */
+  __pyx_t_1 = PyList_New(__pyx_v_length); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 115; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_v_l = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "carray.to_py":116
+ *     cdef object value
+ *     l = PyList_New(length)
+ *     for i in range(<size_t>length):             # <<<<<<<<<<<<<<
+ *         value = v[i]
+ *         Py_INCREF(value)
+ */
+  __pyx_t_2 = ((size_t)__pyx_v_length);
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "carray.to_py":117
+ *     l = PyList_New(length)
+ *     for i in range(<size_t>length):
+ *         value = v[i]             # <<<<<<<<<<<<<<
+ *         Py_INCREF(value)
+ *         PyList_SET_ITEM(l, i, value)
+ */
+    __pyx_t_1 = __pyx_convert__to_py_M128A((__pyx_v_v[__pyx_v_i])); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_XDECREF_SET(__pyx_v_value, __pyx_t_1);
+    __pyx_t_1 = 0;
+
+    /* "carray.to_py":118
+ *     for i in range(<size_t>length):
+ *         value = v[i]
+ *         Py_INCREF(value)             # <<<<<<<<<<<<<<
+ *         PyList_SET_ITEM(l, i, value)
+ *     return l
+ */
+    Py_INCREF(__pyx_v_value);
+
+    /* "carray.to_py":119
+ *         value = v[i]
+ *         Py_INCREF(value)
+ *         PyList_SET_ITEM(l, i, value)             # <<<<<<<<<<<<<<
+ *     return l
+ * 
+ */
+    PyList_SET_ITEM(__pyx_v_l, __pyx_v_i, __pyx_v_value);
+  }
+
+  /* "carray.to_py":120
+ *         Py_INCREF(value)
+ *         PyList_SET_ITEM(l, i, value)
+ *     return l             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_l);
+  __pyx_r = __pyx_v_l;
+  goto __pyx_L0;
+
+  /* "carray.to_py":112
+ * 
+ * @cname("__Pyx_carray_to_py_M128A")
+ * cdef inline list __Pyx_carray_to_py_M128A(M128A *v, Py_ssize_t length):             # <<<<<<<<<<<<<<
+ *     cdef size_t i
+ *     cdef object value
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("carray.to_py.__Pyx_carray_to_py_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_XDECREF(__pyx_v_l);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "carray.to_py":124
+ * 
+ * @cname("__Pyx_carray_to_tuple_M128A")
+ * cdef inline tuple __Pyx_carray_to_tuple_M128A(M128A *v, Py_ssize_t length):             # <<<<<<<<<<<<<<
+ *     cdef size_t i
+ *     cdef object value
+ */
+
+static CYTHON_INLINE PyObject *__Pyx_carray_to_tuple_M128A(M128A *__pyx_v_v, Py_ssize_t __pyx_v_length) {
+  size_t __pyx_v_i;
+  PyObject *__pyx_v_value = 0;
+  PyObject *__pyx_v_t = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  size_t __pyx_t_2;
+  size_t __pyx_t_3;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__Pyx_carray_to_tuple_M128A", 0);
+
+  /* "carray.to_py":127
+ *     cdef size_t i
+ *     cdef object value
+ *     t = PyTuple_New(length)             # <<<<<<<<<<<<<<
+ *     for i in range(<size_t>length):
+ *         value = v[i]
+ */
+  __pyx_t_1 = PyTuple_New(__pyx_v_length); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_v_t = ((PyObject*)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "carray.to_py":128
+ *     cdef object value
+ *     t = PyTuple_New(length)
+ *     for i in range(<size_t>length):             # <<<<<<<<<<<<<<
+ *         value = v[i]
+ *         Py_INCREF(value)
+ */
+  __pyx_t_2 = ((size_t)__pyx_v_length);
+  for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
+    __pyx_v_i = __pyx_t_3;
+
+    /* "carray.to_py":129
+ *     t = PyTuple_New(length)
+ *     for i in range(<size_t>length):
+ *         value = v[i]             # <<<<<<<<<<<<<<
+ *         Py_INCREF(value)
+ *         PyTuple_SET_ITEM(t, i, value)
+ */
+    __pyx_t_1 = __pyx_convert__to_py_M128A((__pyx_v_v[__pyx_v_i])); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_XDECREF_SET(__pyx_v_value, __pyx_t_1);
+    __pyx_t_1 = 0;
+
+    /* "carray.to_py":130
+ *     for i in range(<size_t>length):
+ *         value = v[i]
+ *         Py_INCREF(value)             # <<<<<<<<<<<<<<
+ *         PyTuple_SET_ITEM(t, i, value)
+ *     return t
+ */
+    Py_INCREF(__pyx_v_value);
+
+    /* "carray.to_py":131
+ *         value = v[i]
+ *         Py_INCREF(value)
+ *         PyTuple_SET_ITEM(t, i, value)             # <<<<<<<<<<<<<<
+ *     return t
+ */
+    PyTuple_SET_ITEM(__pyx_v_t, __pyx_v_i, __pyx_v_value);
+  }
+
+  /* "carray.to_py":132
+ *         Py_INCREF(value)
+ *         PyTuple_SET_ITEM(t, i, value)
+ *     return t             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF(__pyx_v_t);
+  __pyx_r = __pyx_v_t;
+  goto __pyx_L0;
+
+  /* "carray.to_py":124
+ * 
+ * @cname("__Pyx_carray_to_tuple_M128A")
+ * cdef inline tuple __Pyx_carray_to_tuple_M128A(M128A *v, Py_ssize_t length):             # <<<<<<<<<<<<<<
+ *     cdef size_t i
+ *     cdef object value
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("carray.to_py.__Pyx_carray_to_tuple_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = 0;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_XDECREF(__pyx_v_t);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_M128A")
+ * cdef M128A __pyx_convert__from_py_M128A(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef M128A result
+ *     if not PyMapping_Check(obj):
+ */
+
+static M128A __pyx_convert__from_py_M128A(PyObject *__pyx_v_obj) {
+  M128A __pyx_v_result;
+  PyObject *__pyx_v_value = NULL;
+  M128A __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  ULONGLONG __pyx_t_10;
+  LONGLONG __pyx_t_11;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__pyx_convert__from_py_M128A", 0);
+
+  /* "FromPyStructUtility":13
+ * cdef M128A __pyx_convert__from_py_M128A(obj) except *:
+ *     cdef M128A result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
+  if (__pyx_t_1) {
+
+    /* "FromPyStructUtility":14
+ *     cdef M128A result
+ *     if not PyMapping_Check(obj):
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
+ * 
+ *     try:
+ */
+    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, __pyx_k_Expected_16s_got_200s, __pyx_k_a_mapping, Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":13
+ * cdef M128A __pyx_convert__from_py_M128A(obj) except *:
+ *     cdef M128A result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  }
+
+  /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Low']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":17
+ * 
+ *     try:
+ *         value = obj['Low']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Low); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L4_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __pyx_v_value = __pyx_t_2;
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Low']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L11_try_end;
+    __pyx_L4_error:;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":18
+ *     try:
+ *         value = obj['Low']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ *     result.Low = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":19
+ *         value = obj['Low']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Low'")             # <<<<<<<<<<<<<<
+ *     result.Low = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+    }
+    goto __pyx_L6_except_error;
+    __pyx_L6_except_error:;
+
+    /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Low']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L11_try_end:;
+  }
+
+  /* "FromPyStructUtility":20
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ *     result.Low = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['High']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_ULONGLONG(__pyx_v_value); if (unlikely((__pyx_t_10 == (ULONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Low = __pyx_t_10;
+
+  /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ *     result.Low = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['High']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":22
+ *     result.Low = value
+ *     try:
+ *         value = obj['High']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'High'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_High); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L14_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ *     result.Low = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['High']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L21_try_end;
+    __pyx_L14_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":23
+ *     try:
+ *         value = obj['High']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'High'")
+ *     result.High = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":24
+ *         value = obj['High']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'High'")             # <<<<<<<<<<<<<<
+ *     result.High = value
+ *     return result
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+    }
+    goto __pyx_L16_except_error;
+    __pyx_L16_except_error:;
+
+    /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'Low'")
+ *     result.Low = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['High']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L21_try_end:;
+  }
+
+  /* "FromPyStructUtility":25
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'High'")
+ *     result.High = value             # <<<<<<<<<<<<<<
+ *     return result
+ * 
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_LONGLONG(__pyx_v_value); if (unlikely((__pyx_t_11 == (LONGLONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.High = __pyx_t_11;
+
+  /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'High'")
+ *     result.High = value
+ *     return result             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_r = __pyx_v_result;
+  goto __pyx_L0;
+
+  /* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_M128A")
+ * cdef M128A __pyx_convert__from_py_M128A(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef M128A result
+ *     if not PyMapping_Check(obj):
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "carray.from_py":77
+ * 
+ * @cname("__Pyx_carray_from_py_M128A")
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:             # <<<<<<<<<<<<<<
+ *     cdef Py_ssize_t i = length
+ *     try:
+ */
+
+static int __Pyx_carray_from_py_M128A(PyObject *__pyx_v_o, M128A *__pyx_v_v, Py_ssize_t __pyx_v_length) {
+  Py_ssize_t __pyx_v_i;
+  PyObject *__pyx_v_item = NULL;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  Py_ssize_t __pyx_t_4;
+  int __pyx_t_5;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  Py_ssize_t __pyx_t_8;
+  PyObject *(*__pyx_t_9)(PyObject *);
+  PyObject *__pyx_t_10 = NULL;
+  M128A __pyx_t_11;
+  char const *__pyx_t_12;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__Pyx_carray_from_py_M128A", 0);
+
+  /* "carray.from_py":78
+ * @cname("__Pyx_carray_from_py_M128A")
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:
+ *     cdef Py_ssize_t i = length             # <<<<<<<<<<<<<<
+ *     try:
+ *         i = len(o)
+ */
+  __pyx_v_i = __pyx_v_length;
+
+  /* "carray.from_py":79
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:
+ *     cdef Py_ssize_t i = length
+ *     try:             # <<<<<<<<<<<<<<
+ *         i = len(o)
+ *     except (TypeError, OverflowError):
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_1, &__pyx_t_2, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_1);
+    __Pyx_XGOTREF(__pyx_t_2);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "carray.from_py":80
+ *     cdef Py_ssize_t i = length
+ *     try:
+ *         i = len(o)             # <<<<<<<<<<<<<<
+ *     except (TypeError, OverflowError):
+ *         pass
+ */
+      __pyx_t_4 = PyObject_Length(__pyx_v_o); if (unlikely(__pyx_t_4 == -1)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L3_error;}
+      __pyx_v_i = __pyx_t_4;
+
+      /* "carray.from_py":79
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:
+ *     cdef Py_ssize_t i = length
+ *     try:             # <<<<<<<<<<<<<<
+ *         i = len(o)
+ *     except (TypeError, OverflowError):
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L10_try_end;
+    __pyx_L3_error:;
+
+    /* "carray.from_py":81
+ *     try:
+ *         i = len(o)
+ *     except (TypeError, OverflowError):             # <<<<<<<<<<<<<<
+ *         pass
+ *     if i == length:
+ */
+    __pyx_t_5 = PyErr_ExceptionMatches(__pyx_builtin_TypeError) || PyErr_ExceptionMatches(__pyx_builtin_OverflowError);
+    if (__pyx_t_5) {
+      PyErr_Restore(0,0,0);
+      goto __pyx_L4_exception_handled;
+    }
+    goto __pyx_L5_except_error;
+    __pyx_L5_except_error:;
+
+    /* "carray.from_py":79
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:
+ *     cdef Py_ssize_t i = length
+ *     try:             # <<<<<<<<<<<<<<
+ *         i = len(o)
+ *     except (TypeError, OverflowError):
+ */
+    __Pyx_XGIVEREF(__pyx_t_1);
+    __Pyx_XGIVEREF(__pyx_t_2);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_1, __pyx_t_2, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L4_exception_handled:;
+    __Pyx_XGIVEREF(__pyx_t_1);
+    __Pyx_XGIVEREF(__pyx_t_2);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_1, __pyx_t_2, __pyx_t_3);
+    __pyx_L10_try_end:;
+  }
+
+  /* "carray.from_py":83
+ *     except (TypeError, OverflowError):
+ *         pass
+ *     if i == length:             # <<<<<<<<<<<<<<
+ *         for i, item in enumerate(o):
+ *             if i >= length:
+ */
+  __pyx_t_6 = ((__pyx_v_i == __pyx_v_length) != 0);
+  if (__pyx_t_6) {
+
+    /* "carray.from_py":84
+ *         pass
+ *     if i == length:
+ *         for i, item in enumerate(o):             # <<<<<<<<<<<<<<
+ *             if i >= length:
+ *                 break
+ */
+    __pyx_t_4 = 0;
+    if (likely(PyList_CheckExact(__pyx_v_o)) || PyTuple_CheckExact(__pyx_v_o)) {
+      __pyx_t_7 = __pyx_v_o; __Pyx_INCREF(__pyx_t_7); __pyx_t_8 = 0;
+      __pyx_t_9 = NULL;
+    } else {
+      __pyx_t_8 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_v_o); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_9 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    }
+    for (;;) {
+      if (likely(!__pyx_t_9)) {
+        if (likely(PyList_CheckExact(__pyx_t_7))) {
+          if (__pyx_t_8 >= PyList_GET_SIZE(__pyx_t_7)) break;
+          #if CYTHON_COMPILING_IN_CPYTHON
+          __pyx_t_10 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_8); __Pyx_INCREF(__pyx_t_10); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          #else
+          __pyx_t_10 = PySequence_ITEM(__pyx_t_7, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __Pyx_GOTREF(__pyx_t_10);
+          #endif
+        } else {
+          if (__pyx_t_8 >= PyTuple_GET_SIZE(__pyx_t_7)) break;
+          #if CYTHON_COMPILING_IN_CPYTHON
+          __pyx_t_10 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_8); __Pyx_INCREF(__pyx_t_10); __pyx_t_8++; if (unlikely(0 < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          #else
+          __pyx_t_10 = PySequence_ITEM(__pyx_t_7, __pyx_t_8); __pyx_t_8++; if (unlikely(!__pyx_t_10)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          __Pyx_GOTREF(__pyx_t_10);
+          #endif
+        }
+      } else {
+        __pyx_t_10 = __pyx_t_9(__pyx_t_7);
+        if (unlikely(!__pyx_t_10)) {
+          PyObject* exc_type = PyErr_Occurred();
+          if (exc_type) {
+            if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+            else {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+          }
+          break;
+        }
+        __Pyx_GOTREF(__pyx_t_10);
+      }
+      __Pyx_XDECREF_SET(__pyx_v_item, __pyx_t_10);
+      __pyx_t_10 = 0;
+      __pyx_v_i = __pyx_t_4;
+      __pyx_t_4 = (__pyx_t_4 + 1);
+
+      /* "carray.from_py":85
+ *     if i == length:
+ *         for i, item in enumerate(o):
+ *             if i >= length:             # <<<<<<<<<<<<<<
+ *                 break
+ *             v[i] = item
+ */
+      __pyx_t_6 = ((__pyx_v_i >= __pyx_v_length) != 0);
+      if (__pyx_t_6) {
+
+        /* "carray.from_py":86
+ *         for i, item in enumerate(o):
+ *             if i >= length:
+ *                 break             # <<<<<<<<<<<<<<
+ *             v[i] = item
+ *         else:
+ */
+        goto __pyx_L13_break;
+
+        /* "carray.from_py":85
+ *     if i == length:
+ *         for i, item in enumerate(o):
+ *             if i >= length:             # <<<<<<<<<<<<<<
+ *                 break
+ *             v[i] = item
+ */
+      }
+
+      /* "carray.from_py":87
+ *             if i >= length:
+ *                 break
+ *             v[i] = item             # <<<<<<<<<<<<<<
+ *         else:
+ *             i += 1  # convert index to length
+ */
+      __pyx_t_11 = __pyx_convert__from_py_M128A(__pyx_v_item); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      (__pyx_v_v[__pyx_v_i]) = __pyx_t_11;
+
+      /* "carray.from_py":84
+ *         pass
+ *     if i == length:
+ *         for i, item in enumerate(o):             # <<<<<<<<<<<<<<
+ *             if i >= length:
+ *                 break
+ */
+    }
+    /*else*/ {
+
+      /* "carray.from_py":89
+ *             v[i] = item
+ *         else:
+ *             i += 1  # convert index to length             # <<<<<<<<<<<<<<
+ *             if i == length:
+ *                 return 0
+ */
+      __pyx_v_i = (__pyx_v_i + 1);
+
+      /* "carray.from_py":90
+ *         else:
+ *             i += 1  # convert index to length
+ *             if i == length:             # <<<<<<<<<<<<<<
+ *                 return 0
+ * 
+ */
+      __pyx_t_6 = ((__pyx_v_i == __pyx_v_length) != 0);
+      if (__pyx_t_6) {
+
+        /* "carray.from_py":91
+ *             i += 1  # convert index to length
+ *             if i == length:
+ *                 return 0             # <<<<<<<<<<<<<<
+ * 
+ *     PyErr_Format(
+ */
+        __pyx_r = 0;
+        __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+        goto __pyx_L0;
+
+        /* "carray.from_py":90
+ *         else:
+ *             i += 1  # convert index to length
+ *             if i == length:             # <<<<<<<<<<<<<<
+ *                 return 0
+ * 
+ */
+      }
+    }
+
+    /* "carray.from_py":84
+ *         pass
+ *     if i == length:
+ *         for i, item in enumerate(o):             # <<<<<<<<<<<<<<
+ *             if i >= length:
+ *                 break
+ */
+    __pyx_L13_break:;
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+    /* "carray.from_py":83
+ *     except (TypeError, OverflowError):
+ *         pass
+ *     if i == length:             # <<<<<<<<<<<<<<
+ *         for i, item in enumerate(o):
+ *             if i >= length:
+ */
+  }
+
+  /* "carray.from_py":96
+ *         IndexError,
+ *         ("too many values found during array assignment, expected %zd"
+ *          if i >= length else             # <<<<<<<<<<<<<<
+ *          "not enough values found during array assignment, expected %zd, got %zd"),
+ *         length, i)
+ */
+  if (((__pyx_v_i >= __pyx_v_length) != 0)) {
+    __pyx_t_12 = __pyx_k_too_many_values_found_during_arr;
+  } else {
+    __pyx_t_12 = __pyx_k_not_enough_values_found_during_a;
+  }
+
+  /* "carray.from_py":93
+ *                 return 0
+ * 
+ *     PyErr_Format(             # <<<<<<<<<<<<<<
+ *         IndexError,
+ *         ("too many values found during array assignment, expected %zd"
+ */
+  __pyx_t_7 = PyErr_Format(__pyx_builtin_IndexError, __pyx_t_12, __pyx_v_length, __pyx_v_i); if (unlikely(!__pyx_t_7)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+
+  /* "carray.from_py":77
+ * 
+ * @cname("__Pyx_carray_from_py_M128A")
+ * cdef int __Pyx_carray_from_py_M128A(object o, M128A *v, Py_ssize_t length) except -1:             # <<<<<<<<<<<<<<
+ *     cdef Py_ssize_t i = length
+ *     try:
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_10);
+  __Pyx_AddTraceback("carray.from_py.__Pyx_carray_from_py_M128A", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_item);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_XSAVE_FORMAT")
+ * cdef XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef XSAVE_FORMAT result
+ *     if not PyMapping_Check(obj):
+ */
+
+static XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(PyObject *__pyx_v_obj) {
+  XSAVE_FORMAT __pyx_v_result;
+  PyObject *__pyx_v_value = NULL;
+  XSAVE_FORMAT __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  USHORT __pyx_t_10;
+  UCHAR __pyx_t_11;
+  ULONG __pyx_t_12;
+  M128A __pyx_t_13[8];
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__pyx_convert__from_py_XSAVE_FORMAT", 0);
+
+  /* "FromPyStructUtility":13
+ * cdef XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(obj) except *:
+ *     cdef XSAVE_FORMAT result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
+  if (__pyx_t_1) {
+
+    /* "FromPyStructUtility":14
+ *     cdef XSAVE_FORMAT result
+ *     if not PyMapping_Check(obj):
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
+ * 
+ *     try:
+ */
+    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, __pyx_k_Expected_16s_got_200s, __pyx_k_a_mapping, Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":13
+ * cdef XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(obj) except *:
+ *     cdef XSAVE_FORMAT result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  }
+
+  /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ControlWord']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":17
+ * 
+ *     try:
+ *         value = obj['ControlWord']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_ControlWord); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L4_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __pyx_v_value = __pyx_t_2;
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ControlWord']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L11_try_end;
+    __pyx_L4_error:;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":18
+ *     try:
+ *         value = obj['ControlWord']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ *     result.ControlWord = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":19
+ *         value = obj['ControlWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")             # <<<<<<<<<<<<<<
+ *     result.ControlWord = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+    }
+    goto __pyx_L6_except_error;
+    __pyx_L6_except_error:;
+
+    /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ControlWord']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L11_try_end:;
+  }
+
+  /* "FromPyStructUtility":20
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ *     result.ControlWord = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['StatusWord']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.ControlWord = __pyx_t_10;
+
+  /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ *     result.ControlWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['StatusWord']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":22
+ *     result.ControlWord = value
+ *     try:
+ *         value = obj['StatusWord']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_StatusWord); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L14_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ *     result.ControlWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['StatusWord']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L21_try_end;
+    __pyx_L14_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":23
+ *     try:
+ *         value = obj['StatusWord']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ *     result.StatusWord = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":24
+ *         value = obj['StatusWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")             # <<<<<<<<<<<<<<
+ *     result.StatusWord = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+    }
+    goto __pyx_L16_except_error;
+    __pyx_L16_except_error:;
+
+    /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")
+ *     result.ControlWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['StatusWord']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L21_try_end:;
+  }
+
+  /* "FromPyStructUtility":25
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ *     result.StatusWord = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['TagWord']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.StatusWord = __pyx_t_10;
+
+  /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ *     result.StatusWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['TagWord']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":27
+ *     result.StatusWord = value
+ *     try:
+ *         value = obj['TagWord']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_TagWord); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L24_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ *     result.StatusWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['TagWord']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L31_try_end;
+    __pyx_L24_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":28
+ *     try:
+ *         value = obj['TagWord']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ *     result.TagWord = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":29
+ *         value = obj['TagWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")             # <<<<<<<<<<<<<<
+ *     result.TagWord = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__9, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+    }
+    goto __pyx_L26_except_error;
+    __pyx_L26_except_error:;
+
+    /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")
+ *     result.StatusWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['TagWord']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L31_try_end:;
+  }
+
+  /* "FromPyStructUtility":30
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ *     result.TagWord = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Reserved1']
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_UCHAR(__pyx_v_value); if (unlikely((__pyx_t_11 == (UCHAR)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.TagWord = __pyx_t_11;
+
+  /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ *     result.TagWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved1']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":32
+ *     result.TagWord = value
+ *     try:
+ *         value = obj['Reserved1']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Reserved1); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L34_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ *     result.TagWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved1']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L41_try_end;
+    __pyx_L34_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":33
+ *     try:
+ *         value = obj['Reserved1']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ *     result.Reserved1 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":34
+ *         value = obj['Reserved1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")             # <<<<<<<<<<<<<<
+ *     result.Reserved1 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__10, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+    }
+    goto __pyx_L36_except_error;
+    __pyx_L36_except_error:;
+
+    /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")
+ *     result.TagWord = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved1']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L41_try_end:;
+  }
+
+  /* "FromPyStructUtility":35
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ *     result.Reserved1 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['ErrorOpcode']
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_UCHAR(__pyx_v_value); if (unlikely((__pyx_t_11 == (UCHAR)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Reserved1 = __pyx_t_11;
+
+  /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ *     result.Reserved1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":37
+ *     result.Reserved1 = value
+ *     try:
+ *         value = obj['ErrorOpcode']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_ErrorOpcode); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L44_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ *     result.Reserved1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L51_try_end;
+    __pyx_L44_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":38
+ *     try:
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ *     result.ErrorOpcode = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":39
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")             # <<<<<<<<<<<<<<
+ *     result.ErrorOpcode = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+    }
+    goto __pyx_L46_except_error;
+    __pyx_L46_except_error:;
+
+    /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")
+ *     result.Reserved1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L51_try_end:;
+  }
+
+  /* "FromPyStructUtility":40
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ *     result.ErrorOpcode = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['ErrorOffset']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.ErrorOpcode = __pyx_t_10;
+
+  /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ *     result.ErrorOpcode = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOffset']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":42
+ *     result.ErrorOpcode = value
+ *     try:
+ *         value = obj['ErrorOffset']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_ErrorOffset); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L54_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ *     result.ErrorOpcode = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOffset']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L61_try_end;
+    __pyx_L54_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":43
+ *     try:
+ *         value = obj['ErrorOffset']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ *     result.ErrorOffset = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":44
+ *         value = obj['ErrorOffset']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")             # <<<<<<<<<<<<<<
+ *     result.ErrorOffset = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__12, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+    }
+    goto __pyx_L56_except_error;
+    __pyx_L56_except_error:;
+
+    /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")
+ *     result.ErrorOpcode = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorOffset']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L61_try_end:;
+  }
+
+  /* "FromPyStructUtility":45
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ *     result.ErrorOffset = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['ErrorSelector']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_12 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.ErrorOffset = __pyx_t_12;
+
+  /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ *     result.ErrorOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorSelector']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":47
+ *     result.ErrorOffset = value
+ *     try:
+ *         value = obj['ErrorSelector']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_ErrorSelector); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L64_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ *     result.ErrorOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorSelector']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L71_try_end;
+    __pyx_L64_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":48
+ *     try:
+ *         value = obj['ErrorSelector']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ *     result.ErrorSelector = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":49
+ *         value = obj['ErrorSelector']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")             # <<<<<<<<<<<<<<
+ *     result.ErrorSelector = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__13, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+    }
+    goto __pyx_L66_except_error;
+    __pyx_L66_except_error:;
+
+    /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")
+ *     result.ErrorOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ErrorSelector']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L71_try_end:;
+  }
+
+  /* "FromPyStructUtility":50
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ *     result.ErrorSelector = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Reserved2']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.ErrorSelector = __pyx_t_10;
+
+  /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ *     result.ErrorSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved2']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":52
+ *     result.ErrorSelector = value
+ *     try:
+ *         value = obj['Reserved2']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Reserved2); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L74_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ *     result.ErrorSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved2']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L81_try_end;
+    __pyx_L74_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":53
+ *     try:
+ *         value = obj['Reserved2']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ *     result.Reserved2 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":54
+ *         value = obj['Reserved2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")             # <<<<<<<<<<<<<<
+ *     result.Reserved2 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__14, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+    }
+    goto __pyx_L76_except_error;
+    __pyx_L76_except_error:;
+
+    /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")
+ *     result.ErrorSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved2']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L81_try_end:;
+  }
+
+  /* "FromPyStructUtility":55
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ *     result.Reserved2 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['DataOffset']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Reserved2 = __pyx_t_10;
+
+  /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ *     result.Reserved2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataOffset']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":57
+ *     result.Reserved2 = value
+ *     try:
+ *         value = obj['DataOffset']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_DataOffset); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L84_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ *     result.Reserved2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataOffset']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L91_try_end;
+    __pyx_L84_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":58
+ *     try:
+ *         value = obj['DataOffset']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ *     result.DataOffset = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":59
+ *         value = obj['DataOffset']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")             # <<<<<<<<<<<<<<
+ *     result.DataOffset = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__15, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+    }
+    goto __pyx_L86_except_error;
+    __pyx_L86_except_error:;
+
+    /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")
+ *     result.Reserved2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataOffset']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L91_try_end:;
+  }
+
+  /* "FromPyStructUtility":60
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ *     result.DataOffset = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['DataSelector']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_12 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 60; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.DataOffset = __pyx_t_12;
+
+  /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ *     result.DataOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataSelector']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":62
+ *     result.DataOffset = value
+ *     try:
+ *         value = obj['DataSelector']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_DataSelector); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 62; __pyx_clineno = __LINE__; goto __pyx_L94_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ *     result.DataOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataSelector']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L101_try_end;
+    __pyx_L94_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":63
+ *     try:
+ *         value = obj['DataSelector']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ *     result.DataSelector = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":64
+ *         value = obj['DataSelector']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")             # <<<<<<<<<<<<<<
+ *     result.DataSelector = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__16, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+    }
+    goto __pyx_L96_except_error;
+    __pyx_L96_except_error:;
+
+    /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")
+ *     result.DataOffset = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DataSelector']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L101_try_end:;
+  }
+
+  /* "FromPyStructUtility":65
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ *     result.DataSelector = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Reserved3']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.DataSelector = __pyx_t_10;
+
+  /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ *     result.DataSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved3']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":67
+ *     result.DataSelector = value
+ *     try:
+ *         value = obj['Reserved3']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Reserved3); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L104_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ *     result.DataSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved3']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L111_try_end;
+    __pyx_L104_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":68
+ *     try:
+ *         value = obj['Reserved3']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ *     result.Reserved3 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":69
+ *         value = obj['Reserved3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")             # <<<<<<<<<<<<<<
+ *     result.Reserved3 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__17, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+    }
+    goto __pyx_L106_except_error;
+    __pyx_L106_except_error:;
+
+    /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")
+ *     result.DataSelector = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Reserved3']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L111_try_end:;
+  }
+
+  /* "FromPyStructUtility":70
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ *     result.Reserved3 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['MxCsr']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_USHORT(__pyx_v_value); if (unlikely((__pyx_t_10 == (USHORT)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Reserved3 = __pyx_t_10;
+
+  /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ *     result.Reserved3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":72
+ *     result.Reserved3 = value
+ *     try:
+ *         value = obj['MxCsr']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_MxCsr); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L114_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ *     result.Reserved3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L121_try_end;
+    __pyx_L114_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":73
+ *     try:
+ *         value = obj['MxCsr']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":74
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__18, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+    }
+    goto __pyx_L116_except_error;
+    __pyx_L116_except_error:;
+
+    /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")
+ *     result.Reserved3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L121_try_end:;
+  }
+
+  /* "FromPyStructUtility":75
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['MxCsr_Mask']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_12 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.MxCsr = __pyx_t_12;
+
+  /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":77
+ *     result.MxCsr = value
+ *     try:
+ *         value = obj['MxCsr_Mask']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_MxCsr_Mask); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L124_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L131_try_end;
+    __pyx_L124_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":78
+ *     try:
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ *     result.MxCsr_Mask = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":79
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr_Mask = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__19, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+    }
+    goto __pyx_L126_except_error;
+    __pyx_L126_except_error:;
+
+    /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L131_try_end:;
+  }
+
+  /* "FromPyStructUtility":80
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ *     result.MxCsr_Mask = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['FloatRegisters']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_ULONG(__pyx_v_value); if (unlikely((__pyx_t_12 == (ULONG)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.MxCsr_Mask = __pyx_t_12;
+
+  /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ *     result.MxCsr_Mask = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FloatRegisters']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":82
+ *     result.MxCsr_Mask = value
+ *     try:
+ *         value = obj['FloatRegisters']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_FloatRegisters); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 82; __pyx_clineno = __LINE__; goto __pyx_L134_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ *     result.MxCsr_Mask = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FloatRegisters']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L141_try_end;
+    __pyx_L134_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":83
+ *     try:
+ *         value = obj['FloatRegisters']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")
+ *     result.FloatRegisters = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 83; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":84
+ *         value = obj['FloatRegisters']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")             # <<<<<<<<<<<<<<
+ *     result.FloatRegisters = value
+ *     return result
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__20, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+    }
+    goto __pyx_L136_except_error;
+    __pyx_L136_except_error:;
+
+    /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")
+ *     result.MxCsr_Mask = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FloatRegisters']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L141_try_end:;
+  }
+
+  /* "FromPyStructUtility":85
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")
+ *     result.FloatRegisters = value             # <<<<<<<<<<<<<<
+ *     return result
+ * 
+ */
+  if (unlikely(__Pyx_carray_from_py_M128A(__pyx_v_value, __pyx_t_13, 8) < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  memcpy(&(__pyx_v_result.FloatRegisters[0]), __pyx_t_13, sizeof(__pyx_v_result.FloatRegisters[0]) * (8));
+
+  /* "FromPyStructUtility":86
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")
+ *     result.FloatRegisters = value
+ *     return result             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_r = __pyx_v_result;
+  goto __pyx_L0;
+
+  /* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_XSAVE_FORMAT")
+ * cdef XSAVE_FORMAT __pyx_convert__from_py_XSAVE_FORMAT(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef XSAVE_FORMAT result
+ *     if not PyMapping_Check(obj):
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_XSAVE_FORMAT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static CONTEXT __pyx_convert__from_py_CONTEXT(PyObject *__pyx_v_obj) {
+  CONTEXT __pyx_v_result;
+  PyObject *__pyx_v_value = NULL;
+  CONTEXT __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  DWORD64 __pyx_t_10;
+  DWORD __pyx_t_11;
+  WORD __pyx_t_12;
+  XMM_SAVE_AREA32 __pyx_t_13;
+  M128A __pyx_t_14[2];
+  M128A __pyx_t_15[8];
+  M128A __pyx_t_16;
+  M128A __pyx_t_17[26];
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__pyx_convert__from_py_CONTEXT", 0);
+
+  /* "FromPyStructUtility":13
+ * cdef CONTEXT __pyx_convert__from_py_CONTEXT(obj) except *:
+ *     cdef CONTEXT result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  __pyx_t_1 = ((!(PyMapping_Check(__pyx_v_obj) != 0)) != 0);
+  if (__pyx_t_1) {
+
+    /* "FromPyStructUtility":14
+ *     cdef CONTEXT result
+ *     if not PyMapping_Check(obj):
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)             # <<<<<<<<<<<<<<
+ * 
+ *     try:
+ */
+    __pyx_t_2 = PyErr_Format(__pyx_builtin_TypeError, __pyx_k_Expected_16s_got_200s, __pyx_k_a_mapping, Py_TYPE(__pyx_v_obj)->tp_name); if (unlikely(!__pyx_t_2)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":13
+ * cdef CONTEXT __pyx_convert__from_py_CONTEXT(obj) except *:
+ *     cdef CONTEXT result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ */
+  }
+
+  /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P1Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":17
+ * 
+ *     try:
+ *         value = obj['P1Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P1Home); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L4_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __pyx_v_value = __pyx_t_2;
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P1Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L11_try_end;
+    __pyx_L4_error:;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":18
+ *     try:
+ *         value = obj['P1Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ *     result.P1Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":19
+ *         value = obj['P1Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")             # <<<<<<<<<<<<<<
+ *     result.P1Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__21, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L6_except_error;}
+    }
+    goto __pyx_L6_except_error;
+    __pyx_L6_except_error:;
+
+    /* "FromPyStructUtility":16
+ *         PyErr_Format(TypeError, b"Expected %.16s, got %.200s", b"a mapping", Py_TYPE(obj).tp_name)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P1Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L11_try_end:;
+  }
+
+  /* "FromPyStructUtility":20
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ *     result.P1Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['P2Home']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P1Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ *     result.P1Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P2Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":22
+ *     result.P1Home = value
+ *     try:
+ *         value = obj['P2Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P2Home); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L14_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ *     result.P1Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P2Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L21_try_end;
+    __pyx_L14_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":23
+ *     try:
+ *         value = obj['P2Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ *     result.P2Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":24
+ *         value = obj['P2Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")             # <<<<<<<<<<<<<<
+ *     result.P2Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__22, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L16_except_error;}
+    }
+    goto __pyx_L16_except_error;
+    __pyx_L16_except_error:;
+
+    /* "FromPyStructUtility":21
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")
+ *     result.P1Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P2Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L21_try_end:;
+  }
+
+  /* "FromPyStructUtility":25
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ *     result.P2Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['P3Home']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P2Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ *     result.P2Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P3Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":27
+ *     result.P2Home = value
+ *     try:
+ *         value = obj['P3Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P3Home); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L24_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ *     result.P2Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P3Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L31_try_end;
+    __pyx_L24_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":28
+ *     try:
+ *         value = obj['P3Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ *     result.P3Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":29
+ *         value = obj['P3Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")             # <<<<<<<<<<<<<<
+ *     result.P3Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__23, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L26_except_error;}
+    }
+    goto __pyx_L26_except_error;
+    __pyx_L26_except_error:;
+
+    /* "FromPyStructUtility":26
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")
+ *     result.P2Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P3Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L31_try_end:;
+  }
+
+  /* "FromPyStructUtility":30
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ *     result.P3Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['P4Home']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P3Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ *     result.P3Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P4Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":32
+ *     result.P3Home = value
+ *     try:
+ *         value = obj['P4Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P4Home); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 32; __pyx_clineno = __LINE__; goto __pyx_L34_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ *     result.P3Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P4Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L41_try_end;
+    __pyx_L34_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":33
+ *     try:
+ *         value = obj['P4Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ *     result.P4Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":34
+ *         value = obj['P4Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")             # <<<<<<<<<<<<<<
+ *     result.P4Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__24, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L36_except_error;}
+    }
+    goto __pyx_L36_except_error;
+    __pyx_L36_except_error:;
+
+    /* "FromPyStructUtility":31
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")
+ *     result.P3Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P4Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L41_try_end:;
+  }
+
+  /* "FromPyStructUtility":35
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ *     result.P4Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['P5Home']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 35; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P4Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ *     result.P4Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P5Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":37
+ *     result.P4Home = value
+ *     try:
+ *         value = obj['P5Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P5Home); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 37; __pyx_clineno = __LINE__; goto __pyx_L44_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ *     result.P4Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P5Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L51_try_end;
+    __pyx_L44_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":38
+ *     try:
+ *         value = obj['P5Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ *     result.P5Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 38; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":39
+ *         value = obj['P5Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")             # <<<<<<<<<<<<<<
+ *     result.P5Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__25, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L46_except_error;}
+    }
+    goto __pyx_L46_except_error;
+    __pyx_L46_except_error:;
+
+    /* "FromPyStructUtility":36
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")
+ *     result.P4Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P5Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L51_try_end:;
+  }
+
+  /* "FromPyStructUtility":40
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ *     result.P5Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['P6Home']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 40; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P5Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ *     result.P5Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P6Home']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":42
+ *     result.P5Home = value
+ *     try:
+ *         value = obj['P6Home']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_P6Home); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 42; __pyx_clineno = __LINE__; goto __pyx_L54_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ *     result.P5Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P6Home']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L61_try_end;
+    __pyx_L54_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":43
+ *     try:
+ *         value = obj['P6Home']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ *     result.P6Home = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 43; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":44
+ *         value = obj['P6Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")             # <<<<<<<<<<<<<<
+ *     result.P6Home = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__26, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L56_except_error;}
+    }
+    goto __pyx_L56_except_error;
+    __pyx_L56_except_error:;
+
+    /* "FromPyStructUtility":41
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")
+ *     result.P5Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['P6Home']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L61_try_end:;
+  }
+
+  /* "FromPyStructUtility":45
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ *     result.P6Home = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['ContextFlags']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.P6Home = __pyx_t_10;
+
+  /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ *     result.P6Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ContextFlags']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":47
+ *     result.P6Home = value
+ *     try:
+ *         value = obj['ContextFlags']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_ContextFlags); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L64_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ *     result.P6Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ContextFlags']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L71_try_end;
+    __pyx_L64_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":48
+ *     try:
+ *         value = obj['ContextFlags']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ *     result.ContextFlags = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":49
+ *         value = obj['ContextFlags']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")             # <<<<<<<<<<<<<<
+ *     result.ContextFlags = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__27, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L66_except_error;}
+    }
+    goto __pyx_L66_except_error;
+    __pyx_L66_except_error:;
+
+    /* "FromPyStructUtility":46
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")
+ *     result.P6Home = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['ContextFlags']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L71_try_end:;
+  }
+
+  /* "FromPyStructUtility":50
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ *     result.ContextFlags = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['MxCsr']
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_DWORD(__pyx_v_value); if (unlikely((__pyx_t_11 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.ContextFlags = __pyx_t_11;
+
+  /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ *     result.ContextFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":52
+ *     result.ContextFlags = value
+ *     try:
+ *         value = obj['MxCsr']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_MxCsr); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L74_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ *     result.ContextFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L81_try_end;
+    __pyx_L74_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":53
+ *     try:
+ *         value = obj['MxCsr']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 53; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":54
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__28, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L76_except_error;}
+    }
+    goto __pyx_L76_except_error;
+    __pyx_L76_except_error:;
+
+    /* "FromPyStructUtility":51
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")
+ *     result.ContextFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L81_try_end:;
+  }
+
+  /* "FromPyStructUtility":55
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegCs']
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_DWORD(__pyx_v_value); if (unlikely((__pyx_t_11 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 55; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.MxCsr = __pyx_t_11;
+
+  /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegCs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":57
+ *     result.MxCsr = value
+ *     try:
+ *         value = obj['SegCs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegCs); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 57; __pyx_clineno = __LINE__; goto __pyx_L84_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegCs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L91_try_end;
+    __pyx_L84_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":58
+ *     try:
+ *         value = obj['SegCs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ *     result.SegCs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 58; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":59
+ *         value = obj['SegCs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")             # <<<<<<<<<<<<<<
+ *     result.SegCs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__29, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L86_except_error;}
+    }
+    goto __pyx_L86_except_error;
+    __pyx_L86_except_error:;
+
+    /* "FromPyStructUtility":56
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")
+ *     result.MxCsr = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegCs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L91_try_end:;
+  }
+
+  /* "FromPyStructUtility":60
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ *     result.SegCs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegDs']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 60; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegCs = __pyx_t_12;
+
+  /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ *     result.SegCs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegDs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":62
+ *     result.SegCs = value
+ *     try:
+ *         value = obj['SegDs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegDs); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 62; __pyx_clineno = __LINE__; goto __pyx_L94_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ *     result.SegCs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegDs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L101_try_end;
+    __pyx_L94_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":63
+ *     try:
+ *         value = obj['SegDs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ *     result.SegDs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 63; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":64
+ *         value = obj['SegDs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")             # <<<<<<<<<<<<<<
+ *     result.SegDs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__30, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L96_except_error;}
+    }
+    goto __pyx_L96_except_error;
+    __pyx_L96_except_error:;
+
+    /* "FromPyStructUtility":61
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")
+ *     result.SegCs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegDs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L101_try_end:;
+  }
+
+  /* "FromPyStructUtility":65
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ *     result.SegDs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegEs']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 65; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegDs = __pyx_t_12;
+
+  /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ *     result.SegDs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegEs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":67
+ *     result.SegDs = value
+ *     try:
+ *         value = obj['SegEs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegEs); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 67; __pyx_clineno = __LINE__; goto __pyx_L104_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ *     result.SegDs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegEs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L111_try_end;
+    __pyx_L104_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":68
+ *     try:
+ *         value = obj['SegEs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ *     result.SegEs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 68; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":69
+ *         value = obj['SegEs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")             # <<<<<<<<<<<<<<
+ *     result.SegEs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__31, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L106_except_error;}
+    }
+    goto __pyx_L106_except_error;
+    __pyx_L106_except_error:;
+
+    /* "FromPyStructUtility":66
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")
+ *     result.SegDs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegEs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L111_try_end:;
+  }
+
+  /* "FromPyStructUtility":70
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ *     result.SegEs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegFs']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 70; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegEs = __pyx_t_12;
+
+  /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ *     result.SegEs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegFs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":72
+ *     result.SegEs = value
+ *     try:
+ *         value = obj['SegFs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegFs); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 72; __pyx_clineno = __LINE__; goto __pyx_L114_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ *     result.SegEs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegFs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L121_try_end;
+    __pyx_L114_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":73
+ *     try:
+ *         value = obj['SegFs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ *     result.SegFs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 73; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":74
+ *         value = obj['SegFs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")             # <<<<<<<<<<<<<<
+ *     result.SegFs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__32, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L116_except_error;}
+    }
+    goto __pyx_L116_except_error;
+    __pyx_L116_except_error:;
+
+    /* "FromPyStructUtility":71
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")
+ *     result.SegEs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegFs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L121_try_end:;
+  }
+
+  /* "FromPyStructUtility":75
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ *     result.SegFs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegGs']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 75; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegFs = __pyx_t_12;
+
+  /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ *     result.SegFs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegGs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":77
+ *     result.SegFs = value
+ *     try:
+ *         value = obj['SegGs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegGs); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 77; __pyx_clineno = __LINE__; goto __pyx_L124_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ *     result.SegFs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegGs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L131_try_end;
+    __pyx_L124_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":78
+ *     try:
+ *         value = obj['SegGs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ *     result.SegGs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 78; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":79
+ *         value = obj['SegGs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")             # <<<<<<<<<<<<<<
+ *     result.SegGs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__33, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L126_except_error;}
+    }
+    goto __pyx_L126_except_error;
+    __pyx_L126_except_error:;
+
+    /* "FromPyStructUtility":76
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")
+ *     result.SegFs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegGs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L131_try_end:;
+  }
+
+  /* "FromPyStructUtility":80
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ *     result.SegGs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['SegSs']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 80; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegGs = __pyx_t_12;
+
+  /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ *     result.SegGs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegSs']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":82
+ *     result.SegGs = value
+ *     try:
+ *         value = obj['SegSs']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_SegSs); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 82; __pyx_clineno = __LINE__; goto __pyx_L134_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ *     result.SegGs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegSs']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L141_try_end;
+    __pyx_L134_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":83
+ *     try:
+ *         value = obj['SegSs']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ *     result.SegSs = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 83; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":84
+ *         value = obj['SegSs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")             # <<<<<<<<<<<<<<
+ *     result.SegSs = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__34, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L136_except_error;}
+    }
+    goto __pyx_L136_except_error;
+    __pyx_L136_except_error:;
+
+    /* "FromPyStructUtility":81
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")
+ *     result.SegGs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['SegSs']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L141_try_end:;
+  }
+
+  /* "FromPyStructUtility":85
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ *     result.SegSs = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['EFlags']
+ */
+  __pyx_t_12 = __Pyx_PyInt_As_WORD(__pyx_v_value); if (unlikely((__pyx_t_12 == (WORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.SegSs = __pyx_t_12;
+
+  /* "FromPyStructUtility":86
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ *     result.SegSs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['EFlags']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":87
+ *     result.SegSs = value
+ *     try:
+ *         value = obj['EFlags']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_EFlags); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L144_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":86
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ *     result.SegSs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['EFlags']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L151_try_end;
+    __pyx_L144_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":88
+ *     try:
+ *         value = obj['EFlags']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ *     result.EFlags = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L146_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":89
+ *         value = obj['EFlags']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")             # <<<<<<<<<<<<<<
+ *     result.EFlags = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__35, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L146_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L146_except_error;}
+    }
+    goto __pyx_L146_except_error;
+    __pyx_L146_except_error:;
+
+    /* "FromPyStructUtility":86
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")
+ *     result.SegSs = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['EFlags']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L151_try_end:;
+  }
+
+  /* "FromPyStructUtility":90
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ *     result.EFlags = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr0']
+ */
+  __pyx_t_11 = __Pyx_PyInt_As_DWORD(__pyx_v_value); if (unlikely((__pyx_t_11 == (DWORD)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 90; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.EFlags = __pyx_t_11;
+
+  /* "FromPyStructUtility":91
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ *     result.EFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr0']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":92
+ *     result.EFlags = value
+ *     try:
+ *         value = obj['Dr0']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr0); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 92; __pyx_clineno = __LINE__; goto __pyx_L154_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":91
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ *     result.EFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr0']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L161_try_end;
+    __pyx_L154_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":93
+ *     try:
+ *         value = obj['Dr0']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ *     result.Dr0 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L156_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":94
+ *         value = obj['Dr0']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")             # <<<<<<<<<<<<<<
+ *     result.Dr0 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__36, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L156_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L156_except_error;}
+    }
+    goto __pyx_L156_except_error;
+    __pyx_L156_except_error:;
+
+    /* "FromPyStructUtility":91
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")
+ *     result.EFlags = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr0']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L161_try_end:;
+  }
+
+  /* "FromPyStructUtility":95
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ *     result.Dr0 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr1']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr0 = __pyx_t_10;
+
+  /* "FromPyStructUtility":96
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ *     result.Dr0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr1']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":97
+ *     result.Dr0 = value
+ *     try:
+ *         value = obj['Dr1']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr1); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 97; __pyx_clineno = __LINE__; goto __pyx_L164_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":96
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ *     result.Dr0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr1']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L171_try_end;
+    __pyx_L164_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":98
+ *     try:
+ *         value = obj['Dr1']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ *     result.Dr1 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L166_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":99
+ *         value = obj['Dr1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")             # <<<<<<<<<<<<<<
+ *     result.Dr1 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__37, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L166_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L166_except_error;}
+    }
+    goto __pyx_L166_except_error;
+    __pyx_L166_except_error:;
+
+    /* "FromPyStructUtility":96
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")
+ *     result.Dr0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr1']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L171_try_end:;
+  }
+
+  /* "FromPyStructUtility":100
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ *     result.Dr1 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr2']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr1 = __pyx_t_10;
+
+  /* "FromPyStructUtility":101
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ *     result.Dr1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr2']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":102
+ *     result.Dr1 = value
+ *     try:
+ *         value = obj['Dr2']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr2); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 102; __pyx_clineno = __LINE__; goto __pyx_L174_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":101
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ *     result.Dr1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr2']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L181_try_end;
+    __pyx_L174_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":103
+ *     try:
+ *         value = obj['Dr2']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ *     result.Dr2 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L176_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":104
+ *         value = obj['Dr2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")             # <<<<<<<<<<<<<<
+ *     result.Dr2 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__38, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 104; __pyx_clineno = __LINE__; goto __pyx_L176_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 104; __pyx_clineno = __LINE__; goto __pyx_L176_except_error;}
+    }
+    goto __pyx_L176_except_error;
+    __pyx_L176_except_error:;
+
+    /* "FromPyStructUtility":101
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")
+ *     result.Dr1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr2']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L181_try_end:;
+  }
+
+  /* "FromPyStructUtility":105
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ *     result.Dr2 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr3']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 105; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr2 = __pyx_t_10;
+
+  /* "FromPyStructUtility":106
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ *     result.Dr2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr3']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":107
+ *     result.Dr2 = value
+ *     try:
+ *         value = obj['Dr3']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr3); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 107; __pyx_clineno = __LINE__; goto __pyx_L184_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":106
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ *     result.Dr2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr3']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L191_try_end;
+    __pyx_L184_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":108
+ *     try:
+ *         value = obj['Dr3']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ *     result.Dr3 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L186_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":109
+ *         value = obj['Dr3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")             # <<<<<<<<<<<<<<
+ *     result.Dr3 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__39, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L186_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L186_except_error;}
+    }
+    goto __pyx_L186_except_error;
+    __pyx_L186_except_error:;
+
+    /* "FromPyStructUtility":106
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")
+ *     result.Dr2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr3']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L191_try_end:;
+  }
+
+  /* "FromPyStructUtility":110
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ *     result.Dr3 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr6']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr3 = __pyx_t_10;
+
+  /* "FromPyStructUtility":111
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ *     result.Dr3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr6']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":112
+ *     result.Dr3 = value
+ *     try:
+ *         value = obj['Dr6']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr6); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 112; __pyx_clineno = __LINE__; goto __pyx_L194_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":111
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ *     result.Dr3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr6']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L201_try_end;
+    __pyx_L194_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":113
+ *     try:
+ *         value = obj['Dr6']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ *     result.Dr6 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 113; __pyx_clineno = __LINE__; goto __pyx_L196_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":114
+ *         value = obj['Dr6']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")             # <<<<<<<<<<<<<<
+ *     result.Dr6 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__40, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L196_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L196_except_error;}
+    }
+    goto __pyx_L196_except_error;
+    __pyx_L196_except_error:;
+
+    /* "FromPyStructUtility":111
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")
+ *     result.Dr3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr6']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L201_try_end:;
+  }
+
+  /* "FromPyStructUtility":115
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ *     result.Dr6 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Dr7']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 115; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr6 = __pyx_t_10;
+
+  /* "FromPyStructUtility":116
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ *     result.Dr6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr7']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":117
+ *     result.Dr6 = value
+ *     try:
+ *         value = obj['Dr7']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Dr7); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 117; __pyx_clineno = __LINE__; goto __pyx_L204_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":116
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ *     result.Dr6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr7']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L211_try_end;
+    __pyx_L204_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":118
+ *     try:
+ *         value = obj['Dr7']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ *     result.Dr7 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 118; __pyx_clineno = __LINE__; goto __pyx_L206_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":119
+ *         value = obj['Dr7']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")             # <<<<<<<<<<<<<<
+ *     result.Dr7 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__41, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L206_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L206_except_error;}
+    }
+    goto __pyx_L206_except_error;
+    __pyx_L206_except_error:;
+
+    /* "FromPyStructUtility":116
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")
+ *     result.Dr6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Dr7']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L211_try_end:;
+  }
+
+  /* "FromPyStructUtility":120
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ *     result.Dr7 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rax']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 120; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Dr7 = __pyx_t_10;
+
+  /* "FromPyStructUtility":121
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ *     result.Dr7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rax']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":122
+ *     result.Dr7 = value
+ *     try:
+ *         value = obj['Rax']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rax); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 122; __pyx_clineno = __LINE__; goto __pyx_L214_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":121
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ *     result.Dr7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rax']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L221_try_end;
+    __pyx_L214_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":123
+ *     try:
+ *         value = obj['Rax']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ *     result.Rax = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 123; __pyx_clineno = __LINE__; goto __pyx_L216_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":124
+ *         value = obj['Rax']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rax'")             # <<<<<<<<<<<<<<
+ *     result.Rax = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__42, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 124; __pyx_clineno = __LINE__; goto __pyx_L216_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 124; __pyx_clineno = __LINE__; goto __pyx_L216_except_error;}
+    }
+    goto __pyx_L216_except_error;
+    __pyx_L216_except_error:;
+
+    /* "FromPyStructUtility":121
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")
+ *     result.Dr7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rax']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L221_try_end:;
+  }
+
+  /* "FromPyStructUtility":125
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ *     result.Rax = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rcx']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 125; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rax = __pyx_t_10;
+
+  /* "FromPyStructUtility":126
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ *     result.Rax = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rcx']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":127
+ *     result.Rax = value
+ *     try:
+ *         value = obj['Rcx']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rcx); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 127; __pyx_clineno = __LINE__; goto __pyx_L224_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":126
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ *     result.Rax = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rcx']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L231_try_end;
+    __pyx_L224_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":128
+ *     try:
+ *         value = obj['Rcx']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ *     result.Rcx = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 128; __pyx_clineno = __LINE__; goto __pyx_L226_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":129
+ *         value = obj['Rcx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")             # <<<<<<<<<<<<<<
+ *     result.Rcx = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__43, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L226_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L226_except_error;}
+    }
+    goto __pyx_L226_except_error;
+    __pyx_L226_except_error:;
+
+    /* "FromPyStructUtility":126
+ *         raise ValueError("No value specified for struct attribute 'Rax'")
+ *     result.Rax = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rcx']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L231_try_end:;
+  }
+
+  /* "FromPyStructUtility":130
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ *     result.Rcx = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rdx']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 130; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rcx = __pyx_t_10;
+
+  /* "FromPyStructUtility":131
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ *     result.Rcx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdx']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":132
+ *     result.Rcx = value
+ *     try:
+ *         value = obj['Rdx']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rdx); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 132; __pyx_clineno = __LINE__; goto __pyx_L234_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":131
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ *     result.Rcx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdx']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L241_try_end;
+    __pyx_L234_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":133
+ *     try:
+ *         value = obj['Rdx']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ *     result.Rdx = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 133; __pyx_clineno = __LINE__; goto __pyx_L236_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":134
+ *         value = obj['Rdx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")             # <<<<<<<<<<<<<<
+ *     result.Rdx = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__44, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 134; __pyx_clineno = __LINE__; goto __pyx_L236_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 134; __pyx_clineno = __LINE__; goto __pyx_L236_except_error;}
+    }
+    goto __pyx_L236_except_error;
+    __pyx_L236_except_error:;
+
+    /* "FromPyStructUtility":131
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")
+ *     result.Rcx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdx']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L241_try_end:;
+  }
+
+  /* "FromPyStructUtility":135
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ *     result.Rdx = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rbx']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 135; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rdx = __pyx_t_10;
+
+  /* "FromPyStructUtility":136
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ *     result.Rdx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbx']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":137
+ *     result.Rdx = value
+ *     try:
+ *         value = obj['Rbx']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rbx); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 137; __pyx_clineno = __LINE__; goto __pyx_L244_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":136
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ *     result.Rdx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbx']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L251_try_end;
+    __pyx_L244_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":138
+ *     try:
+ *         value = obj['Rbx']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ *     result.Rbx = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 138; __pyx_clineno = __LINE__; goto __pyx_L246_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":139
+ *         value = obj['Rbx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")             # <<<<<<<<<<<<<<
+ *     result.Rbx = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__45, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L246_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L246_except_error;}
+    }
+    goto __pyx_L246_except_error;
+    __pyx_L246_except_error:;
+
+    /* "FromPyStructUtility":136
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")
+ *     result.Rdx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbx']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L251_try_end:;
+  }
+
+  /* "FromPyStructUtility":140
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ *     result.Rbx = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rsp']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 140; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rbx = __pyx_t_10;
+
+  /* "FromPyStructUtility":141
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ *     result.Rbx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsp']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":142
+ *     result.Rbx = value
+ *     try:
+ *         value = obj['Rsp']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rsp); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 142; __pyx_clineno = __LINE__; goto __pyx_L254_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":141
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ *     result.Rbx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsp']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L261_try_end;
+    __pyx_L254_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":143
+ *     try:
+ *         value = obj['Rsp']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ *     result.Rsp = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 143; __pyx_clineno = __LINE__; goto __pyx_L256_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":144
+ *         value = obj['Rsp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")             # <<<<<<<<<<<<<<
+ *     result.Rsp = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__46, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 144; __pyx_clineno = __LINE__; goto __pyx_L256_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 144; __pyx_clineno = __LINE__; goto __pyx_L256_except_error;}
+    }
+    goto __pyx_L256_except_error;
+    __pyx_L256_except_error:;
+
+    /* "FromPyStructUtility":141
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")
+ *     result.Rbx = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsp']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L261_try_end:;
+  }
+
+  /* "FromPyStructUtility":145
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ *     result.Rsp = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rbp']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 145; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rsp = __pyx_t_10;
+
+  /* "FromPyStructUtility":146
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ *     result.Rsp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbp']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":147
+ *     result.Rsp = value
+ *     try:
+ *         value = obj['Rbp']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rbp); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 147; __pyx_clineno = __LINE__; goto __pyx_L264_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":146
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ *     result.Rsp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbp']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L271_try_end;
+    __pyx_L264_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":148
+ *     try:
+ *         value = obj['Rbp']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ *     result.Rbp = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 148; __pyx_clineno = __LINE__; goto __pyx_L266_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":149
+ *         value = obj['Rbp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")             # <<<<<<<<<<<<<<
+ *     result.Rbp = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__47, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 149; __pyx_clineno = __LINE__; goto __pyx_L266_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 149; __pyx_clineno = __LINE__; goto __pyx_L266_except_error;}
+    }
+    goto __pyx_L266_except_error;
+    __pyx_L266_except_error:;
+
+    /* "FromPyStructUtility":146
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")
+ *     result.Rsp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rbp']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L271_try_end:;
+  }
+
+  /* "FromPyStructUtility":150
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ *     result.Rbp = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rsi']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 150; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rbp = __pyx_t_10;
+
+  /* "FromPyStructUtility":151
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ *     result.Rbp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsi']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":152
+ *     result.Rbp = value
+ *     try:
+ *         value = obj['Rsi']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rsi); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 152; __pyx_clineno = __LINE__; goto __pyx_L274_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":151
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ *     result.Rbp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsi']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L281_try_end;
+    __pyx_L274_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":153
+ *     try:
+ *         value = obj['Rsi']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ *     result.Rsi = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 153; __pyx_clineno = __LINE__; goto __pyx_L276_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":154
+ *         value = obj['Rsi']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")             # <<<<<<<<<<<<<<
+ *     result.Rsi = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__48, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L276_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L276_except_error;}
+    }
+    goto __pyx_L276_except_error;
+    __pyx_L276_except_error:;
+
+    /* "FromPyStructUtility":151
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")
+ *     result.Rbp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rsi']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L281_try_end:;
+  }
+
+  /* "FromPyStructUtility":155
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ *     result.Rsi = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rdi']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rsi = __pyx_t_10;
+
+  /* "FromPyStructUtility":156
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ *     result.Rsi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdi']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":157
+ *     result.Rsi = value
+ *     try:
+ *         value = obj['Rdi']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rdi); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 157; __pyx_clineno = __LINE__; goto __pyx_L284_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":156
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ *     result.Rsi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdi']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L291_try_end;
+    __pyx_L284_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":158
+ *     try:
+ *         value = obj['Rdi']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ *     result.Rdi = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 158; __pyx_clineno = __LINE__; goto __pyx_L286_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":159
+ *         value = obj['Rdi']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")             # <<<<<<<<<<<<<<
+ *     result.Rdi = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__49, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 159; __pyx_clineno = __LINE__; goto __pyx_L286_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 159; __pyx_clineno = __LINE__; goto __pyx_L286_except_error;}
+    }
+    goto __pyx_L286_except_error;
+    __pyx_L286_except_error:;
+
+    /* "FromPyStructUtility":156
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")
+ *     result.Rsi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rdi']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L291_try_end:;
+  }
+
+  /* "FromPyStructUtility":160
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ *     result.Rdi = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R8']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 160; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rdi = __pyx_t_10;
+
+  /* "FromPyStructUtility":161
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ *     result.Rdi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R8']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":162
+ *     result.Rdi = value
+ *     try:
+ *         value = obj['R8']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R8); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 162; __pyx_clineno = __LINE__; goto __pyx_L294_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":161
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ *     result.Rdi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R8']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L301_try_end;
+    __pyx_L294_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":163
+ *     try:
+ *         value = obj['R8']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ *     result.R8 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 163; __pyx_clineno = __LINE__; goto __pyx_L296_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":164
+ *         value = obj['R8']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R8'")             # <<<<<<<<<<<<<<
+ *     result.R8 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__50, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 164; __pyx_clineno = __LINE__; goto __pyx_L296_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 164; __pyx_clineno = __LINE__; goto __pyx_L296_except_error;}
+    }
+    goto __pyx_L296_except_error;
+    __pyx_L296_except_error:;
+
+    /* "FromPyStructUtility":161
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")
+ *     result.Rdi = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R8']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L301_try_end:;
+  }
+
+  /* "FromPyStructUtility":165
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ *     result.R8 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R9']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 165; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R8 = __pyx_t_10;
+
+  /* "FromPyStructUtility":166
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ *     result.R8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R9']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":167
+ *     result.R8 = value
+ *     try:
+ *         value = obj['R9']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R9); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 167; __pyx_clineno = __LINE__; goto __pyx_L304_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":166
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ *     result.R8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R9']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L311_try_end;
+    __pyx_L304_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":168
+ *     try:
+ *         value = obj['R9']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ *     result.R9 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 168; __pyx_clineno = __LINE__; goto __pyx_L306_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":169
+ *         value = obj['R9']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R9'")             # <<<<<<<<<<<<<<
+ *     result.R9 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__51, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 169; __pyx_clineno = __LINE__; goto __pyx_L306_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 169; __pyx_clineno = __LINE__; goto __pyx_L306_except_error;}
+    }
+    goto __pyx_L306_except_error;
+    __pyx_L306_except_error:;
+
+    /* "FromPyStructUtility":166
+ *         raise ValueError("No value specified for struct attribute 'R8'")
+ *     result.R8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R9']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L311_try_end:;
+  }
+
+  /* "FromPyStructUtility":170
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ *     result.R9 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R10']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 170; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R9 = __pyx_t_10;
+
+  /* "FromPyStructUtility":171
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ *     result.R9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R10']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":172
+ *     result.R9 = value
+ *     try:
+ *         value = obj['R10']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R10); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 172; __pyx_clineno = __LINE__; goto __pyx_L314_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":171
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ *     result.R9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R10']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L321_try_end;
+    __pyx_L314_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":173
+ *     try:
+ *         value = obj['R10']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ *     result.R10 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 173; __pyx_clineno = __LINE__; goto __pyx_L316_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":174
+ *         value = obj['R10']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R10'")             # <<<<<<<<<<<<<<
+ *     result.R10 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__52, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L316_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L316_except_error;}
+    }
+    goto __pyx_L316_except_error;
+    __pyx_L316_except_error:;
+
+    /* "FromPyStructUtility":171
+ *         raise ValueError("No value specified for struct attribute 'R9'")
+ *     result.R9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R10']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L321_try_end:;
+  }
+
+  /* "FromPyStructUtility":175
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ *     result.R10 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R11']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 175; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R10 = __pyx_t_10;
+
+  /* "FromPyStructUtility":176
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ *     result.R10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R11']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":177
+ *     result.R10 = value
+ *     try:
+ *         value = obj['R11']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R11); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 177; __pyx_clineno = __LINE__; goto __pyx_L324_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":176
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ *     result.R10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R11']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L331_try_end;
+    __pyx_L324_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":178
+ *     try:
+ *         value = obj['R11']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ *     result.R11 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 178; __pyx_clineno = __LINE__; goto __pyx_L326_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":179
+ *         value = obj['R11']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R11'")             # <<<<<<<<<<<<<<
+ *     result.R11 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__53, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 179; __pyx_clineno = __LINE__; goto __pyx_L326_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 179; __pyx_clineno = __LINE__; goto __pyx_L326_except_error;}
+    }
+    goto __pyx_L326_except_error;
+    __pyx_L326_except_error:;
+
+    /* "FromPyStructUtility":176
+ *         raise ValueError("No value specified for struct attribute 'R10'")
+ *     result.R10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R11']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L331_try_end:;
+  }
+
+  /* "FromPyStructUtility":180
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ *     result.R11 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R12']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 180; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R11 = __pyx_t_10;
+
+  /* "FromPyStructUtility":181
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ *     result.R11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R12']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":182
+ *     result.R11 = value
+ *     try:
+ *         value = obj['R12']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R12); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 182; __pyx_clineno = __LINE__; goto __pyx_L334_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":181
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ *     result.R11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R12']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L341_try_end;
+    __pyx_L334_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":183
+ *     try:
+ *         value = obj['R12']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ *     result.R12 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 183; __pyx_clineno = __LINE__; goto __pyx_L336_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":184
+ *         value = obj['R12']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R12'")             # <<<<<<<<<<<<<<
+ *     result.R12 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__54, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L336_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L336_except_error;}
+    }
+    goto __pyx_L336_except_error;
+    __pyx_L336_except_error:;
+
+    /* "FromPyStructUtility":181
+ *         raise ValueError("No value specified for struct attribute 'R11'")
+ *     result.R11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R12']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L341_try_end:;
+  }
+
+  /* "FromPyStructUtility":185
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ *     result.R12 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R13']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 185; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R12 = __pyx_t_10;
+
+  /* "FromPyStructUtility":186
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ *     result.R12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R13']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":187
+ *     result.R12 = value
+ *     try:
+ *         value = obj['R13']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R13); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 187; __pyx_clineno = __LINE__; goto __pyx_L344_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":186
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ *     result.R12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R13']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L351_try_end;
+    __pyx_L344_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":188
+ *     try:
+ *         value = obj['R13']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ *     result.R13 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 188; __pyx_clineno = __LINE__; goto __pyx_L346_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":189
+ *         value = obj['R13']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R13'")             # <<<<<<<<<<<<<<
+ *     result.R13 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__55, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 189; __pyx_clineno = __LINE__; goto __pyx_L346_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 189; __pyx_clineno = __LINE__; goto __pyx_L346_except_error;}
+    }
+    goto __pyx_L346_except_error;
+    __pyx_L346_except_error:;
+
+    /* "FromPyStructUtility":186
+ *         raise ValueError("No value specified for struct attribute 'R12'")
+ *     result.R12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R13']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L351_try_end:;
+  }
+
+  /* "FromPyStructUtility":190
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ *     result.R13 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R14']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 190; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R13 = __pyx_t_10;
+
+  /* "FromPyStructUtility":191
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ *     result.R13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R14']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":192
+ *     result.R13 = value
+ *     try:
+ *         value = obj['R14']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R14); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 192; __pyx_clineno = __LINE__; goto __pyx_L354_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":191
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ *     result.R13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R14']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L361_try_end;
+    __pyx_L354_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":193
+ *     try:
+ *         value = obj['R14']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ *     result.R14 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 193; __pyx_clineno = __LINE__; goto __pyx_L356_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":194
+ *         value = obj['R14']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R14'")             # <<<<<<<<<<<<<<
+ *     result.R14 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__56, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 194; __pyx_clineno = __LINE__; goto __pyx_L356_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 194; __pyx_clineno = __LINE__; goto __pyx_L356_except_error;}
+    }
+    goto __pyx_L356_except_error;
+    __pyx_L356_except_error:;
+
+    /* "FromPyStructUtility":191
+ *         raise ValueError("No value specified for struct attribute 'R13'")
+ *     result.R13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R14']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L361_try_end:;
+  }
+
+  /* "FromPyStructUtility":195
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ *     result.R14 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['R15']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 195; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R14 = __pyx_t_10;
+
+  /* "FromPyStructUtility":196
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ *     result.R14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R15']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":197
+ *     result.R14 = value
+ *     try:
+ *         value = obj['R15']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_R15); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 197; __pyx_clineno = __LINE__; goto __pyx_L364_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":196
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ *     result.R14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R15']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L371_try_end;
+    __pyx_L364_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":198
+ *     try:
+ *         value = obj['R15']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ *     result.R15 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 198; __pyx_clineno = __LINE__; goto __pyx_L366_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":199
+ *         value = obj['R15']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R15'")             # <<<<<<<<<<<<<<
+ *     result.R15 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__57, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 199; __pyx_clineno = __LINE__; goto __pyx_L366_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 199; __pyx_clineno = __LINE__; goto __pyx_L366_except_error;}
+    }
+    goto __pyx_L366_except_error;
+    __pyx_L366_except_error:;
+
+    /* "FromPyStructUtility":196
+ *         raise ValueError("No value specified for struct attribute 'R14'")
+ *     result.R14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['R15']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L371_try_end:;
+  }
+
+  /* "FromPyStructUtility":200
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ *     result.R15 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Rip']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 200; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.R15 = __pyx_t_10;
+
+  /* "FromPyStructUtility":201
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ *     result.R15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rip']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":202
+ *     result.R15 = value
+ *     try:
+ *         value = obj['Rip']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Rip); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 202; __pyx_clineno = __LINE__; goto __pyx_L374_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":201
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ *     result.R15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rip']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L381_try_end;
+    __pyx_L374_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":203
+ *     try:
+ *         value = obj['Rip']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ *     result.Rip = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 203; __pyx_clineno = __LINE__; goto __pyx_L376_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":204
+ *         value = obj['Rip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rip'")             # <<<<<<<<<<<<<<
+ *     result.Rip = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__58, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 204; __pyx_clineno = __LINE__; goto __pyx_L376_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 204; __pyx_clineno = __LINE__; goto __pyx_L376_except_error;}
+    }
+    goto __pyx_L376_except_error;
+    __pyx_L376_except_error:;
+
+    /* "FromPyStructUtility":201
+ *         raise ValueError("No value specified for struct attribute 'R15'")
+ *     result.R15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Rip']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L381_try_end:;
+  }
+
+  /* "FromPyStructUtility":205
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ *     result.Rip = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['FltSave']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 205; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Rip = __pyx_t_10;
+
+  /* "FromPyStructUtility":206
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ *     result.Rip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FltSave']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":207
+ *     result.Rip = value
+ *     try:
+ *         value = obj['FltSave']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_FltSave); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 207; __pyx_clineno = __LINE__; goto __pyx_L384_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":206
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ *     result.Rip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FltSave']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L391_try_end;
+    __pyx_L384_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":208
+ *     try:
+ *         value = obj['FltSave']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ *     result.FltSave = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 208; __pyx_clineno = __LINE__; goto __pyx_L386_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":209
+ *         value = obj['FltSave']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")             # <<<<<<<<<<<<<<
+ *     result.FltSave = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__59, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 209; __pyx_clineno = __LINE__; goto __pyx_L386_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 209; __pyx_clineno = __LINE__; goto __pyx_L386_except_error;}
+    }
+    goto __pyx_L386_except_error;
+    __pyx_L386_except_error:;
+
+    /* "FromPyStructUtility":206
+ *         raise ValueError("No value specified for struct attribute 'Rip'")
+ *     result.Rip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['FltSave']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L391_try_end:;
+  }
+
+  /* "FromPyStructUtility":210
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ *     result.FltSave = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Header']
+ */
+  __pyx_t_13 = __pyx_convert__from_py_XSAVE_FORMAT(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 210; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.FltSave = __pyx_t_13;
+
+  /* "FromPyStructUtility":211
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ *     result.FltSave = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Header']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":212
+ *     result.FltSave = value
+ *     try:
+ *         value = obj['Header']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Header); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 212; __pyx_clineno = __LINE__; goto __pyx_L394_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":211
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ *     result.FltSave = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Header']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L401_try_end;
+    __pyx_L394_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":213
+ *     try:
+ *         value = obj['Header']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ *     result.Header = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 213; __pyx_clineno = __LINE__; goto __pyx_L396_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":214
+ *         value = obj['Header']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Header'")             # <<<<<<<<<<<<<<
+ *     result.Header = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__60, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 214; __pyx_clineno = __LINE__; goto __pyx_L396_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 214; __pyx_clineno = __LINE__; goto __pyx_L396_except_error;}
+    }
+    goto __pyx_L396_except_error;
+    __pyx_L396_except_error:;
+
+    /* "FromPyStructUtility":211
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")
+ *     result.FltSave = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Header']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L401_try_end:;
+  }
+
+  /* "FromPyStructUtility":215
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ *     result.Header = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Legacy']
+ */
+  if (unlikely(__Pyx_carray_from_py_M128A(__pyx_v_value, __pyx_t_14, 2) < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 215; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  memcpy(&(__pyx_v_result.Header[0]), __pyx_t_14, sizeof(__pyx_v_result.Header[0]) * (2));
+
+  /* "FromPyStructUtility":216
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ *     result.Header = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Legacy']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":217
+ *     result.Header = value
+ *     try:
+ *         value = obj['Legacy']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Legacy); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 217; __pyx_clineno = __LINE__; goto __pyx_L404_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":216
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ *     result.Header = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Legacy']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L411_try_end;
+    __pyx_L404_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":218
+ *     try:
+ *         value = obj['Legacy']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ *     result.Legacy = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 218; __pyx_clineno = __LINE__; goto __pyx_L406_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":219
+ *         value = obj['Legacy']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")             # <<<<<<<<<<<<<<
+ *     result.Legacy = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__61, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 219; __pyx_clineno = __LINE__; goto __pyx_L406_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 219; __pyx_clineno = __LINE__; goto __pyx_L406_except_error;}
+    }
+    goto __pyx_L406_except_error;
+    __pyx_L406_except_error:;
+
+    /* "FromPyStructUtility":216
+ *         raise ValueError("No value specified for struct attribute 'Header'")
+ *     result.Header = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Legacy']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L411_try_end:;
+  }
+
+  /* "FromPyStructUtility":220
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ *     result.Legacy = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm0']
+ */
+  if (unlikely(__Pyx_carray_from_py_M128A(__pyx_v_value, __pyx_t_15, 8) < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 220; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  memcpy(&(__pyx_v_result.Legacy[0]), __pyx_t_15, sizeof(__pyx_v_result.Legacy[0]) * (8));
+
+  /* "FromPyStructUtility":221
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ *     result.Legacy = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm0']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":222
+ *     result.Legacy = value
+ *     try:
+ *         value = obj['Xmm0']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm0); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 222; __pyx_clineno = __LINE__; goto __pyx_L414_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":221
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ *     result.Legacy = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm0']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L421_try_end;
+    __pyx_L414_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":223
+ *     try:
+ *         value = obj['Xmm0']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ *     result.Xmm0 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 223; __pyx_clineno = __LINE__; goto __pyx_L416_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":224
+ *         value = obj['Xmm0']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")             # <<<<<<<<<<<<<<
+ *     result.Xmm0 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__62, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 224; __pyx_clineno = __LINE__; goto __pyx_L416_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 224; __pyx_clineno = __LINE__; goto __pyx_L416_except_error;}
+    }
+    goto __pyx_L416_except_error;
+    __pyx_L416_except_error:;
+
+    /* "FromPyStructUtility":221
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")
+ *     result.Legacy = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm0']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L421_try_end:;
+  }
+
+  /* "FromPyStructUtility":225
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ *     result.Xmm0 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm1']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 225; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm0 = __pyx_t_16;
+
+  /* "FromPyStructUtility":226
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ *     result.Xmm0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm1']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":227
+ *     result.Xmm0 = value
+ *     try:
+ *         value = obj['Xmm1']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm1); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 227; __pyx_clineno = __LINE__; goto __pyx_L424_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":226
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ *     result.Xmm0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm1']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L431_try_end;
+    __pyx_L424_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":228
+ *     try:
+ *         value = obj['Xmm1']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ *     result.Xmm1 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 228; __pyx_clineno = __LINE__; goto __pyx_L426_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":229
+ *         value = obj['Xmm1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")             # <<<<<<<<<<<<<<
+ *     result.Xmm1 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__63, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 229; __pyx_clineno = __LINE__; goto __pyx_L426_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 229; __pyx_clineno = __LINE__; goto __pyx_L426_except_error;}
+    }
+    goto __pyx_L426_except_error;
+    __pyx_L426_except_error:;
+
+    /* "FromPyStructUtility":226
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")
+ *     result.Xmm0 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm1']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L431_try_end:;
+  }
+
+  /* "FromPyStructUtility":230
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ *     result.Xmm1 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm2']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 230; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm1 = __pyx_t_16;
+
+  /* "FromPyStructUtility":231
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ *     result.Xmm1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm2']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":232
+ *     result.Xmm1 = value
+ *     try:
+ *         value = obj['Xmm2']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm2); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 232; __pyx_clineno = __LINE__; goto __pyx_L434_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":231
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ *     result.Xmm1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm2']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L441_try_end;
+    __pyx_L434_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":233
+ *     try:
+ *         value = obj['Xmm2']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ *     result.Xmm2 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 233; __pyx_clineno = __LINE__; goto __pyx_L436_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":234
+ *         value = obj['Xmm2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")             # <<<<<<<<<<<<<<
+ *     result.Xmm2 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__64, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 234; __pyx_clineno = __LINE__; goto __pyx_L436_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 234; __pyx_clineno = __LINE__; goto __pyx_L436_except_error;}
+    }
+    goto __pyx_L436_except_error;
+    __pyx_L436_except_error:;
+
+    /* "FromPyStructUtility":231
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")
+ *     result.Xmm1 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm2']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L441_try_end:;
+  }
+
+  /* "FromPyStructUtility":235
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ *     result.Xmm2 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm3']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 235; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm2 = __pyx_t_16;
+
+  /* "FromPyStructUtility":236
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ *     result.Xmm2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm3']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":237
+ *     result.Xmm2 = value
+ *     try:
+ *         value = obj['Xmm3']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm3); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 237; __pyx_clineno = __LINE__; goto __pyx_L444_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":236
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ *     result.Xmm2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm3']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L451_try_end;
+    __pyx_L444_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":238
+ *     try:
+ *         value = obj['Xmm3']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ *     result.Xmm3 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 238; __pyx_clineno = __LINE__; goto __pyx_L446_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":239
+ *         value = obj['Xmm3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")             # <<<<<<<<<<<<<<
+ *     result.Xmm3 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__65, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 239; __pyx_clineno = __LINE__; goto __pyx_L446_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 239; __pyx_clineno = __LINE__; goto __pyx_L446_except_error;}
+    }
+    goto __pyx_L446_except_error;
+    __pyx_L446_except_error:;
+
+    /* "FromPyStructUtility":236
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")
+ *     result.Xmm2 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm3']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L451_try_end:;
+  }
+
+  /* "FromPyStructUtility":240
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ *     result.Xmm3 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm4']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 240; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm3 = __pyx_t_16;
+
+  /* "FromPyStructUtility":241
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ *     result.Xmm3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm4']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":242
+ *     result.Xmm3 = value
+ *     try:
+ *         value = obj['Xmm4']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm4); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 242; __pyx_clineno = __LINE__; goto __pyx_L454_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":241
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ *     result.Xmm3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm4']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L461_try_end;
+    __pyx_L454_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":243
+ *     try:
+ *         value = obj['Xmm4']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ *     result.Xmm4 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 243; __pyx_clineno = __LINE__; goto __pyx_L456_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":244
+ *         value = obj['Xmm4']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")             # <<<<<<<<<<<<<<
+ *     result.Xmm4 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__66, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 244; __pyx_clineno = __LINE__; goto __pyx_L456_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 244; __pyx_clineno = __LINE__; goto __pyx_L456_except_error;}
+    }
+    goto __pyx_L456_except_error;
+    __pyx_L456_except_error:;
+
+    /* "FromPyStructUtility":241
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")
+ *     result.Xmm3 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm4']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L461_try_end:;
+  }
+
+  /* "FromPyStructUtility":245
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ *     result.Xmm4 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm5']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 245; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm4 = __pyx_t_16;
+
+  /* "FromPyStructUtility":246
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ *     result.Xmm4 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm5']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":247
+ *     result.Xmm4 = value
+ *     try:
+ *         value = obj['Xmm5']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm5); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 247; __pyx_clineno = __LINE__; goto __pyx_L464_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":246
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ *     result.Xmm4 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm5']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L471_try_end;
+    __pyx_L464_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":248
+ *     try:
+ *         value = obj['Xmm5']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ *     result.Xmm5 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 248; __pyx_clineno = __LINE__; goto __pyx_L466_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":249
+ *         value = obj['Xmm5']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")             # <<<<<<<<<<<<<<
+ *     result.Xmm5 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__67, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 249; __pyx_clineno = __LINE__; goto __pyx_L466_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 249; __pyx_clineno = __LINE__; goto __pyx_L466_except_error;}
+    }
+    goto __pyx_L466_except_error;
+    __pyx_L466_except_error:;
+
+    /* "FromPyStructUtility":246
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")
+ *     result.Xmm4 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm5']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L471_try_end:;
+  }
+
+  /* "FromPyStructUtility":250
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ *     result.Xmm5 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm6']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 250; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm5 = __pyx_t_16;
+
+  /* "FromPyStructUtility":251
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ *     result.Xmm5 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm6']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":252
+ *     result.Xmm5 = value
+ *     try:
+ *         value = obj['Xmm6']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm6); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 252; __pyx_clineno = __LINE__; goto __pyx_L474_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":251
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ *     result.Xmm5 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm6']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L481_try_end;
+    __pyx_L474_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":253
+ *     try:
+ *         value = obj['Xmm6']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ *     result.Xmm6 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 253; __pyx_clineno = __LINE__; goto __pyx_L476_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":254
+ *         value = obj['Xmm6']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")             # <<<<<<<<<<<<<<
+ *     result.Xmm6 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__68, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 254; __pyx_clineno = __LINE__; goto __pyx_L476_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 254; __pyx_clineno = __LINE__; goto __pyx_L476_except_error;}
+    }
+    goto __pyx_L476_except_error;
+    __pyx_L476_except_error:;
+
+    /* "FromPyStructUtility":251
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")
+ *     result.Xmm5 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm6']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L481_try_end:;
+  }
+
+  /* "FromPyStructUtility":255
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ *     result.Xmm6 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm7']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 255; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm6 = __pyx_t_16;
+
+  /* "FromPyStructUtility":256
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ *     result.Xmm6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm7']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":257
+ *     result.Xmm6 = value
+ *     try:
+ *         value = obj['Xmm7']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm7); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 257; __pyx_clineno = __LINE__; goto __pyx_L484_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":256
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ *     result.Xmm6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm7']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L491_try_end;
+    __pyx_L484_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":258
+ *     try:
+ *         value = obj['Xmm7']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ *     result.Xmm7 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 258; __pyx_clineno = __LINE__; goto __pyx_L486_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":259
+ *         value = obj['Xmm7']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")             # <<<<<<<<<<<<<<
+ *     result.Xmm7 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__69, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 259; __pyx_clineno = __LINE__; goto __pyx_L486_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 259; __pyx_clineno = __LINE__; goto __pyx_L486_except_error;}
+    }
+    goto __pyx_L486_except_error;
+    __pyx_L486_except_error:;
+
+    /* "FromPyStructUtility":256
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")
+ *     result.Xmm6 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm7']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L491_try_end:;
+  }
+
+  /* "FromPyStructUtility":260
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ *     result.Xmm7 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm8']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 260; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm7 = __pyx_t_16;
+
+  /* "FromPyStructUtility":261
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ *     result.Xmm7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm8']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":262
+ *     result.Xmm7 = value
+ *     try:
+ *         value = obj['Xmm8']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm8); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 262; __pyx_clineno = __LINE__; goto __pyx_L494_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":261
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ *     result.Xmm7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm8']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L501_try_end;
+    __pyx_L494_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":263
+ *     try:
+ *         value = obj['Xmm8']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ *     result.Xmm8 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 263; __pyx_clineno = __LINE__; goto __pyx_L496_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":264
+ *         value = obj['Xmm8']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")             # <<<<<<<<<<<<<<
+ *     result.Xmm8 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__70, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 264; __pyx_clineno = __LINE__; goto __pyx_L496_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 264; __pyx_clineno = __LINE__; goto __pyx_L496_except_error;}
+    }
+    goto __pyx_L496_except_error;
+    __pyx_L496_except_error:;
+
+    /* "FromPyStructUtility":261
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")
+ *     result.Xmm7 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm8']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L501_try_end:;
+  }
+
+  /* "FromPyStructUtility":265
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ *     result.Xmm8 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm9']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 265; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm8 = __pyx_t_16;
+
+  /* "FromPyStructUtility":266
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ *     result.Xmm8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm9']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":267
+ *     result.Xmm8 = value
+ *     try:
+ *         value = obj['Xmm9']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm9); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 267; __pyx_clineno = __LINE__; goto __pyx_L504_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":266
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ *     result.Xmm8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm9']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L511_try_end;
+    __pyx_L504_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":268
+ *     try:
+ *         value = obj['Xmm9']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ *     result.Xmm9 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 268; __pyx_clineno = __LINE__; goto __pyx_L506_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":269
+ *         value = obj['Xmm9']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")             # <<<<<<<<<<<<<<
+ *     result.Xmm9 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__71, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 269; __pyx_clineno = __LINE__; goto __pyx_L506_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 269; __pyx_clineno = __LINE__; goto __pyx_L506_except_error;}
+    }
+    goto __pyx_L506_except_error;
+    __pyx_L506_except_error:;
+
+    /* "FromPyStructUtility":266
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")
+ *     result.Xmm8 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm9']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L511_try_end:;
+  }
+
+  /* "FromPyStructUtility":270
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ *     result.Xmm9 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm10']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 270; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm9 = __pyx_t_16;
+
+  /* "FromPyStructUtility":271
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ *     result.Xmm9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm10']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":272
+ *     result.Xmm9 = value
+ *     try:
+ *         value = obj['Xmm10']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm10); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 272; __pyx_clineno = __LINE__; goto __pyx_L514_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":271
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ *     result.Xmm9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm10']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L521_try_end;
+    __pyx_L514_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":273
+ *     try:
+ *         value = obj['Xmm10']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ *     result.Xmm10 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 273; __pyx_clineno = __LINE__; goto __pyx_L516_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":274
+ *         value = obj['Xmm10']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")             # <<<<<<<<<<<<<<
+ *     result.Xmm10 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__72, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 274; __pyx_clineno = __LINE__; goto __pyx_L516_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 274; __pyx_clineno = __LINE__; goto __pyx_L516_except_error;}
+    }
+    goto __pyx_L516_except_error;
+    __pyx_L516_except_error:;
+
+    /* "FromPyStructUtility":271
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")
+ *     result.Xmm9 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm10']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L521_try_end:;
+  }
+
+  /* "FromPyStructUtility":275
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ *     result.Xmm10 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm11']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 275; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm10 = __pyx_t_16;
+
+  /* "FromPyStructUtility":276
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ *     result.Xmm10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm11']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":277
+ *     result.Xmm10 = value
+ *     try:
+ *         value = obj['Xmm11']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm11); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 277; __pyx_clineno = __LINE__; goto __pyx_L524_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":276
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ *     result.Xmm10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm11']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L531_try_end;
+    __pyx_L524_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":278
+ *     try:
+ *         value = obj['Xmm11']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ *     result.Xmm11 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 278; __pyx_clineno = __LINE__; goto __pyx_L526_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":279
+ *         value = obj['Xmm11']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")             # <<<<<<<<<<<<<<
+ *     result.Xmm11 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__73, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 279; __pyx_clineno = __LINE__; goto __pyx_L526_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 279; __pyx_clineno = __LINE__; goto __pyx_L526_except_error;}
+    }
+    goto __pyx_L526_except_error;
+    __pyx_L526_except_error:;
+
+    /* "FromPyStructUtility":276
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")
+ *     result.Xmm10 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm11']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L531_try_end:;
+  }
+
+  /* "FromPyStructUtility":280
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ *     result.Xmm11 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm12']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 280; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm11 = __pyx_t_16;
+
+  /* "FromPyStructUtility":281
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ *     result.Xmm11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm12']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":282
+ *     result.Xmm11 = value
+ *     try:
+ *         value = obj['Xmm12']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm12); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 282; __pyx_clineno = __LINE__; goto __pyx_L534_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":281
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ *     result.Xmm11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm12']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L541_try_end;
+    __pyx_L534_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":283
+ *     try:
+ *         value = obj['Xmm12']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ *     result.Xmm12 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 283; __pyx_clineno = __LINE__; goto __pyx_L536_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":284
+ *         value = obj['Xmm12']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")             # <<<<<<<<<<<<<<
+ *     result.Xmm12 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__74, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 284; __pyx_clineno = __LINE__; goto __pyx_L536_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 284; __pyx_clineno = __LINE__; goto __pyx_L536_except_error;}
+    }
+    goto __pyx_L536_except_error;
+    __pyx_L536_except_error:;
+
+    /* "FromPyStructUtility":281
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")
+ *     result.Xmm11 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm12']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L541_try_end:;
+  }
+
+  /* "FromPyStructUtility":285
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ *     result.Xmm12 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm13']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 285; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm12 = __pyx_t_16;
+
+  /* "FromPyStructUtility":286
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ *     result.Xmm12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm13']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":287
+ *     result.Xmm12 = value
+ *     try:
+ *         value = obj['Xmm13']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm13); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 287; __pyx_clineno = __LINE__; goto __pyx_L544_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":286
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ *     result.Xmm12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm13']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L551_try_end;
+    __pyx_L544_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":288
+ *     try:
+ *         value = obj['Xmm13']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ *     result.Xmm13 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 288; __pyx_clineno = __LINE__; goto __pyx_L546_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":289
+ *         value = obj['Xmm13']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")             # <<<<<<<<<<<<<<
+ *     result.Xmm13 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__75, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 289; __pyx_clineno = __LINE__; goto __pyx_L546_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 289; __pyx_clineno = __LINE__; goto __pyx_L546_except_error;}
+    }
+    goto __pyx_L546_except_error;
+    __pyx_L546_except_error:;
+
+    /* "FromPyStructUtility":286
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")
+ *     result.Xmm12 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm13']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L551_try_end:;
+  }
+
+  /* "FromPyStructUtility":290
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ *     result.Xmm13 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm14']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 290; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm13 = __pyx_t_16;
+
+  /* "FromPyStructUtility":291
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ *     result.Xmm13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm14']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":292
+ *     result.Xmm13 = value
+ *     try:
+ *         value = obj['Xmm14']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm14); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 292; __pyx_clineno = __LINE__; goto __pyx_L554_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":291
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ *     result.Xmm13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm14']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L561_try_end;
+    __pyx_L554_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":293
+ *     try:
+ *         value = obj['Xmm14']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ *     result.Xmm14 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 293; __pyx_clineno = __LINE__; goto __pyx_L556_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":294
+ *         value = obj['Xmm14']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")             # <<<<<<<<<<<<<<
+ *     result.Xmm14 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__76, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 294; __pyx_clineno = __LINE__; goto __pyx_L556_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 294; __pyx_clineno = __LINE__; goto __pyx_L556_except_error;}
+    }
+    goto __pyx_L556_except_error;
+    __pyx_L556_except_error:;
+
+    /* "FromPyStructUtility":291
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")
+ *     result.Xmm13 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm14']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L561_try_end:;
+  }
+
+  /* "FromPyStructUtility":295
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ *     result.Xmm14 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['Xmm15']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 295; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm14 = __pyx_t_16;
+
+  /* "FromPyStructUtility":296
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ *     result.Xmm14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm15']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":297
+ *     result.Xmm14 = value
+ *     try:
+ *         value = obj['Xmm15']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_Xmm15); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 297; __pyx_clineno = __LINE__; goto __pyx_L564_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":296
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ *     result.Xmm14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm15']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L571_try_end;
+    __pyx_L564_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":298
+ *     try:
+ *         value = obj['Xmm15']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ *     result.Xmm15 = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 298; __pyx_clineno = __LINE__; goto __pyx_L566_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":299
+ *         value = obj['Xmm15']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")             # <<<<<<<<<<<<<<
+ *     result.Xmm15 = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__77, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 299; __pyx_clineno = __LINE__; goto __pyx_L566_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 299; __pyx_clineno = __LINE__; goto __pyx_L566_except_error;}
+    }
+    goto __pyx_L566_except_error;
+    __pyx_L566_except_error:;
+
+    /* "FromPyStructUtility":296
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")
+ *     result.Xmm14 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['Xmm15']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L571_try_end:;
+  }
+
+  /* "FromPyStructUtility":300
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ *     result.Xmm15 = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['VectorRegister']
+ */
+  __pyx_t_16 = __pyx_convert__from_py_M128A(__pyx_v_value); if (unlikely(PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 300; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.Xmm15 = __pyx_t_16;
+
+  /* "FromPyStructUtility":301
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ *     result.Xmm15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorRegister']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":302
+ *     result.Xmm15 = value
+ *     try:
+ *         value = obj['VectorRegister']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_VectorRegister); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 302; __pyx_clineno = __LINE__; goto __pyx_L574_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":301
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ *     result.Xmm15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorRegister']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L581_try_end;
+    __pyx_L574_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":303
+ *     try:
+ *         value = obj['VectorRegister']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ *     result.VectorRegister = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 303; __pyx_clineno = __LINE__; goto __pyx_L576_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":304
+ *         value = obj['VectorRegister']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")             # <<<<<<<<<<<<<<
+ *     result.VectorRegister = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__78, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 304; __pyx_clineno = __LINE__; goto __pyx_L576_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 304; __pyx_clineno = __LINE__; goto __pyx_L576_except_error;}
+    }
+    goto __pyx_L576_except_error;
+    __pyx_L576_except_error:;
+
+    /* "FromPyStructUtility":301
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")
+ *     result.Xmm15 = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorRegister']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L581_try_end:;
+  }
+
+  /* "FromPyStructUtility":305
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ *     result.VectorRegister = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['VectorControl']
+ */
+  if (unlikely(__Pyx_carray_from_py_M128A(__pyx_v_value, __pyx_t_17, 26) < 0)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 305; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  memcpy(&(__pyx_v_result.VectorRegister[0]), __pyx_t_17, sizeof(__pyx_v_result.VectorRegister[0]) * (26));
+
+  /* "FromPyStructUtility":306
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ *     result.VectorRegister = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorControl']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":307
+ *     result.VectorRegister = value
+ *     try:
+ *         value = obj['VectorControl']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_VectorControl); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 307; __pyx_clineno = __LINE__; goto __pyx_L584_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":306
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ *     result.VectorRegister = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorControl']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L591_try_end;
+    __pyx_L584_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":308
+ *     try:
+ *         value = obj['VectorControl']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ *     result.VectorControl = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 308; __pyx_clineno = __LINE__; goto __pyx_L586_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":309
+ *         value = obj['VectorControl']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")             # <<<<<<<<<<<<<<
+ *     result.VectorControl = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__79, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 309; __pyx_clineno = __LINE__; goto __pyx_L586_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 309; __pyx_clineno = __LINE__; goto __pyx_L586_except_error;}
+    }
+    goto __pyx_L586_except_error;
+    __pyx_L586_except_error:;
+
+    /* "FromPyStructUtility":306
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")
+ *     result.VectorRegister = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['VectorControl']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L591_try_end:;
+  }
+
+  /* "FromPyStructUtility":310
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ *     result.VectorControl = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['DebugControl']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 310; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.VectorControl = __pyx_t_10;
+
+  /* "FromPyStructUtility":311
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ *     result.VectorControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DebugControl']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":312
+ *     result.VectorControl = value
+ *     try:
+ *         value = obj['DebugControl']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_DebugControl); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 312; __pyx_clineno = __LINE__; goto __pyx_L594_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":311
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ *     result.VectorControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DebugControl']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L601_try_end;
+    __pyx_L594_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":313
+ *     try:
+ *         value = obj['DebugControl']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ *     result.DebugControl = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 313; __pyx_clineno = __LINE__; goto __pyx_L596_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":314
+ *         value = obj['DebugControl']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")             # <<<<<<<<<<<<<<
+ *     result.DebugControl = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__80, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 314; __pyx_clineno = __LINE__; goto __pyx_L596_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 314; __pyx_clineno = __LINE__; goto __pyx_L596_except_error;}
+    }
+    goto __pyx_L596_except_error;
+    __pyx_L596_except_error:;
+
+    /* "FromPyStructUtility":311
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")
+ *     result.VectorControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['DebugControl']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L601_try_end:;
+  }
+
+  /* "FromPyStructUtility":315
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ *     result.DebugControl = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['LastBranchToRip']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 315; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.DebugControl = __pyx_t_10;
+
+  /* "FromPyStructUtility":316
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ *     result.DebugControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":317
+ *     result.DebugControl = value
+ *     try:
+ *         value = obj['LastBranchToRip']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_LastBranchToRip); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 317; __pyx_clineno = __LINE__; goto __pyx_L604_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":316
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ *     result.DebugControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L611_try_end;
+    __pyx_L604_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":318
+ *     try:
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ *     result.LastBranchToRip = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 318; __pyx_clineno = __LINE__; goto __pyx_L606_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":319
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")             # <<<<<<<<<<<<<<
+ *     result.LastBranchToRip = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__81, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 319; __pyx_clineno = __LINE__; goto __pyx_L606_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 319; __pyx_clineno = __LINE__; goto __pyx_L606_except_error;}
+    }
+    goto __pyx_L606_except_error;
+    __pyx_L606_except_error:;
+
+    /* "FromPyStructUtility":316
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")
+ *     result.DebugControl = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L611_try_end:;
+  }
+
+  /* "FromPyStructUtility":320
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ *     result.LastBranchToRip = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['LastBranchFromRip']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 320; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.LastBranchToRip = __pyx_t_10;
+
+  /* "FromPyStructUtility":321
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ *     result.LastBranchToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":322
+ *     result.LastBranchToRip = value
+ *     try:
+ *         value = obj['LastBranchFromRip']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_LastBranchFromRip); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 322; __pyx_clineno = __LINE__; goto __pyx_L614_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":321
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ *     result.LastBranchToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L621_try_end;
+    __pyx_L614_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":323
+ *     try:
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ *     result.LastBranchFromRip = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 323; __pyx_clineno = __LINE__; goto __pyx_L616_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":324
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")             # <<<<<<<<<<<<<<
+ *     result.LastBranchFromRip = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__82, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 324; __pyx_clineno = __LINE__; goto __pyx_L616_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 324; __pyx_clineno = __LINE__; goto __pyx_L616_except_error;}
+    }
+    goto __pyx_L616_except_error;
+    __pyx_L616_except_error:;
+
+    /* "FromPyStructUtility":321
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")
+ *     result.LastBranchToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L621_try_end:;
+  }
+
+  /* "FromPyStructUtility":325
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ *     result.LastBranchFromRip = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['LastExceptionToRip']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 325; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.LastBranchFromRip = __pyx_t_10;
+
+  /* "FromPyStructUtility":326
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ *     result.LastBranchFromRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":327
+ *     result.LastBranchFromRip = value
+ *     try:
+ *         value = obj['LastExceptionToRip']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ */
+      __pyx_t_2 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_LastExceptionToRip); if (unlikely(__pyx_t_2 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 327; __pyx_clineno = __LINE__; goto __pyx_L624_error;};
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_2);
+      __pyx_t_2 = 0;
+
+      /* "FromPyStructUtility":326
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ *     result.LastBranchFromRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L631_try_end;
+    __pyx_L624_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+
+    /* "FromPyStructUtility":328
+ *     try:
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ *     result.LastExceptionToRip = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_2, &__pyx_t_7, &__pyx_t_8) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 328; __pyx_clineno = __LINE__; goto __pyx_L626_except_error;}
+      __Pyx_GOTREF(__pyx_t_2);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":329
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")             # <<<<<<<<<<<<<<
+ *     result.LastExceptionToRip = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__83, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 329; __pyx_clineno = __LINE__; goto __pyx_L626_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 329; __pyx_clineno = __LINE__; goto __pyx_L626_except_error;}
+    }
+    goto __pyx_L626_except_error;
+    __pyx_L626_except_error:;
+
+    /* "FromPyStructUtility":326
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")
+ *     result.LastBranchFromRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L631_try_end:;
+  }
+
+  /* "FromPyStructUtility":330
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ *     result.LastExceptionToRip = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['LastExceptionFromRip']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 330; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.LastExceptionToRip = __pyx_t_10;
+
+  /* "FromPyStructUtility":331
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ *     result.LastExceptionToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:
+ */
+  {
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":332
+ *     result.LastExceptionToRip = value
+ *     try:
+ *         value = obj['LastExceptionFromRip']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")
+ */
+      __pyx_t_8 = PyObject_GetItem(__pyx_v_obj, __pyx_n_s_LastExceptionFromRip); if (unlikely(__pyx_t_8 == NULL)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 332; __pyx_clineno = __LINE__; goto __pyx_L634_error;};
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":331
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ *     result.LastExceptionToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L641_try_end;
+    __pyx_L634_error:;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "FromPyStructUtility":333
+ *     try:
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")
+ *     result.LastExceptionFromRip = value
+ */
+    __pyx_t_6 = PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_6) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_2) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 333; __pyx_clineno = __LINE__; goto __pyx_L636_except_error;}
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GOTREF(__pyx_t_2);
+
+      /* "FromPyStructUtility":334
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")             # <<<<<<<<<<<<<<
+ *     result.LastExceptionFromRip = value
+ *     return result
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__84, NULL); if (unlikely(!__pyx_t_9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 334; __pyx_clineno = __LINE__; goto __pyx_L636_except_error;}
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      {__pyx_filename = __pyx_f[1]; __pyx_lineno = 334; __pyx_clineno = __LINE__; goto __pyx_L636_except_error;}
+    }
+    goto __pyx_L636_except_error;
+    __pyx_L636_except_error:;
+
+    /* "FromPyStructUtility":331
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")
+ *     result.LastExceptionToRip = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:
+ */
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L641_try_end:;
+  }
+
+  /* "FromPyStructUtility":335
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")
+ *     result.LastExceptionFromRip = value             # <<<<<<<<<<<<<<
+ *     return result
+ * 
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_DWORD64(__pyx_v_value); if (unlikely((__pyx_t_10 == (DWORD64)-1) && PyErr_Occurred())) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 335; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_v_result.LastExceptionFromRip = __pyx_t_10;
+
+  /* "FromPyStructUtility":336
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")
+ *     result.LastExceptionFromRip = value
+ *     return result             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_r = __pyx_v_result;
+  goto __pyx_L0;
+
+  /* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_CONTEXT")
+ * cdef CONTEXT __pyx_convert__from_py_CONTEXT(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef CONTEXT result
+ *     if not PyMapping_Check(obj):
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_CONTEXT", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_tp_new_4base_ProcessorNumber(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  PyObject *o;
+  if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
+    o = (*t->tp_alloc)(t, 0);
+  } else {
+    o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
+  }
+  if (unlikely(!o)) return 0;
+  if (unlikely(__pyx_pw_4base_15ProcessorNumber_1__cinit__(o, __pyx_empty_tuple, NULL) < 0)) {
+    Py_DECREF(o); o = 0;
+  }
+  return o;
+}
+
+static void __pyx_tp_dealloc_4base_ProcessorNumber(PyObject *o) {
+  #if PY_VERSION_HEX >= 0x030400a1
+  if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
+    if (PyObject_CallFinalizerFromDealloc(o)) return;
+  }
+  #endif
+  (*Py_TYPE(o)->tp_free)(o);
+}
+
+static PyObject *__pyx_getprop_4base_15ProcessorNumber_group(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_15ProcessorNumber_5group_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_4base_15ProcessorNumber_number(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_15ProcessorNumber_6number_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_4base_15ProcessorNumber_pn(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_15ProcessorNumber_2pn_1__get__(o);
+}
+
+static PyMethodDef __pyx_methods_4base_ProcessorNumber[] = {
+  {0, 0, 0, 0}
+};
+
+static struct PyGetSetDef __pyx_getsets_4base_ProcessorNumber[] = {
+  {(char *)"group", __pyx_getprop_4base_15ProcessorNumber_group, 0, 0, 0},
+  {(char *)"number", __pyx_getprop_4base_15ProcessorNumber_number, 0, 0, 0},
+  {(char *)"pn", __pyx_getprop_4base_15ProcessorNumber_pn, 0, 0, 0},
+  {0, 0, 0, 0, 0}
+};
+
+static PyTypeObject __pyx_type_4base_ProcessorNumber = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "base.ProcessorNumber", /*tp_name*/
+  sizeof(struct __pyx_obj_4base_ProcessorNumber), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_4base_ProcessorNumber, /*tp_dealloc*/
+  0, /*tp_print*/
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  __pyx_methods_4base_ProcessorNumber, /*tp_methods*/
+  0, /*tp_members*/
+  __pyx_getsets_4base_ProcessorNumber, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  0, /*tp_dictoffset*/
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_4base_ProcessorNumber, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  0, /*tp_finalize*/
+  #endif
+};
+static struct __pyx_vtabstruct_4base_Context __pyx_vtable_4base_Context;
+
+static PyObject *__pyx_tp_new_4base_Context(PyTypeObject *t, PyObject *a, PyObject *k) {
+  struct __pyx_obj_4base_Context *p;
+  PyObject *o;
+  if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
+    o = (*t->tp_alloc)(t, 0);
+  } else {
+    o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
+  }
+  if (unlikely(!o)) return 0;
+  p = ((struct __pyx_obj_4base_Context *)o);
+  p->__pyx_vtab = __pyx_vtabptr_4base_Context;
+  if (unlikely(__pyx_pw_4base_7Context_1__cinit__(o, a, k) < 0)) {
+    Py_DECREF(o); o = 0;
+  }
+  return o;
+}
+
+static void __pyx_tp_dealloc_4base_Context(PyObject *o) {
+  #if PY_VERSION_HEX >= 0x030400a1
+  if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
+    if (PyObject_CallFinalizerFromDealloc(o)) return;
+  }
+  #endif
+  (*Py_TYPE(o)->tp_free)(o);
+}
+
+static PyObject *__pyx_getprop_4base_7Context_handle(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_7Context_6handle_1__get__(o);
+}
+
+static int __pyx_setprop_4base_7Context_handle(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_4base_7Context_6handle_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyObject *__pyx_getprop_4base_7Context_ctx(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_7Context_3ctx_1__get__(o);
+}
+
+static int __pyx_setprop_4base_7Context_ctx(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_4base_7Context_3ctx_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyMethodDef __pyx_methods_4base_Context[] = {
+  {"refresh", (PyCFunction)__pyx_pw_4base_7Context_3refresh, METH_NOARGS, 0},
+  {0, 0, 0, 0}
+};
+
+static struct PyGetSetDef __pyx_getsets_4base_Context[] = {
+  {(char *)"handle", __pyx_getprop_4base_7Context_handle, __pyx_setprop_4base_7Context_handle, 0, 0},
+  {(char *)"ctx", __pyx_getprop_4base_7Context_ctx, __pyx_setprop_4base_7Context_ctx, 0, 0},
+  {0, 0, 0, 0, 0}
+};
+
+static PyTypeObject __pyx_type_4base_Context = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "base.Context", /*tp_name*/
+  sizeof(struct __pyx_obj_4base_Context), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_4base_Context, /*tp_dealloc*/
+  0, /*tp_print*/
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  __pyx_methods_4base_Context, /*tp_methods*/
+  0, /*tp_members*/
+  __pyx_getsets_4base_Context, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  0, /*tp_dictoffset*/
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_4base_Context, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  0, /*tp_finalize*/
+  #endif
+};
+static struct __pyx_vtabstruct_4base_IOCounters __pyx_vtable_4base_IOCounters;
+
+static PyObject *__pyx_tp_new_4base_IOCounters(PyTypeObject *t, PyObject *a, PyObject *k) {
+  struct __pyx_obj_4base_IOCounters *p;
+  PyObject *o;
+  if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
+    o = (*t->tp_alloc)(t, 0);
+  } else {
+    o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
+  }
+  if (unlikely(!o)) return 0;
+  p = ((struct __pyx_obj_4base_IOCounters *)o);
+  p->__pyx_vtab = __pyx_vtabptr_4base_IOCounters;
+  if (unlikely(__pyx_pw_4base_10IOCounters_1__cinit__(o, a, k) < 0)) {
+    Py_DECREF(o); o = 0;
+  }
+  return o;
+}
+
+static void __pyx_tp_dealloc_4base_IOCounters(PyObject *o) {
+  #if PY_VERSION_HEX >= 0x030400a1
+  if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
+    if (PyObject_CallFinalizerFromDealloc(o)) return;
+  }
+  #endif
+  (*Py_TYPE(o)->tp_free)(o);
+}
+
+static PyObject *__pyx_getprop_4base_10IOCounters_handle(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_10IOCounters_6handle_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_4base_10IOCounters_counters(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_4base_10IOCounters_8counters_1__get__(o);
+}
+
+static PyMethodDef __pyx_methods_4base_IOCounters[] = {
+  {"refresh", (PyCFunction)__pyx_pw_4base_10IOCounters_3refresh, METH_NOARGS, 0},
+  {0, 0, 0, 0}
+};
+
+static struct PyGetSetDef __pyx_getsets_4base_IOCounters[] = {
+  {(char *)"handle", __pyx_getprop_4base_10IOCounters_handle, 0, 0, 0},
+  {(char *)"counters", __pyx_getprop_4base_10IOCounters_counters, 0, 0, 0},
+  {0, 0, 0, 0, 0}
+};
+
+static PyTypeObject __pyx_type_4base_IOCounters = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "base.IOCounters", /*tp_name*/
+  sizeof(struct __pyx_obj_4base_IOCounters), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_4base_IOCounters, /*tp_dealloc*/
+  0, /*tp_print*/
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  __pyx_methods_4base_IOCounters, /*tp_methods*/
+  0, /*tp_members*/
+  __pyx_getsets_4base_IOCounters, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  0, /*tp_dictoffset*/
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_4base_IOCounters, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  0, /*tp_finalize*/
+  #endif
+};
 
 static PyMethodDef __pyx_methods[] = {
   {0, 0, 0, 0}
@@ -575,23 +11463,1120 @@ static struct PyModuleDef __pyx_moduledef = {
 #endif
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
+  {&__pyx_n_s_ContextFlags, __pyx_k_ContextFlags, sizeof(__pyx_k_ContextFlags), 0, 0, 1, 1},
+  {&__pyx_n_s_ControlWord, __pyx_k_ControlWord, sizeof(__pyx_k_ControlWord), 0, 0, 1, 1},
+  {&__pyx_n_s_DataOffset, __pyx_k_DataOffset, sizeof(__pyx_k_DataOffset), 0, 0, 1, 1},
+  {&__pyx_n_s_DataSelector, __pyx_k_DataSelector, sizeof(__pyx_k_DataSelector), 0, 0, 1, 1},
+  {&__pyx_n_s_DebugControl, __pyx_k_DebugControl, sizeof(__pyx_k_DebugControl), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr0, __pyx_k_Dr0, sizeof(__pyx_k_Dr0), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr1, __pyx_k_Dr1, sizeof(__pyx_k_Dr1), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr2, __pyx_k_Dr2, sizeof(__pyx_k_Dr2), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr3, __pyx_k_Dr3, sizeof(__pyx_k_Dr3), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr6, __pyx_k_Dr6, sizeof(__pyx_k_Dr6), 0, 0, 1, 1},
+  {&__pyx_n_s_Dr7, __pyx_k_Dr7, sizeof(__pyx_k_Dr7), 0, 0, 1, 1},
+  {&__pyx_n_s_EFlags, __pyx_k_EFlags, sizeof(__pyx_k_EFlags), 0, 0, 1, 1},
+  {&__pyx_n_s_ErrorOffset, __pyx_k_ErrorOffset, sizeof(__pyx_k_ErrorOffset), 0, 0, 1, 1},
+  {&__pyx_n_s_ErrorOpcode, __pyx_k_ErrorOpcode, sizeof(__pyx_k_ErrorOpcode), 0, 0, 1, 1},
+  {&__pyx_n_s_ErrorSelector, __pyx_k_ErrorSelector, sizeof(__pyx_k_ErrorSelector), 0, 0, 1, 1},
+  {&__pyx_n_s_FloatRegisters, __pyx_k_FloatRegisters, sizeof(__pyx_k_FloatRegisters), 0, 0, 1, 1},
+  {&__pyx_n_s_FltSave, __pyx_k_FltSave, sizeof(__pyx_k_FltSave), 0, 0, 1, 1},
+  {&__pyx_n_u_GetProcessIoCounters, __pyx_k_GetProcessIoCounters, sizeof(__pyx_k_GetProcessIoCounters), 0, 1, 0, 1},
+  {&__pyx_n_u_GetThreadContext, __pyx_k_GetThreadContext, sizeof(__pyx_k_GetThreadContext), 0, 1, 0, 1},
+  {&__pyx_n_s_Group, __pyx_k_Group, sizeof(__pyx_k_Group), 0, 0, 1, 1},
+  {&__pyx_n_s_Header, __pyx_k_Header, sizeof(__pyx_k_Header), 0, 0, 1, 1},
+  {&__pyx_n_s_High, __pyx_k_High, sizeof(__pyx_k_High), 0, 0, 1, 1},
+  {&__pyx_n_s_IndexError, __pyx_k_IndexError, sizeof(__pyx_k_IndexError), 0, 0, 1, 1},
+  {&__pyx_n_s_KeyError, __pyx_k_KeyError, sizeof(__pyx_k_KeyError), 0, 0, 1, 1},
+  {&__pyx_n_s_LastBranchFromRip, __pyx_k_LastBranchFromRip, sizeof(__pyx_k_LastBranchFromRip), 0, 0, 1, 1},
+  {&__pyx_n_s_LastBranchToRip, __pyx_k_LastBranchToRip, sizeof(__pyx_k_LastBranchToRip), 0, 0, 1, 1},
+  {&__pyx_n_s_LastExceptionFromRip, __pyx_k_LastExceptionFromRip, sizeof(__pyx_k_LastExceptionFromRip), 0, 0, 1, 1},
+  {&__pyx_n_s_LastExceptionToRip, __pyx_k_LastExceptionToRip, sizeof(__pyx_k_LastExceptionToRip), 0, 0, 1, 1},
+  {&__pyx_n_s_Legacy, __pyx_k_Legacy, sizeof(__pyx_k_Legacy), 0, 0, 1, 1},
+  {&__pyx_n_s_Low, __pyx_k_Low, sizeof(__pyx_k_Low), 0, 0, 1, 1},
+  {&__pyx_n_s_MxCsr, __pyx_k_MxCsr, sizeof(__pyx_k_MxCsr), 0, 0, 1, 1},
+  {&__pyx_n_s_MxCsr_Mask, __pyx_k_MxCsr_Mask, sizeof(__pyx_k_MxCsr_Mask), 0, 0, 1, 1},
+  {&__pyx_kp_s_No_value_specified_for_struct_at, __pyx_k_No_value_specified_for_struct_at, sizeof(__pyx_k_No_value_specified_for_struct_at), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_10, __pyx_k_No_value_specified_for_struct_at_10, sizeof(__pyx_k_No_value_specified_for_struct_at_10), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_11, __pyx_k_No_value_specified_for_struct_at_11, sizeof(__pyx_k_No_value_specified_for_struct_at_11), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_12, __pyx_k_No_value_specified_for_struct_at_12, sizeof(__pyx_k_No_value_specified_for_struct_at_12), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_13, __pyx_k_No_value_specified_for_struct_at_13, sizeof(__pyx_k_No_value_specified_for_struct_at_13), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_14, __pyx_k_No_value_specified_for_struct_at_14, sizeof(__pyx_k_No_value_specified_for_struct_at_14), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_15, __pyx_k_No_value_specified_for_struct_at_15, sizeof(__pyx_k_No_value_specified_for_struct_at_15), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_16, __pyx_k_No_value_specified_for_struct_at_16, sizeof(__pyx_k_No_value_specified_for_struct_at_16), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_17, __pyx_k_No_value_specified_for_struct_at_17, sizeof(__pyx_k_No_value_specified_for_struct_at_17), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_18, __pyx_k_No_value_specified_for_struct_at_18, sizeof(__pyx_k_No_value_specified_for_struct_at_18), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_19, __pyx_k_No_value_specified_for_struct_at_19, sizeof(__pyx_k_No_value_specified_for_struct_at_19), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_2, __pyx_k_No_value_specified_for_struct_at_2, sizeof(__pyx_k_No_value_specified_for_struct_at_2), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_20, __pyx_k_No_value_specified_for_struct_at_20, sizeof(__pyx_k_No_value_specified_for_struct_at_20), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_21, __pyx_k_No_value_specified_for_struct_at_21, sizeof(__pyx_k_No_value_specified_for_struct_at_21), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_22, __pyx_k_No_value_specified_for_struct_at_22, sizeof(__pyx_k_No_value_specified_for_struct_at_22), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_23, __pyx_k_No_value_specified_for_struct_at_23, sizeof(__pyx_k_No_value_specified_for_struct_at_23), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_24, __pyx_k_No_value_specified_for_struct_at_24, sizeof(__pyx_k_No_value_specified_for_struct_at_24), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_25, __pyx_k_No_value_specified_for_struct_at_25, sizeof(__pyx_k_No_value_specified_for_struct_at_25), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_26, __pyx_k_No_value_specified_for_struct_at_26, sizeof(__pyx_k_No_value_specified_for_struct_at_26), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_27, __pyx_k_No_value_specified_for_struct_at_27, sizeof(__pyx_k_No_value_specified_for_struct_at_27), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_28, __pyx_k_No_value_specified_for_struct_at_28, sizeof(__pyx_k_No_value_specified_for_struct_at_28), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_29, __pyx_k_No_value_specified_for_struct_at_29, sizeof(__pyx_k_No_value_specified_for_struct_at_29), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_3, __pyx_k_No_value_specified_for_struct_at_3, sizeof(__pyx_k_No_value_specified_for_struct_at_3), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_30, __pyx_k_No_value_specified_for_struct_at_30, sizeof(__pyx_k_No_value_specified_for_struct_at_30), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_31, __pyx_k_No_value_specified_for_struct_at_31, sizeof(__pyx_k_No_value_specified_for_struct_at_31), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_32, __pyx_k_No_value_specified_for_struct_at_32, sizeof(__pyx_k_No_value_specified_for_struct_at_32), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_33, __pyx_k_No_value_specified_for_struct_at_33, sizeof(__pyx_k_No_value_specified_for_struct_at_33), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_34, __pyx_k_No_value_specified_for_struct_at_34, sizeof(__pyx_k_No_value_specified_for_struct_at_34), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_35, __pyx_k_No_value_specified_for_struct_at_35, sizeof(__pyx_k_No_value_specified_for_struct_at_35), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_36, __pyx_k_No_value_specified_for_struct_at_36, sizeof(__pyx_k_No_value_specified_for_struct_at_36), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_37, __pyx_k_No_value_specified_for_struct_at_37, sizeof(__pyx_k_No_value_specified_for_struct_at_37), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_38, __pyx_k_No_value_specified_for_struct_at_38, sizeof(__pyx_k_No_value_specified_for_struct_at_38), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_39, __pyx_k_No_value_specified_for_struct_at_39, sizeof(__pyx_k_No_value_specified_for_struct_at_39), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_4, __pyx_k_No_value_specified_for_struct_at_4, sizeof(__pyx_k_No_value_specified_for_struct_at_4), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_40, __pyx_k_No_value_specified_for_struct_at_40, sizeof(__pyx_k_No_value_specified_for_struct_at_40), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_41, __pyx_k_No_value_specified_for_struct_at_41, sizeof(__pyx_k_No_value_specified_for_struct_at_41), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_42, __pyx_k_No_value_specified_for_struct_at_42, sizeof(__pyx_k_No_value_specified_for_struct_at_42), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_43, __pyx_k_No_value_specified_for_struct_at_43, sizeof(__pyx_k_No_value_specified_for_struct_at_43), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_44, __pyx_k_No_value_specified_for_struct_at_44, sizeof(__pyx_k_No_value_specified_for_struct_at_44), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_45, __pyx_k_No_value_specified_for_struct_at_45, sizeof(__pyx_k_No_value_specified_for_struct_at_45), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_46, __pyx_k_No_value_specified_for_struct_at_46, sizeof(__pyx_k_No_value_specified_for_struct_at_46), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_47, __pyx_k_No_value_specified_for_struct_at_47, sizeof(__pyx_k_No_value_specified_for_struct_at_47), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_48, __pyx_k_No_value_specified_for_struct_at_48, sizeof(__pyx_k_No_value_specified_for_struct_at_48), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_49, __pyx_k_No_value_specified_for_struct_at_49, sizeof(__pyx_k_No_value_specified_for_struct_at_49), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_5, __pyx_k_No_value_specified_for_struct_at_5, sizeof(__pyx_k_No_value_specified_for_struct_at_5), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_50, __pyx_k_No_value_specified_for_struct_at_50, sizeof(__pyx_k_No_value_specified_for_struct_at_50), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_51, __pyx_k_No_value_specified_for_struct_at_51, sizeof(__pyx_k_No_value_specified_for_struct_at_51), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_52, __pyx_k_No_value_specified_for_struct_at_52, sizeof(__pyx_k_No_value_specified_for_struct_at_52), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_53, __pyx_k_No_value_specified_for_struct_at_53, sizeof(__pyx_k_No_value_specified_for_struct_at_53), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_54, __pyx_k_No_value_specified_for_struct_at_54, sizeof(__pyx_k_No_value_specified_for_struct_at_54), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_55, __pyx_k_No_value_specified_for_struct_at_55, sizeof(__pyx_k_No_value_specified_for_struct_at_55), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_56, __pyx_k_No_value_specified_for_struct_at_56, sizeof(__pyx_k_No_value_specified_for_struct_at_56), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_57, __pyx_k_No_value_specified_for_struct_at_57, sizeof(__pyx_k_No_value_specified_for_struct_at_57), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_58, __pyx_k_No_value_specified_for_struct_at_58, sizeof(__pyx_k_No_value_specified_for_struct_at_58), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_59, __pyx_k_No_value_specified_for_struct_at_59, sizeof(__pyx_k_No_value_specified_for_struct_at_59), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_6, __pyx_k_No_value_specified_for_struct_at_6, sizeof(__pyx_k_No_value_specified_for_struct_at_6), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_60, __pyx_k_No_value_specified_for_struct_at_60, sizeof(__pyx_k_No_value_specified_for_struct_at_60), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_61, __pyx_k_No_value_specified_for_struct_at_61, sizeof(__pyx_k_No_value_specified_for_struct_at_61), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_62, __pyx_k_No_value_specified_for_struct_at_62, sizeof(__pyx_k_No_value_specified_for_struct_at_62), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_63, __pyx_k_No_value_specified_for_struct_at_63, sizeof(__pyx_k_No_value_specified_for_struct_at_63), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_64, __pyx_k_No_value_specified_for_struct_at_64, sizeof(__pyx_k_No_value_specified_for_struct_at_64), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_65, __pyx_k_No_value_specified_for_struct_at_65, sizeof(__pyx_k_No_value_specified_for_struct_at_65), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_66, __pyx_k_No_value_specified_for_struct_at_66, sizeof(__pyx_k_No_value_specified_for_struct_at_66), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_67, __pyx_k_No_value_specified_for_struct_at_67, sizeof(__pyx_k_No_value_specified_for_struct_at_67), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_68, __pyx_k_No_value_specified_for_struct_at_68, sizeof(__pyx_k_No_value_specified_for_struct_at_68), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_69, __pyx_k_No_value_specified_for_struct_at_69, sizeof(__pyx_k_No_value_specified_for_struct_at_69), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_7, __pyx_k_No_value_specified_for_struct_at_7, sizeof(__pyx_k_No_value_specified_for_struct_at_7), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_70, __pyx_k_No_value_specified_for_struct_at_70, sizeof(__pyx_k_No_value_specified_for_struct_at_70), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_71, __pyx_k_No_value_specified_for_struct_at_71, sizeof(__pyx_k_No_value_specified_for_struct_at_71), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_72, __pyx_k_No_value_specified_for_struct_at_72, sizeof(__pyx_k_No_value_specified_for_struct_at_72), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_73, __pyx_k_No_value_specified_for_struct_at_73, sizeof(__pyx_k_No_value_specified_for_struct_at_73), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_74, __pyx_k_No_value_specified_for_struct_at_74, sizeof(__pyx_k_No_value_specified_for_struct_at_74), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_75, __pyx_k_No_value_specified_for_struct_at_75, sizeof(__pyx_k_No_value_specified_for_struct_at_75), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_76, __pyx_k_No_value_specified_for_struct_at_76, sizeof(__pyx_k_No_value_specified_for_struct_at_76), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_77, __pyx_k_No_value_specified_for_struct_at_77, sizeof(__pyx_k_No_value_specified_for_struct_at_77), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_78, __pyx_k_No_value_specified_for_struct_at_78, sizeof(__pyx_k_No_value_specified_for_struct_at_78), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_79, __pyx_k_No_value_specified_for_struct_at_79, sizeof(__pyx_k_No_value_specified_for_struct_at_79), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_8, __pyx_k_No_value_specified_for_struct_at_8, sizeof(__pyx_k_No_value_specified_for_struct_at_8), 0, 0, 1, 0},
+  {&__pyx_kp_s_No_value_specified_for_struct_at_9, __pyx_k_No_value_specified_for_struct_at_9, sizeof(__pyx_k_No_value_specified_for_struct_at_9), 0, 0, 1, 0},
+  {&__pyx_n_s_Number, __pyx_k_Number, sizeof(__pyx_k_Number), 0, 0, 1, 1},
+  {&__pyx_n_s_OSError, __pyx_k_OSError, sizeof(__pyx_k_OSError), 0, 0, 1, 1},
+  {&__pyx_n_s_OtherOperationCount, __pyx_k_OtherOperationCount, sizeof(__pyx_k_OtherOperationCount), 0, 0, 1, 1},
+  {&__pyx_n_s_OtherTransferCount, __pyx_k_OtherTransferCount, sizeof(__pyx_k_OtherTransferCount), 0, 0, 1, 1},
+  {&__pyx_n_s_OverflowError, __pyx_k_OverflowError, sizeof(__pyx_k_OverflowError), 0, 0, 1, 1},
+  {&__pyx_n_s_P1Home, __pyx_k_P1Home, sizeof(__pyx_k_P1Home), 0, 0, 1, 1},
+  {&__pyx_n_s_P2Home, __pyx_k_P2Home, sizeof(__pyx_k_P2Home), 0, 0, 1, 1},
+  {&__pyx_n_s_P3Home, __pyx_k_P3Home, sizeof(__pyx_k_P3Home), 0, 0, 1, 1},
+  {&__pyx_n_s_P4Home, __pyx_k_P4Home, sizeof(__pyx_k_P4Home), 0, 0, 1, 1},
+  {&__pyx_n_s_P5Home, __pyx_k_P5Home, sizeof(__pyx_k_P5Home), 0, 0, 1, 1},
+  {&__pyx_n_s_P6Home, __pyx_k_P6Home, sizeof(__pyx_k_P6Home), 0, 0, 1, 1},
+  {&__pyx_n_s_R10, __pyx_k_R10, sizeof(__pyx_k_R10), 0, 0, 1, 1},
+  {&__pyx_n_s_R11, __pyx_k_R11, sizeof(__pyx_k_R11), 0, 0, 1, 1},
+  {&__pyx_n_s_R12, __pyx_k_R12, sizeof(__pyx_k_R12), 0, 0, 1, 1},
+  {&__pyx_n_s_R13, __pyx_k_R13, sizeof(__pyx_k_R13), 0, 0, 1, 1},
+  {&__pyx_n_s_R14, __pyx_k_R14, sizeof(__pyx_k_R14), 0, 0, 1, 1},
+  {&__pyx_n_s_R15, __pyx_k_R15, sizeof(__pyx_k_R15), 0, 0, 1, 1},
+  {&__pyx_n_s_R8, __pyx_k_R8, sizeof(__pyx_k_R8), 0, 0, 1, 1},
+  {&__pyx_n_s_R9, __pyx_k_R9, sizeof(__pyx_k_R9), 0, 0, 1, 1},
+  {&__pyx_n_s_Rax, __pyx_k_Rax, sizeof(__pyx_k_Rax), 0, 0, 1, 1},
+  {&__pyx_n_s_Rbp, __pyx_k_Rbp, sizeof(__pyx_k_Rbp), 0, 0, 1, 1},
+  {&__pyx_n_s_Rbx, __pyx_k_Rbx, sizeof(__pyx_k_Rbx), 0, 0, 1, 1},
+  {&__pyx_n_s_Rcx, __pyx_k_Rcx, sizeof(__pyx_k_Rcx), 0, 0, 1, 1},
+  {&__pyx_n_s_Rdi, __pyx_k_Rdi, sizeof(__pyx_k_Rdi), 0, 0, 1, 1},
+  {&__pyx_n_s_Rdx, __pyx_k_Rdx, sizeof(__pyx_k_Rdx), 0, 0, 1, 1},
+  {&__pyx_n_s_ReadOperationCount, __pyx_k_ReadOperationCount, sizeof(__pyx_k_ReadOperationCount), 0, 0, 1, 1},
+  {&__pyx_n_s_ReadTransferCount, __pyx_k_ReadTransferCount, sizeof(__pyx_k_ReadTransferCount), 0, 0, 1, 1},
+  {&__pyx_n_s_Reserved, __pyx_k_Reserved, sizeof(__pyx_k_Reserved), 0, 0, 1, 1},
+  {&__pyx_n_s_Reserved1, __pyx_k_Reserved1, sizeof(__pyx_k_Reserved1), 0, 0, 1, 1},
+  {&__pyx_n_s_Reserved2, __pyx_k_Reserved2, sizeof(__pyx_k_Reserved2), 0, 0, 1, 1},
+  {&__pyx_n_s_Reserved3, __pyx_k_Reserved3, sizeof(__pyx_k_Reserved3), 0, 0, 1, 1},
+  {&__pyx_n_s_Rip, __pyx_k_Rip, sizeof(__pyx_k_Rip), 0, 0, 1, 1},
+  {&__pyx_n_s_Rsi, __pyx_k_Rsi, sizeof(__pyx_k_Rsi), 0, 0, 1, 1},
+  {&__pyx_n_s_Rsp, __pyx_k_Rsp, sizeof(__pyx_k_Rsp), 0, 0, 1, 1},
+  {&__pyx_n_s_SegCs, __pyx_k_SegCs, sizeof(__pyx_k_SegCs), 0, 0, 1, 1},
+  {&__pyx_n_s_SegDs, __pyx_k_SegDs, sizeof(__pyx_k_SegDs), 0, 0, 1, 1},
+  {&__pyx_n_s_SegEs, __pyx_k_SegEs, sizeof(__pyx_k_SegEs), 0, 0, 1, 1},
+  {&__pyx_n_s_SegFs, __pyx_k_SegFs, sizeof(__pyx_k_SegFs), 0, 0, 1, 1},
+  {&__pyx_n_s_SegGs, __pyx_k_SegGs, sizeof(__pyx_k_SegGs), 0, 0, 1, 1},
+  {&__pyx_n_s_SegSs, __pyx_k_SegSs, sizeof(__pyx_k_SegSs), 0, 0, 1, 1},
+  {&__pyx_n_s_StatusWord, __pyx_k_StatusWord, sizeof(__pyx_k_StatusWord), 0, 0, 1, 1},
+  {&__pyx_n_s_TagWord, __pyx_k_TagWord, sizeof(__pyx_k_TagWord), 0, 0, 1, 1},
+  {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
+  {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
+  {&__pyx_n_s_VectorControl, __pyx_k_VectorControl, sizeof(__pyx_k_VectorControl), 0, 0, 1, 1},
+  {&__pyx_n_s_VectorRegister, __pyx_k_VectorRegister, sizeof(__pyx_k_VectorRegister), 0, 0, 1, 1},
+  {&__pyx_n_s_WriteOperationCount, __pyx_k_WriteOperationCount, sizeof(__pyx_k_WriteOperationCount), 0, 0, 1, 1},
+  {&__pyx_n_s_WriteTransferCount, __pyx_k_WriteTransferCount, sizeof(__pyx_k_WriteTransferCount), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm0, __pyx_k_Xmm0, sizeof(__pyx_k_Xmm0), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm1, __pyx_k_Xmm1, sizeof(__pyx_k_Xmm1), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm10, __pyx_k_Xmm10, sizeof(__pyx_k_Xmm10), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm11, __pyx_k_Xmm11, sizeof(__pyx_k_Xmm11), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm12, __pyx_k_Xmm12, sizeof(__pyx_k_Xmm12), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm13, __pyx_k_Xmm13, sizeof(__pyx_k_Xmm13), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm14, __pyx_k_Xmm14, sizeof(__pyx_k_Xmm14), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm15, __pyx_k_Xmm15, sizeof(__pyx_k_Xmm15), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm2, __pyx_k_Xmm2, sizeof(__pyx_k_Xmm2), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm3, __pyx_k_Xmm3, sizeof(__pyx_k_Xmm3), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm4, __pyx_k_Xmm4, sizeof(__pyx_k_Xmm4), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm5, __pyx_k_Xmm5, sizeof(__pyx_k_Xmm5), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm6, __pyx_k_Xmm6, sizeof(__pyx_k_Xmm6), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm7, __pyx_k_Xmm7, sizeof(__pyx_k_Xmm7), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm8, __pyx_k_Xmm8, sizeof(__pyx_k_Xmm8), 0, 0, 1, 1},
+  {&__pyx_n_s_Xmm9, __pyx_k_Xmm9, sizeof(__pyx_k_Xmm9), 0, 0, 1, 1},
+  {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
+  {&__pyx_n_s_flags, __pyx_k_flags, sizeof(__pyx_k_flags), 0, 0, 1, 1},
+  {&__pyx_n_s_hThread, __pyx_k_hThread, sizeof(__pyx_k_hThread), 0, 0, 1, 1},
+  {&__pyx_n_s_handle, __pyx_k_handle, sizeof(__pyx_k_handle), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
+  {&__pyx_n_s_pyx_vtable, __pyx_k_pyx_vtable, sizeof(__pyx_k_pyx_vtable), 0, 0, 1, 1},
+  {&__pyx_n_s_range, __pyx_k_range, sizeof(__pyx_k_range), 0, 0, 1, 1},
+  {&__pyx_n_s_refresh, __pyx_k_refresh, sizeof(__pyx_k_refresh), 0, 0, 1, 1},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static int __Pyx_InitCachedBuiltins(void) {
+  __pyx_builtin_OSError = __Pyx_GetBuiltinName(__pyx_n_s_OSError); if (!__pyx_builtin_OSError) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 116; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_OverflowError = __Pyx_GetBuiltinName(__pyx_n_s_OverflowError); if (!__pyx_builtin_OverflowError) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 81; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_builtin_IndexError = __Pyx_GetBuiltinName(__pyx_n_s_IndexError); if (!__pyx_builtin_IndexError) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   return 0;
+  __pyx_L1_error:;
+  return -1;
 }
 
 static int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
+
+  /* "base.pyx":39
+ *             return
+ *         if not base.GetThreadContext(self.handle, &self.ctx):
+ *             raise OSError("GetThreadContext")             # <<<<<<<<<<<<<<
+ * 
+ * cdef class IOCounters:
+ */
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_n_u_GetThreadContext); if (unlikely(!__pyx_tuple__3)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
+
+  /* "base.pyx":52
+ *     cpdef void refresh(self):
+ *         if not base.GetProcessIoCounters(self.handle, &self.counters):
+ *             raise OSError("GetProcessIoCounters")             # <<<<<<<<<<<<<<
+ * 
+ * #def GetCurrentProcess():
+ */
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_n_u_GetProcessIoCounters); if (unlikely(!__pyx_tuple__4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 52; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
+
+  /* "FromPyStructUtility":19
+ *         value = obj['Low']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Low'")             # <<<<<<<<<<<<<<
+ *     result.Low = value
+ *     try:
+ */
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at); if (unlikely(!__pyx_tuple__5)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
+
+  /* "FromPyStructUtility":24
+ *         value = obj['High']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'High'")             # <<<<<<<<<<<<<<
+ *     result.High = value
+ *     return result
+ */
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_2); if (unlikely(!__pyx_tuple__6)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__6);
+  __Pyx_GIVEREF(__pyx_tuple__6);
+
+  /* "FromPyStructUtility":19
+ *         value = obj['ControlWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ControlWord'")             # <<<<<<<<<<<<<<
+ *     result.ControlWord = value
+ *     try:
+ */
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_3); if (unlikely(!__pyx_tuple__7)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__7);
+  __Pyx_GIVEREF(__pyx_tuple__7);
+
+  /* "FromPyStructUtility":24
+ *         value = obj['StatusWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'StatusWord'")             # <<<<<<<<<<<<<<
+ *     result.StatusWord = value
+ *     try:
+ */
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_4); if (unlikely(!__pyx_tuple__8)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__8);
+  __Pyx_GIVEREF(__pyx_tuple__8);
+
+  /* "FromPyStructUtility":29
+ *         value = obj['TagWord']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'TagWord'")             # <<<<<<<<<<<<<<
+ *     result.TagWord = value
+ *     try:
+ */
+  __pyx_tuple__9 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_5); if (unlikely(!__pyx_tuple__9)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
+
+  /* "FromPyStructUtility":34
+ *         value = obj['Reserved1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved1'")             # <<<<<<<<<<<<<<
+ *     result.Reserved1 = value
+ *     try:
+ */
+  __pyx_tuple__10 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_6); if (unlikely(!__pyx_tuple__10)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__10);
+  __Pyx_GIVEREF(__pyx_tuple__10);
+
+  /* "FromPyStructUtility":39
+ *         value = obj['ErrorOpcode']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOpcode'")             # <<<<<<<<<<<<<<
+ *     result.ErrorOpcode = value
+ *     try:
+ */
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_7); if (unlikely(!__pyx_tuple__11)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
+
+  /* "FromPyStructUtility":44
+ *         value = obj['ErrorOffset']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorOffset'")             # <<<<<<<<<<<<<<
+ *     result.ErrorOffset = value
+ *     try:
+ */
+  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_8); if (unlikely(!__pyx_tuple__12)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
+
+  /* "FromPyStructUtility":49
+ *         value = obj['ErrorSelector']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ErrorSelector'")             # <<<<<<<<<<<<<<
+ *     result.ErrorSelector = value
+ *     try:
+ */
+  __pyx_tuple__13 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_9); if (unlikely(!__pyx_tuple__13)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__13);
+  __Pyx_GIVEREF(__pyx_tuple__13);
+
+  /* "FromPyStructUtility":54
+ *         value = obj['Reserved2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved2'")             # <<<<<<<<<<<<<<
+ *     result.Reserved2 = value
+ *     try:
+ */
+  __pyx_tuple__14 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_10); if (unlikely(!__pyx_tuple__14)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__14);
+  __Pyx_GIVEREF(__pyx_tuple__14);
+
+  /* "FromPyStructUtility":59
+ *         value = obj['DataOffset']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataOffset'")             # <<<<<<<<<<<<<<
+ *     result.DataOffset = value
+ *     try:
+ */
+  __pyx_tuple__15 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_11); if (unlikely(!__pyx_tuple__15)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__15);
+  __Pyx_GIVEREF(__pyx_tuple__15);
+
+  /* "FromPyStructUtility":64
+ *         value = obj['DataSelector']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DataSelector'")             # <<<<<<<<<<<<<<
+ *     result.DataSelector = value
+ *     try:
+ */
+  __pyx_tuple__16 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_12); if (unlikely(!__pyx_tuple__16)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__16);
+  __Pyx_GIVEREF(__pyx_tuple__16);
+
+  /* "FromPyStructUtility":69
+ *         value = obj['Reserved3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Reserved3'")             # <<<<<<<<<<<<<<
+ *     result.Reserved3 = value
+ *     try:
+ */
+  __pyx_tuple__17 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_13); if (unlikely(!__pyx_tuple__17)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__17);
+  __Pyx_GIVEREF(__pyx_tuple__17);
+
+  /* "FromPyStructUtility":74
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr = value
+ *     try:
+ */
+  __pyx_tuple__18 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_14); if (unlikely(!__pyx_tuple__18)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__18);
+  __Pyx_GIVEREF(__pyx_tuple__18);
+
+  /* "FromPyStructUtility":79
+ *         value = obj['MxCsr_Mask']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr_Mask'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr_Mask = value
+ *     try:
+ */
+  __pyx_tuple__19 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_15); if (unlikely(!__pyx_tuple__19)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__19);
+  __Pyx_GIVEREF(__pyx_tuple__19);
+
+  /* "FromPyStructUtility":84
+ *         value = obj['FloatRegisters']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FloatRegisters'")             # <<<<<<<<<<<<<<
+ *     result.FloatRegisters = value
+ *     return result
+ */
+  __pyx_tuple__20 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_16); if (unlikely(!__pyx_tuple__20)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__20);
+  __Pyx_GIVEREF(__pyx_tuple__20);
+
+  /* "FromPyStructUtility":19
+ *         value = obj['P1Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P1Home'")             # <<<<<<<<<<<<<<
+ *     result.P1Home = value
+ *     try:
+ */
+  __pyx_tuple__21 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_17); if (unlikely(!__pyx_tuple__21)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__21);
+  __Pyx_GIVEREF(__pyx_tuple__21);
+
+  /* "FromPyStructUtility":24
+ *         value = obj['P2Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P2Home'")             # <<<<<<<<<<<<<<
+ *     result.P2Home = value
+ *     try:
+ */
+  __pyx_tuple__22 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_18); if (unlikely(!__pyx_tuple__22)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__22);
+  __Pyx_GIVEREF(__pyx_tuple__22);
+
+  /* "FromPyStructUtility":29
+ *         value = obj['P3Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P3Home'")             # <<<<<<<<<<<<<<
+ *     result.P3Home = value
+ *     try:
+ */
+  __pyx_tuple__23 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_19); if (unlikely(!__pyx_tuple__23)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__23);
+  __Pyx_GIVEREF(__pyx_tuple__23);
+
+  /* "FromPyStructUtility":34
+ *         value = obj['P4Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P4Home'")             # <<<<<<<<<<<<<<
+ *     result.P4Home = value
+ *     try:
+ */
+  __pyx_tuple__24 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_20); if (unlikely(!__pyx_tuple__24)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__24);
+  __Pyx_GIVEREF(__pyx_tuple__24);
+
+  /* "FromPyStructUtility":39
+ *         value = obj['P5Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P5Home'")             # <<<<<<<<<<<<<<
+ *     result.P5Home = value
+ *     try:
+ */
+  __pyx_tuple__25 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_21); if (unlikely(!__pyx_tuple__25)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 39; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__25);
+  __Pyx_GIVEREF(__pyx_tuple__25);
+
+  /* "FromPyStructUtility":44
+ *         value = obj['P6Home']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'P6Home'")             # <<<<<<<<<<<<<<
+ *     result.P6Home = value
+ *     try:
+ */
+  __pyx_tuple__26 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_22); if (unlikely(!__pyx_tuple__26)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__26);
+  __Pyx_GIVEREF(__pyx_tuple__26);
+
+  /* "FromPyStructUtility":49
+ *         value = obj['ContextFlags']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'ContextFlags'")             # <<<<<<<<<<<<<<
+ *     result.ContextFlags = value
+ *     try:
+ */
+  __pyx_tuple__27 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_23); if (unlikely(!__pyx_tuple__27)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__27);
+  __Pyx_GIVEREF(__pyx_tuple__27);
+
+  /* "FromPyStructUtility":54
+ *         value = obj['MxCsr']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'MxCsr'")             # <<<<<<<<<<<<<<
+ *     result.MxCsr = value
+ *     try:
+ */
+  __pyx_tuple__28 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_14); if (unlikely(!__pyx_tuple__28)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 54; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__28);
+  __Pyx_GIVEREF(__pyx_tuple__28);
+
+  /* "FromPyStructUtility":59
+ *         value = obj['SegCs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegCs'")             # <<<<<<<<<<<<<<
+ *     result.SegCs = value
+ *     try:
+ */
+  __pyx_tuple__29 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_24); if (unlikely(!__pyx_tuple__29)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 59; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__29);
+  __Pyx_GIVEREF(__pyx_tuple__29);
+
+  /* "FromPyStructUtility":64
+ *         value = obj['SegDs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegDs'")             # <<<<<<<<<<<<<<
+ *     result.SegDs = value
+ *     try:
+ */
+  __pyx_tuple__30 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_25); if (unlikely(!__pyx_tuple__30)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 64; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__30);
+  __Pyx_GIVEREF(__pyx_tuple__30);
+
+  /* "FromPyStructUtility":69
+ *         value = obj['SegEs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegEs'")             # <<<<<<<<<<<<<<
+ *     result.SegEs = value
+ *     try:
+ */
+  __pyx_tuple__31 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_26); if (unlikely(!__pyx_tuple__31)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 69; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__31);
+  __Pyx_GIVEREF(__pyx_tuple__31);
+
+  /* "FromPyStructUtility":74
+ *         value = obj['SegFs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegFs'")             # <<<<<<<<<<<<<<
+ *     result.SegFs = value
+ *     try:
+ */
+  __pyx_tuple__32 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_27); if (unlikely(!__pyx_tuple__32)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 74; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__32);
+  __Pyx_GIVEREF(__pyx_tuple__32);
+
+  /* "FromPyStructUtility":79
+ *         value = obj['SegGs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegGs'")             # <<<<<<<<<<<<<<
+ *     result.SegGs = value
+ *     try:
+ */
+  __pyx_tuple__33 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_28); if (unlikely(!__pyx_tuple__33)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 79; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__33);
+  __Pyx_GIVEREF(__pyx_tuple__33);
+
+  /* "FromPyStructUtility":84
+ *         value = obj['SegSs']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'SegSs'")             # <<<<<<<<<<<<<<
+ *     result.SegSs = value
+ *     try:
+ */
+  __pyx_tuple__34 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_29); if (unlikely(!__pyx_tuple__34)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 84; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__34);
+  __Pyx_GIVEREF(__pyx_tuple__34);
+
+  /* "FromPyStructUtility":89
+ *         value = obj['EFlags']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'EFlags'")             # <<<<<<<<<<<<<<
+ *     result.EFlags = value
+ *     try:
+ */
+  __pyx_tuple__35 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_30); if (unlikely(!__pyx_tuple__35)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__35);
+  __Pyx_GIVEREF(__pyx_tuple__35);
+
+  /* "FromPyStructUtility":94
+ *         value = obj['Dr0']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr0'")             # <<<<<<<<<<<<<<
+ *     result.Dr0 = value
+ *     try:
+ */
+  __pyx_tuple__36 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_31); if (unlikely(!__pyx_tuple__36)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__36);
+  __Pyx_GIVEREF(__pyx_tuple__36);
+
+  /* "FromPyStructUtility":99
+ *         value = obj['Dr1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr1'")             # <<<<<<<<<<<<<<
+ *     result.Dr1 = value
+ *     try:
+ */
+  __pyx_tuple__37 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_32); if (unlikely(!__pyx_tuple__37)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__37);
+  __Pyx_GIVEREF(__pyx_tuple__37);
+
+  /* "FromPyStructUtility":104
+ *         value = obj['Dr2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr2'")             # <<<<<<<<<<<<<<
+ *     result.Dr2 = value
+ *     try:
+ */
+  __pyx_tuple__38 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_33); if (unlikely(!__pyx_tuple__38)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 104; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__38);
+  __Pyx_GIVEREF(__pyx_tuple__38);
+
+  /* "FromPyStructUtility":109
+ *         value = obj['Dr3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr3'")             # <<<<<<<<<<<<<<
+ *     result.Dr3 = value
+ *     try:
+ */
+  __pyx_tuple__39 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_34); if (unlikely(!__pyx_tuple__39)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__39);
+  __Pyx_GIVEREF(__pyx_tuple__39);
+
+  /* "FromPyStructUtility":114
+ *         value = obj['Dr6']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr6'")             # <<<<<<<<<<<<<<
+ *     result.Dr6 = value
+ *     try:
+ */
+  __pyx_tuple__40 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_35); if (unlikely(!__pyx_tuple__40)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 114; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__40);
+  __Pyx_GIVEREF(__pyx_tuple__40);
+
+  /* "FromPyStructUtility":119
+ *         value = obj['Dr7']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Dr7'")             # <<<<<<<<<<<<<<
+ *     result.Dr7 = value
+ *     try:
+ */
+  __pyx_tuple__41 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_36); if (unlikely(!__pyx_tuple__41)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__41);
+  __Pyx_GIVEREF(__pyx_tuple__41);
+
+  /* "FromPyStructUtility":124
+ *         value = obj['Rax']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rax'")             # <<<<<<<<<<<<<<
+ *     result.Rax = value
+ *     try:
+ */
+  __pyx_tuple__42 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_37); if (unlikely(!__pyx_tuple__42)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 124; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__42);
+  __Pyx_GIVEREF(__pyx_tuple__42);
+
+  /* "FromPyStructUtility":129
+ *         value = obj['Rcx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rcx'")             # <<<<<<<<<<<<<<
+ *     result.Rcx = value
+ *     try:
+ */
+  __pyx_tuple__43 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_38); if (unlikely(!__pyx_tuple__43)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 129; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__43);
+  __Pyx_GIVEREF(__pyx_tuple__43);
+
+  /* "FromPyStructUtility":134
+ *         value = obj['Rdx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdx'")             # <<<<<<<<<<<<<<
+ *     result.Rdx = value
+ *     try:
+ */
+  __pyx_tuple__44 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_39); if (unlikely(!__pyx_tuple__44)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 134; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__44);
+  __Pyx_GIVEREF(__pyx_tuple__44);
+
+  /* "FromPyStructUtility":139
+ *         value = obj['Rbx']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbx'")             # <<<<<<<<<<<<<<
+ *     result.Rbx = value
+ *     try:
+ */
+  __pyx_tuple__45 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_40); if (unlikely(!__pyx_tuple__45)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 139; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__45);
+  __Pyx_GIVEREF(__pyx_tuple__45);
+
+  /* "FromPyStructUtility":144
+ *         value = obj['Rsp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsp'")             # <<<<<<<<<<<<<<
+ *     result.Rsp = value
+ *     try:
+ */
+  __pyx_tuple__46 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_41); if (unlikely(!__pyx_tuple__46)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 144; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__46);
+  __Pyx_GIVEREF(__pyx_tuple__46);
+
+  /* "FromPyStructUtility":149
+ *         value = obj['Rbp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rbp'")             # <<<<<<<<<<<<<<
+ *     result.Rbp = value
+ *     try:
+ */
+  __pyx_tuple__47 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_42); if (unlikely(!__pyx_tuple__47)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 149; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__47);
+  __Pyx_GIVEREF(__pyx_tuple__47);
+
+  /* "FromPyStructUtility":154
+ *         value = obj['Rsi']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rsi'")             # <<<<<<<<<<<<<<
+ *     result.Rsi = value
+ *     try:
+ */
+  __pyx_tuple__48 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_43); if (unlikely(!__pyx_tuple__48)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 154; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__48);
+  __Pyx_GIVEREF(__pyx_tuple__48);
+
+  /* "FromPyStructUtility":159
+ *         value = obj['Rdi']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rdi'")             # <<<<<<<<<<<<<<
+ *     result.Rdi = value
+ *     try:
+ */
+  __pyx_tuple__49 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_44); if (unlikely(!__pyx_tuple__49)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 159; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__49);
+  __Pyx_GIVEREF(__pyx_tuple__49);
+
+  /* "FromPyStructUtility":164
+ *         value = obj['R8']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R8'")             # <<<<<<<<<<<<<<
+ *     result.R8 = value
+ *     try:
+ */
+  __pyx_tuple__50 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_45); if (unlikely(!__pyx_tuple__50)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 164; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__50);
+  __Pyx_GIVEREF(__pyx_tuple__50);
+
+  /* "FromPyStructUtility":169
+ *         value = obj['R9']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R9'")             # <<<<<<<<<<<<<<
+ *     result.R9 = value
+ *     try:
+ */
+  __pyx_tuple__51 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_46); if (unlikely(!__pyx_tuple__51)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 169; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__51);
+  __Pyx_GIVEREF(__pyx_tuple__51);
+
+  /* "FromPyStructUtility":174
+ *         value = obj['R10']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R10'")             # <<<<<<<<<<<<<<
+ *     result.R10 = value
+ *     try:
+ */
+  __pyx_tuple__52 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_47); if (unlikely(!__pyx_tuple__52)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 174; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__52);
+  __Pyx_GIVEREF(__pyx_tuple__52);
+
+  /* "FromPyStructUtility":179
+ *         value = obj['R11']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R11'")             # <<<<<<<<<<<<<<
+ *     result.R11 = value
+ *     try:
+ */
+  __pyx_tuple__53 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_48); if (unlikely(!__pyx_tuple__53)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 179; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__53);
+  __Pyx_GIVEREF(__pyx_tuple__53);
+
+  /* "FromPyStructUtility":184
+ *         value = obj['R12']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R12'")             # <<<<<<<<<<<<<<
+ *     result.R12 = value
+ *     try:
+ */
+  __pyx_tuple__54 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_49); if (unlikely(!__pyx_tuple__54)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 184; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__54);
+  __Pyx_GIVEREF(__pyx_tuple__54);
+
+  /* "FromPyStructUtility":189
+ *         value = obj['R13']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R13'")             # <<<<<<<<<<<<<<
+ *     result.R13 = value
+ *     try:
+ */
+  __pyx_tuple__55 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_50); if (unlikely(!__pyx_tuple__55)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 189; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__55);
+  __Pyx_GIVEREF(__pyx_tuple__55);
+
+  /* "FromPyStructUtility":194
+ *         value = obj['R14']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R14'")             # <<<<<<<<<<<<<<
+ *     result.R14 = value
+ *     try:
+ */
+  __pyx_tuple__56 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_51); if (unlikely(!__pyx_tuple__56)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 194; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__56);
+  __Pyx_GIVEREF(__pyx_tuple__56);
+
+  /* "FromPyStructUtility":199
+ *         value = obj['R15']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'R15'")             # <<<<<<<<<<<<<<
+ *     result.R15 = value
+ *     try:
+ */
+  __pyx_tuple__57 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_52); if (unlikely(!__pyx_tuple__57)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 199; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__57);
+  __Pyx_GIVEREF(__pyx_tuple__57);
+
+  /* "FromPyStructUtility":204
+ *         value = obj['Rip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Rip'")             # <<<<<<<<<<<<<<
+ *     result.Rip = value
+ *     try:
+ */
+  __pyx_tuple__58 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_53); if (unlikely(!__pyx_tuple__58)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 204; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__58);
+  __Pyx_GIVEREF(__pyx_tuple__58);
+
+  /* "FromPyStructUtility":209
+ *         value = obj['FltSave']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'FltSave'")             # <<<<<<<<<<<<<<
+ *     result.FltSave = value
+ *     try:
+ */
+  __pyx_tuple__59 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_54); if (unlikely(!__pyx_tuple__59)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 209; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__59);
+  __Pyx_GIVEREF(__pyx_tuple__59);
+
+  /* "FromPyStructUtility":214
+ *         value = obj['Header']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Header'")             # <<<<<<<<<<<<<<
+ *     result.Header = value
+ *     try:
+ */
+  __pyx_tuple__60 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_55); if (unlikely(!__pyx_tuple__60)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 214; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__60);
+  __Pyx_GIVEREF(__pyx_tuple__60);
+
+  /* "FromPyStructUtility":219
+ *         value = obj['Legacy']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Legacy'")             # <<<<<<<<<<<<<<
+ *     result.Legacy = value
+ *     try:
+ */
+  __pyx_tuple__61 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_56); if (unlikely(!__pyx_tuple__61)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 219; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__61);
+  __Pyx_GIVEREF(__pyx_tuple__61);
+
+  /* "FromPyStructUtility":224
+ *         value = obj['Xmm0']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm0'")             # <<<<<<<<<<<<<<
+ *     result.Xmm0 = value
+ *     try:
+ */
+  __pyx_tuple__62 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_57); if (unlikely(!__pyx_tuple__62)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 224; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__62);
+  __Pyx_GIVEREF(__pyx_tuple__62);
+
+  /* "FromPyStructUtility":229
+ *         value = obj['Xmm1']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm1'")             # <<<<<<<<<<<<<<
+ *     result.Xmm1 = value
+ *     try:
+ */
+  __pyx_tuple__63 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_58); if (unlikely(!__pyx_tuple__63)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 229; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__63);
+  __Pyx_GIVEREF(__pyx_tuple__63);
+
+  /* "FromPyStructUtility":234
+ *         value = obj['Xmm2']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm2'")             # <<<<<<<<<<<<<<
+ *     result.Xmm2 = value
+ *     try:
+ */
+  __pyx_tuple__64 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_59); if (unlikely(!__pyx_tuple__64)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 234; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__64);
+  __Pyx_GIVEREF(__pyx_tuple__64);
+
+  /* "FromPyStructUtility":239
+ *         value = obj['Xmm3']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm3'")             # <<<<<<<<<<<<<<
+ *     result.Xmm3 = value
+ *     try:
+ */
+  __pyx_tuple__65 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_60); if (unlikely(!__pyx_tuple__65)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 239; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__65);
+  __Pyx_GIVEREF(__pyx_tuple__65);
+
+  /* "FromPyStructUtility":244
+ *         value = obj['Xmm4']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm4'")             # <<<<<<<<<<<<<<
+ *     result.Xmm4 = value
+ *     try:
+ */
+  __pyx_tuple__66 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_61); if (unlikely(!__pyx_tuple__66)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 244; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__66);
+  __Pyx_GIVEREF(__pyx_tuple__66);
+
+  /* "FromPyStructUtility":249
+ *         value = obj['Xmm5']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm5'")             # <<<<<<<<<<<<<<
+ *     result.Xmm5 = value
+ *     try:
+ */
+  __pyx_tuple__67 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_62); if (unlikely(!__pyx_tuple__67)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 249; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__67);
+  __Pyx_GIVEREF(__pyx_tuple__67);
+
+  /* "FromPyStructUtility":254
+ *         value = obj['Xmm6']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm6'")             # <<<<<<<<<<<<<<
+ *     result.Xmm6 = value
+ *     try:
+ */
+  __pyx_tuple__68 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_63); if (unlikely(!__pyx_tuple__68)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 254; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__68);
+  __Pyx_GIVEREF(__pyx_tuple__68);
+
+  /* "FromPyStructUtility":259
+ *         value = obj['Xmm7']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm7'")             # <<<<<<<<<<<<<<
+ *     result.Xmm7 = value
+ *     try:
+ */
+  __pyx_tuple__69 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_64); if (unlikely(!__pyx_tuple__69)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 259; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__69);
+  __Pyx_GIVEREF(__pyx_tuple__69);
+
+  /* "FromPyStructUtility":264
+ *         value = obj['Xmm8']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm8'")             # <<<<<<<<<<<<<<
+ *     result.Xmm8 = value
+ *     try:
+ */
+  __pyx_tuple__70 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_65); if (unlikely(!__pyx_tuple__70)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 264; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__70);
+  __Pyx_GIVEREF(__pyx_tuple__70);
+
+  /* "FromPyStructUtility":269
+ *         value = obj['Xmm9']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm9'")             # <<<<<<<<<<<<<<
+ *     result.Xmm9 = value
+ *     try:
+ */
+  __pyx_tuple__71 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_66); if (unlikely(!__pyx_tuple__71)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 269; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__71);
+  __Pyx_GIVEREF(__pyx_tuple__71);
+
+  /* "FromPyStructUtility":274
+ *         value = obj['Xmm10']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm10'")             # <<<<<<<<<<<<<<
+ *     result.Xmm10 = value
+ *     try:
+ */
+  __pyx_tuple__72 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_67); if (unlikely(!__pyx_tuple__72)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 274; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__72);
+  __Pyx_GIVEREF(__pyx_tuple__72);
+
+  /* "FromPyStructUtility":279
+ *         value = obj['Xmm11']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm11'")             # <<<<<<<<<<<<<<
+ *     result.Xmm11 = value
+ *     try:
+ */
+  __pyx_tuple__73 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_68); if (unlikely(!__pyx_tuple__73)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 279; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__73);
+  __Pyx_GIVEREF(__pyx_tuple__73);
+
+  /* "FromPyStructUtility":284
+ *         value = obj['Xmm12']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm12'")             # <<<<<<<<<<<<<<
+ *     result.Xmm12 = value
+ *     try:
+ */
+  __pyx_tuple__74 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_69); if (unlikely(!__pyx_tuple__74)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 284; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__74);
+  __Pyx_GIVEREF(__pyx_tuple__74);
+
+  /* "FromPyStructUtility":289
+ *         value = obj['Xmm13']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm13'")             # <<<<<<<<<<<<<<
+ *     result.Xmm13 = value
+ *     try:
+ */
+  __pyx_tuple__75 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_70); if (unlikely(!__pyx_tuple__75)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 289; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__75);
+  __Pyx_GIVEREF(__pyx_tuple__75);
+
+  /* "FromPyStructUtility":294
+ *         value = obj['Xmm14']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm14'")             # <<<<<<<<<<<<<<
+ *     result.Xmm14 = value
+ *     try:
+ */
+  __pyx_tuple__76 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_71); if (unlikely(!__pyx_tuple__76)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 294; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__76);
+  __Pyx_GIVEREF(__pyx_tuple__76);
+
+  /* "FromPyStructUtility":299
+ *         value = obj['Xmm15']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'Xmm15'")             # <<<<<<<<<<<<<<
+ *     result.Xmm15 = value
+ *     try:
+ */
+  __pyx_tuple__77 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_72); if (unlikely(!__pyx_tuple__77)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 299; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__77);
+  __Pyx_GIVEREF(__pyx_tuple__77);
+
+  /* "FromPyStructUtility":304
+ *         value = obj['VectorRegister']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorRegister'")             # <<<<<<<<<<<<<<
+ *     result.VectorRegister = value
+ *     try:
+ */
+  __pyx_tuple__78 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_73); if (unlikely(!__pyx_tuple__78)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 304; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__78);
+  __Pyx_GIVEREF(__pyx_tuple__78);
+
+  /* "FromPyStructUtility":309
+ *         value = obj['VectorControl']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'VectorControl'")             # <<<<<<<<<<<<<<
+ *     result.VectorControl = value
+ *     try:
+ */
+  __pyx_tuple__79 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_74); if (unlikely(!__pyx_tuple__79)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 309; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__79);
+  __Pyx_GIVEREF(__pyx_tuple__79);
+
+  /* "FromPyStructUtility":314
+ *         value = obj['DebugControl']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'DebugControl'")             # <<<<<<<<<<<<<<
+ *     result.DebugControl = value
+ *     try:
+ */
+  __pyx_tuple__80 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_75); if (unlikely(!__pyx_tuple__80)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 314; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__80);
+  __Pyx_GIVEREF(__pyx_tuple__80);
+
+  /* "FromPyStructUtility":319
+ *         value = obj['LastBranchToRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchToRip'")             # <<<<<<<<<<<<<<
+ *     result.LastBranchToRip = value
+ *     try:
+ */
+  __pyx_tuple__81 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_76); if (unlikely(!__pyx_tuple__81)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 319; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__81);
+  __Pyx_GIVEREF(__pyx_tuple__81);
+
+  /* "FromPyStructUtility":324
+ *         value = obj['LastBranchFromRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastBranchFromRip'")             # <<<<<<<<<<<<<<
+ *     result.LastBranchFromRip = value
+ *     try:
+ */
+  __pyx_tuple__82 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_77); if (unlikely(!__pyx_tuple__82)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 324; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__82);
+  __Pyx_GIVEREF(__pyx_tuple__82);
+
+  /* "FromPyStructUtility":329
+ *         value = obj['LastExceptionToRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionToRip'")             # <<<<<<<<<<<<<<
+ *     result.LastExceptionToRip = value
+ *     try:
+ */
+  __pyx_tuple__83 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_78); if (unlikely(!__pyx_tuple__83)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 329; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__83);
+  __Pyx_GIVEREF(__pyx_tuple__83);
+
+  /* "FromPyStructUtility":334
+ *         value = obj['LastExceptionFromRip']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'LastExceptionFromRip'")             # <<<<<<<<<<<<<<
+ *     result.LastExceptionFromRip = value
+ *     return result
+ */
+  __pyx_tuple__84 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_79); if (unlikely(!__pyx_tuple__84)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 334; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __Pyx_GOTREF(__pyx_tuple__84);
+  __Pyx_GIVEREF(__pyx_tuple__84);
   __Pyx_RefNannyFinishContext();
   return 0;
+  __pyx_L1_error:;
+  __Pyx_RefNannyFinishContext();
+  return -1;
 }
 
 static int __Pyx_InitGlobals(void) {
-  if (__Pyx_InitStrings(__pyx_string_tab) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  if (__Pyx_InitStrings(__pyx_string_tab) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -620,23 +12605,23 @@ PyMODINIT_FUNC PyInit_base(void)
   }
   #endif
   __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_base(void)", 0);
-  if (__Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #ifdef __Pyx_CyFunction_USED
-  if (__pyx_CyFunction_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_CyFunction_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   #ifdef __Pyx_FusedFunction_USED
-  if (__pyx_FusedFunction_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_FusedFunction_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   #ifdef __Pyx_Coroutine_USED
-  if (__pyx_Coroutine_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_Coroutine_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   #ifdef __Pyx_Generator_USED
-  if (__pyx_Generator_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_Generator_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   #ifdef __Pyx_StopAsyncIteration_USED
-  if (__pyx_StopAsyncIteration_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__pyx_StopAsyncIteration_init() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   /*--- Library function declarations ---*/
   /*--- Threads initialization code ---*/
@@ -651,53 +12636,100 @@ PyMODINIT_FUNC PyInit_base(void)
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
-  if (unlikely(!__pyx_m)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (unlikely(!__pyx_m)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   Py_INCREF(__pyx_d);
-  __pyx_b = PyImport_AddModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_b = PyImport_AddModule(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #if CYTHON_COMPILING_IN_PYPY
   Py_INCREF(__pyx_b);
   #endif
-  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   /*--- Initialize various global constants etc. ---*/
-  if (__Pyx_InitGlobals() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_InitGlobals() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
-  if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
   if (__pyx_module_is_main_base) {
-    if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
-    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (!PyDict_GetItemString(modules, "base")) {
-      if (unlikely(PyDict_SetItemString(modules, "base", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+      if (unlikely(PyDict_SetItemString(modules, "base", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
   /*--- Builtin init code ---*/
-  if (__Pyx_InitCachedBuiltins() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_InitCachedBuiltins() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Constants init code ---*/
-  if (__Pyx_InitCachedConstants() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_InitCachedConstants() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   /*--- Global init code ---*/
   /*--- Variable export code ---*/
   /*--- Function export code ---*/
   /*--- Type init code ---*/
+  if (PyType_Ready(&__pyx_type_4base_ProcessorNumber) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_4base_ProcessorNumber.tp_print = 0;
+  if (PyObject_SetAttrString(__pyx_m, "ProcessorNumber", (PyObject *)&__pyx_type_4base_ProcessorNumber) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_4base_ProcessorNumber = &__pyx_type_4base_ProcessorNumber;
+  __pyx_vtabptr_4base_Context = &__pyx_vtable_4base_Context;
+  __pyx_vtable_4base_Context.refresh = (void (*)(struct __pyx_obj_4base_Context *, int __pyx_skip_dispatch))__pyx_f_4base_7Context_refresh;
+  if (PyType_Ready(&__pyx_type_4base_Context) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_4base_Context.tp_print = 0;
+  if (__Pyx_SetVtable(__pyx_type_4base_Context.tp_dict, __pyx_vtabptr_4base_Context) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttrString(__pyx_m, "Context", (PyObject *)&__pyx_type_4base_Context) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_4base_Context = &__pyx_type_4base_Context;
+  __pyx_vtabptr_4base_IOCounters = &__pyx_vtable_4base_IOCounters;
+  __pyx_vtable_4base_IOCounters.refresh = (void (*)(struct __pyx_obj_4base_IOCounters *, int __pyx_skip_dispatch))__pyx_f_4base_10IOCounters_refresh;
+  if (PyType_Ready(&__pyx_type_4base_IOCounters) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_4base_IOCounters.tp_print = 0;
+  if (__Pyx_SetVtable(__pyx_type_4base_IOCounters.tp_dict, __pyx_vtabptr_4base_IOCounters) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyObject_SetAttrString(__pyx_m, "IOCounters", (PyObject *)&__pyx_type_4base_IOCounters) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 41; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_4base_IOCounters = &__pyx_type_4base_IOCounters;
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
   /*--- Function import code ---*/
   /*--- Execution code ---*/
   #if defined(__Pyx_Generator_USED) || defined(__Pyx_Coroutine_USED)
-  if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "base.pyx":1
- * from base cimport *             # <<<<<<<<<<<<<<
+  /* "base.pyx":29
+ *         CONTEXT ctx
+ * 
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,             # <<<<<<<<<<<<<<
+ *                         DWORD flags = CONTEXT_FULL):
+ *         self.handle = hThread
  */
-  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_k_ = ((HANDLE)NULL);
+
+  /* "base.pyx":30
+ * 
+ *     def __cinit__(self, HANDLE hThread = <HANDLE>NULL,
+ *                         DWORD flags = CONTEXT_FULL):             # <<<<<<<<<<<<<<
+ *         self.handle = hThread
+ *         self.ctx.ContextFlags = flags
+ */
+  __pyx_k__2 = CONTEXT_FULL;
+
+  /* "base.pyx":2
+ * 
+ * from types cimport *             # <<<<<<<<<<<<<<
+ * from constants cimport *
+ * 
+ */
+  __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 1; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "FromPyStructUtility":11
+ * 
+ * @cname("__pyx_convert__from_py_CONTEXT")
+ * cdef CONTEXT __pyx_convert__from_py_CONTEXT(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef CONTEXT result
+ *     if not PyMapping_Check(obj):
+ */
 
   /*--- Wrapped vars code ---*/
 
@@ -737,6 +12769,616 @@ end:
     return (__Pyx_RefNannyAPIStruct *)r;
 }
 #endif
+
+static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
+    PyObject* result = __Pyx_PyObject_GetAttrStr(__pyx_b, name);
+    if (unlikely(!result)) {
+        PyErr_Format(PyExc_NameError,
+#if PY_MAJOR_VERSION >= 3
+            "name '%U' is not defined", name);
+#else
+            "name '%.200s' is not defined", PyString_AS_STRING(name));
+#endif
+    }
+    return result;
+}
+
+static void __Pyx_RaiseArgtupleInvalid(
+    const char* func_name,
+    int exact,
+    Py_ssize_t num_min,
+    Py_ssize_t num_max,
+    Py_ssize_t num_found)
+{
+    Py_ssize_t num_expected;
+    const char *more_or_less;
+    if (num_found < num_min) {
+        num_expected = num_min;
+        more_or_less = "at least";
+    } else {
+        num_expected = num_max;
+        more_or_less = "at most";
+    }
+    if (exact) {
+        more_or_less = "exactly";
+    }
+    PyErr_Format(PyExc_TypeError,
+                 "%.200s() takes %.8s %" CYTHON_FORMAT_SSIZE_T "d positional argument%.1s (%" CYTHON_FORMAT_SSIZE_T "d given)",
+                 func_name, more_or_less, num_expected,
+                 (num_expected == 1) ? "" : "s", num_found);
+}
+
+static CYTHON_INLINE int __Pyx_CheckKeywordStrings(
+    PyObject *kwdict,
+    const char* function_name,
+    int kw_allowed)
+{
+    PyObject* key = 0;
+    Py_ssize_t pos = 0;
+#if CYTHON_COMPILING_IN_PYPY
+    if (!kw_allowed && PyDict_Next(kwdict, &pos, &key, 0))
+        goto invalid_keyword;
+    return 1;
+#else
+    while (PyDict_Next(kwdict, &pos, &key, 0)) {
+        #if PY_MAJOR_VERSION < 3
+        if (unlikely(!PyString_CheckExact(key)) && unlikely(!PyString_Check(key)))
+        #endif
+            if (unlikely(!PyUnicode_Check(key)))
+                goto invalid_keyword_type;
+    }
+    if ((!kw_allowed) && unlikely(key))
+        goto invalid_keyword;
+    return 1;
+invalid_keyword_type:
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() keywords must be strings", function_name);
+    return 0;
+#endif
+invalid_keyword:
+    PyErr_Format(PyExc_TypeError,
+    #if PY_MAJOR_VERSION < 3
+        "%.200s() got an unexpected keyword argument '%.200s'",
+        function_name, PyString_AsString(key));
+    #else
+        "%s() got an unexpected keyword argument '%U'",
+        function_name, key);
+    #endif
+    return 0;
+}
+
+static void __Pyx_RaiseDoubleKeywordsError(
+    const char* func_name,
+    PyObject* kw_name)
+{
+    PyErr_Format(PyExc_TypeError,
+        #if PY_MAJOR_VERSION >= 3
+        "%s() got multiple values for keyword argument '%U'", func_name, kw_name);
+        #else
+        "%s() got multiple values for keyword argument '%s'", func_name,
+        PyString_AsString(kw_name));
+        #endif
+}
+
+static int __Pyx_ParseOptionalKeywords(
+    PyObject *kwds,
+    PyObject **argnames[],
+    PyObject *kwds2,
+    PyObject *values[],
+    Py_ssize_t num_pos_args,
+    const char* function_name)
+{
+    PyObject *key = 0, *value = 0;
+    Py_ssize_t pos = 0;
+    PyObject*** name;
+    PyObject*** first_kw_arg = argnames + num_pos_args;
+    while (PyDict_Next(kwds, &pos, &key, &value)) {
+        name = first_kw_arg;
+        while (*name && (**name != key)) name++;
+        if (*name) {
+            values[name-argnames] = value;
+            continue;
+        }
+        name = first_kw_arg;
+        #if PY_MAJOR_VERSION < 3
+        if (likely(PyString_CheckExact(key)) || likely(PyString_Check(key))) {
+            while (*name) {
+                if ((CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**name) == PyString_GET_SIZE(key))
+                        && _PyString_Eq(**name, key)) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    if ((**argname == key) || (
+                            (CYTHON_COMPILING_IN_PYPY || PyString_GET_SIZE(**argname) == PyString_GET_SIZE(key))
+                             && _PyString_Eq(**argname, key))) {
+                        goto arg_passed_twice;
+                    }
+                    argname++;
+                }
+            }
+        } else
+        #endif
+        if (likely(PyUnicode_Check(key))) {
+            while (*name) {
+                int cmp = (**name == key) ? 0 :
+                #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                    (PyUnicode_GET_SIZE(**name) != PyUnicode_GET_SIZE(key)) ? 1 :
+                #endif
+                    PyUnicode_Compare(**name, key);
+                if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                if (cmp == 0) {
+                    values[name-argnames] = value;
+                    break;
+                }
+                name++;
+            }
+            if (*name) continue;
+            else {
+                PyObject*** argname = argnames;
+                while (argname != first_kw_arg) {
+                    int cmp = (**argname == key) ? 0 :
+                    #if !CYTHON_COMPILING_IN_PYPY && PY_MAJOR_VERSION >= 3
+                        (PyUnicode_GET_SIZE(**argname) != PyUnicode_GET_SIZE(key)) ? 1 :
+                    #endif
+                        PyUnicode_Compare(**argname, key);
+                    if (cmp < 0 && unlikely(PyErr_Occurred())) goto bad;
+                    if (cmp == 0) goto arg_passed_twice;
+                    argname++;
+                }
+            }
+        } else
+            goto invalid_keyword_type;
+        if (kwds2) {
+            if (unlikely(PyDict_SetItem(kwds2, key, value))) goto bad;
+        } else {
+            goto invalid_keyword;
+        }
+    }
+    return 0;
+arg_passed_twice:
+    __Pyx_RaiseDoubleKeywordsError(function_name, key);
+    goto bad;
+invalid_keyword_type:
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() keywords must be strings", function_name);
+    goto bad;
+invalid_keyword:
+    PyErr_Format(PyExc_TypeError,
+    #if PY_MAJOR_VERSION < 3
+        "%.200s() got an unexpected keyword argument '%.200s'",
+        function_name, PyString_AsString(key));
+    #else
+        "%s() got an unexpected keyword argument '%U'",
+        function_name, key);
+    #endif
+bad:
+    return -1;
+}
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_Call(PyObject *func, PyObject *arg, PyObject *kw) {
+    PyObject *result;
+    ternaryfunc call = func->ob_type->tp_call;
+    if (unlikely(!call))
+        return PyObject_Call(func, arg, kw);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = (*call)(func, arg, kw);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
+    PyObject *self, *result;
+    PyCFunction cfunc;
+    cfunc = PyCFunction_GET_FUNCTION(func);
+    self = PyCFunction_GET_SELF(func);
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    result = cfunc(self, arg);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static PyObject* __Pyx__PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_New(1);
+    if (unlikely(!args)) return NULL;
+    Py_INCREF(arg);
+    PyTuple_SET_ITEM(args, 0, arg);
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+#ifdef __Pyx_CyFunction_USED
+    if (likely(PyCFunction_Check(func) || PyObject_TypeCheck(func, __pyx_CyFunctionType))) {
+#else
+    if (likely(PyCFunction_Check(func))) {
+#endif
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_O)) {
+            return __Pyx_PyObject_CallMethO(func, arg);
+        }
+    }
+    return __Pyx__PyObject_CallOneArg(func, arg);
+}
+#else
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *result;
+    PyObject *args = PyTuple_Pack(1, arg);
+    if (unlikely(!args)) return NULL;
+    result = __Pyx_PyObject_Call(func, args, NULL);
+    Py_DECREF(args);
+    return result;
+}
+#endif
+
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
+#ifdef __Pyx_CyFunction_USED
+    if (likely(PyCFunction_Check(func) || PyObject_TypeCheck(func, __pyx_CyFunctionType))) {
+#else
+    if (likely(PyCFunction_Check(func))) {
+#endif
+        if (likely(PyCFunction_GET_FLAGS(func) & METH_NOARGS)) {
+            return __Pyx_PyObject_CallMethO(func, NULL);
+        }
+    }
+    return __Pyx_PyObject_Call(func, __pyx_empty_tuple, NULL);
+}
+#endif
+
+static CYTHON_INLINE void __Pyx_ErrRestore(PyObject *type, PyObject *value, PyObject *tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyObject *tmp_type, *tmp_value, *tmp_tb;
+    PyThreadState *tstate = PyThreadState_GET();
+    tmp_type = tstate->curexc_type;
+    tmp_value = tstate->curexc_value;
+    tmp_tb = tstate->curexc_traceback;
+    tstate->curexc_type = type;
+    tstate->curexc_value = value;
+    tstate->curexc_traceback = tb;
+    Py_XDECREF(tmp_type);
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(tmp_tb);
+#else
+    PyErr_Restore(type, value, tb);
+#endif
+}
+static CYTHON_INLINE void __Pyx_ErrFetch(PyObject **type, PyObject **value, PyObject **tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyThreadState *tstate = PyThreadState_GET();
+    *type = tstate->curexc_type;
+    *value = tstate->curexc_value;
+    *tb = tstate->curexc_traceback;
+    tstate->curexc_type = 0;
+    tstate->curexc_value = 0;
+    tstate->curexc_traceback = 0;
+#else
+    PyErr_Fetch(type, value, tb);
+#endif
+}
+
+#if PY_MAJOR_VERSION < 3
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb,
+                        CYTHON_UNUSED PyObject *cause) {
+    Py_XINCREF(type);
+    if (!value || value == Py_None)
+        value = NULL;
+    else
+        Py_INCREF(value);
+    if (!tb || tb == Py_None)
+        tb = NULL;
+    else {
+        Py_INCREF(tb);
+        if (!PyTraceBack_Check(tb)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: arg 3 must be a traceback or None");
+            goto raise_error;
+        }
+    }
+    if (PyType_Check(type)) {
+#if CYTHON_COMPILING_IN_PYPY
+        if (!value) {
+            Py_INCREF(Py_None);
+            value = Py_None;
+        }
+#endif
+        PyErr_NormalizeException(&type, &value, &tb);
+    } else {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto raise_error;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(type);
+        Py_INCREF(type);
+        if (!PyType_IsSubtype((PyTypeObject *)type, (PyTypeObject *)PyExc_BaseException)) {
+            PyErr_SetString(PyExc_TypeError,
+                "raise: exception class must be a subclass of BaseException");
+            goto raise_error;
+        }
+    }
+    __Pyx_ErrRestore(type, value, tb);
+    return;
+raise_error:
+    Py_XDECREF(value);
+    Py_XDECREF(type);
+    Py_XDECREF(tb);
+    return;
+}
+#else
+static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause) {
+    PyObject* owned_instance = NULL;
+    if (tb == Py_None) {
+        tb = 0;
+    } else if (tb && !PyTraceBack_Check(tb)) {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: arg 3 must be a traceback or None");
+        goto bad;
+    }
+    if (value == Py_None)
+        value = 0;
+    if (PyExceptionInstance_Check(type)) {
+        if (value) {
+            PyErr_SetString(PyExc_TypeError,
+                "instance exception may not have a separate value");
+            goto bad;
+        }
+        value = type;
+        type = (PyObject*) Py_TYPE(value);
+    } else if (PyExceptionClass_Check(type)) {
+        PyObject *instance_class = NULL;
+        if (value && PyExceptionInstance_Check(value)) {
+            instance_class = (PyObject*) Py_TYPE(value);
+            if (instance_class != type) {
+                int is_subclass = PyObject_IsSubclass(instance_class, type);
+                if (!is_subclass) {
+                    instance_class = NULL;
+                } else if (unlikely(is_subclass == -1)) {
+                    goto bad;
+                } else {
+                    type = instance_class;
+                }
+            }
+        }
+        if (!instance_class) {
+            PyObject *args;
+            if (!value)
+                args = PyTuple_New(0);
+            else if (PyTuple_Check(value)) {
+                Py_INCREF(value);
+                args = value;
+            } else
+                args = PyTuple_Pack(1, value);
+            if (!args)
+                goto bad;
+            owned_instance = PyObject_Call(type, args, NULL);
+            Py_DECREF(args);
+            if (!owned_instance)
+                goto bad;
+            value = owned_instance;
+            if (!PyExceptionInstance_Check(value)) {
+                PyErr_Format(PyExc_TypeError,
+                             "calling %R should have returned an instance of "
+                             "BaseException, not %R",
+                             type, Py_TYPE(value));
+                goto bad;
+            }
+        }
+    } else {
+        PyErr_SetString(PyExc_TypeError,
+            "raise: exception class must be a subclass of BaseException");
+        goto bad;
+    }
+#if PY_VERSION_HEX >= 0x03030000
+    if (cause) {
+#else
+    if (cause && cause != Py_None) {
+#endif
+        PyObject *fixed_cause;
+        if (cause == Py_None) {
+            fixed_cause = NULL;
+        } else if (PyExceptionClass_Check(cause)) {
+            fixed_cause = PyObject_CallObject(cause, NULL);
+            if (fixed_cause == NULL)
+                goto bad;
+        } else if (PyExceptionInstance_Check(cause)) {
+            fixed_cause = cause;
+            Py_INCREF(fixed_cause);
+        } else {
+            PyErr_SetString(PyExc_TypeError,
+                            "exception causes must derive from "
+                            "BaseException");
+            goto bad;
+        }
+        PyException_SetCause(value, fixed_cause);
+    }
+    PyErr_SetObject(type, value);
+    if (tb) {
+#if CYTHON_COMPILING_IN_PYPY
+        PyObject *tmp_type, *tmp_value, *tmp_tb;
+        PyErr_Fetch(&tmp_type, &tmp_value, &tmp_tb);
+        Py_INCREF(tb);
+        PyErr_Restore(tmp_type, tmp_value, tb);
+        Py_XDECREF(tmp_tb);
+#else
+        PyThreadState *tstate = PyThreadState_GET();
+        PyObject* tmp_tb = tstate->curexc_traceback;
+        if (tb != tmp_tb) {
+            Py_INCREF(tb);
+            tstate->curexc_traceback = tb;
+            Py_XDECREF(tmp_tb);
+        }
+#endif
+    }
+bad:
+    Py_XDECREF(owned_instance);
+    return;
+}
+#endif
+
+static void __Pyx_WriteUnraisable(const char *name, CYTHON_UNUSED int clineno,
+                                  CYTHON_UNUSED int lineno, CYTHON_UNUSED const char *filename,
+                                  int full_traceback, CYTHON_UNUSED int nogil) {
+    PyObject *old_exc, *old_val, *old_tb;
+    PyObject *ctx;
+#ifdef WITH_THREAD
+    PyGILState_STATE state;
+    if (nogil)
+        state = PyGILState_Ensure();
+#endif
+    __Pyx_ErrFetch(&old_exc, &old_val, &old_tb);
+    if (full_traceback) {
+        Py_XINCREF(old_exc);
+        Py_XINCREF(old_val);
+        Py_XINCREF(old_tb);
+        __Pyx_ErrRestore(old_exc, old_val, old_tb);
+        PyErr_PrintEx(1);
+    }
+    #if PY_MAJOR_VERSION < 3
+    ctx = PyString_FromString(name);
+    #else
+    ctx = PyUnicode_FromString(name);
+    #endif
+    __Pyx_ErrRestore(old_exc, old_val, old_tb);
+    if (!ctx) {
+        PyErr_WriteUnraisable(Py_None);
+    } else {
+        PyErr_WriteUnraisable(ctx);
+        Py_DECREF(ctx);
+    }
+#ifdef WITH_THREAD
+    if (nogil)
+        PyGILState_Release(state);
+#endif
+}
+
+static CYTHON_INLINE void __Pyx_ExceptionSave(PyObject **type, PyObject **value, PyObject **tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyThreadState *tstate = PyThreadState_GET();
+    *type = tstate->exc_type;
+    *value = tstate->exc_value;
+    *tb = tstate->exc_traceback;
+    Py_XINCREF(*type);
+    Py_XINCREF(*value);
+    Py_XINCREF(*tb);
+#else
+    PyErr_GetExcInfo(type, value, tb);
+#endif
+}
+static void __Pyx_ExceptionReset(PyObject *type, PyObject *value, PyObject *tb) {
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyObject *tmp_type, *tmp_value, *tmp_tb;
+    PyThreadState *tstate = PyThreadState_GET();
+    tmp_type = tstate->exc_type;
+    tmp_value = tstate->exc_value;
+    tmp_tb = tstate->exc_traceback;
+    tstate->exc_type = type;
+    tstate->exc_value = value;
+    tstate->exc_traceback = tb;
+    Py_XDECREF(tmp_type);
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(tmp_tb);
+#else
+    PyErr_SetExcInfo(type, value, tb);
+#endif
+}
+
+static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb) {
+    PyObject *local_type, *local_value, *local_tb;
+#if CYTHON_COMPILING_IN_CPYTHON
+    PyObject *tmp_type, *tmp_value, *tmp_tb;
+    PyThreadState *tstate = PyThreadState_GET();
+    local_type = tstate->curexc_type;
+    local_value = tstate->curexc_value;
+    local_tb = tstate->curexc_traceback;
+    tstate->curexc_type = 0;
+    tstate->curexc_value = 0;
+    tstate->curexc_traceback = 0;
+#else
+    PyErr_Fetch(&local_type, &local_value, &local_tb);
+#endif
+    PyErr_NormalizeException(&local_type, &local_value, &local_tb);
+#if CYTHON_COMPILING_IN_CPYTHON
+    if (unlikely(tstate->curexc_type))
+#else
+    if (unlikely(PyErr_Occurred()))
+#endif
+        goto bad;
+    #if PY_MAJOR_VERSION >= 3
+    if (local_tb) {
+        if (unlikely(PyException_SetTraceback(local_value, local_tb) < 0))
+            goto bad;
+    }
+    #endif
+    Py_XINCREF(local_tb);
+    Py_XINCREF(local_type);
+    Py_XINCREF(local_value);
+    *type = local_type;
+    *value = local_value;
+    *tb = local_tb;
+#if CYTHON_COMPILING_IN_CPYTHON
+    tmp_type = tstate->exc_type;
+    tmp_value = tstate->exc_value;
+    tmp_tb = tstate->exc_traceback;
+    tstate->exc_type = local_type;
+    tstate->exc_value = local_value;
+    tstate->exc_traceback = local_tb;
+    Py_XDECREF(tmp_type);
+    Py_XDECREF(tmp_value);
+    Py_XDECREF(tmp_tb);
+#else
+    PyErr_SetExcInfo(local_type, local_value, local_tb);
+#endif
+    return 0;
+bad:
+    *type = 0;
+    *value = 0;
+    *tb = 0;
+    Py_XDECREF(local_type);
+    Py_XDECREF(local_value);
+    Py_XDECREF(local_tb);
+    return -1;
+}
+
+static int __Pyx_SetVtable(PyObject *dict, void *vtable) {
+#if PY_VERSION_HEX >= 0x02070000
+    PyObject *ob = PyCapsule_New(vtable, 0, 0);
+#else
+    PyObject *ob = PyCObject_FromVoidPtr(vtable, 0);
+#endif
+    if (!ob)
+        goto bad;
+    if (PyDict_SetItem(dict, __pyx_n_s_pyx_vtable, ob) < 0)
+        goto bad;
+    Py_DECREF(ob);
+    return 0;
+bad:
+    Py_XDECREF(ob);
+    return -1;
+}
 
 static int __pyx_bisect_code_objects(__Pyx_CodeObjectCacheEntry* entries, int count, int code_line) {
     int start = 0, mid = 0, end = count - 1;
@@ -907,6 +13549,2212 @@ bad:
     Py_XDECREF(py_frame);
 }
 
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_WORD(WORD value) {
+    const WORD neg_one = (WORD) -1, const_zero = (WORD) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(WORD) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(WORD) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(WORD) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(WORD) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(WORD) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(WORD),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_UCHAR(UCHAR value) {
+    const UCHAR neg_one = (UCHAR) -1, const_zero = (UCHAR) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(UCHAR) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(UCHAR) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(UCHAR) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(UCHAR) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(UCHAR) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(UCHAR),
+                                     little, !is_unsigned);
+    }
+}
+
+static PyObject* __pyx_convert__to_py_PROCESSOR_NUMBER(PROCESSOR_NUMBER s) {
+        PyObject* res;
+        PyObject* member;
+        res = PyDict_New(); if (res == NULL) return NULL;
+        member = __Pyx_PyInt_From_WORD(s.Group); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Group, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_UCHAR(s.Number); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Number, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_UCHAR(s.Reserved); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Reserved, member) < 0) goto bad;
+        Py_DECREF(member);
+        return res;
+        bad:
+        Py_XDECREF(member);
+        Py_DECREF(res);
+        return NULL;
+      }
+      static CYTHON_INLINE PyObject* __Pyx_PyInt_From_DWORD64(DWORD64 value) {
+    const DWORD64 neg_one = (DWORD64) -1, const_zero = (DWORD64) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(DWORD64) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(DWORD64) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(DWORD64) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(DWORD64) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(DWORD64) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(DWORD64),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_DWORD(DWORD value) {
+    const DWORD neg_one = (DWORD) -1, const_zero = (DWORD) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(DWORD) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(DWORD) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(DWORD) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(DWORD) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(DWORD) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(DWORD),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_USHORT(USHORT value) {
+    const USHORT neg_one = (USHORT) -1, const_zero = (USHORT) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(USHORT) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(USHORT) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(USHORT) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(USHORT) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(USHORT) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(USHORT),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONG(ULONG value) {
+    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(ULONG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(ULONG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(ULONG),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_ULONGLONG(ULONGLONG value) {
+    const ULONGLONG neg_one = (ULONGLONG) -1, const_zero = (ULONGLONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(ULONGLONG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONGLONG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(ULONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(ULONGLONG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(ULONGLONG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(ULONGLONG),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_LONGLONG(LONGLONG value) {
+    const LONGLONG neg_one = (LONGLONG) -1, const_zero = (LONGLONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(LONGLONG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(LONGLONG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(LONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(LONGLONG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(LONGLONG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(LONGLONG),
+                                     little, !is_unsigned);
+    }
+}
+
+static PyObject* __pyx_convert__to_py_M128A(M128A s) {
+        PyObject* res;
+        PyObject* member;
+        res = PyDict_New(); if (res == NULL) return NULL;
+        member = __Pyx_PyInt_From_ULONGLONG(s.Low); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Low, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_LONGLONG(s.High); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_High, member) < 0) goto bad;
+        Py_DECREF(member);
+        return res;
+        bad:
+        Py_XDECREF(member);
+        Py_DECREF(res);
+        return NULL;
+      }
+      static PyObject* __pyx_convert__to_py_XSAVE_FORMAT(XSAVE_FORMAT s) {
+        PyObject* res;
+        PyObject* member;
+        res = PyDict_New(); if (res == NULL) return NULL;
+        member = __Pyx_PyInt_From_USHORT(s.ControlWord); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ControlWord, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.StatusWord); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_StatusWord, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_UCHAR(s.TagWord); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_TagWord, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_UCHAR(s.Reserved1); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Reserved1, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.ErrorOpcode); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ErrorOpcode, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONG(s.ErrorOffset); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ErrorOffset, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.ErrorSelector); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ErrorSelector, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.Reserved2); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Reserved2, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONG(s.DataOffset); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_DataOffset, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.DataSelector); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_DataSelector, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_USHORT(s.Reserved3); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Reserved3, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONG(s.MxCsr); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_MxCsr, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONG(s.MxCsr_Mask); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_MxCsr_Mask, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_carray_to_py_M128A(s.FloatRegisters, 8); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_FloatRegisters, member) < 0) goto bad;
+        Py_DECREF(member);
+        return res;
+        bad:
+        Py_XDECREF(member);
+        Py_DECREF(res);
+        return NULL;
+      }
+      static PyObject* __pyx_convert__to_py_CONTEXT(CONTEXT s) {
+        PyObject* res;
+        PyObject* member;
+        res = PyDict_New(); if (res == NULL) return NULL;
+        member = __Pyx_PyInt_From_DWORD64(s.P1Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P1Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.P2Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P2Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.P3Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P3Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.P4Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P4Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.P5Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P5Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.P6Home); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_P6Home, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD(s.ContextFlags); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ContextFlags, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD(s.MxCsr); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_MxCsr, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegCs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegCs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegDs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegDs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegEs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegEs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegFs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegFs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegGs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegGs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_WORD(s.SegSs); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_SegSs, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD(s.EFlags); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_EFlags, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr0); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr0, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr1); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr1, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr2); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr2, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr3); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr3, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr6); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr6, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Dr7); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Dr7, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rax); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rax, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rcx); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rcx, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rdx); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rdx, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rbx); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rbx, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rsp); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rsp, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rbp); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rbp, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rsi); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rsi, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rdi); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rdi, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R8); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R8, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R9); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R9, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R10); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R10, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R11); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R11, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R12); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R12, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R13); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R13, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R14); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R14, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.R15); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_R15, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.Rip); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Rip, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_XSAVE_FORMAT(s.FltSave); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_FltSave, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_carray_to_py_M128A(s.Header, 2); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Header, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_carray_to_py_M128A(s.Legacy, 8); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Legacy, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm0); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm0, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm1); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm1, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm2); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm2, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm3); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm3, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm4); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm4, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm5); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm5, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm6); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm6, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm7); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm7, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm8); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm8, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm9); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm9, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm10); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm10, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm11); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm11, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm12); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm12, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm13); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm13, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm14); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm14, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __pyx_convert__to_py_M128A(s.Xmm15); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_Xmm15, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_carray_to_py_M128A(s.VectorRegister, 26); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_VectorRegister, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.VectorControl); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_VectorControl, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.DebugControl); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_DebugControl, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.LastBranchToRip); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_LastBranchToRip, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.LastBranchFromRip); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_LastBranchFromRip, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.LastExceptionToRip); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_LastExceptionToRip, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_DWORD64(s.LastExceptionFromRip); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_LastExceptionFromRip, member) < 0) goto bad;
+        Py_DECREF(member);
+        return res;
+        bad:
+        Py_XDECREF(member);
+        Py_DECREF(res);
+        return NULL;
+      }
+      static PyObject* __pyx_convert__to_py_IO_COUNTERS(IO_COUNTERS s) {
+        PyObject* res;
+        PyObject* member;
+        res = PyDict_New(); if (res == NULL) return NULL;
+        member = __Pyx_PyInt_From_ULONGLONG(s.ReadOperationCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ReadOperationCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONGLONG(s.WriteOperationCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_WriteOperationCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONGLONG(s.OtherOperationCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_OtherOperationCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONGLONG(s.ReadTransferCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_ReadTransferCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONGLONG(s.WriteTransferCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_WriteTransferCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        member = __Pyx_PyInt_From_ULONGLONG(s.OtherTransferCount); if (member == NULL) goto bad;
+        if (PyDict_SetItem(res, __pyx_n_s_OtherTransferCount, member) < 0) goto bad;
+        Py_DECREF(member);
+        return res;
+        bad:
+        Py_XDECREF(member);
+        Py_DECREF(res);
+        return NULL;
+      }
+      #define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
+#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
+    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
+#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
+    {\
+        func_type value = func_value;\
+        if (sizeof(target_type) < sizeof(func_type)) {\
+            if (unlikely(value != (func_type) (target_type) value)) {\
+                func_type zero = 0;\
+                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
+                    return (target_type) -1;\
+                if (is_unsigned && unlikely(value < zero))\
+                    goto raise_neg_overflow;\
+                else\
+                    goto raise_overflow;\
+            }\
+        }\
+        return (target_type) value;\
+    }
+
+#if CYTHON_USE_PYLONG_INTERNALS
+  #include "longintrepr.h"
+#endif
+
+static CYTHON_INLINE DWORD __Pyx_PyInt_As_DWORD(PyObject *x) {
+    const DWORD neg_one = (DWORD) -1, const_zero = (DWORD) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(DWORD) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(DWORD, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (DWORD) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (DWORD) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(DWORD, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(DWORD) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) >= 2 * PyLong_SHIFT) {
+                            return (DWORD) (((((DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(DWORD) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) >= 3 * PyLong_SHIFT) {
+                            return (DWORD) (((((((DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(DWORD) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) >= 4 * PyLong_SHIFT) {
+                            return (DWORD) (((((((((DWORD)digits[3]) << PyLong_SHIFT) | (DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (DWORD) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(DWORD) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(DWORD) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (DWORD) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(DWORD, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(DWORD,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(DWORD) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 2 * PyLong_SHIFT) {
+                            return (DWORD) (((DWORD)-1)*(((((DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(DWORD) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 2 * PyLong_SHIFT) {
+                            return (DWORD) ((((((DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(DWORD) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 3 * PyLong_SHIFT) {
+                            return (DWORD) (((DWORD)-1)*(((((((DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(DWORD) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 3 * PyLong_SHIFT) {
+                            return (DWORD) ((((((((DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(DWORD) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 4 * PyLong_SHIFT) {
+                            return (DWORD) (((DWORD)-1)*(((((((((DWORD)digits[3]) << PyLong_SHIFT) | (DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(DWORD) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD) - 1 > 4 * PyLong_SHIFT) {
+                            return (DWORD) ((((((((((DWORD)digits[3]) << PyLong_SHIFT) | (DWORD)digits[2]) << PyLong_SHIFT) | (DWORD)digits[1]) << PyLong_SHIFT) | (DWORD)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(DWORD) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD, long, PyLong_AsLong(x))
+            } else if (sizeof(DWORD) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            DWORD val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (DWORD) -1;
+        }
+    } else {
+        DWORD val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (DWORD) -1;
+        val = __Pyx_PyInt_As_DWORD(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to DWORD");
+    return (DWORD) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to DWORD");
+    return (DWORD) -1;
+}
+
+static CYTHON_INLINE DWORD64 __Pyx_PyInt_As_DWORD64(PyObject *x) {
+    const DWORD64 neg_one = (DWORD64) -1, const_zero = (DWORD64) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(DWORD64) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(DWORD64, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (DWORD64) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (DWORD64) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(DWORD64, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(DWORD64) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) >= 2 * PyLong_SHIFT) {
+                            return (DWORD64) (((((DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(DWORD64) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) >= 3 * PyLong_SHIFT) {
+                            return (DWORD64) (((((((DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(DWORD64) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) >= 4 * PyLong_SHIFT) {
+                            return (DWORD64) (((((((((DWORD64)digits[3]) << PyLong_SHIFT) | (DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (DWORD64) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(DWORD64) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD64, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(DWORD64) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD64, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (DWORD64) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(DWORD64, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(DWORD64,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(DWORD64) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 2 * PyLong_SHIFT) {
+                            return (DWORD64) (((DWORD64)-1)*(((((DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(DWORD64) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 2 * PyLong_SHIFT) {
+                            return (DWORD64) ((((((DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(DWORD64) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 3 * PyLong_SHIFT) {
+                            return (DWORD64) (((DWORD64)-1)*(((((((DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(DWORD64) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 3 * PyLong_SHIFT) {
+                            return (DWORD64) ((((((((DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(DWORD64) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 4 * PyLong_SHIFT) {
+                            return (DWORD64) (((DWORD64)-1)*(((((((((DWORD64)digits[3]) << PyLong_SHIFT) | (DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(DWORD64) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(DWORD64, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(DWORD64) - 1 > 4 * PyLong_SHIFT) {
+                            return (DWORD64) ((((((((((DWORD64)digits[3]) << PyLong_SHIFT) | (DWORD64)digits[2]) << PyLong_SHIFT) | (DWORD64)digits[1]) << PyLong_SHIFT) | (DWORD64)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(DWORD64) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD64, long, PyLong_AsLong(x))
+            } else if (sizeof(DWORD64) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(DWORD64, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            DWORD64 val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (DWORD64) -1;
+        }
+    } else {
+        DWORD64 val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (DWORD64) -1;
+        val = __Pyx_PyInt_As_DWORD64(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to DWORD64");
+    return (DWORD64) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to DWORD64");
+    return (DWORD64) -1;
+}
+
+static CYTHON_INLINE WORD __Pyx_PyInt_As_WORD(PyObject *x) {
+    const WORD neg_one = (WORD) -1, const_zero = (WORD) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(WORD) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(WORD, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (WORD) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (WORD) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(WORD, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(WORD) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) >= 2 * PyLong_SHIFT) {
+                            return (WORD) (((((WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(WORD) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) >= 3 * PyLong_SHIFT) {
+                            return (WORD) (((((((WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(WORD) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) >= 4 * PyLong_SHIFT) {
+                            return (WORD) (((((((((WORD)digits[3]) << PyLong_SHIFT) | (WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (WORD) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(WORD) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(WORD, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(WORD) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(WORD, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (WORD) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(WORD, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(WORD,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(WORD) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 2 * PyLong_SHIFT) {
+                            return (WORD) (((WORD)-1)*(((((WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(WORD) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 2 * PyLong_SHIFT) {
+                            return (WORD) ((((((WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(WORD) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 3 * PyLong_SHIFT) {
+                            return (WORD) (((WORD)-1)*(((((((WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(WORD) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 3 * PyLong_SHIFT) {
+                            return (WORD) ((((((((WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(WORD) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 4 * PyLong_SHIFT) {
+                            return (WORD) (((WORD)-1)*(((((((((WORD)digits[3]) << PyLong_SHIFT) | (WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(WORD) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(WORD, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(WORD) - 1 > 4 * PyLong_SHIFT) {
+                            return (WORD) ((((((((((WORD)digits[3]) << PyLong_SHIFT) | (WORD)digits[2]) << PyLong_SHIFT) | (WORD)digits[1]) << PyLong_SHIFT) | (WORD)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(WORD) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(WORD, long, PyLong_AsLong(x))
+            } else if (sizeof(WORD) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(WORD, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            WORD val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (WORD) -1;
+        }
+    } else {
+        WORD val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (WORD) -1;
+        val = __Pyx_PyInt_As_WORD(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to WORD");
+    return (WORD) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to WORD");
+    return (WORD) -1;
+}
+
+static CYTHON_INLINE USHORT __Pyx_PyInt_As_USHORT(PyObject *x) {
+    const USHORT neg_one = (USHORT) -1, const_zero = (USHORT) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(USHORT) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(USHORT, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (USHORT) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (USHORT) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(USHORT, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(USHORT) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) >= 2 * PyLong_SHIFT) {
+                            return (USHORT) (((((USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(USHORT) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) >= 3 * PyLong_SHIFT) {
+                            return (USHORT) (((((((USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(USHORT) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) >= 4 * PyLong_SHIFT) {
+                            return (USHORT) (((((((((USHORT)digits[3]) << PyLong_SHIFT) | (USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (USHORT) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(USHORT) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(USHORT, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(USHORT) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(USHORT, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (USHORT) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(USHORT, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(USHORT,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(USHORT) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 2 * PyLong_SHIFT) {
+                            return (USHORT) (((USHORT)-1)*(((((USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(USHORT) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 2 * PyLong_SHIFT) {
+                            return (USHORT) ((((((USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(USHORT) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 3 * PyLong_SHIFT) {
+                            return (USHORT) (((USHORT)-1)*(((((((USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(USHORT) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 3 * PyLong_SHIFT) {
+                            return (USHORT) ((((((((USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(USHORT) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 4 * PyLong_SHIFT) {
+                            return (USHORT) (((USHORT)-1)*(((((((((USHORT)digits[3]) << PyLong_SHIFT) | (USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(USHORT) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(USHORT, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(USHORT) - 1 > 4 * PyLong_SHIFT) {
+                            return (USHORT) ((((((((((USHORT)digits[3]) << PyLong_SHIFT) | (USHORT)digits[2]) << PyLong_SHIFT) | (USHORT)digits[1]) << PyLong_SHIFT) | (USHORT)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(USHORT) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(USHORT, long, PyLong_AsLong(x))
+            } else if (sizeof(USHORT) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(USHORT, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            USHORT val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (USHORT) -1;
+        }
+    } else {
+        USHORT val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (USHORT) -1;
+        val = __Pyx_PyInt_As_USHORT(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to USHORT");
+    return (USHORT) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to USHORT");
+    return (USHORT) -1;
+}
+
+static CYTHON_INLINE UCHAR __Pyx_PyInt_As_UCHAR(PyObject *x) {
+    const UCHAR neg_one = (UCHAR) -1, const_zero = (UCHAR) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(UCHAR) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(UCHAR, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (UCHAR) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (UCHAR) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(UCHAR, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(UCHAR) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) >= 2 * PyLong_SHIFT) {
+                            return (UCHAR) (((((UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(UCHAR) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) >= 3 * PyLong_SHIFT) {
+                            return (UCHAR) (((((((UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(UCHAR) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) >= 4 * PyLong_SHIFT) {
+                            return (UCHAR) (((((((((UCHAR)digits[3]) << PyLong_SHIFT) | (UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (UCHAR) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(UCHAR) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(UCHAR, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(UCHAR) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(UCHAR, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (UCHAR) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(UCHAR, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(UCHAR,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(UCHAR) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 2 * PyLong_SHIFT) {
+                            return (UCHAR) (((UCHAR)-1)*(((((UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(UCHAR) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 2 * PyLong_SHIFT) {
+                            return (UCHAR) ((((((UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(UCHAR) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 3 * PyLong_SHIFT) {
+                            return (UCHAR) (((UCHAR)-1)*(((((((UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(UCHAR) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 3 * PyLong_SHIFT) {
+                            return (UCHAR) ((((((((UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(UCHAR) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 4 * PyLong_SHIFT) {
+                            return (UCHAR) (((UCHAR)-1)*(((((((((UCHAR)digits[3]) << PyLong_SHIFT) | (UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(UCHAR) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(UCHAR, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(UCHAR) - 1 > 4 * PyLong_SHIFT) {
+                            return (UCHAR) ((((((((((UCHAR)digits[3]) << PyLong_SHIFT) | (UCHAR)digits[2]) << PyLong_SHIFT) | (UCHAR)digits[1]) << PyLong_SHIFT) | (UCHAR)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(UCHAR) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(UCHAR, long, PyLong_AsLong(x))
+            } else if (sizeof(UCHAR) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(UCHAR, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            UCHAR val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (UCHAR) -1;
+        }
+    } else {
+        UCHAR val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (UCHAR) -1;
+        val = __Pyx_PyInt_As_UCHAR(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to UCHAR");
+    return (UCHAR) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to UCHAR");
+    return (UCHAR) -1;
+}
+
+static CYTHON_INLINE ULONG __Pyx_PyInt_As_ULONG(PyObject *x) {
+    const ULONG neg_one = (ULONG) -1, const_zero = (ULONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(ULONG) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(ULONG, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (ULONG) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 2 * PyLong_SHIFT) {
+                            return (ULONG) (((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 3 * PyLong_SHIFT) {
+                            return (ULONG) (((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) >= 4 * PyLong_SHIFT) {
+                            return (ULONG) (((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (ULONG) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(ULONG) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONG) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(ULONG, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(ULONG,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(ULONG) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(ULONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONG) ((((((ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(ULONG) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(ULONG) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) (((ULONG)-1)*(((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONG) ((((((((((ULONG)digits[3]) << PyLong_SHIFT) | (ULONG)digits[2]) << PyLong_SHIFT) | (ULONG)digits[1]) << PyLong_SHIFT) | (ULONG)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(ULONG) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, long, PyLong_AsLong(x))
+            } else if (sizeof(ULONG) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONG, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            ULONG val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (ULONG) -1;
+        }
+    } else {
+        ULONG val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (ULONG) -1;
+        val = __Pyx_PyInt_As_ULONG(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to ULONG");
+    return (ULONG) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to ULONG");
+    return (ULONG) -1;
+}
+
+static CYTHON_INLINE ULONGLONG __Pyx_PyInt_As_ULONGLONG(PyObject *x) {
+    const ULONGLONG neg_one = (ULONGLONG) -1, const_zero = (ULONGLONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(ULONGLONG) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (ULONGLONG) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONGLONG) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(ULONGLONG, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(ULONGLONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) >= 2 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONGLONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) >= 3 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONGLONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) >= 4 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (ULONGLONG) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(ULONGLONG) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(ULONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (ULONGLONG) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(ULONGLONG, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(ULONGLONG,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(ULONGLONG) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((ULONGLONG)-1)*(((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(ULONGLONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (ULONGLONG) ((((((ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(ULONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((ULONGLONG)-1)*(((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(ULONGLONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (ULONGLONG) ((((((((ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(ULONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONGLONG) (((ULONGLONG)-1)*(((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(ULONGLONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(ULONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(ULONGLONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (ULONGLONG) ((((((((((ULONGLONG)digits[3]) << PyLong_SHIFT) | (ULONGLONG)digits[2]) << PyLong_SHIFT) | (ULONGLONG)digits[1]) << PyLong_SHIFT) | (ULONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(ULONGLONG) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, long, PyLong_AsLong(x))
+            } else if (sizeof(ULONGLONG) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(ULONGLONG, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            ULONGLONG val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (ULONGLONG) -1;
+        }
+    } else {
+        ULONGLONG val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (ULONGLONG) -1;
+        val = __Pyx_PyInt_As_ULONGLONG(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to ULONGLONG");
+    return (ULONGLONG) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to ULONGLONG");
+    return (ULONGLONG) -1;
+}
+
+static CYTHON_INLINE LONGLONG __Pyx_PyInt_As_LONGLONG(PyObject *x) {
+    const LONGLONG neg_one = (LONGLONG) -1, const_zero = (LONGLONG) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(LONGLONG) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(LONGLONG, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (LONGLONG) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (LONGLONG) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(LONGLONG, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(LONGLONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) >= 2 * PyLong_SHIFT) {
+                            return (LONGLONG) (((((LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(LONGLONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) >= 3 * PyLong_SHIFT) {
+                            return (LONGLONG) (((((((LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(LONGLONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) >= 4 * PyLong_SHIFT) {
+                            return (LONGLONG) (((((((((LONGLONG)digits[3]) << PyLong_SHIFT) | (LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (LONGLONG) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(LONGLONG) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(LONGLONG, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(LONGLONG) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(LONGLONG, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (LONGLONG) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(LONGLONG, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(LONGLONG,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(LONGLONG) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (LONGLONG) (((LONGLONG)-1)*(((((LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(LONGLONG) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                            return (LONGLONG) ((((((LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(LONGLONG) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (LONGLONG) (((LONGLONG)-1)*(((((((LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(LONGLONG) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                            return (LONGLONG) ((((((((LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(LONGLONG) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (LONGLONG) (((LONGLONG)-1)*(((((((((LONGLONG)digits[3]) << PyLong_SHIFT) | (LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(LONGLONG) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(LONGLONG, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(LONGLONG) - 1 > 4 * PyLong_SHIFT) {
+                            return (LONGLONG) ((((((((((LONGLONG)digits[3]) << PyLong_SHIFT) | (LONGLONG)digits[2]) << PyLong_SHIFT) | (LONGLONG)digits[1]) << PyLong_SHIFT) | (LONGLONG)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(LONGLONG) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(LONGLONG, long, PyLong_AsLong(x))
+            } else if (sizeof(LONGLONG) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(LONGLONG, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            LONGLONG val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (LONGLONG) -1;
+        }
+    } else {
+        LONGLONG val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (LONGLONG) -1;
+        val = __Pyx_PyInt_As_LONGLONG(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to LONGLONG");
+    return (LONGLONG) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to LONGLONG");
+    return (LONGLONG) -1;
+}
+
+static CYTHON_INLINE size_t __Pyx_PyInt_As_size_t(PyObject *x) {
+    const size_t neg_one = (size_t) -1, const_zero = (size_t) 0;
+    const int is_unsigned = neg_one > const_zero;
+#if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_Check(x))) {
+        if (sizeof(size_t) < sizeof(long)) {
+            __PYX_VERIFY_RETURN_INT(size_t, long, PyInt_AS_LONG(x))
+        } else {
+            long val = PyInt_AS_LONG(x);
+            if (is_unsigned && unlikely(val < 0)) {
+                goto raise_neg_overflow;
+            }
+            return (size_t) val;
+        }
+    } else
+#endif
+    if (likely(PyLong_Check(x))) {
+        if (is_unsigned) {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (size_t) 0;
+                case  1: __PYX_VERIFY_RETURN_INT(size_t, digit, digits[0])
+                case 2:
+                    if (8 * sizeof(size_t) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) >= 2 * PyLong_SHIFT) {
+                            return (size_t) (((((size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0]));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(size_t) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) >= 3 * PyLong_SHIFT) {
+                            return (size_t) (((((((size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0]));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(size_t) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) >= 4 * PyLong_SHIFT) {
+                            return (size_t) (((((((((size_t)digits[3]) << PyLong_SHIFT) | (size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0]));
+                        }
+                    }
+                    break;
+            }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON
+            if (unlikely(Py_SIZE(x) < 0)) {
+                goto raise_neg_overflow;
+            }
+#else
+            {
+                int result = PyObject_RichCompareBool(x, Py_False, Py_LT);
+                if (unlikely(result < 0))
+                    return (size_t) -1;
+                if (unlikely(result == 1))
+                    goto raise_neg_overflow;
+            }
+#endif
+            if (sizeof(size_t) <= sizeof(unsigned long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(size_t, unsigned long, PyLong_AsUnsignedLong(x))
+            } else if (sizeof(size_t) <= sizeof(unsigned PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(size_t, unsigned PY_LONG_LONG, PyLong_AsUnsignedLongLong(x))
+            }
+        } else {
+#if CYTHON_USE_PYLONG_INTERNALS
+            const digit* digits = ((PyLongObject*)x)->ob_digit;
+            switch (Py_SIZE(x)) {
+                case  0: return (size_t) 0;
+                case -1: __PYX_VERIFY_RETURN_INT(size_t, sdigit, -(sdigit) digits[0])
+                case  1: __PYX_VERIFY_RETURN_INT(size_t,  digit, +digits[0])
+                case -2:
+                    if (8 * sizeof(size_t) - 1 > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, long, -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 2 * PyLong_SHIFT) {
+                            return (size_t) (((size_t)-1)*(((((size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+                case 2:
+                    if (8 * sizeof(size_t) > 1 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 2 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 2 * PyLong_SHIFT) {
+                            return (size_t) ((((((size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+                case -3:
+                    if (8 * sizeof(size_t) - 1 > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, long, -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 3 * PyLong_SHIFT) {
+                            return (size_t) (((size_t)-1)*(((((((size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+                case 3:
+                    if (8 * sizeof(size_t) > 2 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 3 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 3 * PyLong_SHIFT) {
+                            return (size_t) ((((((((size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+                case -4:
+                    if (8 * sizeof(size_t) - 1 > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, long, -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 4 * PyLong_SHIFT) {
+                            return (size_t) (((size_t)-1)*(((((((((size_t)digits[3]) << PyLong_SHIFT) | (size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+                case 4:
+                    if (8 * sizeof(size_t) > 3 * PyLong_SHIFT) {
+                        if (8 * sizeof(unsigned long) > 4 * PyLong_SHIFT) {
+                            __PYX_VERIFY_RETURN_INT(size_t, unsigned long, (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0])))
+                        } else if (8 * sizeof(size_t) - 1 > 4 * PyLong_SHIFT) {
+                            return (size_t) ((((((((((size_t)digits[3]) << PyLong_SHIFT) | (size_t)digits[2]) << PyLong_SHIFT) | (size_t)digits[1]) << PyLong_SHIFT) | (size_t)digits[0])));
+                        }
+                    }
+                    break;
+            }
+#endif
+            if (sizeof(size_t) <= sizeof(long)) {
+                __PYX_VERIFY_RETURN_INT_EXC(size_t, long, PyLong_AsLong(x))
+            } else if (sizeof(size_t) <= sizeof(PY_LONG_LONG)) {
+                __PYX_VERIFY_RETURN_INT_EXC(size_t, PY_LONG_LONG, PyLong_AsLongLong(x))
+            }
+        }
+        {
+#if CYTHON_COMPILING_IN_PYPY && !defined(_PyLong_AsByteArray)
+            PyErr_SetString(PyExc_RuntimeError,
+                            "_PyLong_AsByteArray() not available in PyPy, cannot convert large numbers");
+#else
+            size_t val;
+            PyObject *v = __Pyx_PyNumber_Int(x);
+ #if PY_MAJOR_VERSION < 3
+            if (likely(v) && !PyLong_Check(v)) {
+                PyObject *tmp = v;
+                v = PyNumber_Long(tmp);
+                Py_DECREF(tmp);
+            }
+ #endif
+            if (likely(v)) {
+                int one = 1; int is_little = (int)*(unsigned char *)&one;
+                unsigned char *bytes = (unsigned char *)&val;
+                int ret = _PyLong_AsByteArray((PyLongObject *)v,
+                                              bytes, sizeof(val),
+                                              is_little, !is_unsigned);
+                Py_DECREF(v);
+                if (likely(!ret))
+                    return val;
+            }
+#endif
+            return (size_t) -1;
+        }
+    } else {
+        size_t val;
+        PyObject *tmp = __Pyx_PyNumber_Int(x);
+        if (!tmp) return (size_t) -1;
+        val = __Pyx_PyInt_As_size_t(tmp);
+        Py_DECREF(tmp);
+        return val;
+    }
+raise_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "value too large to convert to size_t");
+    return (size_t) -1;
+raise_neg_overflow:
+    PyErr_SetString(PyExc_OverflowError,
+        "can't convert negative value to size_t");
+    return (size_t) -1;
+}
+
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
     const long neg_one = (long) -1, const_zero = (long) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -932,31 +15780,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
                                      little, !is_unsigned);
     }
 }
-
-#define __PYX_VERIFY_RETURN_INT(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 0)
-#define __PYX_VERIFY_RETURN_INT_EXC(target_type, func_type, func_value)\
-    __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, 1)
-#define __PYX__VERIFY_RETURN_INT(target_type, func_type, func_value, exc)\
-    {\
-        func_type value = func_value;\
-        if (sizeof(target_type) < sizeof(func_type)) {\
-            if (unlikely(value != (func_type) (target_type) value)) {\
-                func_type zero = 0;\
-                if (exc && unlikely(value == (func_type)-1 && PyErr_Occurred()))\
-                    return (target_type) -1;\
-                if (is_unsigned && unlikely(value < zero))\
-                    goto raise_neg_overflow;\
-                else\
-                    goto raise_overflow;\
-            }\
-        }\
-        return (target_type) value;\
-    }
-
-#if CYTHON_USE_PYLONG_INTERNALS
-  #include "longintrepr.h"
-#endif
 
 static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *x) {
     const long neg_one = (long) -1, const_zero = (long) 0;
