@@ -332,4 +332,30 @@ cdef extern from *:
         PHANDLE TokenHandle
     )
 
+    HANDLE __stdcall OpenFileById(
+        HANDLE                hFile,
+        LPFILE_ID_DESCRIPTOR  lpFileID,
+        DWORD                 dwDesiredAccess,
+        DWORD                 dwShareMode,
+        LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+        DWORD                 dwFlags
+    )
+    ctypedef HANDLE (__stdcall *LPFN_OpenFileById)(
+        HANDLE                hFile,
+        LPFILE_ID_DESCRIPTOR  lpFileID,
+        DWORD                 dwDesiredAccess,
+        DWORD                 dwShareMode,
+        LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+        DWORD                 dwFlags
+    )
+
+    FARPROC __stdcall GetProcAddress(
+        HMODULE hModule,
+        LPCSTR  lpProcName
+    )
+    ctypedef FARPROC (__stdcall *LPFN_GetProcAddress)(
+        HMODULE hModule,
+        LPCSTR  lpProcName
+    )
+
 # vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #
