@@ -36,32 +36,25 @@ cdef extern from *:
     DWORD IOCTL_DISK_VERIFY
     DWORD IOCTL_STORAGE_QUERY_PROPERTY
 
-    ctypedef struct DISK_PERFORMANCE:
-        LARGE_INTEGER BytesRead
-        LARGE_INTEGER BytesWritten
-        LARGE_INTEGER ReadTime
-        LARGE_INTEGER WriteTime
-        LARGE_INTEGER IdleTime
-        DWORD         ReadCount
-        DWORD         WriteCount
-        DWORD         QueueDepth
-        DWORD         SplitCount
-        LARGE_INTEGER QueryTime
-        DWORD         StorageDeviceNumber
-        WCHAR         StorageManagerName[8]
-    ctypedef DISK_PERFORMANCE *PDISK_PERFORMANCE
-
-    ctypedef struct DISK_GEOMETRY:
-          LARGE_INTEGER Cylinders
-          MEDIA_TYPE    MediaType
-          DWORD         TracksPerCylinder
-          DWORD         SectorsPerTrack
-          DWORD         BytesPerSector
-    ctypedef DISK_GEOMETRY *PDISK_GEOMETRY
-
-    ctypedef struct GET_LENGTH_INFORMATION:
-        LARGE_INTEGER Length
-    ctypedef GET_LENGTH_INFORMATION *PGET_LENGTH_INFORMATION
-
+    BOOL DeviceIoControl(
+        (HANDLE) hDevice,                # handle to file
+        FSCTL_QUERY_ALLOCATED_RANGES,    # dwIoControlCode
+        (LPVOID) lpInBuffer,             # input buffer
+        (DWORD) nInBufferSize,           # size of input buffer
+        (LPVOID) lpOutBuffer,            # output buffer
+        (DWORD) nOutBufferSize,          # size of output buffer
+        (LPDWORD) lpBytesReturned,       # number of bytes returned
+        (LPOVERLAPPED) lpOverlapped      # OVERLAPPED structure
+    )
+    ctypedef BOOL (*LPFN_DeviceIoControl)(
+        (HANDLE) hDevice,                # handle to file
+        FSCTL_QUERY_ALLOCATED_RANGES,    # dwIoControlCode
+        (LPVOID) lpInBuffer,             # input buffer
+        (DWORD) nInBufferSize,           # size of input buffer
+        (LPVOID) lpOutBuffer,            # output buffer
+        (DWORD) nOutBufferSize,          # size of output buffer
+        (LPDWORD) lpBytesReturned,       # number of bytes returned
+        (LPOVERLAPPED) lpOverlapped      # OVERLAPPED structure
+    )
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #

@@ -11,6 +11,7 @@ cdef extern from *:
     ctypedef UCHAR BYTE
     ctypedef UCHAR* PUCHAR
     ctypedef short SHORT
+    ctypedef SHORT CSHORT
     ctypedef unsigned short USHORT
     ctypedef unsigned short WORD
     ctypedef WORD *PWORD
@@ -740,6 +741,22 @@ cdef extern from *:
     ctypedef BY_HANDLE_FILE_INFORMATION *PBY_HANDLE_FILE_INFORMATION
     ctypedef BY_HANDLE_FILE_INFORMATION *LPBY_HANDLE_FILE_INFORMATION
 
+    ctypedef struct DEVICE_OBJECT:
+        pass
+    ctypedef DEVICE_OBJECT *PDEVICE_OBJECT
+
+    ctypedef struct VPB:
+        CSHORT                Size
+        CSHORT                Type
+        USHORT                Flags
+        USHORT                VolumeLabelLength
+        PDEVICE_OBJECT        DeviceObject
+        PDEVICE_OBJECT        RealDevice
+        ULONG                 SerialNumber
+        ULONG                 ReferenceCount
+        WCHAR                 VolumeLabel[]
+    ctypedef VPB *PVPB
+
     ctypedef struct MEMORY_BASIC_INFORMATION:
         PVOID  BaseAddress
         PVOID  AllocationBase
@@ -1084,6 +1101,155 @@ cdef extern from *:
         PVOID Tail
         DWORD TailLength
     ctypedef TRANSMIT_FILE_BUFFERS *PTRANSMIT_FILE_BUFFERS
+
+    ctypedef struct FILE_STORAGE_INFO:
+        ULONG LogicalBytesPerSector
+        ULONG PhysicalBytesPerSectorForAtomicity
+        ULONG PhysicalBytesPerSectorForPerformance
+        ULONG FileSystemEffectivePhysicalBytesPerSectorForAtomicity
+        ULONG Flags
+        ULONG ByteOffsetForSectorAlignment
+        ULONG ByteOffsetForPartitionAlignment
+    ctypedef FILE_STORAGE_INFO *PFILE_STORAGE_INFO
+
+    ctypedef struct FILE_END_OF_FILE_INFO:
+        LARGE_INTEGER EndOfFile
+    ctypedef FILE_END_OF_FILE_INFO *PFILE_END_OF_FILE_INFO
+
+    ctypedef struct EXT_FILE_ID_128:
+        BYTE Identifier[16]
+    ctypedef EXT_FILE_ID_128 *PEXT_FILE_ID_128
+
+    ctypedef struct FILE_BASIC_INFO:
+        LARGE_INTEGER CreationTime
+        LARGE_INTEGER LastAccessTime
+        LARGE_INTEGER LastWriteTime
+        LARGE_INTEGER ChangeTime
+        DWORD         FileAttributes
+    ctypedef FILE_BASIC_INFO *PFILE_BASIC_INFO
+
+    ctypedef struct FILE_ALLOCATED_RANGE_BUFFER:
+        LARGE_INTEGER FileOffset
+        LARGE_INTEGER Length
+    ctypedef FILE_ALLOCATED_RANGE_BUFFER *PFILE_ALLOCATED_RANGE_BUFFER
+
+    ctypedef struct FILE_ALLOCATION_INFO:
+        LARGE_INTEGER AllocationSize
+    ctypedef FILE_ALLOCATION_INFO *PFILE_ALLOCATION_INFO
+
+    ctypedef struct FILE_ALIGNMENT_INFO:
+        ULONG AlignmentRequirement
+    ctypedef FILE_ALIGNMENT_INFO *PFILE_ALIGNMENT_INFO
+
+    ctypedef struct FILE_ATTRIBUTE_TAG_INFO:
+        DWORD FileAttributes
+        DWORD ReparseTag
+    ctypedef FILE_ATTRIBUTE_TAG_INFO *PFILE_ATTRIBUTE_TAG_INFO
+
+    ctypedef struct FILE_OBJECTID_BUFFER:
+        BYTE ObjectId[16]
+        BYTE BirthVolumeId[16]
+        BYTE BirthObjectId[16]
+        BYTE DomainId[16]
+        BYTE ExtendedInfo[48]
+    ctypedef FILE_OBJECTID_BUFFER *PFILE_OBJECTID_BUFFER
+
+    ctypedef struct FILE_NAME_INFO:
+        DWORD FileNameLength
+        WCHAR FileName[1]
+    ctypedef FILE_NAME_INFO *PFILE_NAME_INFO
+
+    ctypedef struct DISK_PERFORMANCE:
+        LARGE_INTEGER BytesRead
+        LARGE_INTEGER BytesWritten
+        LARGE_INTEGER ReadTime
+        LARGE_INTEGER WriteTime
+        LARGE_INTEGER IdleTime
+        DWORD         ReadCount
+        DWORD         WriteCount
+        DWORD         QueueDepth
+        DWORD         SplitCount
+        LARGE_INTEGER QueryTime
+        DWORD         StorageDeviceNumber
+        WCHAR         StorageManagerName[8]
+    ctypedef DISK_PERFORMANCE *PDISK_PERFORMANCE
+
+    ctypedef struct DISK_GEOMETRY:
+          LARGE_INTEGER Cylinders
+          MEDIA_TYPE    MediaType
+          DWORD         TracksPerCylinder
+          DWORD         SectorsPerTrack
+          DWORD         BytesPerSector
+    ctypedef DISK_GEOMETRY *PDISK_GEOMETRY
+
+    ctypedef struct GET_LENGTH_INFORMATION:
+        LARGE_INTEGER Length
+    ctypedef GET_LENGTH_INFORMATION *PGET_LENGTH_INFORMATION
+
+    ctypedef struct FILESYSTEM_STATISTICS:
+        USHORT FileSystemType
+        USHORT Version
+        ULONG  SizeOfCompleteStructure
+        ULONG  UserFileReads
+        ULONG  UserFileReadBytes
+        ULONG  UserDiskReads
+        ULONG  UserFileWrites
+        ULONG  UserFileWriteBytes
+        ULONG  UserDiskWrites
+        ULONG  MetaDataReads
+        ULONG  MetaDataReadBytes
+        ULONG  MetaDataDiskReads
+        ULONG  MetaDataWrites
+        DWORD  MetaDataWriteBytes
+        ULONG  MetaDataDiskWrites
+    ctypedef FILESYSTEM_STATISTICS *PFILESYSTEM_STATISTICS
+
+    ctypedef struct FILESYSTEM_STATISTICS_EX:
+        USHORT    FileSystemType
+        USHORT    Version
+        ULONG     SizeOfCompleteStructure
+        ULONGLONG UserFileReads
+        ULONGLONG UserFileReadBytes
+        ULONGLONG UserDiskReads
+        ULONGLONG UserFileWrites
+        ULONGLONG UserFileWriteBytes
+        ULONGLONG UserDiskWrites
+        ULONGLONG MetaDataReads
+        ULONGLONG MetaDataReadBytes
+        ULONGLONG MetaDataDiskReads
+        ULONGLONG MetaDataWrites
+        ULONGLONG MetaDataWriteBytes
+        ULONGLONG MetaDataDiskWrites
+    ctypedef FILESYSTEM_STATISTICS_EX *PFILESYSTEM_STATISTICS_EX
+
+    ctypedef struct FILE_QUERY_ON_DISK_VOL_INFO_BUFFER:
+        LARGE_INTEGER DirectoryCount
+        LARGE_INTEGER FileCount
+        WORD          FsFormatMajVersion
+        WORD          FsFormatMinVersion
+        WCHAR         FsFormatName[12]
+        LARGE_INTEGER FormatTime
+        LARGE_INTEGER LastUpdateTime
+        WCHAR         CopyrightInfo[34]
+        WCHAR         AbstractInfo[34]
+        WCHAR         FormattingImplementationInfo[34]
+        WCHAR         LastModifyingImplementationInfo[34]
+    ctypedef FILE_QUERY_ON_DISK_VOL_INFO_BUFFER *PFILE_QUERY_ON_DISK_VOL_INFO_BUFFER
+
+    ctypedef struct OVERLAPPED_ENTRY:
+        ULONG_PTR    lpCompletionKey
+        LPOVERLAPPED lpOverlapped
+        ULONG_PTR    Internal
+        DWORD        dwNumberOfBytesTransferred
+    ctypedef OVERLAPPED_ENTRY *LPOVERLAPPED_ENTRY
+
+    ctypedef struct FILE_STREAM_INFO:
+        DWORD         NextEntryOffset
+        DWORD         StreamNameLength
+        LARGE_INTEGER StreamSize
+        LARGE_INTEGER StreamAllocationSize
+        WCHAR         StreamName[1]
+    ctypedef FILE_STREAM_INFO *PFILE_STREAM_INFO
 
     ctypedef enum KPROFILE_SOURCE:
         ProfileTime
