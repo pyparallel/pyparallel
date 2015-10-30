@@ -89,5 +89,11 @@ cdef extern from *:
         RelationGroup               = 4
         RelationAll                 = 0xffff
 
+    cpdef enum FILE_ID_TYPE:
+        FileIdType          = 0
+        ObjectIdType        = 1
+        ExtendedFileIdType  = 2
+        MaximumFileIdType
+    ctypedef FILE_ID_TYPE *PFILE_ID_TYPE
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #
