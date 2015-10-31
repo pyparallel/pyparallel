@@ -11446,8 +11446,15 @@ serverclient:
 
 create_socket:
     s->sock_flags = WSA_FLAG_OVERLAPPED;
-    if (_PyParallel_RegisteredIOAvailable)
+#if 0
+    /* RIO hasn't been ratified yet. */
+    if (_PyParallel_RegisteredIOAvailable && !PxSocket_IS_SERVER(s))
+        /* We don't set RIO on the accept socket as it prevents FD_ACCEPT from
+         * working.  (And we don't need RIO for the server as AcceptEx() does
+         * what we want.) */
         s->sock_flags |= WSA_FLAG_REGISTERED_IO;
+#endif
+
     s->sock_fd = WSASocket(
         s->sock_family,
         s->sock_type,
@@ -11456,15 +11463,19 @@ create_socket:
         0,
         s->sock_flags
     );
-    if (s->sock_fd == INVALID_SOCKET)
+    if (s->sock_fd == INVALID_SOCKET) {
+        __debugbreak();
         PxSocket_WSAERROR("socket()");
+    }
 
     s->sock_seq_id = InterlockedIncrement(&_PyParallel_NextSocketSeqId);
 
 setnonblock:
     fd = s->sock_fd;
-    if (ioctlsocket(fd, FIONBIO, (ULONG *)&nonblock) == SOCKET_ERROR)
+    if (ioctlsocket(fd, FIONBIO, (ULONG *)&nonblock) == SOCKET_ERROR) {
+        __debugbreak();
         PxSocket_WSAERROR("ioctlsocket(FIONBIO)");
+    }
 
     if (PxSocket_THROUGHPUT(s)) {
         size_t sizeof_rbuf = sizeof(RBUF);
