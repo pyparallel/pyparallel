@@ -3493,7 +3493,6 @@ _PyHeap_Malloc(Context *c, size_t n, size_t align, int no_realloc)
 {
     void  *base, *start;
     Heap  *h;
-    size_t alignment_diff;
     size_t alignment = align;
     size_t requested_size = n;
     size_t aligned_size, total_size, padding;
