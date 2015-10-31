@@ -66,6 +66,7 @@ whose size is determined when the object is allocated.
 #endif
 
 #ifndef WITH_PARALLEL
+#error Detected WITH_PARALLEL not defined
 #ifdef Py_TRACE_REFS
 /* Define pointers to support a doubly-linked list of all live heap objects. */
 #define _PyObject_HEAD_EXTRA            \
@@ -902,68 +903,10 @@ PyAPI_FUNC(void) Px_DecRef(PyObject *o);
 #define Px_DECREF(o) (Px_DecRef((PyObject *)o))
 #endif
 
-__inline
-void
-_Py_IncRef(PyObject *op)
-{
-#if defined(Py_DEBUG)
-    _PyParallel_IncRef(op);
-#else
-    if ((!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op)))) {
-        _Py_INC_REFTOTAL;
-        (((PyObject*)(op))->ob_refcnt++);
-    }
-#endif
-}
-
+PyAPI_FUNC(void) _Py_IncRef(PyObject *op);
+PyAPI_FUNC(void) _Py_DecRef(PyObject *op);
 #define Py_INCREF(op) (_Py_IncRef((PyObject *)op))
-#define __Py_INCREF(op)                                       \
-    (!(!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op))) ?    \
-        ((void)0) : (                                         \
-            _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
-            (((PyObject*)(op))->ob_refcnt++)                  \
-        )                                                     \
-    )
-
-__inline
-void
-_Py_DecRef(PyObject *op)
-{
-#if defined(Py_DEBUG)
-    _PyParallel_DecRef(op);
-#else
-    if (!Py_PXCTX()) {
-        if (Px_PERSISTED(op) || Px_CLONED(op))
-            Px_DECREF(op);
-        else if (!Px_ISPX(op)) {
-            _Py_DEC_REFTOTAL;
-            if ((--((PyObject *)(op))->ob_refcnt) != 0) {
-                _Py_CHECK_REFCNT(op);
-            } else
-                _Py_Dealloc((PyObject *)(op));
-        }
-    }
-#endif
-}
-
 #define Py_DECREF(op) (_Py_DecRef((PyObject *)op))
-
-#define __Py_DECREF(op)                                       \
-    do {                                                      \
-        if (!Py_PXCTX()) {                                    \
-            if (Px_PERSISTED(op))                             \
-                Px_DECREF(op);                                \
-            else if (!Px_ISPX(op)) {                          \
-                _Py_DEC_REFTOTAL;                             \
-                if ((--((PyObject *)(op))->ob_refcnt) != 0) { \
-                    _Py_CHECK_REFCNT(op);                     \
-                } else {                                      \
-                    _Py_Dealloc((PyObject *)(op));            \
-                }                                             \
-            }                                                 \
-        }                                                     \
-    } while (0)
-
 
 #endif /* WITH_PARALLEL */
 

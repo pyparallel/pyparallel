@@ -216,14 +216,26 @@ _Py_NegativeRefcount(const char *fname, int lineno, PyObject *op)
 #endif /* Py_REF_DEBUG */
 
 void
+_Py_IncRef(PyObject *op)
+{
+    _PyParallel_IncRef(op);
+}
+
+void
+_Py_DecRef(PyObject *op)
+{
+    _PyParallel_DecRef(op);
+}
+
+void
 Py_IncRef(PyObject *o)
 {
 #ifdef Py_DEBUG
     PyPx_GUARD_OBJ(o);
 #endif
-    if (Py_PXCTX())
+    if (Py_PXCTX() || !o)
         return;
-    Py_XINCREF(o);
+    _Py_IncRef(o);
 }
 
 void
@@ -232,9 +244,9 @@ Py_DecRef(PyObject *o)
 #ifdef Py_DEBUG
     PyPx_GUARD_OBJ(o);
 #endif
-    if (Py_PXCTX())
+    if (Py_PXCTX() || !o)
         return;
-    Py_XDECREF(o);
+    _Py_DecRef(o);
 }
 
 PyObject *
