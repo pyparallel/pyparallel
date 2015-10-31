@@ -97,7 +97,7 @@ PxThread_Main(LPVOID param)
     PyObject *result;
     Heap *prev_snapshot, *this_snapshot;
     LARGE_INTEGER start, end, elapsed, frequency;
-    int expect_snapshot = 1;
+    int expect_snapshot;
     int expected_snapshot_group = 0;
 
     _PyParallel_EnteredCallback(c, NULL);
@@ -171,6 +171,7 @@ begin:
     }
 
 post:
+    expect_snapshot = 1;
     if (++t->count < 0) {
         t->count_wrapped++;
         t->count = 1;
