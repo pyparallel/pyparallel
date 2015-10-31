@@ -35,9 +35,21 @@
 #else
 #define __AS_GC(o)   ((PyGC_Head *)(o)-1)
 #define __FROM_GC(g) ((PyObject *)(((PyGC_Head *)g)+1))
-/* Force a null-pointer deref if we're in a parallel context. */
-#define AS_GC(o)   (Py_ISPX(o) ? (PyGC_Head *)0 : __AS_GC(o))
-#define FROM_GC(g) (Py_PXCTX() ? (PyObject  *)0 : __FROM_GC(g))
+/* Force a debugbreak as soon as we're hit from a parallel context. */
+#define AS_GC(o)   (                                \
+    Py_PXCTX() ?                                    \
+        __debugbreak(), (PyGC_Head *)0 :            \
+        (Py_ISPX(o) ?                               \
+            __debugbreak(), (PyGC_Head *)0 :        \
+            __AS_GC(o)))
+
+#define FROM_GC(g) (                                \
+    Py_PXCTX() ?                                    \
+        __debugbreak(), (PyObject *)0 :             \
+            (Py_ISPX(__FROM_GC(g)) ?                \
+                __debugbreak(), (PyObject *)0 :     \
+                __FROM_GC(g)                        \
+            ))
 #endif
 
 /*** Global GC state ***/
