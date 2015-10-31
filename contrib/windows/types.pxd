@@ -754,7 +754,7 @@ cdef extern from *:
         PDEVICE_OBJECT        RealDevice
         ULONG                 SerialNumber
         ULONG                 ReferenceCount
-        WCHAR                 VolumeLabel[]
+        WCHAR                *VolumeLabel
     ctypedef VPB *PVPB
 
     ctypedef struct MEMORY_BASIC_INFORMATION:
@@ -1119,6 +1119,40 @@ cdef extern from *:
     ctypedef struct EXT_FILE_ID_128:
         BYTE Identifier[16]
     ctypedef EXT_FILE_ID_128 *PEXT_FILE_ID_128
+    ctypedef EXT_FILE_ID_128 FILE_ID_128
+
+    cpdef enum FILE_ID_TYPE:
+        FileIdType          = 0
+        ObjectIdType        = 1
+        ExtendedFileIdType  = 2
+        MaximumFileIdType
+    ctypedef FILE_ID_TYPE *PFILE_ID_TYPE
+
+    ctypedef struct FILE_ID_DESCRIPTOR:
+        DWORD         dwSize
+        FILE_ID_TYPE  Type
+        LARGE_INTEGER FileId
+        GUID          ObjectId
+        FILE_ID_128   ExtendedFileId
+    ctypedef FILE_ID_DESCRIPTOR *PFILE_ID_DESCRIPTOR
+    ctypedef FILE_ID_DESCRIPTOR *LPFILE_ID_DESCRIPTOR
+
+    ctypedef struct FILE_ID_EXTD_DIR_INFO:
+        ULONG         NextEntryOffset
+        ULONG         FileIndex
+        LARGE_INTEGER CreationTime
+        LARGE_INTEGER LastAccessTime
+        LARGE_INTEGER LastWriteTime
+        LARGE_INTEGER ChangeTime
+        LARGE_INTEGER EndOfFile
+        LARGE_INTEGER AllocationSize
+        ULONG         FileAttributes
+        ULONG         FileNameLength
+        ULONG         EaSize
+        ULONG         ReparsePointTag
+        FILE_ID_128   FileId
+        WCHAR         FileName[1]
+    ctypedef FILE_ID_EXTD_DIR_INFO *PFILE_ID_EXTD_DIR_INFO
 
     ctypedef struct FILE_BASIC_INFO:
         LARGE_INTEGER CreationTime
@@ -1173,6 +1207,39 @@ cdef extern from *:
         DWORD         StorageDeviceNumber
         WCHAR         StorageManagerName[8]
     ctypedef DISK_PERFORMANCE *PDISK_PERFORMANCE
+
+    ctypedef enum WRITE_THROUGH:
+        WriteThroughUnknown       = 0
+        WriteThroughNotSupported  = 1
+        WriteThroughSupported     = 2
+
+    ctypedef enum MEDIA_TYPE:
+        Unknown         = 0x00
+        F5_1Pt2_512     = 0x01
+        F3_1Pt44_512    = 0x02
+        F3_2Pt88_512    = 0x03
+        F3_20Pt8_512    = 0x04
+        F3_720_512      = 0x05
+        F5_360_512      = 0x06
+        F5_320_512      = 0x07
+        F5_320_1024     = 0x08
+        F5_180_512      = 0x09
+        F5_160_512      = 0x0a
+        RemovableMedia  = 0x0b
+        FixedMedia      = 0x0c
+        F3_120M_512     = 0x0d
+        F3_640_512      = 0x0e
+        F5_640_512      = 0x0f
+        F5_720_512      = 0x10
+        F3_1Pt2_512     = 0x11
+        F3_1Pt23_1024   = 0x12
+        F5_1Pt23_1024   = 0x13
+        F3_128Mb_512    = 0x14
+        F3_230Mb_512    = 0x15
+        F8_256_128      = 0x16
+        F3_200Mb_512    = 0x17
+        F3_240M_512     = 0x18
+        F3_32M_512      = 0x19
 
     ctypedef struct DISK_GEOMETRY:
           LARGE_INTEGER Cylinders
