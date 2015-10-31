@@ -494,7 +494,7 @@ class TechempowerFrameworkBenchmarkServer(TCPServerCommand):
             try:
                 parallel.run()
             except KeyboardInterrupt:
-                server.shutdown()
+                self.server.shutdown()
 
 class PandasServer(TCPServerCommand):
     _shortname_ = 'pd'
