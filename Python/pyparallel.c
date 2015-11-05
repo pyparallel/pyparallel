@@ -1732,6 +1732,8 @@ void
 _PyParallel_IncRef(void *vp)
 {
     PyObject *op = (PyObject *)vp;
+    if (op == NULL)
+        return;
     if ((!Py_PXCTX() && (Py_ISPY(op) || Px_PERSISTED(op)))) {
         _Py_INC_REFTOTAL;
         (((PyObject*)(op))->ob_refcnt++);
@@ -1742,6 +1744,8 @@ void
 _PyParallel_DecRef(void *vp)
 {
     PyObject *op = (PyObject *)vp;
+    if (op == NULL)
+        return;
     if (!Py_PXCTX()) {
         if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
