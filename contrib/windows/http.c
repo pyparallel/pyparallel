@@ -234,8 +234,9 @@ static CYTHON_INLINE float __PYX_NAN() {
   #endif
 #endif
 
-#define __PYX_HAVE__types
-#define __PYX_HAVE_API__types
+#define __PYX_HAVE__http
+#define __PYX_HAVE_API__http
+#include <http.h>
 #include <windows.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -445,11 +446,39 @@ static const char *__pyx_filename;
 
 
 static const char *__pyx_f[] = {
-  "types.pyx",
-  "types.pxd",
+  "http.pyx",
+  "http.pxd",
 };
 
 /*--- Type declarations ---*/
+struct __pyx_obj_4http_HttpRequestV1;
+struct __pyx_obj_4http_HttpRequest;
+
+/* "http.pyx":19
+ * # Classes
+ * #===============================================================================
+ * cdef class HttpRequestV1:             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         HTTP_REQUEST _request
+ */
+struct __pyx_obj_4http_HttpRequestV1 {
+  PyObject_HEAD
+  HTTP_REQUEST _request;
+};
+
+
+/* "http.pyx":23
+ *         HTTP_REQUEST _request
+ * 
+ * cdef class HttpRequest:             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         HTTP_REQUEST_V2 _request
+ */
+struct __pyx_obj_4http_HttpRequest {
+  PyObject_HEAD
+  HTTP_REQUEST_V2 _request;
+};
+
 
 /* --- Runtime support code (head) --- */
 #ifndef CYTHON_REFNANNY
@@ -539,20 +568,34 @@ static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 static int __Pyx_check_binary_version(void);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value);
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__HTTP_CACHE_POLICY_TYPE(enum HTTP_CACHE_POLICY_TYPE value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__HTTP_LOG_DATA_TYPE(enum HTTP_LOG_DATA_TYPE value);
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
 
 /* Module declarations from 'types' */
-#define __Pyx_MODULE_NAME "types"
-int __pyx_module_is_main_types = 0;
 
-/* Implementation of 'types' */
+/* Module declarations from 'constants' */
+
+/* Module declarations from 'base' */
+
+/* Module declarations from 'http' */
+static PyTypeObject *__pyx_ptype_4http_HttpRequestV1 = 0;
+static PyTypeObject *__pyx_ptype_4http_HttpRequest = 0;
+#define __Pyx_MODULE_NAME "http"
+int __pyx_module_is_main_http = 0;
+
+/* Implementation of 'http' */
 static char __pyx_k_main[] = "__main__";
 static char __pyx_k_test[] = "__test__";
 static PyObject *__pyx_n_s_main;
 static PyObject *__pyx_n_s_test;
+static PyObject *__pyx_tp_new_4http_HttpRequestV1(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_tp_new_4http_HttpRequest(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 
 /* "windows.pxi":4
  *     pass
@@ -562,7 +605,7 @@ static PyObject *__pyx_n_s_test;
  *     ul.LowPart = filetime.dwLowDateTime
  */
 
-static CYTHON_INLINE ULONGLONG __pyx_f_5types_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
+static CYTHON_INLINE ULONGLONG __pyx_f_4http_FileTimeToUnsignedLongLong(PFILETIME __pyx_v_filetime) {
   ULARGE_INTEGER __pyx_v_ul;
   ULONGLONG __pyx_r;
   __Pyx_RefNannyDeclarations
@@ -613,6 +656,162 @@ static CYTHON_INLINE ULONGLONG __pyx_f_5types_FileTimeToUnsignedLongLong(PFILETI
   return __pyx_r;
 }
 
+static PyObject *__pyx_tp_new_4http_HttpRequestV1(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  PyObject *o;
+  if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
+    o = (*t->tp_alloc)(t, 0);
+  } else {
+    o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
+  }
+  if (unlikely(!o)) return 0;
+  return o;
+}
+
+static void __pyx_tp_dealloc_4http_HttpRequestV1(PyObject *o) {
+  #if PY_VERSION_HEX >= 0x030400a1
+  if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
+    if (PyObject_CallFinalizerFromDealloc(o)) return;
+  }
+  #endif
+  (*Py_TYPE(o)->tp_free)(o);
+}
+
+static PyTypeObject __pyx_type_4http_HttpRequestV1 = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "http.HttpRequestV1", /*tp_name*/
+  sizeof(struct __pyx_obj_4http_HttpRequestV1), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_4http_HttpRequestV1, /*tp_dealloc*/
+  0, /*tp_print*/
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  0, /*tp_methods*/
+  0, /*tp_members*/
+  0, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  0, /*tp_dictoffset*/
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_4http_HttpRequestV1, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  0, /*tp_finalize*/
+  #endif
+};
+
+static PyObject *__pyx_tp_new_4http_HttpRequest(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  PyObject *o;
+  if (likely((t->tp_flags & Py_TPFLAGS_IS_ABSTRACT) == 0)) {
+    o = (*t->tp_alloc)(t, 0);
+  } else {
+    o = (PyObject *) PyBaseObject_Type.tp_new(t, __pyx_empty_tuple, 0);
+  }
+  if (unlikely(!o)) return 0;
+  return o;
+}
+
+static void __pyx_tp_dealloc_4http_HttpRequest(PyObject *o) {
+  #if PY_VERSION_HEX >= 0x030400a1
+  if (unlikely(Py_TYPE(o)->tp_finalize) && (!PyType_IS_GC(Py_TYPE(o)) || !_PyGC_FINALIZED(o))) {
+    if (PyObject_CallFinalizerFromDealloc(o)) return;
+  }
+  #endif
+  (*Py_TYPE(o)->tp_free)(o);
+}
+
+static PyTypeObject __pyx_type_4http_HttpRequest = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "http.HttpRequest", /*tp_name*/
+  sizeof(struct __pyx_obj_4http_HttpRequest), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_4http_HttpRequest, /*tp_dealloc*/
+  0, /*tp_print*/
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  0, /*tp_methods*/
+  0, /*tp_members*/
+  0, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  0, /*tp_dictoffset*/
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_4http_HttpRequest, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  0, /*tp_finalize*/
+  #endif
+};
+
 static PyMethodDef __pyx_methods[] = {
   {0, 0, 0, 0}
 };
@@ -624,7 +823,7 @@ static struct PyModuleDef __pyx_moduledef = {
   #else
     PyModuleDef_HEAD_INIT,
   #endif
-    "types",
+    "http",
     0, /* m_doc */
     -1, /* m_size */
     __pyx_methods /* m_methods */,
@@ -659,11 +858,11 @@ static int __Pyx_InitGlobals(void) {
 }
 
 #if PY_MAJOR_VERSION < 3
-PyMODINIT_FUNC inittypes(void); /*proto*/
-PyMODINIT_FUNC inittypes(void)
+PyMODINIT_FUNC inithttp(void); /*proto*/
+PyMODINIT_FUNC inithttp(void)
 #else
-PyMODINIT_FUNC PyInit_types(void); /*proto*/
-PyMODINIT_FUNC PyInit_types(void)
+PyMODINIT_FUNC PyInit_http(void); /*proto*/
+PyMODINIT_FUNC PyInit_http(void)
 #endif
 {
   PyObject *__pyx_t_1 = NULL;
@@ -680,7 +879,7 @@ PyMODINIT_FUNC PyInit_types(void)
           Py_FatalError("failed to import 'refnanny' module");
   }
   #endif
-  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_types(void)", 0);
+  __Pyx_RefNannySetupContext("PyMODINIT_FUNC PyInit_http(void)", 0);
   if (__Pyx_check_binary_version() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
@@ -708,7 +907,7 @@ PyMODINIT_FUNC PyInit_types(void)
   #endif
   /*--- Module creation code ---*/
   #if PY_MAJOR_VERSION < 3
-  __pyx_m = Py_InitModule4("types", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
+  __pyx_m = Py_InitModule4("http", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
   #endif
@@ -725,14 +924,14 @@ PyMODINIT_FUNC PyInit_types(void)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
   if (__Pyx_init_sys_getdefaultencoding_params() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
-  if (__pyx_module_is_main_types) {
+  if (__pyx_module_is_main_http) {
     if (PyObject_SetAttrString(__pyx_m, "__name__", __pyx_n_s_main) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   #if PY_MAJOR_VERSION >= 3
   {
     PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (!PyDict_GetItemString(modules, "types")) {
-      if (unlikely(PyDict_SetItemString(modules, "types", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (!PyDict_GetItemString(modules, "http")) {
+      if (unlikely(PyDict_SetItemString(modules, "http", __pyx_m) < 0)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     }
   }
   #endif
@@ -744,6 +943,14 @@ PyMODINIT_FUNC PyInit_types(void)
   /*--- Variable export code ---*/
   /*--- Function export code ---*/
   /*--- Type init code ---*/
+  if (PyType_Ready(&__pyx_type_4http_HttpRequestV1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_4http_HttpRequestV1.tp_print = 0;
+  if (PyObject_SetAttrString(__pyx_m, "HttpRequestV1", (PyObject *)&__pyx_type_4http_HttpRequestV1) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_4http_HttpRequestV1 = &__pyx_type_4http_HttpRequestV1;
+  if (PyType_Ready(&__pyx_type_4http_HttpRequest) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_type_4http_HttpRequest.tp_print = 0;
+  if (PyObject_SetAttrString(__pyx_m, "HttpRequest", (PyObject *)&__pyx_type_4http_HttpRequest) < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_ptype_4http_HttpRequest = &__pyx_type_4http_HttpRequest;
   /*--- Type import code ---*/
   /*--- Variable import code ---*/
   /*--- Function import code ---*/
@@ -752,11 +959,11 @@ PyMODINIT_FUNC PyInit_types(void)
   if (__Pyx_patch_abc() < 0) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   #endif
 
-  /* "types.pyx":2
+  /* "http.pyx":2
  * 
- * from types cimport *             # <<<<<<<<<<<<<<
+ * cdef extern from "<http.h>":             # <<<<<<<<<<<<<<
+ *     pass
  * 
- * include "windows.pxi"
  */
   __pyx_t_1 = PyDict_New(); if (unlikely(!__pyx_t_1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 2; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_1);
@@ -765,24 +972,109 @@ PyMODINIT_FUNC PyInit_types(void)
 
   /*--- Wrapped vars code ---*/
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(FileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "FileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1155; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_int(ERROR_DLL_INIT_FAILED);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "ERROR_DLL_INIT_FAILED", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ObjectIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ObjectIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1156; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_int(ERROR_INVALID_PARAMETER);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "ERROR_INVALID_PARAMETER", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(MaximumFileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1158; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MaximumFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1158; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_enum__HTTP_CACHE_POLICY_TYPE(HttpCachePolicyTimeToLive);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 125; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HttpCachePolicyTimeToLive", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 125; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ExtendedFileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1157; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ExtendedFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1157; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_OPAQUE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_OPAQUE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_UNTRUSTEDROOT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_UNTRUSTEDROOT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_UNTRUSTEDCA);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_UNTRUSTEDCA", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_CN_NO_MATCH);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_CN_NO_MATCH", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_WRONG_USAGE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_WRONG_USAGE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_MORE_DATA);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_MORE_DATA", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 15; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_ENABLE_NAGLING);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_ENABLE_NAGLING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__HTTP_LOG_DATA_TYPE(HttpLogDataTypeFields);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HttpLogDataTypeFields", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 119; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_REQUEST_AUTH_FLAG_TOKEN_FOR_CACHED_CRED);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_REQUEST_AUTH_FLAG_TOKEN_FOR_CACHED_CRED", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(ERROR_HANDLE_EOF);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "ERROR_HANDLE_EOF", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__HTTP_CACHE_POLICY_TYPE(HttpCachePolicyNocache);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 123; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HttpCachePolicyNocache", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 123; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_EXPIRED);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_EXPIRED", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 22; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__HTTP_CACHE_POLICY_TYPE(HttpCachePolicyUserInvalidates);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 124; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HttpCachePolicyUserInvalidates", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 124; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_PROCESS_RANGES);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_PROCESS_RANGES", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 18; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_REVOKED);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CERT_E_REVOKED", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_DISCONNECT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_DISCONNECT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 14; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
 
   goto __pyx_L0;
@@ -790,11 +1082,11 @@ PyMODINIT_FUNC PyInit_types(void)
   __Pyx_XDECREF(__pyx_t_1);
   if (__pyx_m) {
     if (__pyx_d) {
-      __Pyx_AddTraceback("init types", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      __Pyx_AddTraceback("init http", __pyx_clineno, __pyx_lineno, __pyx_filename);
     }
     Py_DECREF(__pyx_m); __pyx_m = 0;
   } else if (!PyErr_Occurred()) {
-    PyErr_SetString(PyExc_ImportError, "init types");
+    PyErr_SetString(PyExc_ImportError, "init http");
   }
   __pyx_L0:;
   __Pyx_RefNannyFinishContext();
@@ -1425,28 +1717,80 @@ static int __Pyx_check_binary_version(void) {
     return 0;
 }
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value) {
-    const enum FILE_ID_TYPE neg_one = (enum FILE_ID_TYPE) -1, const_zero = (enum FILE_ID_TYPE) 0;
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
+    const int neg_one = (int) -1, const_zero = (int) 0;
     const int is_unsigned = neg_one > const_zero;
     if (is_unsigned) {
-        if (sizeof(enum FILE_ID_TYPE) < sizeof(long)) {
+        if (sizeof(int) < sizeof(long)) {
             return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned long)) {
+        } else if (sizeof(int) <= sizeof(unsigned long)) {
             return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned PY_LONG_LONG)) {
+        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
             return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
         }
     } else {
-        if (sizeof(enum FILE_ID_TYPE) <= sizeof(long)) {
+        if (sizeof(int) <= sizeof(long)) {
             return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(PY_LONG_LONG)) {
+        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
             return PyLong_FromLongLong((PY_LONG_LONG) value);
         }
     }
     {
         int one = 1; int little = (int)*(unsigned char *)&one;
         unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum FILE_ID_TYPE),
+        return _PyLong_FromByteArray(bytes, sizeof(int),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__HTTP_CACHE_POLICY_TYPE(enum HTTP_CACHE_POLICY_TYPE value) {
+    const enum HTTP_CACHE_POLICY_TYPE neg_one = (enum HTTP_CACHE_POLICY_TYPE) -1, const_zero = (enum HTTP_CACHE_POLICY_TYPE) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(enum HTTP_CACHE_POLICY_TYPE) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum HTTP_CACHE_POLICY_TYPE) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(enum HTTP_CACHE_POLICY_TYPE) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(enum HTTP_CACHE_POLICY_TYPE) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum HTTP_CACHE_POLICY_TYPE) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(enum HTTP_CACHE_POLICY_TYPE),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__HTTP_LOG_DATA_TYPE(enum HTTP_LOG_DATA_TYPE value) {
+    const enum HTTP_LOG_DATA_TYPE neg_one = (enum HTTP_LOG_DATA_TYPE) -1, const_zero = (enum HTTP_LOG_DATA_TYPE) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(enum HTTP_LOG_DATA_TYPE) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum HTTP_LOG_DATA_TYPE) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(enum HTTP_LOG_DATA_TYPE) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(enum HTTP_LOG_DATA_TYPE) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum HTTP_LOG_DATA_TYPE) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(enum HTTP_LOG_DATA_TYPE),
                                      little, !is_unsigned);
     }
 }
