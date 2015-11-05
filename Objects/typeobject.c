@@ -6095,6 +6095,7 @@ init_slotdefs(void)
 {
     slotdef *p;
     static int initialized = 0;
+    Py_GUARD();
 
     if (initialized)
         return;
