@@ -43,4 +43,14 @@ parallel.register(server1, RateLimitedServer)
 
 
 import parallel
-t = parallel.thread(interval=8, thread_characteristics="Low Latency")
+def gmtime():
+    return parallel.gmtime()
+
+t = parallel.thread(func=gmtime, interval=1000, thread_characteristics="Low Latency")
+
+import parallel
+import datetime
+def gmtime():
+    return parallel.gmtime()
+
+t = parallel.timer(func=gmtime, duetime=datetime.timedelta(milliseconds=1000), period=1000)
