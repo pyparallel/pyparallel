@@ -3,13 +3,14 @@ cdef extern from *:
     ctypedef bint BOOL
     ctypedef char CHAR
     ctypedef CHAR CCHAR
-    ctypedef CHAR* PCHAR
-    ctypedef CHAR* CSTR
-    ctypedef CHAR* LPCSTR
+    ctypedef CHAR *PCHAR
+    ctypedef CHAR *CSTR
+    ctypedef CHAR *PCSTR
+    ctypedef CHAR *LPCSTR
     ctypedef CHAR BOOLEAN
     ctypedef unsigned char UCHAR
     ctypedef UCHAR BYTE
-    ctypedef UCHAR* PUCHAR
+    ctypedef UCHAR *PUCHAR
     ctypedef short SHORT
     ctypedef SHORT CSHORT
     ctypedef unsigned short USHORT
@@ -17,17 +18,18 @@ cdef extern from *:
     ctypedef WORD *PWORD
     ctypedef WORD ATOM
     ctypedef USHORT WCHAR
-    ctypedef WCHAR* PWSTR
-    ctypedef WCHAR* PTSTR
-    ctypedef WCHAR* LPTSTR
-    ctypedef WCHAR* LPSTR
-    ctypedef WCHAR* LPWSTR
-    ctypedef WCHAR* POLESTR
-    ctypedef WCHAR* LPOLESTR
-    ctypedef const WCHAR* LPCTSTR
-    ctypedef const WCHAR* LPCWSTR
+    ctypedef WCHAR *PWSTR
+    ctypedef WCHAR *PTSTR
+    ctypedef WCHAR *LPTSTR
+    ctypedef WCHAR *LPSTR
+    ctypedef WCHAR *LPWSTR
+    ctypedef WCHAR *POLESTR
+    ctypedef WCHAR *LPOLESTR
+    ctypedef const WCHAR *LPCTSTR
+    ctypedef const WCHAR *LPCWSTR
+    ctypedef const WCHAR *PCWSTR
     ctypedef float FLOAT
-    ctypedef FLOAT* PFLOAT
+    ctypedef FLOAT *PFLOAT
     ctypedef int INT
     ctypedef int INT32
     ctypedef long long INT64
@@ -46,20 +48,21 @@ cdef extern from *:
     ctypedef LONGLONG USN
     ctypedef unsigned long ULONG
     ctypedef ULONG ACCESS_MASK
+    ctypedef LONG SECURITY_STATUS
     ctypedef Py_ssize_t ULONG_PTR
     ctypedef Py_ssize_t PULONG_PTR
     ctypedef ULONG_PTR KAFFINITY
-    ctypedef ULONG* PULONG
+    ctypedef ULONG *PULONG
     ctypedef unsigned long long ULONGLONG
     ctypedef unsigned long long ULONG64
     ctypedef ULONGLONG DWORDLONG
-    ctypedef ULONGLONG* PDWORDLONG
-    ctypedef ULONG64* PULONG64
-    ctypedef ULONGLONG* PULONGLONG
+    ctypedef ULONGLONG *PDWORDLONG
+    ctypedef ULONG64 *PULONG64
+    ctypedef ULONGLONG *PULONGLONG
     ctypedef unsigned long DWORD
-    ctypedef DWORD* PDWORD
-    ctypedef DWORD* LPDWORD
-    ctypedef DWORD* DWORD_PTR
+    ctypedef DWORD *PDWORD
+    ctypedef DWORD *LPDWORD
+    ctypedef DWORD *DWORD_PTR
     ctypedef unsigned int DWORD32
     ctypedef unsigned long long DWORD64
     ctypedef long long WORD64
@@ -68,9 +71,9 @@ cdef extern from *:
     ctypedef Py_ssize_t PVOID
     ctypedef Py_ssize_t LPVOID
     ctypedef unsigned long long PVOID64
-    ctypedef const void * LPCVOID
+    ctypedef const void *LPCVOID
     ctypedef PVOID INIT_ONCE
-    ctypedef PVOID* PINIT_ONCE
+    ctypedef PVOID *PINIT_ONCE
 
     ctypedef Py_ssize_t HANDLE
     ctypedef HANDLE HDC
@@ -80,7 +83,7 @@ cdef extern from *:
     ctypedef HANDLE HMODULE
     ctypedef HANDLE *PHANDLE
 
-    ctypedef void* _HANDLE
+    ctypedef void *_HANDLE
     ctypedef _HANDLE _HBITMAP
 
     ctypedef INT_PTR (__stdcall *FARPROC)()
@@ -93,28 +96,28 @@ cdef extern from *:
         unsigned short s2
         unsigned char c[8]
     ctypedef IID CLSID
-    ctypedef CLSID* PCLSID
-    ctypedef IID* REFIID
+    ctypedef CLSID *PCLSID
+    ctypedef IID *REFIID
 
     ctypedef struct GUID:
         ULONG   Data1
         USHORT  Data2
         USHORT  Data3
         UCHAR   Data4[8]
-    ctypedef GUID* PGUID
+    ctypedef GUID *PGUID
 
     ctypedef struct PROCESSOR_NUMBER:
         WORD Group
         BYTE Number
         BYTE Reserved
-    ctypedef PROCESSOR_NUMBER* PPROCESSOR_NUMBER
+    ctypedef PROCESSOR_NUMBER *PPROCESSOR_NUMBER
 
     ctypedef struct PROCESS_INFORMATION:
         HANDLE hProcess
         HANDLE hThread
         DWORD dwProcessId
         DWORD dwThreadId
-    ctypedef PROCESS_INFORMATION* PPROCESS_INFORMATION
+    ctypedef PROCESS_INFORMATION *PPROCESS_INFORMATION
 
     ctypedef struct SYSTEM_INFO:
         DWORD dwOemId
@@ -220,11 +223,11 @@ cdef extern from *:
 
     ctypedef struct SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION:
         DWORD64 CycleTime
-    ctypedef SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION* PSYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION
+    ctypedef SYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION *PSYSTEM_PROCESSOR_CYCLE_TIME_INFORMATION
 
     ctypedef struct MEMORY_PRIORITY_INFORMATION:
         ULONG MemoryPriority
-    ctypedef MEMORY_PRIORITY_INFORMATION* PMEMORY_PRIORITY_INFORMATION
+    ctypedef MEMORY_PRIORITY_INFORMATION *PMEMORY_PRIORITY_INFORMATION
 
     ctypedef enum MEMORY_PRIORITY:
         MEMORY_PRIORITY_VERY_LOW        = 1
@@ -236,7 +239,7 @@ cdef extern from *:
     ctypedef struct LIST_ENTRY:
         LIST_ENTRY *Flink
         LIST_ENTRY *Blink
-    ctypedef LIST_ENTRY* PLIST_ENTRY
+    ctypedef LIST_ENTRY *PLIST_ENTRY
 
     # See http://www.hitmaroc.net/600697-3913-cython-nesting-union-within-struct.html
     # regarding the quirky nesting.
@@ -268,7 +271,7 @@ cdef extern from *:
         USHORT Length
         USHORT MaximumLength
         PWSTR  Buffer
-    ctypedef UNICODE_STRING* PUNICODE_STRING
+    ctypedef UNICODE_STRING *PUNICODE_STRING
 
     ctypedef struct IO_COUNTERS:
         ULONGLONG ReadOperationCount
@@ -277,12 +280,12 @@ cdef extern from *:
         ULONGLONG ReadTransferCount
         ULONGLONG WriteTransferCount
         ULONGLONG OtherTransferCount
-    ctypedef IO_COUNTERS* PIO_COUNTERS
+    ctypedef IO_COUNTERS *PIO_COUNTERS
 
     ctypedef struct FILETIME:
         DWORD dwLowDateTime
         DWORD dwHighDateTime
-    ctypedef FILETIME* PFILETIME
+    ctypedef FILETIME *PFILETIME
     ctypedef PFILETIME LPFILETIME
 
     ctypedef struct SYSTEMTIME:
@@ -294,13 +297,13 @@ cdef extern from *:
         WORD wMinute
         WORD wSecond
         WORD wMilliseconds
-    ctypedef SYSTEMTIME* PSYSTEMTIME
+    ctypedef SYSTEMTIME *PSYSTEMTIME
     ctypedef PSYSTEMTIME LPSYSTEMTIME
 
     ctypedef struct CRITICAL_SECTION:
         pass
-    ctypedef CRITICAL_SECTION* PCRITICAL_SECTION
-    ctypedef CRITICAL_SECTION* LPCRITICAL_SECTION
+    ctypedef CRITICAL_SECTION *PCRITICAL_SECTION
+    ctypedef CRITICAL_SECTION *LPCRITICAL_SECTION
 
     ctypedef BOOL (__stdcall *PINIT_ONCE_FN)(
         PINIT_ONCE InitOnce,
@@ -320,7 +323,7 @@ cdef extern from *:
         KAFFINITY Mask
         WORD Group
         WORD Reserved[3]
-    ctypedef GROUP_AFFINITY* PGROUP_AFFINITY
+    ctypedef GROUP_AFFINITY *PGROUP_AFFINITY
 
     ctypedef struct PROCESSOR_RELATIONSHIP:
         BYTE Flags
@@ -345,7 +348,7 @@ cdef extern from *:
         WORD LineSize
         DWORD Size
         PROCESSOR_CACHE_TYPE Type
-    ctypedef CACHE_DESCRIPTOR* PCACHE_DESCRIPTOR
+    ctypedef CACHE_DESCRIPTOR *PCACHE_DESCRIPTOR
 
     ctypedef struct CACHE_RELATIONSHIP:
         BYTE Level
@@ -355,20 +358,20 @@ cdef extern from *:
         PROCESSOR_CACHE_TYPE Type
         BYTE Reserved[20]
         GROUP_AFFINITY GroupMask
-    ctypedef CACHE_RELATIONSHIP* PCACHE_RELATIONSHIP
+    ctypedef CACHE_RELATIONSHIP *PCACHE_RELATIONSHIP
 
     ctypedef struct NUMA_NODE_RELATIONSHIP:
         DWORD NodeNumber
         BYTE Reserved[20]
         GROUP_AFFINITY GroupMask
-    ctypedef NUMA_NODE_RELATIONSHIP* PNUMA_NODE_RELATIONSHIP
+    ctypedef NUMA_NODE_RELATIONSHIP *PNUMA_NODE_RELATIONSHIP
 
     ctypedef struct PROCESSOR_GROUP_INFO:
         BYTE MaximumProcessorCount
         BYTE ActiveProcessorCount
         BYTE Reserved[38]
         KAFFINITY ActiveProcessorMask
-    ctypedef PROCESSOR_GROUP_INFO* PPROCESSOR_GROUP_INFO
+    ctypedef PROCESSOR_GROUP_INFO *PPROCESSOR_GROUP_INFO
 
     ctypedef struct GROUP_RELATIONSHIP:
         WORD MaximumGroupCount
@@ -381,7 +384,7 @@ cdef extern from *:
         WORD Group
         BYTE Number
         BYTE Reserved
-    ctypedef PROCESSOR_NUMBER* PPROCESSOR_NUMBER
+    ctypedef PROCESSOR_NUMBER *PPROCESSOR_NUMBER
 
     ctypedef struct SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX:
         LOGICAL_PROCESSOR_RELATIONSHIP Relationship
@@ -438,7 +441,7 @@ cdef extern from *:
         DWORD Reserved
         DWORD64 AllocationTag
     ctypedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION SYSTEM_CPU_SET_INFORMATION
-    ctypedef SYSTEM_CPU_SET_INFORMATION* PSYSTEM_CPU_SET_INFORMATION
+    ctypedef SYSTEM_CPU_SET_INFORMATION *PSYSTEM_CPU_SET_INFORMATION
 
     ctypedef struct SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX:
         LOGICAL_PROCESSOR_RELATIONSHIP Relationship
@@ -448,7 +451,7 @@ cdef extern from *:
         NUMA_NODE_RELATIONSHIP NumaNode
         CACHE_RELATIONSHIP Cache
         GROUP_RELATIONSHIP Group
-    ctypedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX* PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX
+    ctypedef SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX
 
     ctypedef struct HEAPENTRY32:
         Py_ssize_t dwSize
@@ -460,7 +463,7 @@ cdef extern from *:
         DWORD dwResvd
         DWORD th32ProcessID
         ULONG_PTR th32HeapID
-    ctypedef HEAPENTRY32* PHEAPENTRY32
+    ctypedef HEAPENTRY32 *PHEAPENTRY32
 
     ctypedef enum HEAPENTRY32_FLAGS:
         LF32_FIXED      = 1
@@ -472,8 +475,8 @@ cdef extern from *:
         DWORD th32ProcessID
         ULONG_PTR th32HeapID
         DWORD dwFlags
-    ctypedef HEAPLIST32* PHEAPLIST32
-    ctypedef HEAPLIST32* LPHEAPLIST32
+    ctypedef HEAPLIST32 *PHEAPLIST32
+    ctypedef HEAPLIST32 *LPHEAPLIST32
 
     ctypedef struct THREADENTRY32:
         DWORD dwSize
@@ -483,14 +486,14 @@ cdef extern from *:
         LONG tpBasePri
         LONG tpDeltaPri
         DWORD dwFlags
-    ctypedef THREADENTRY32* PTHREADENTRY32
+    ctypedef THREADENTRY32 *PTHREADENTRY32
 
     ctypedef struct SECURITY_ATTRIBUTES:
         DWORD   nLength
         LPVOID  lpSecurityDescriptor
         BOOL    bInheritHandle
-    ctypedef SECURITY_ATTRIBUTES* PSECURITY_ATTRIBUTES
-    ctypedef SECURITY_ATTRIBUTES* LPSECURITY_ATTRIBUTES
+    ctypedef SECURITY_ATTRIBUTES *PSECURITY_ATTRIBUTES
+    ctypedef SECURITY_ATTRIBUTES *LPSECURITY_ATTRIBUTES
 
     ctypedef struct OVERLAPPED:
         ULONG_PTR Internal
@@ -499,7 +502,7 @@ cdef extern from *:
         DWORD OffsetHigh
         LPVOID Pointer
         HANDLE hEvent
-    ctypedef OVERLAPPED* LPOVERLAPPED
+    ctypedef OVERLAPPED *LPOVERLAPPED
 
     ctypedef struct OVERLAPPED_ENTRY:
         ULONG_PTR lpCompletionKey
@@ -522,7 +525,7 @@ cdef extern from *:
     ctypedef struct SIZE:
         LONG cx
         LONG cy
-    ctypedef SIZE* PSIZE
+    ctypedef SIZE *PSIZE
 
     ctypedef struct RGBQUAD:
         BYTE rgbBlue
@@ -538,8 +541,8 @@ cdef extern from *:
         LONG bmPlanes
         LONG bmBitsPixel
         LPVOID bmBits
-    ctypedef BITMAP* PBITMAP
-    ctypedef BITMAP* LPBITMAP
+    ctypedef BITMAP *PBITMAP
+    ctypedef BITMAP *LPBITMAP
 
     ctypedef struct BITMAPFILEHEADER:
         WORD  bfType
@@ -547,7 +550,7 @@ cdef extern from *:
         WORD  bfReserved1
         WORD  bfReserved2
         DWORD bfOffBits
-    ctypedef BITMAPFILEHEADER* PBITMAPFILEHEADER
+    ctypedef BITMAPFILEHEADER *PBITMAPFILEHEADER
 
     ctypedef struct BITMAPINFOHEADER:
         DWORD   biSize
@@ -561,13 +564,13 @@ cdef extern from *:
         LONG    biYPelsPerMeter
         DWORD   biClrUsed
         DWORD   biClrImportant
-    ctypedef BITMAPINFOHEADER* PBITMAPINFOHEADER
+    ctypedef BITMAPINFOHEADER *PBITMAPINFOHEADER
 
     ctypedef struct BITMAPINFO:
         BITMAPINFOHEADER bmiHeader
         RGBQUAD          bmiColors[1]
-    ctypedef BITMAPINFO* PBITMAPINFO
-    ctypedef BITMAPINFO* LPBITMAPINFO
+    ctypedef BITMAPINFO *PBITMAPINFO
+    ctypedef BITMAPINFO *LPBITMAPINFO
 
     ctypedef long FXPT2DOT30
     ctypedef struct CIEXYZ:
@@ -601,7 +604,7 @@ cdef extern from *:
         DWORD        bV4GammaRed
         DWORD        bV4GammaGreen
         DWORD        bV4GammaBlue
-    ctypedef BITMAPV4HEADER* PBITMAPV4HEADER
+    ctypedef BITMAPV4HEADER *PBITMAPV4HEADER
 
     ctypedef struct BITMAPV5HEADER:
         DWORD        bV5Size
@@ -628,40 +631,40 @@ cdef extern from *:
         DWORD        bV5ProfileData
         DWORD        bV5ProfileSize
         DWORD        bV5Reserved
-    ctypedef BITMAPV5HEADER* PBITMAPV5HEADER
+    ctypedef BITMAPV5HEADER *PBITMAPV5HEADER
 
     ctypedef struct RECT:
         LONG left
         LONG top
         LONG right
         LONG bottom
-    ctypedef RECT* PRECT
-    ctypedef RECT* LPRECT
+    ctypedef RECT *PRECT
+    ctypedef RECT *LPRECT
     ctypedef RECT RECTL
-    ctypedef RECTL* PRECTL
-    ctypedef RECTL* LPRECTL
+    ctypedef RECTL *PRECTL
+    ctypedef RECTL *LPRECTL
 
     ctypedef struct RTL_BITMAP:
         ULONG SizeOfBitMap
         PULONG Buffer
-    ctypedef RTL_BITMAP* PRTL_BITMAP
+    ctypedef RTL_BITMAP *PRTL_BITMAP
 
     ctypedef struct RTL_BITMAP_RUN:
         ULONG StartingIndex
         ULONG NumberOfBits
-    ctypedef RTL_BITMAP_RUN* PRTL_BITMAP_RUN
+    ctypedef RTL_BITMAP_RUN *PRTL_BITMAP_RUN
 
     ctypedef LARGE_INTEGER PHYSICAL_ADDRESS
 
     ctypedef struct MM_PHYSICAL_ADDRESS_LIST:
         PHYSICAL_ADDRESS PhysicalAddress
         Py_ssize_t NumberOfBytes
-    ctypedef MM_PHYSICAL_ADDRESS_LIST* PMM_PHYSICAL_ADDRESS_LIST
+    ctypedef MM_PHYSICAL_ADDRESS_LIST *PMM_PHYSICAL_ADDRESS_LIST
 
     ctypedef union FILE_SEGMENT_ELEMENT:
         PVOID64 Buffer
         ULONGLONG Alignment
-    ctypedef FILE_SEGMENT_ELEMENT* PFILE_SEGMENT_ELEMENT
+    ctypedef FILE_SEGMENT_ELEMENT *PFILE_SEGMENT_ELEMENT
 
     ctypedef enum FILE_MAPPING:
         FILE_MAP_ALL_ACCESS
@@ -1026,6 +1029,7 @@ cdef extern from *:
     ctypedef struct SOCKADDR:
         USHORT sa_family
         CHAR   sa_data[14]
+    ctypedef SOCKADDR *PSOCKADDR
 
     ctypedef struct _S_un_b:
         UCHAR s_b1
