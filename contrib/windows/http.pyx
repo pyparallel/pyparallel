@@ -1,5 +1,10 @@
 
+cdef extern from "<http.h>":
+    pass
+
 include "windows.pxi"
+
+from types cimport *
 from constants cimport *
 from base cimport *
 from http cimport *
@@ -12,8 +17,12 @@ from http cimport *
 # Classes
 #===============================================================================
 cdef class HttpRequestV1:
-    cdef public:
-        HTTP_REQUEST_V1 _request
+    cdef:
+        HTTP_REQUEST _request
+
+cdef class HttpRequest:
+    cdef:
+        HTTP_REQUEST_V2 _request
 
 
 # vim: set ts=8 sw=4 sts=4 tw=80 et:

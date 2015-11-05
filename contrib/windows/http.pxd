@@ -10,13 +10,13 @@ cdef extern from *:
 
     cpdef enum:
         HTTP_REQUEST_FLAG_MORE_ENTITY_BODY_EXISTS
-        HTTP_REQUEST_IP_ROUTED
-	HTTP_SEND_RESPONSE_FLAG_DISCONNECT
-	HTTP_SEND_RESPONSE_FLAG_MORE_DATA
-	HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA
-	HTTP_SEND_RESPONSE_FLAG_ENABLE_NAGLING
-	HTTP_SEND_RESPONSE_FLAG_PROCESS_RANGES
-	HTTP_SEND_RESPONSE_FLAG_OPAQUE
+        #HTTP_REQUEST_IP_ROUTED /* doesn't seem to exist? */
+        HTTP_SEND_RESPONSE_FLAG_DISCONNECT
+        HTTP_SEND_RESPONSE_FLAG_MORE_DATA
+        HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA
+        HTTP_SEND_RESPONSE_FLAG_ENABLE_NAGLING
+        HTTP_SEND_RESPONSE_FLAG_PROCESS_RANGES
+        HTTP_SEND_RESPONSE_FLAG_OPAQUE
 
     cpdef enum:
         CERT_E_EXPIRED
@@ -29,7 +29,7 @@ cdef extern from *:
     cpdef enum:
         HTTP_REQUEST_AUTH_FLAG_TOKEN_FOR_CACHED_CRED
 
-    cpdef enum HTTP_VERB:
+    ctypedef enum HTTP_VERB:
         HttpVerbUnparsed
         HttpVerbUnknown
         HttpVerbInvalid
@@ -53,7 +53,7 @@ cdef extern from *:
         HttpVerbMaximum
     ctypedef HTTP_VERB *PHTTP_VERB
 
-    cpdef enum HTTP_HEADER_ID:
+    ctypedef enum HTTP_HEADER_ID:
         HttpHeaderCacheControl        = 0
         HttpHeaderConnection          = 1
         HttpHeaderDate                = 2
@@ -120,9 +120,9 @@ cdef extern from *:
     ctypedef HTTP_LOG_DATA_TYPE *PHTTP_LOG_DATA_TYPE
 
     cpdef enum HTTP_CACHE_POLICY_TYPE:
-	HttpCachePolicyNocache
-	HttpCachePolicyUserInvalidates
-	HttpCachePolicyTimeToLive
+        HttpCachePolicyNocache
+        HttpCachePolicyUserInvalidates
+        HttpCachePolicyTimeToLive
 
     ctypedef enum HTTP_REQUEST_INFO_TYPE:
         HttpRequestInfoTypeAuth
@@ -147,6 +147,12 @@ cdef extern from *:
         PCWSTR pAbsPath
         PCWSTR pQueryString
     ctypedef HTTP_COOKED_URL *PHTTP_COOKED_URL
+
+    ctypedef enum HTTP_AUTH_STATUS:
+        HttpAuthStatusSuccess
+        HttpAuthStatusNotAuthenticated
+        HttpAuthStatusFailure
+    ctypedef HTTP_AUTH_STATUS *PHTTP_AUTH_STATUS
 
     ctypedef struct HTTP_REQUEST_AUTH_INFO:
         HTTP_AUTH_STATUS       AuthStatus
@@ -232,6 +238,14 @@ cdef extern from *:
         ULONG                  SecondsToLive
     ctypedef HTTP_CACHE_POLICY *PHTTP_CACHE_POLICY
 
+    ctypedef enum HTTP_DATA_CHUNK_TYPE:
+        HttpDataChunkFromMemory
+        HttpDataChunkFromFileHandle
+        HttpDataChunkFromFragmentCache
+        HttpDataChunkFromFragmentCacheEx
+        HttpDataChunkMaximum
+    ctypedef HTTP_DATA_CHUNK_TYPE *PHTTP_DATA_CHUNK_TYPE
+
     ctypedef struct HTTP_DATA_CHUNK:
         HTTP_DATA_CHUNK_TYPE DataChunkType
         PVOID pBuffer
@@ -240,8 +254,6 @@ cdef extern from *:
         HANDLE          FileHandle
         USHORT FragmentNameLength
         PCWSTR pFragmentName
-        HTTP_BYTE_RANGE ByteRange
-        PCWSTR          pFragmentName
     ctypedef HTTP_DATA_CHUNK *PHTTP_DATA_CHUNK
 
     ctypedef struct HTTP_SSL_CLIENT_CERT_INFO:
@@ -262,6 +274,14 @@ cdef extern from *:
         PHTTP_SSL_CLIENT_CERT_INFO pClientCertInfo
         ULONG                      SslClientCertNegotiated
     ctypedef HTTP_SSL_INFO *PHTTP_SSL_INFO
+
+    ctypedef struct HTTP_REQUEST_HEADERS:
+        USHORT               UnknownHeaderCount
+        PHTTP_UNKNOWN_HEADER pUnknownHeaders
+        USHORT               TrailerCount
+        PHTTP_UNKNOWN_HEADER pTrailers
+        HTTP_KNOWN_HEADER    KnownHeaders[41]
+    ctypedef HTTP_REQUEST_HEADERS *PHTTP_REQUEST_HEADERS
 
     ctypedef struct HTTP_REQUEST:
         ULONG                  Flags
@@ -317,12 +337,25 @@ cdef extern from *:
         # HTTP_REQUEST_V2 end
     ctypedef HTTP_REQUEST_V2 *PHTTP_REQUEST_V2
 
+    ctypedef enum HTTP_RESPONSE_INFO_TYPE:
+        HttpResponseInfoTypeMultipleKnownHeaders
+        HttpResponseInfoTypeAuthenticationProperty
+        HttpResponseInfoTypeQoSProperty
+        HttpResponseInfoTypeChannelBind
+    ctypedef HTTP_RESPONSE_INFO_TYPE PHTTP_RESPONSE_INFO_TYPE
+
+    ctypedef struct HTTP_RESPONSE_INFO:
+        HTTP_RESPONSE_INFO_TYPE Type
+        ULONG                   Length
+        PVOID                   pInfo
+    ctypedef HTTP_RESPONSE_INFO *PHTTP_RESPONSE_INFO
+
     ctypedef struct HTTP_RESPONSE_HEADERS:
         USHORT               UnknownHeaderCount
         PHTTP_UNKNOWN_HEADER pUnknownHeaders
         USHORT               TrailerCount
         PHTTP_UNKNOWN_HEADER pTrailers
-        HTTP_KNOWN_HEADER    KnownHeaders[HttpHeaderResponseMaximum]
+        HTTP_KNOWN_HEADER    KnownHeaders[30]
     ctypedef HTTP_RESPONSE_HEADERS *PHTTP_RESPONSE_HEADERS
 
     ctypedef struct HTTP_RESPONSE:
@@ -352,6 +385,7 @@ cdef extern from *:
         PHTTP_RESPONSE_INFO pResponseInfo
         # HTTP_RESPONSE_V2 end
     ctypedef HTTP_RESPONSE_V2 *PHTTP_RESPONSE_V2
+    ctypedef HTTP_RESPONSE_V2 *PHTTP_RESPONSE
 
     ULONG HttpReceiveRequestEntityBody(
         HANDLE          ReqQueueHandle,

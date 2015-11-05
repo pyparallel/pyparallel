@@ -461,6 +461,7 @@ IF %ERRORLEVEL% NEQ 0 (
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <CythonFile Include="..\contrib\windows\http.pyx" />
     <CythonFile Include="..\contrib\windows\threadpool.pyx" />
     <CythonFile Include="..\contrib\windows\avrt.pyx" />
     <CythonFile Include="..\contrib\windows\adv.pyx" />
@@ -626,6 +627,7 @@ IF %ERRORLEVEL% NEQ 0 (
     <ClCompile Include="..\contrib\windows\_avrt.c" />
     <ClCompile Include="..\contrib\windows\gdiplus.cpp" />
     <ClCompile Include="..\contrib\windows\base.c" />
+    <ClCompile Include="..\contrib\windows\http.c" />
     <ClCompile Include="..\contrib\windows\types.c" />
     <ClCompile Include="..\contrib\windows\constants.c" />
     <ClCompile Include="..\contrib\windows\error.c" />

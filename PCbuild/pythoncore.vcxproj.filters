@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Include">
@@ -1034,6 +1034,9 @@
     <ClCompile Include="..\contrib\windows\base.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
+    <ClCompile Include="..\contrib\windows\http.c">
+      <Filter>Windows\Generated</Filter>
+    </ClCompile>
     <ClCompile Include="..\contrib\windows\types.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1084,6 +1087,9 @@
       <Filter>Windows\Cython</Filter>
     </CythonFile>
     <CythonFile Include="..\contrib\windows\types.pyx">
+      <Filter>Windows\Cython</Filter>
+    </CythonFile>
+    <CythonFile Include="..\contrib\windows\http.pyx">
       <Filter>Windows\Cython</Filter>
     </CythonFile>
     <CythonFile Include="..\contrib\windows\constants.pyx">

@@ -18,6 +18,7 @@ cdef extern from *:
     ctypedef WORD *PWORD
     ctypedef WORD ATOM
     ctypedef USHORT WCHAR
+    ctypedef WCHAR *PWCHAR
     ctypedef WCHAR *PWSTR
     ctypedef WCHAR *PTSTR
     ctypedef WCHAR *LPTSTR
@@ -89,6 +90,31 @@ cdef extern from *:
     ctypedef INT_PTR (__stdcall *FARPROC)()
     ctypedef INT_PTR (__stdcall *NEARPROC)()
     ctypedef INT_PTR (__stdcall *PROC)()
+
+    ctypedef ULONGLONG HTTP_OPAQUE_ID
+    ctypedef HTTP_OPAQUE_ID *PHTTP_OPAQUE_ID
+
+    ctypedef HTTP_OPAQUE_ID HTTP_REQUEST_ID
+    ctypedef HTTP_REQUEST_ID *PHTTP_REQUEST_ID
+
+    ctypedef HTTP_OPAQUE_ID HTTP_CONNECTION_ID
+    ctypedef HTTP_CONNECTION_ID *PHTTP_CONNECTION_ID
+
+    ctypedef HTTP_OPAQUE_ID HTTP_RAW_CONNECTION_ID
+    ctypedef HTTP_RAW_CONNECTION_ID *PHTTP_RAW_CONNECTION_ID
+
+    ctypedef HTTP_OPAQUE_ID HTTP_URL_GROUP_ID
+    ctypedef HTTP_URL_GROUP_ID *PHTTP_URL_GROUP_ID
+
+    ctypedef HTTP_OPAQUE_ID HTTP_SERVER_SESSION_ID
+    ctypedef HTTP_SERVER_SESSION_ID *PHTTP_SERVER_SESSION_ID
+
+    ctypedef ULONGLONG HTTP_URL_CONTEXT
+
+    ctypedef struct HTTP_VERSION:
+        USHORT MajorVersion
+        USHORT MinorVersion
+    ctypedef HTTP_VERSION *PHTTP_VERSION
 
     ctypedef struct IID:
         unsigned long x
