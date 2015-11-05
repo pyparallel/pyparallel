@@ -1,5 +1,5 @@
 diff --git a/PCbuild/pythoncore.vcxproj b/PCbuild/pythoncore.vcxproj
-index 8b5c42f..cbe80d2 100644
+index 8b5c42f..b4a6de7 100644
 --- a/PCbuild/pythoncore.vcxproj
 +++ b/PCbuild/pythoncore.vcxproj
 @@ -123,6 +123,7 @@
@@ -122,10 +122,12 @@ index 8b5c42f..cbe80d2 100644
        <AdditionalDependencies>$(IntDir)getbuildinfo.o;%(AdditionalDependencies)</AdditionalDependencies>
        <IgnoreSpecificDefaultLibraries>libc;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
        <BaseAddress>0x1e000000</BaseAddress>
-@@ -439,6 +461,18 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -439,6 +461,22 @@ IF %ERRORLEVEL% NEQ 0 (
      </PreBuildEvent>
    </ItemDefinitionGroup>
    <ItemGroup>
++    <CythonFile Include="..\contrib\windows\http.pyx" />
++    <CythonFile Include="..\contrib\windows\threadpool.pyx" />
 +    <CythonFile Include="..\contrib\windows\avrt.pyx" />
 +    <CythonFile Include="..\contrib\windows\adv.pyx" />
 +    <CythonFile Include="..\contrib\windows\user.pyx" />
@@ -133,6 +135,8 @@ index 8b5c42f..cbe80d2 100644
 +    <CythonFile Include="..\contrib\windows\processthreads.pyx" />
 +    <CythonFile Include="..\contrib\windows\error.pyx" />
 +    <CythonFile Include="..\contrib\windows\base.pyx" />
++    <CythonFile Include="..\contrib\windows\types.pyx" />
++    <CythonFile Include="..\contrib\windows\constants.pyx" />
 +  </ItemGroup>
 +  <ItemGroup>
 +    <CythonCppFile Include="..\contrib\windows\gdiplus.pyx" />
@@ -141,7 +145,7 @@ index 8b5c42f..cbe80d2 100644
      <ClInclude Include="..\Include\abstract.h" />
      <ClInclude Include="..\Include\accu.h" />
      <ClInclude Include="..\Include\asdl.h" />
-@@ -565,8 +599,36 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -565,8 +603,40 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClInclude Include="..\Python\condvar.h" />
      <ClInclude Include="..\Python\importdl.h" />
      <ClInclude Include="..\Python\thread_nt.h" />
@@ -169,7 +173,11 @@ index 8b5c42f..cbe80d2 100644
 +    <ClCompile Include="..\contrib\windows\_avrt.c" />
 +    <ClCompile Include="..\contrib\windows\gdiplus.cpp" />
 +    <ClCompile Include="..\contrib\windows\base.c" />
++    <ClCompile Include="..\contrib\windows\http.c" />
++    <ClCompile Include="..\contrib\windows\types.c" />
++    <ClCompile Include="..\contrib\windows\constants.c" />
 +    <ClCompile Include="..\contrib\windows\error.c" />
++    <ClCompile Include="..\contrib\windows\threadpool.c" />
 +    <ClCompile Include="..\contrib\windows\processthreads.c" />
 +    <ClCompile Include="..\contrib\windows\rtl.c" />
 +    <ClCompile Include="..\contrib\windows\user.c" />
@@ -178,7 +186,7 @@ index 8b5c42f..cbe80d2 100644
      <ClCompile Include="..\Modules\_bisectmodule.c" />
      <ClCompile Include="..\Modules\_codecsmodule.c" />
      <ClCompile Include="..\Modules\_collectionsmodule.c" />
-@@ -674,6 +736,8 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -674,6 +744,8 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClCompile Include="..\Objects\unicodectype.c" />
      <ClCompile Include="..\Objects\unicodeobject.c" />
      <ClCompile Include="..\Objects\weakrefobject.c" />
@@ -187,7 +195,7 @@ index 8b5c42f..cbe80d2 100644
      <ClCompile Include="..\Parser\acceler.c" />
      <ClCompile Include="..\Parser\bitset.c" />
      <ClCompile Include="..\Parser\firstsets.c" />
-@@ -736,6 +800,16 @@ IF %ERRORLEVEL% NEQ 0 (
+@@ -736,6 +808,16 @@ IF %ERRORLEVEL% NEQ 0 (
      <ClCompile Include="..\Python\sysmodule.c" />
      <ClCompile Include="..\Python\thread.c" />
      <ClCompile Include="..\Python\traceback.c" />

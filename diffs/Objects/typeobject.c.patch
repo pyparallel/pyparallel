@@ -1,5 +1,5 @@
 diff --git a/Objects/typeobject.c b/Objects/typeobject.c
-index 8851fae..af56e40 100644
+index 8851fae..d26b7b0 100644
 --- a/Objects/typeobject.c
 +++ b/Objects/typeobject.c
 @@ -53,6 +53,7 @@ PyType_ClearCache(void)
@@ -44,3 +44,11 @@ index 8851fae..af56e40 100644
      if (MCACHE_CACHEABLE_NAME(name) && assign_version_tag(type)) {
          h = MCACHE_HASH_METHOD(type, name);
          method_cache[h].version = type->tp_version_tag;
+@@ -6090,6 +6095,7 @@ init_slotdefs(void)
+ {
+     slotdef *p;
+     static int initialized = 0;
++    Py_GUARD();
+ 
+     if (initialized)
+         return;

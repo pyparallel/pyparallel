@@ -1,5 +1,5 @@
 diff --git a/Objects/unicodeobject.c b/Objects/unicodeobject.c
-index 0300753..dbddf5d 100644
+index 0300753..78592a8 100644
 --- a/Objects/unicodeobject.c
 +++ b/Objects/unicodeobject.c
 @@ -42,6 +42,7 @@ OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
@@ -37,16 +37,32 @@ index 0300753..dbddf5d 100644
          Py_UCS4 ch = PyUnicode_READ_CHAR(unicode, 0);
          if (ch < 256) {
              PyObject *latin1_char = unicode_latin1[ch];
-@@ -1514,6 +1509,8 @@ _PyUnicode_Ready(PyObject *unicode)
+@@ -1514,11 +1509,24 @@ _PyUnicode_Ready(PyObject *unicode)
  static void
  unicode_dealloc(register PyObject *unicode)
  {
 +    Py_GUARD();
 +
++#ifdef Py_DEBUG
++    _PyObject_VerifyHead(unicode);
++#endif
++
      switch (PyUnicode_CHECK_INTERNED(unicode)) {
      case SSTATE_NOT_INTERNED:
          break;
-@@ -1564,6 +1561,21 @@ static int
+ 
+     case SSTATE_INTERNED_MORTAL:
++#ifdef Py_DEBUG
++        {
++            int index = 0;
++            if (_Py_IsStatic(unicode, &index))
++                __debugbreak();
++        }
++#endif
+         /* revive dead object temporarily for DelItem */
+         Py_REFCNT(unicode) = 3;
+         if (PyDict_DelItem(interned, unicode) != 0)
+@@ -1564,6 +1572,21 @@ static int
  unicode_modifiable(PyObject *unicode)
  {
      assert(_PyUnicode_CHECK(unicode));
@@ -68,7 +84,7 @@ index 0300753..dbddf5d 100644
      if (Py_REFCNT(unicode) != 1)
          return 0;
      if (_PyUnicode_HASH(unicode) != -1)
-@@ -1731,6 +1743,7 @@ get_latin1_char(unsigned char ch)
+@@ -1731,6 +1754,7 @@ get_latin1_char(unsigned char ch)
              return NULL;
          PyUnicode_1BYTE_DATA(unicode)[0] = ch;
          assert(_PyUnicode_CheckConsistency(unicode, 1));
@@ -76,7 +92,7 @@ index 0300753..dbddf5d 100644
              unicode_latin1[ch] = unicode;
      }
      Py_INCREF(unicode);
-@@ -1827,24 +1840,34 @@ PyUnicode_FromString(const char *u)
+@@ -1827,24 +1851,34 @@ PyUnicode_FromString(const char *u)
  PyObject *
  _PyUnicode_FromId(_Py_Identifier *id)
  {
@@ -116,7 +132,7 @@ index 0300753..dbddf5d 100644
      while (s) {
          Py_CLEAR(s->object);
          tmp = s->next;
-@@ -3100,6 +3123,7 @@ PyUnicode_Decode(const char *s,
+@@ -3100,6 +3134,7 @@ PyUnicode_Decode(const char *s,
      PyObject *buffer = NULL, *unicode;
      Py_buffer info;
      char lower[11];  /* Enough for any encoding shortcut */
@@ -124,7 +140,7 @@ index 0300753..dbddf5d 100644
  
      /* Shortcuts for common default encodings */
      if (_Py_normalize_encoding(encoding, lower, sizeof(lower))) {
-@@ -3120,6 +3144,9 @@ PyUnicode_Decode(const char *s,
+@@ -3120,6 +3155,9 @@ PyUnicode_Decode(const char *s,
              return PyUnicode_DecodeUTF16(s, size, errors, 0);
          else if (strcmp(lower, "utf-32") == 0)
              return PyUnicode_DecodeUTF32(s, size, errors, 0);
@@ -134,7 +150,7 @@ index 0300753..dbddf5d 100644
      }
  
      /* Decode via the codec registry */
-@@ -3737,13 +3764,7 @@ PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
+@@ -3737,13 +3775,7 @@ PyUnicode_DecodeFSDefaultAndSize(const char *s, Py_ssize_t size)
  int
  _PyUnicode_HasNULChars(PyObject* s)
  {
@@ -149,7 +165,7 @@ index 0300753..dbddf5d 100644
  }
  
  
-@@ -3894,6 +3915,14 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
+@@ -3894,6 +3926,14 @@ PyUnicode_AsUnicodeAndSize(PyObject *unicode, Py_ssize_t *size)
          assert(_PyUnicode_KIND(unicode) != 0);
          assert(PyUnicode_IS_READY(unicode));
  
@@ -164,7 +180,7 @@ index 0300753..dbddf5d 100644
          if (PyUnicode_KIND(unicode) == PyUnicode_4BYTE_KIND) {
  #if SIZEOF_WCHAR_T == 2
              four_bytes = PyUnicode_4BYTE_DATA(unicode);
-@@ -14138,6 +14167,15 @@ PyTypeObject PyUnicode_Type = {
+@@ -14138,6 +14178,15 @@ PyTypeObject PyUnicode_Type = {
      0,                  /* tp_alloc */
      unicode_new,            /* tp_new */
      PyObject_Del,           /* tp_free */
@@ -180,7 +196,7 @@ index 0300753..dbddf5d 100644
  };
  
  /* Initialize the Unicode implementation */
-@@ -14156,11 +14194,7 @@ int _PyUnicode_Init(void)
+@@ -14156,11 +14205,7 @@ int _PyUnicode_Init(void)
          0x2029, /* PARAGRAPH SEPARATOR */
      };
  
@@ -193,7 +209,7 @@ index 0300753..dbddf5d 100644
  
      if (PyType_Ready(&PyUnicode_Type) < 0)
          Py_FatalError("Can't initialize 'unicode'");
-@@ -14194,6 +14228,7 @@ int _PyUnicode_Init(void)
+@@ -14194,6 +14239,7 @@ int _PyUnicode_Init(void)
  int
  PyUnicode_ClearFreeList(void)
  {
@@ -201,7 +217,7 @@ index 0300753..dbddf5d 100644
      return 0;
  }
  
-@@ -14201,6 +14236,7 @@ void
+@@ -14201,6 +14247,7 @@ void
  _PyUnicode_Fini(void)
  {
      int i;
@@ -209,7 +225,7 @@ index 0300753..dbddf5d 100644
  
      Py_CLEAR(unicode_empty);
  
-@@ -14222,6 +14258,8 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14222,6 +14269,8 @@ PyUnicode_InternInPlace(PyObject **p)
      if (s == NULL || !PyUnicode_Check(s))
          return;
  #endif
@@ -218,17 +234,15 @@ index 0300753..dbddf5d 100644
      /* If it's a subclass, we don't really know what putting
         it in the interned dict might do. */
      if (!PyUnicode_CheckExact(s))
-@@ -14258,7 +14296,8 @@ PyUnicode_InternInPlace(PyObject **p)
+@@ -14258,6 +14307,7 @@ PyUnicode_InternInPlace(PyObject **p)
      PyThreadState_GET()->recursion_critical = 0;
      /* The two references in interned are not counted by refcnt.
         The deallocator will take care of this */
--    Py_REFCNT(s) -= 2;
-+    Py_DECREF(s);
-+    Py_DECREF(s);
++    assert(Py_ISPY(s));
+     Py_REFCNT(s) -= 2;
      _PyUnicode_STATE(s).interned = SSTATE_INTERNED_MORTAL;
  }
- 
-@@ -14289,6 +14328,7 @@ _Py_ReleaseInternedUnicodeStrings(void)
+@@ -14289,6 +14339,7 @@ _Py_ReleaseInternedUnicodeStrings(void)
      PyObject *s;
      Py_ssize_t i, n;
      Py_ssize_t immortal_size = 0, mortal_size = 0;

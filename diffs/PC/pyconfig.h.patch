@@ -1,5 +1,5 @@
 diff --git a/PC/pyconfig.h b/PC/pyconfig.h
-index 0b96539..b11947a 100644
+index 0b96539..f2dc2e9 100644
 --- a/PC/pyconfig.h
 +++ b/PC/pyconfig.h
 @@ -88,6 +88,11 @@ WIN32 is still required for the locale module.
@@ -38,7 +38,19 @@ index 0b96539..b11947a 100644
  /* We only set these values when building Python - we don't want to force
     these values on extensions, as that will affect the prototypes and
     structures exposed in the Windows headers. Even when building Python, we
-@@ -442,6 +457,11 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+@@ -375,6 +390,11 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+ #	define Py_DEBUG
+ #endif
+ 
++#ifdef Py_DEBUG
++#ifndef _DEBUG
++#error Py_DEBUG/_DEBUG mismatch
++#endif
++#endif
+ 
+ #ifdef MS_WIN32
+ 
+@@ -442,6 +462,11 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
  /* Define to 1 if you have the `copysign' function. */
  #define HAVE_COPYSIGN 1
  
@@ -50,7 +62,7 @@ index 0b96539..b11947a 100644
  /* Define to 1 if you have the `isinf' macro. */
  #define HAVE_DECL_ISINF 1
  
-@@ -731,6 +751,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
+@@ -731,6 +756,9 @@ Py_NO_ENABLE_SHARED to find out.  Also support MS_NO_COREDLL for b/w compat */
  /* The size of `wchar_t', as computed by sizeof. */
  #define SIZEOF_WCHAR_T 2
  

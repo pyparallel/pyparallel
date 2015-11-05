@@ -1,8 +1,8 @@
 diff --git a/Python/errors.c b/Python/errors.c
-index 626b16e..e579e1d 100644
+index 626b16e..fc8f3d9 100644
 --- a/Python/errors.c
 +++ b/Python/errors.c
-@@ -26,10 +26,12 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
+@@ -26,10 +26,14 @@ PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
  {
      PyThreadState *tstate = PyThreadState_GET();
      PyObject *oldtype, *oldvalue, *oldtraceback;
@@ -11,11 +11,13 @@ index 626b16e..e579e1d 100644
      if (traceback != NULL && !PyTraceBack_Check(traceback)) {
          /* XXX Should never happen -- fatal error instead? */
          /* Well, it could be None. */
-+        __debugbreak();
++        /* (XXX Trent: yup, I've seen it as Py_None.) */
++        if (traceback != Py_None)
++            __debugbreak();
          Py_DECREF(traceback);
          traceback = NULL;
      }
-@@ -55,6 +57,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
+@@ -55,6 +59,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
      PyThreadState *tstate = PyThreadState_GET();
      PyObject *exc_value;
      PyObject *tb = NULL;
@@ -23,7 +25,7 @@ index 626b16e..e579e1d 100644
  
      if (exception != NULL &&
          !PyExceptionClass_Check(exception)) {
-@@ -115,6 +118,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
+@@ -115,6 +120,7 @@ PyErr_SetObject(PyObject *exception, PyObject *value)
  void
  PyErr_SetNone(PyObject *exception)
  {
@@ -31,7 +33,7 @@ index 626b16e..e579e1d 100644
      PyErr_SetObject(exception, (PyObject *)NULL);
  }
  
-@@ -122,6 +126,7 @@ void
+@@ -122,6 +128,7 @@ void
  PyErr_SetString(PyObject *exception, const char *string)
  {
      PyObject *value = PyUnicode_FromString(string);
@@ -39,7 +41,7 @@ index 626b16e..e579e1d 100644
      PyErr_SetObject(exception, value);
      Py_XDECREF(value);
  }
-@@ -130,12 +135,7 @@ PyErr_SetString(PyObject *exception, const char *string)
+@@ -130,12 +137,7 @@ PyErr_SetString(PyObject *exception, const char *string)
  PyObject *
  PyErr_Occurred(void)
  {
@@ -53,7 +55,7 @@ index 626b16e..e579e1d 100644
  
      return tstate == NULL ? NULL : tstate->curexc_type;
  }
-@@ -206,6 +206,7 @@ PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
+@@ -206,6 +208,7 @@ PyErr_NormalizeException(PyObject **exc, PyObject **val, PyObject **tb)
      PyObject *inclass = NULL;
      PyObject *initial_tb = NULL;
      PyThreadState *tstate = NULL;
@@ -61,7 +63,7 @@ index 626b16e..e579e1d 100644
  
      if (type == NULL) {
          /* There was no exception, so nothing to do. */
-@@ -358,6 +359,7 @@ PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback)
+@@ -358,6 +361,7 @@ PyErr_SetExcInfo(PyObject *p_type, PyObject *p_value, PyObject *p_traceback)
  int
  PyErr_BadArgument(void)
  {
@@ -69,7 +71,7 @@ index 626b16e..e579e1d 100644
      PyErr_SetString(PyExc_TypeError,
                      "bad argument type for built-in operation");
      return 0;
-@@ -366,6 +368,7 @@ PyErr_BadArgument(void)
+@@ -366,6 +370,7 @@ PyErr_BadArgument(void)
  PyObject *
  PyErr_NoMemory(void)
  {
@@ -77,7 +79,7 @@ index 626b16e..e579e1d 100644
      PyErr_SetNone(PyExc_MemoryError);
      return NULL;
  }
-@@ -379,6 +382,7 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
+@@ -379,6 +384,7 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
  #ifdef MS_WINDOWS
      WCHAR *s_buf = NULL;
  #endif /* Unix/Windows */
@@ -85,7 +87,7 @@ index 626b16e..e579e1d 100644
  
  #ifdef EINTR
      if (i == EINTR && PyErr_CheckSignals())
-@@ -467,8 +471,12 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
+@@ -467,8 +473,12 @@ PyErr_SetFromErrnoWithFilenameObject(PyObject *exc, PyObject *filenameObject)
  PyObject *
  PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
  {
@@ -100,7 +102,7 @@ index 626b16e..e579e1d 100644
      Py_XDECREF(name);
      return result;
  }
-@@ -477,10 +485,12 @@ PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
+@@ -477,10 +487,12 @@ PyErr_SetFromErrnoWithFilename(PyObject *exc, const char *filename)
  PyObject *
  PyErr_SetFromErrnoWithUnicodeFilename(PyObject *exc, const Py_UNICODE *filename)
  {
@@ -117,7 +119,7 @@ index 626b16e..e579e1d 100644
      Py_XDECREF(name);
      return result;
  }
-@@ -489,6 +499,7 @@ PyErr_SetFromErrnoWithUnicodeFilename(PyObject *exc, const Py_UNICODE *filename)
+@@ -489,6 +501,7 @@ PyErr_SetFromErrnoWithUnicodeFilename(PyObject *exc, const Py_UNICODE *filename)
  PyObject *
  PyErr_SetFromErrno(PyObject *exc)
  {
@@ -125,7 +127,7 @@ index 626b16e..e579e1d 100644
      return PyErr_SetFromErrnoWithFilenameObject(exc, NULL);
  }
  
-@@ -504,6 +515,7 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilenameObject(
+@@ -504,6 +517,7 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilenameObject(
      PyObject *message;
      PyObject *args, *v;
      DWORD err = (DWORD)ierr;
@@ -133,7 +135,7 @@ index 626b16e..e579e1d 100644
      if (err==0) err = GetLastError();
      len = FormatMessageW(
          /* Error API error */
-@@ -558,12 +570,14 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilename(
+@@ -558,12 +572,14 @@ PyObject *PyErr_SetExcFromWindowsErrWithFilename(
      int ierr,
      const char *filename)
  {
@@ -153,7 +155,7 @@ index 626b16e..e579e1d 100644
  }
  
  PyObject *PyErr_SetExcFromWindowsErrWithUnicodeFilename(
-@@ -571,23 +585,25 @@ PyObject *PyErr_SetExcFromWindowsErrWithUnicodeFilename(
+@@ -571,23 +587,25 @@ PyObject *PyErr_SetExcFromWindowsErrWithUnicodeFilename(
      int ierr,
      const Py_UNICODE *filename)
  {
@@ -186,7 +188,7 @@ index 626b16e..e579e1d 100644
      return PyErr_SetExcFromWindowsErrWithFilename(PyExc_WindowsError,
                                                    ierr, NULL);
  }
-@@ -595,8 +612,14 @@ PyObject *PyErr_SetFromWindowsErrWithFilename(
+@@ -595,8 +614,14 @@ PyObject *PyErr_SetFromWindowsErrWithFilename(
      int ierr,
      const char *filename)
  {
@@ -203,7 +205,7 @@ index 626b16e..e579e1d 100644
                                                    PyExc_WindowsError,
                                                    ierr, name);
      Py_XDECREF(name);
-@@ -607,10 +630,14 @@ PyObject *PyErr_SetFromWindowsErrWithUnicodeFilename(
+@@ -607,10 +632,14 @@ PyObject *PyErr_SetFromWindowsErrWithUnicodeFilename(
      int ierr,
      const Py_UNICODE *filename)
  {
@@ -222,7 +224,7 @@ index 626b16e..e579e1d 100644
                                                    PyExc_WindowsError,
                                                    ierr, name);
      Py_XDECREF(name);
-@@ -622,6 +649,7 @@ PyObject *
+@@ -622,6 +651,7 @@ PyObject *
  PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
  {
      PyObject *args, *kwargs, *error;
@@ -230,7 +232,7 @@ index 626b16e..e579e1d 100644
  
      if (msg == NULL)
          return NULL;
-@@ -664,6 +692,7 @@ PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
+@@ -664,6 +694,7 @@ PyErr_SetImportError(PyObject *msg, PyObject *name, PyObject *path)
  void
  _PyErr_BadInternalCall(const char *filename, int lineno)
  {
@@ -238,7 +240,7 @@ index 626b16e..e579e1d 100644
      PyErr_Format(PyExc_SystemError,
                   "%s:%d: bad argument to internal function",
                   filename, lineno);
-@@ -675,6 +704,7 @@ _PyErr_BadInternalCall(const char *filename, int lineno)
+@@ -675,6 +706,7 @@ _PyErr_BadInternalCall(const char *filename, int lineno)
  void
  PyErr_BadInternalCall(void)
  {
@@ -246,7 +248,7 @@ index 626b16e..e579e1d 100644
      PyErr_Format(PyExc_SystemError,
                   "bad argument to internal function");
  }
-@@ -687,6 +717,7 @@ PyErr_Format(PyObject *exception, const char *format, ...)
+@@ -687,6 +719,7 @@ PyErr_Format(PyObject *exception, const char *format, ...)
  {
      va_list vargs;
      PyObject* string;
@@ -254,7 +256,7 @@ index 626b16e..e579e1d 100644
  
  #ifdef HAVE_STDARG_PROTOTYPES
      va_start(vargs, format);
-@@ -712,6 +743,7 @@ PyErr_NewException(const char *name, PyObject *base, PyObject *dict)
+@@ -712,6 +745,7 @@ PyErr_NewException(const char *name, PyObject *base, PyObject *dict)
      PyObject *mydict = NULL;
      PyObject *bases = NULL;
      PyObject *result = NULL;
@@ -262,7 +264,7 @@ index 626b16e..e579e1d 100644
      dot = strrchr(name, '.');
      if (dot == NULL) {
          PyErr_SetString(PyExc_SystemError,
-@@ -763,6 +795,7 @@ PyErr_NewExceptionWithDoc(const char *name, const char *doc,
+@@ -763,6 +797,7 @@ PyErr_NewExceptionWithDoc(const char *name, const char *doc,
      PyObject *ret = NULL;
      PyObject *mydict = NULL; /* points to the dict only if we create it */
      PyObject *docobj;
@@ -270,7 +272,7 @@ index 626b16e..e579e1d 100644
  
      if (dict == NULL) {
          dict = mydict = PyDict_New();
-@@ -795,6 +828,7 @@ PyErr_WriteUnraisable(PyObject *obj)
+@@ -795,6 +830,7 @@ PyErr_WriteUnraisable(PyObject *obj)
  {
      _Py_IDENTIFIER(__module__);
      PyObject *f, *t, *v, *tb;
@@ -278,7 +280,7 @@ index 626b16e..e579e1d 100644
      PyErr_Fetch(&t, &v, &tb);
      f = PySys_GetObject("stderr");
      if (f != NULL && f != Py_None) {
-@@ -867,6 +901,7 @@ PyErr_SyntaxLocationEx(const char *filename, int lineno, int col_offset)
+@@ -867,6 +903,7 @@ PyErr_SyntaxLocationEx(const char *filename, int lineno, int col_offset)
      _Py_IDENTIFIER(offset);
      _Py_IDENTIFIER(print_file_and_line);
      _Py_IDENTIFIER(text);
@@ -286,7 +288,7 @@ index 626b16e..e579e1d 100644
  
      /* add attributes for the line number and filename for the error */
      PyErr_Fetch(&exc, &v, &tb);
-@@ -943,6 +978,7 @@ PyErr_ProgramText(const char *filename, int lineno)
+@@ -943,6 +980,7 @@ PyErr_ProgramText(const char *filename, int lineno)
      FILE *fp;
      int i;
      char linebuf[1000];

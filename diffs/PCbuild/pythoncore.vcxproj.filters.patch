@@ -1,7 +1,13 @@
 diff --git a/PCbuild/pythoncore.vcxproj.filters b/PCbuild/pythoncore.vcxproj.filters
-index 5647feb..77035c9 100644
+index 5647feb..72b0d25 100644
 --- a/PCbuild/pythoncore.vcxproj.filters
 +++ b/PCbuild/pythoncore.vcxproj.filters
+@@ -1,4 +1,4 @@
+-﻿<?xml version="1.0" encoding="utf-8"?>
++<?xml version="1.0" encoding="utf-8"?>
+ <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+   <ItemGroup>
+     <Filter Include="Include">
 @@ -31,6 +31,18 @@
      <Filter Include="Resource Files">
        <UniqueIdentifier>{c3e03a5c-56c7-45fd-8543-e5d2326b907d}</UniqueIdentifier>
@@ -98,7 +104,7 @@ index 5647feb..77035c9 100644
      <ClCompile Include="..\Parser\acceler.c">
        <Filter>Parser</Filter>
      </ClCompile>
-@@ -917,13 +989,104 @@
+@@ -917,13 +989,128 @@
      <ClCompile Include="..\Modules\_winapi.c">
        <Filter>PC</Filter>
      </ClCompile>
@@ -135,6 +141,9 @@ index 5647feb..77035c9 100644
 +    <ClCompile Include="..\Python\ultrajsonenc.c">
 +      <Filter>Python</Filter>
 +    </ClCompile>
++    <ClCompile Include="..\contrib\windows\threadpool.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
 +    <ClCompile Include="..\contrib\windows\avrt.c">
 +      <Filter>Windows\Generated</Filter>
 +    </ClCompile>
@@ -142,6 +151,15 @@ index 5647feb..77035c9 100644
 +      <Filter>Windows\Generated</Filter>
 +    </ClCompile>
 +    <ClCompile Include="..\contrib\windows\base.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\http.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\types.c">
++      <Filter>Windows\Generated</Filter>
++    </ClCompile>
++    <ClCompile Include="..\contrib\windows\constants.c">
 +      <Filter>Windows\Generated</Filter>
 +    </ClCompile>
 +    <ClCompile Include="..\contrib\windows\_loader.c">
@@ -175,6 +193,9 @@ index 5647feb..77035c9 100644
      </ResourceCompile>
    </ItemGroup>
 +  <ItemGroup>
++    <CythonFile Include="..\contrib\windows\threadpool.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
 +    <CythonFile Include="..\contrib\windows\avrt.pyx">
 +      <Filter>Windows\Cython</Filter>
 +    </CythonFile>
@@ -182,6 +203,15 @@ index 5647feb..77035c9 100644
 +      <Filter>Windows\Cython</Filter>
 +    </CythonFile>
 +    <CythonFile Include="..\contrib\windows\base.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\types.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\http.pyx">
++      <Filter>Windows\Cython</Filter>
++    </CythonFile>
++    <CythonFile Include="..\contrib\windows\constants.pyx">
 +      <Filter>Windows\Cython</Filter>
 +    </CythonFile>
 +    <CythonFile Include="..\contrib\windows\user.pyx">

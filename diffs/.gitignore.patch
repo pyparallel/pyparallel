@@ -1,17 +1,18 @@
 diff --git a/.gitignore b/.gitignore
-index 49299ee..3b82156 100644
+index 49299ee..ae447f5 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -37,6 +37,8 @@ PCbuild/*.o
+@@ -37,6 +37,9 @@ PCbuild/*.o
  PCbuild/*.pdb
  PCbuild/Win32-temp-*
  PCbuild/amd64/
 +PCbuild/*.user
 +PCbuild/*.suo
++PCbuild/Win32-pgo*
  .purify
  Parser/pgen
  __pycache__
-@@ -56,7 +58,6 @@ libpython*.so*
+@@ -56,7 +59,6 @@ libpython*.so*
  platform
  pybuilddir.txt
  pyconfig.h
@@ -19,7 +20,7 @@ index 49299ee..3b82156 100644
  python.exe
  python-gdb.py
  python.exe-gdb.py
-@@ -67,3 +68,31 @@ TAGS
+@@ -67,3 +69,31 @@ TAGS
  .coverage
  coverage/
  htmlcov/

@@ -1,5 +1,5 @@
 diff --git a/Modules/_json.c b/Modules/_json.c
-index 9166680..a32bb48 100644
+index 9166680..d830636 100644
 --- a/Modules/_json.c
 +++ b/Modules/_json.c
 @@ -1,6 +1,7 @@
@@ -108,11 +108,11 @@ index 9166680..a32bb48 100644
 -        return s_false;
 -    }
 +    if (obj == Py_None)
-+        return statics.s_null;
++        return Py_STATIC(s_null);
 +    else if (obj == Py_True)
-+        return statics.s_true;
++        return Py_STATIC(s_true);
 +    else if (obj == Py_False)
-+        return statics.s_false;
++        return Py_STATIC(s_false);
      else {
          PyErr_SetString(PyExc_ValueError, "not a const");
          return NULL;
@@ -121,15 +121,15 @@ index 9166680..a32bb48 100644
          }
          if (i > 0) {
 -            return PyUnicode_FromString("Infinity");
-+            return statics.infinity;
++            return Py_STATIC(infinity);
          }
          else if (i < 0) {
 -            return PyUnicode_FromString("-Infinity");
-+            return statics.neg_infinity;
++            return Py_STATIC(neg_infinity);
          }
          else {
 -            return PyUnicode_FromString("NaN");
-+            return statics.nan;
++            return Py_STATIC(nan);
          }
      }
      /* Use a better float format here? */

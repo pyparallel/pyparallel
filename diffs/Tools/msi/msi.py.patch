@@ -1,5 +1,5 @@
 diff --git a/Tools/msi/msi.py b/Tools/msi/msi.py
-index 5ed025d..1be5680 100644
+index 5ed025d..bfabd36 100644
 --- a/Tools/msi/msi.py
 +++ b/Tools/msi/msi.py
 @@ -1,3 +1,11 @@
@@ -222,7 +222,7 @@ index 5ed025d..1be5680 100644
          out.write("\nThis copy of Python includes a copy of %s, which is licensed under the following terms:\n\n" % name)
          dirs = glob.glob(srcdir+"/../"+pat)
          if not dirs:
-@@ -927,6 +976,55 @@ class PyDirectory(Directory):
+@@ -927,6 +976,68 @@ class PyDirectory(Directory):
              kw['componentflags'] = 2 #msidbComponentAttributesOptional
          Directory.__init__(self, *args, **kw)
  
@@ -266,10 +266,23 @@ index 5ed025d..1be5680 100644
 +        if filename.startswith(('dbghelp', 'dbgeng')):
 +            return
 +
++        if 'setuptools' in pdbpath:
++            return
++
++        if 'python_icon' in pdbpath:
++            return
++
 +        print "%s -> %s" % (filename, pdbname)
 +        if not exists(pdbpath):
 +            import pdb
 +            dbg = pdb.Pdb()
++            print("If you see this breakpoint, an .exe or .dll file has been "
++                  "found, but no corresponding .pdb file can be found; this "
++                  "could be an error, and the .pdb should exist, or, as in "
++                  "most cases, there's no corresponding .pdb, so you can just "
++                  "edit this file (Tools/msi.py) and add an exclusion stmt "
++                  "above (many examples ~10 lines up).\n\n"
++                  "Next steps: try `print pdbpath`")
 +            dbg.set_trace()
 +
 +        Directory.add_file(self, pdbname, **kw)
@@ -278,7 +291,7 @@ index 5ed025d..1be5680 100644
  def hgmanifest():
      # Fetch file list from Mercurial
      process = subprocess.Popen(['hg', 'manifest'], stdout=subprocess.PIPE)
-@@ -943,21 +1041,80 @@ def hgmanifest():
+@@ -943,21 +1054,80 @@ def hgmanifest():
          d[components[0]] = None
      return result
  
@@ -362,7 +375,7 @@ index 5ed025d..1be5680 100644
      generate_license()
      root.add_file("LICENSE.txt", src=os.path.abspath("LICENSE.txt"))
      root.start_component("python.exe", keyfile="python.exe")
-@@ -965,6 +1122,14 @@ def add_files(db):
+@@ -965,6 +1135,14 @@ def add_files(db):
      root.start_component("pythonw.exe", keyfile="pythonw.exe")
      root.add_file("%s/pythonw.exe" % PCBUILD)
  
@@ -377,7 +390,7 @@ index 5ed025d..1be5680 100644
      # msidbComponentAttributesSharedDllRefCount = 8, see "Component Table"
      dlldir = PyDirectory(db, cab, root, srcdir, "DLLDIR", ".")
      launcherdir = PyDirectory(db, cab, root, srcdir, "LAUNCHERDIR", ".")
-@@ -977,6 +1142,8 @@ def add_files(db):
+@@ -977,6 +1155,8 @@ def add_files(db):
      launchersrc = PCBUILD
      if launchersrc.lower() == 'pcbuild\\x64-pgo':
          launchersrc = 'PCBuild\\win32-pgo'
@@ -386,7 +399,7 @@ index 5ed025d..1be5680 100644
      if launchersrc.lower() == 'pcbuild\\amd64':
          launchersrc = 'PCBuild'
      launcher = os.path.join(srcdir, launchersrc, "py.exe")
-@@ -1028,9 +1195,28 @@ def add_files(db):
+@@ -1028,9 +1208,28 @@ def add_files(db):
          print("WARNING: _ctypes.pyd not found, ctypes will not be included")
          extensions.remove("_ctypes.pyd")
  
@@ -416,7 +429,7 @@ index 5ed025d..1be5680 100644
      while pydirs:
          # Commit every now and then, or else installer will complain
          db.Commit()
-@@ -1051,8 +1237,13 @@ def add_files(db):
+@@ -1051,8 +1250,21 @@ def add_files(db):
          dirs.append(lib)
          has_py = False
          for name, subdir in files.items():
@@ -427,11 +440,19 @@ index 5ed025d..1be5680 100644
              if subdir is None:
 -                assert os.path.isfile(os.path.join(lib.absolute, name))
 +                abs_name = os.path.join(lib.absolute, name)
-+                assert os.path.isfile(abs_name), abs_name
++                if not os.path.isfile(abs_name):
++                    if name in ('sqlite3', 'pxodbc'):
++                        # These are both git submodules so they won't have
++                        # manifest entries.
++                        continue
++                    import pdb
++                    dbg = pdb.Pdb()
++                    dbg.set_trace()
++                    print("Error! %s is not a file" % abs_name)
                  if name == 'README':
                      lib.add_file("README.txt", src="README")
                  else:
-@@ -1289,7 +1480,7 @@ def add_registry(db):
+@@ -1289,7 +1501,7 @@ def add_registry(db):
      # Shortcuts, see "Shortcut Table"
      add_data(db, "Directory",
               [("ProgramMenuFolder", "TARGETDIR", "."),
@@ -440,7 +461,7 @@ index 5ed025d..1be5680 100644
      add_data(db, "RemoveFile",
               [("MenuDir", "TARGETDIR", None, "MenuDir", 2)])
      tcltkshortcuts = []
-@@ -1322,7 +1513,7 @@ def add_registry(db):
+@@ -1322,7 +1534,7 @@ def add_registry(db):
  def build_pdbzip():
      pdbexclude = ['kill_python.pdb', 'make_buildinfo.pdb',
                    'make_versioninfo.pdb']
@@ -449,7 +470,7 @@ index 5ed025d..1be5680 100644
      pdbzip = zipfile.ZipFile(path, 'w')
      for f in glob.glob1(os.path.join(srcdir, PCBUILD), "*.pdb"):
          if f not in pdbexclude and not f.endswith('_d.pdb'):
-@@ -1417,3 +1608,12 @@ if certname:
+@@ -1417,3 +1629,12 @@ if certname:
  
  if pdbzip:
      build_pdbzip()
