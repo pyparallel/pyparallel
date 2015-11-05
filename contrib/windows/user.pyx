@@ -24,6 +24,15 @@ from string cimport *
 
 DEF MAX_FILE_NAME = 1024
 
+#===============================================================================
+# Helpers
+#===============================================================================
+cpdef HWND find_window(LPCSTR lpClassName, LPCSTR lpWindowName):
+    return FindWindowA(lpClassName, lpWindowName)
+
+#===============================================================================
+# Classes
+#===============================================================================
 cdef class Screenshot:
     cdef readonly:
         BITMAPFILEHEADER header

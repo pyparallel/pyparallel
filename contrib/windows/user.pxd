@@ -22,6 +22,9 @@ cdef extern from *:
     BOOL __stdcall CloseClipboard()
 
     HWND __stdcall GetDesktopWindow()
+    HWND __stdcall FindWindow(LPCTSTR lpClassName, LPCTSTR lpWindowName)
+    HWND __stdcall FindWindowA(LPCSTR lpClassName, LPCSTR lpWindowName)
+    HWND __stdcall FindWindowW(LPCWSTR lpClassName, LPCWSTR lpWindowName)
 
     int __stdcall GetSystemMetrics(int nIndex)
 
