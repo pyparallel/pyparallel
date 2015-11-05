@@ -540,19 +540,17 @@ static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 static int __Pyx_check_binary_version(void);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(enum LOGICAL_PROCESSOR_RELATIONSHIP value);
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
-
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__CONTEXT_FLAGS(enum CONTEXT_FLAGS value);
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value);
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(enum PROCESSOR_ARCHITECTURE value);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(enum MEMORY_ALLOCATION_TYPE value);
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value);
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(enum LOGICAL_PROCESSOR_RELATIONSHIP value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(enum MEMORY_ALLOCATION_TYPE value);
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(enum MEMORY_FREE_TYPE value);
 
@@ -782,124 +780,9 @@ PyMODINIT_FUNC PyInit_constants(void)
 
   /*--- Wrapped vars code ---*/
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationProcessorPackage);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "RelationProcessorPackage", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(GENERIC_WRITE);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "GENERIC_WRITE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
     PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_FULL);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "CONTEXT_FULL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 49; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_SEGMENTS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_SEGMENTS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DEDUP);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DEDUP", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_MOUNT_POINT);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_MOUNT_POINT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 106; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_SYMLINK);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_SYMLINK", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 109; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_AMD64);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_AMD64", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_XSTATE);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_XSTATE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(OPEN_EXISTING);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "OPEN_EXISTING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESET);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_RESET", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_COMMIT);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_COMMIT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationNumaNode);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "RelationNumaNode", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(TRUNCATE_EXISTING);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "TRUNCATE_EXISTING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_HSM2);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 105; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_HSM2", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 105; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(CREATE_ALWAYS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CREATE_ALWAYS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(OPEN_ALWAYS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "OPEN_ALWAYS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DFS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 102; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DFS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 102; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ObjectIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ObjectIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_int(CREATE_NEW);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CREATE_NEW", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_UNKNOWN);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_UNKNOWN", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_WIM);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_WIM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 110; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_TOP_DOWN);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_TOP_DOWN", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationProcessorCore);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "RelationProcessorCore", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_CONTROL);
@@ -907,14 +790,149 @@ PyMODINIT_FUNC PyInit_constants(void)
     if (PyObject_SetAttrString(__pyx_m, "CONTEXT_CONTROL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 45; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_SEGMENTS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_SEGMENTS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 47; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_UNKNOWN);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_UNKNOWN", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DEDUP);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DEDUP", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(TRUNCATE_EXISTING);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "TRUNCATE_EXISTING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_FLOATING_POINT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_FLOATING_POINT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_MOUNT_POINT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_MOUNT_POINT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 99; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationProcessorPackage);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "RelationProcessorPackage", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 88; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationNumaNode);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "RelationNumaNode", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 86; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_LARGE_PAGES);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_LARGE_PAGES", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_WRITE_WATCH);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_WRITE_WATCH", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(MEM_RELEASE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_RELEASE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESET_UNDO);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_RESET_UNDO", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationGroup);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "RelationGroup", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_SIS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_SIS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 101; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_CSV);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_CSV", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
     PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationAll);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 90; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "RelationAll", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 90; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_SIS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_SIS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 108; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_TOP_DOWN);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_TOP_DOWN", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 29; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_COMMIT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_COMMIT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 23; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESET);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_RESET", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationCache);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "RelationCache", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_SYMLINK);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 102; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_SYMLINK", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 102; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_ARM);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_ARM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CREATE_ALWAYS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CREATE_ALWAYS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 7; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESERVE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_RESERVE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(OPEN_ALWAYS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "OPEN_ALWAYS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 9; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(OPEN_EXISTING);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "OPEN_EXISTING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 10; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_XSTATE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_XSTATE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 51; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(MEM_DECOMMIT);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_DECOMMIT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_INTEGER);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_INTEGER", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_IA64);
@@ -927,94 +945,19 @@ PyMODINIT_FUNC PyInit_constants(void)
     if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_INTEL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_AMD64);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_AMD64", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationProcessorCore);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "RelationProcessorCore", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 85; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(MEM_RELEASE);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_RELEASE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_ARM);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_ARM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_HSM);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 104; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_HSM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 104; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESERVE);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_RESERVE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 24; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_LARGE_PAGES);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_LARGE_PAGES", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 27; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationGroup);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "RelationGroup", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 89; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    PyObject* wrapped = __Pyx_PyInt_From_int(GENERIC_WRITE);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "GENERIC_WRITE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 12; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DFSR);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DFSR", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_CSV);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_CSV", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_PHYSICAL);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_PHYSICAL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_FLOATING_POINT);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_FLOATING_POINT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 48; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_WRITE_WATCH);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_WRITE_WATCH", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 30; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_NFS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 107; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_NFS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 107; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(MEM_DECOMMIT);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_DECOMMIT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 33; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationCache);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "RelationCache", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 87; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(MaximumFileIdType);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 96; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MaximumFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 96; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_ALL);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_ALL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESET_UNDO);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_RESET_UNDO", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DFSR", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 96; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_int(FILE_ATTRIBUTE_NORMAL);
@@ -1022,19 +965,54 @@ PyMODINIT_FUNC PyInit_constants(void)
     if (PyObject_SetAttrString(__pyx_m, "FILE_ATTRIBUTE_NORMAL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 13; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(FileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "FileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 93; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_INTEGER);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_INTEGER", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 46; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ExtendedFileIdType);
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DFS);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ExtendedFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DFS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 95; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_WIM);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_WIM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 103; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_int(CREATE_NEW);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CREATE_NEW", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_NFS);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_NFS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_AMD64);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_AMD64", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 44; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(PROCESSOR_ARCHITECTURE_AMD64);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_AMD64", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_PHYSICAL);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "MEM_PHYSICAL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 28; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_HSM2);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_HSM2", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 98; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_HSM);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 97; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_HSM", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 97; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_ALL);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "CONTEXT_ALL", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 50; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
 
   goto __pyx_L0;
@@ -1677,58 +1655,6 @@ static int __Pyx_check_binary_version(void) {
     return 0;
 }
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(enum LOGICAL_PROCESSOR_RELATIONSHIP value) {
-    const enum LOGICAL_PROCESSOR_RELATIONSHIP neg_one = (enum LOGICAL_PROCESSOR_RELATIONSHIP) -1, const_zero = (enum LOGICAL_PROCESSOR_RELATIONSHIP) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP),
-                                     little, !is_unsigned);
-    }
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
-    const int neg_one = (int) -1, const_zero = (int) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(int) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(int) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(int) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(int),
-                                     little, !is_unsigned);
-    }
-}
-
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__CONTEXT_FLAGS(enum CONTEXT_FLAGS value) {
     const enum CONTEXT_FLAGS neg_one = (enum CONTEXT_FLAGS) -1, const_zero = (enum CONTEXT_FLAGS) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -1751,32 +1677,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__CONTEXT_FLAGS(enum CONTEXT
         int one = 1; int little = (int)*(unsigned char *)&one;
         unsigned char *bytes = (unsigned char *)&value;
         return _PyLong_FromByteArray(bytes, sizeof(enum CONTEXT_FLAGS),
-                                     little, !is_unsigned);
-    }
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value) {
-    const enum IO_REPARSE_TAG neg_one = (enum IO_REPARSE_TAG) -1, const_zero = (enum IO_REPARSE_TAG) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(enum IO_REPARSE_TAG) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(enum IO_REPARSE_TAG) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum IO_REPARSE_TAG),
                                      little, !is_unsigned);
     }
 }
@@ -1807,6 +1707,84 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(enu
     }
 }
 
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value) {
+    const enum IO_REPARSE_TAG neg_one = (enum IO_REPARSE_TAG) -1, const_zero = (enum IO_REPARSE_TAG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(enum IO_REPARSE_TAG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(enum IO_REPARSE_TAG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(enum IO_REPARSE_TAG),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
+    const int neg_one = (int) -1, const_zero = (int) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(int) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(int) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(int) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(int),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(enum LOGICAL_PROCESSOR_RELATIONSHIP value) {
+    const enum LOGICAL_PROCESSOR_RELATIONSHIP neg_one = (enum LOGICAL_PROCESSOR_RELATIONSHIP) -1, const_zero = (enum LOGICAL_PROCESSOR_RELATIONSHIP) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(enum LOGICAL_PROCESSOR_RELATIONSHIP),
+                                     little, !is_unsigned);
+    }
+}
+
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(enum MEMORY_ALLOCATION_TYPE value) {
     const enum MEMORY_ALLOCATION_TYPE neg_one = (enum MEMORY_ALLOCATION_TYPE) -1, const_zero = (enum MEMORY_ALLOCATION_TYPE) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -1829,32 +1807,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(enu
         int one = 1; int little = (int)*(unsigned char *)&one;
         unsigned char *bytes = (unsigned char *)&value;
         return _PyLong_FromByteArray(bytes, sizeof(enum MEMORY_ALLOCATION_TYPE),
-                                     little, !is_unsigned);
-    }
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value) {
-    const enum FILE_ID_TYPE neg_one = (enum FILE_ID_TYPE) -1, const_zero = (enum FILE_ID_TYPE) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(enum FILE_ID_TYPE) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(enum FILE_ID_TYPE) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum FILE_ID_TYPE),
                                      little, !is_unsigned);
     }
 }

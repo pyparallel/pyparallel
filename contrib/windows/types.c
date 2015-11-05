@@ -770,11 +770,6 @@ PyMODINIT_FUNC PyInit_types(void)
     if (PyObject_SetAttrString(__pyx_m, "FileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1125; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ExtendedFileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ExtendedFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
     PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ObjectIdType);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1126; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "ObjectIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1126; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
@@ -783,6 +778,11 @@ PyMODINIT_FUNC PyInit_types(void)
     PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(MaximumFileIdType);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1128; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "MaximumFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1128; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
+  }
+  {
+    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ExtendedFileIdType);
+    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (PyObject_SetAttrString(__pyx_m, "ExtendedFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1127; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
 
   goto __pyx_L0;
