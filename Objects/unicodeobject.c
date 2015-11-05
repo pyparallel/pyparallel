@@ -1511,11 +1511,22 @@ unicode_dealloc(register PyObject *unicode)
 {
     Py_GUARD();
 
+#ifdef Py_DEBUG
+    _PyObject_VerifyHead(unicode);
+#endif
+
     switch (PyUnicode_CHECK_INTERNED(unicode)) {
     case SSTATE_NOT_INTERNED:
         break;
 
     case SSTATE_INTERNED_MORTAL:
+#ifdef Py_DEBUG
+        {
+            int index = 0;
+            if (_Py_IsStatic(unicode, &index))
+                __debugbreak();
+        }
+#endif
         /* revive dead object temporarily for DelItem */
         Py_REFCNT(unicode) = 3;
         if (PyDict_DelItem(interned, unicode) != 0)
