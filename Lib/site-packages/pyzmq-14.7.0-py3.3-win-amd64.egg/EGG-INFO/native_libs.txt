@@ -1,0 +1,12 @@
+zmq/libsodium.pyd
+zmq/libzmq.pyd
+zmq/backend/cython/constants.pyd
+zmq/backend/cython/context.pyd
+zmq/backend/cython/error.pyd
+zmq/backend/cython/message.pyd
+zmq/backend/cython/socket.pyd
+zmq/backend/cython/utils.pyd
+zmq/backend/cython/_device.pyd
+zmq/backend/cython/_poll.pyd
+zmq/backend/cython/_version.pyd
+zmq/devices/monitoredqueue.pyd

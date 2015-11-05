@@ -1,0 +1,4 @@
+ipython_genutils
+traitlets
+jsonschema>=2.0,!=2.5.0
+jupyter_core

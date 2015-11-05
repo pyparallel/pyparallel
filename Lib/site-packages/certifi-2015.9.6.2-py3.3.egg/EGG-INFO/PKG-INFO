@@ -1,0 +1,50 @@
+Metadata-Version: 1.1
+Name: certifi
+Version: 2015.9.6.2
+Summary: Python package for providing Mozilla's CA Bundle.
+Home-page: http://certifi.io/
+Author: Kenneth Reitz
+Author-email: me@kennethreitz.com
+License: ISC
+Description: Certifi: Python SSL Certificates
+        ================================
+        
+        `Certifi`_ is a carefully curated collection of Root Certificates for
+        validating the trustworthiness of SSL certificates while verifying the identity
+        of TLS hosts. It has been extracted from the `Requests`_ project.
+        
+        Installation
+        ------------
+        
+        `certifi` is available on PyPI. Simply install it with `pip`::
+        
+            $ pip install certifi
+        
+        Usage
+        -----
+        
+        To reference the installed CA Bundle, you can use the built-in function::
+        
+            >>> import certifi
+        
+            >>> certifi.where()
+            '/usr/local/lib/python2.7/site-packages/certifi/cacert.pem'
+        
+        Enjoy!
+        
+        .. _`Certifi`: http://certifi.io/en/latest/
+        .. _`Requests`: http://docs.python-requests.org/en/latest/
+        
+Platform: UNKNOWN
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.5
+Classifier: Programming Language :: Python :: 2.6
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3.0
+Classifier: Programming Language :: Python :: 3.1
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4

@@ -1,0 +1,21 @@
+Metadata-Version: 1.1
+Name: qtconsole
+Version: 4.1.0
+Summary: Jupyter Qt console
+Home-page: http://jupyter.org
+Author: Jupyter Development Team
+Author-email: jupyter@googlegroups.com
+License: BSD
+Description: Qt-based console for Jupyter with support for rich media output
+Keywords: Interactive,Interpreter,Shell
+Platform: Linux
+Platform: Mac OS X
+Platform: Windows
+Classifier: Intended Audience :: Developers
+Classifier: Intended Audience :: System Administrators
+Classifier: Intended Audience :: Science/Research
+Classifier: License :: OSI Approved :: BSD License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3

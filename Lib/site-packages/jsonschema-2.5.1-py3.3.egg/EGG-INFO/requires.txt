@@ -1,0 +1,12 @@
+
+[:python_version=='2.6']
+argparse
+repoze.lru
+
+[:python_version=='2.7']
+functools32
+
+[format]
+rfc3987
+strict-rfc3339
+webcolors
