@@ -1303,11 +1303,11 @@ _encoded_const(PyObject *obj)
 {
     /* Return the JSON string representation of None, True, False */
     if (obj == Py_None)
-        return statics.s_null;
+        return Py_STATIC(s_null);
     else if (obj == Py_True)
-        return statics.s_true;
+        return Py_STATIC(s_true);
     else if (obj == Py_False)
-        return statics.s_false;
+        return Py_STATIC(s_false);
     else {
         PyErr_SetString(PyExc_ValueError, "not a const");
         return NULL;
@@ -1325,13 +1325,13 @@ encoder_encode_float(PyEncoderObject *s, PyObject *obj)
             return NULL;
         }
         if (i > 0) {
-            return statics.infinity;
+            return Py_STATIC(infinity);
         }
         else if (i < 0) {
-            return statics.neg_infinity;
+            return Py_STATIC(neg_infinity);
         }
         else {
-            return statics.nan;
+            return Py_STATIC(nan);
         }
     }
     /* Use a better float format here? */
