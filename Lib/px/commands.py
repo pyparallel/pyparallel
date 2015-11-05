@@ -524,7 +524,16 @@ class PandasServer(TCPServerCommand):
             import parallel
             server = parallel.server(ip, port)
             parallel.register(transport=server, protocol=pdt.PandasHttpServer)
-            parallel.run()
+            self.server1 = server
+            server = parallel.server(ip, port+1)
+            parallel.register(transport=server, protocol=pdt.PandasHttpServer2)
+            self.server2 = server
+            if self.interactive:
+                return self
+            try:
+                parallel.run()
+            except KeyboardInterrupt:
+                self.server.shutdown()
 
 class SqliteServer(TCPServerCommand):
     _shortname_ = 'sq3'
