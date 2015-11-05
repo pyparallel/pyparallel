@@ -164,26 +164,32 @@ PyAPI_FUNC(PyObject *) _PyObject_ToPxObject(PyObject *op);
 /* Functions */
 PyAPI_FUNC(PyObject *) PyObject_Init(PyObject *, PyTypeObject *);
 PyAPI_FUNC(PyVarObject *) PyObject_InitVar(PyVarObject *,
-                                                 PyTypeObject *, Py_ssize_t);
+                                           PyTypeObject *,
+                                           Py_ssize_t);
+PyAPI_FUNC(void) _PyObject_InitHead(PyObject *op);
+PyAPI_FUNC(void) _PyObject_VerifyHead(PyObject *op);
+
 PyAPI_FUNC(PyObject *) _PyObject_New(PyTypeObject *);
 PyAPI_FUNC(PyVarObject *) _PyObject_NewVar(PyTypeObject *, Py_ssize_t);
 
-#ifndef WITH_PARALLEL
 #define PyObject_New(type, typeobj)                                  \
                 ( (type *) _PyObject_New(typeobj) )
+
 #define PyObject_NewVar(type, typeobj, n)                            \
                 ( (type *) _PyObject_NewVar((typeobj), (n)) )
 
-/* Macros trading binary compatibility for speed. See also pymem.h.
-   Note that these macros expect non-NULL object pointers.*/
-#define PyObject_INIT(op, typeobj)                                   \
-    ( Py_TYPE(op) = (typeobj), _Py_NewReference((PyObject *)(op)), (op) )
-#define PyObject_INIT_VAR(op, typeobj, size)                         \
-    ( Py_SIZE(op) = (size), PyObject_INIT((op), (typeobj)) )
+#define PyObject_NEW(type, tp) ((type *)_PyObject_New(tp))
+#define PyObject_NEW_VAR(type, tp, n) ((type *)_PyObject_NewVar(tp, n))
 
-#define _PyObject_InitHead(o)
+#define PyObject_INIT(op, tp)                   \
+    (PyObject_Init((PyObject *)(op),            \
+                    (PyTypeObject *)(tp)))
 
-#else /* !WITH_PARALLEL */
+#define PyObject_INIT_VAR(op, tp, n)            \
+    (PyObject_InitVar((PyVarObject *)(op),      \
+                       (PyTypeObject *)(tp),    \
+                       (Py_ssize_t)(n)))
+
 #if defined(Py_DEBUG) && defined(WITH_PYMALLOC)
 #define Py_USING_MEMORY_DEBUGGER
 PyAPI_FUNC(int) _PyMem_InRange(void *p);
@@ -200,64 +206,6 @@ PyAPI_FUNC(PyVarObject *) _PxObject_Resize(PyVarObject *op, Py_ssize_t s);
 
 PyAPI_FUNC(void) _Px_NewReference(PyObject *op);
 PyAPI_FUNC(void) _Px_ForgetReference(PyObject *op);
-
-#define PyObject_New(type, typeobj)                                  \
-    (Py_PXCTX() ? ((type *)_PxObject_New(typeobj)) :                 \
-                ((type *)_PyObject_New(typeobj)))
-
-#define PyObject_NewVar(type, typeobj, n)                            \
-    (Py_PXCTX() ? ((type *)_PxObject_NewVar((typeobj)), (n)) :       \
-                ((type *)_PyObject_NewVar((typeobj)), (n)))
-
-static __inline
-void
-_PyObject_InitHead(PyObject *op)
-{
-    assert(Py_TYPE(op));
-    op->is_px = _Py_NOT_PARALLEL;
-    op->px_flags  = Py_PXFLAGS_ISPY;
-#ifndef WITH_PARALLEL
-#ifdef Py_TRACE_REFS
-    op->_ob_next = NULL;
-    op->_ob_prev = NULL;
-#endif
-#endif
-}
-
-static __inline
-PyObject *
-_PyObject_INIT(PyObject *op, PyTypeObject *tp)
-{
-    Px_RETURN(_PxObject_Init(op, tp));
-    Py_TYPE(op) = tp;
-    _PyObject_InitHead(op);
-    _Py_NewReference(op);
-    return op;
-}
-
-#define PyObject_INIT(op, tp)                   \
-    (_PyObject_INIT((PyObject *)(op),           \
-                    (PyTypeObject *)(tp)))
-
-static __inline
-PyVarObject *
-_PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
-{
-    Px_RETURN(_PxObject_InitVar(op, tp, n));
-    Py_SIZE(op) = n;
-    Py_TYPE(op) = tp;
-    _PyObject_InitHead((PyObject *)op);
-    _Py_NewReference((PyObject *)op);
-    return op;
-}
-
-#define PyObject_INIT_VAR(op, tp, n)              \
-    (_PyObject_INIT_VAR((PyVarObject *)(op),      \
-                        (PyTypeObject *)(tp),     \
-                        (Py_ssize_t)(n)))
-
-#endif /* WITH_PARALLEL */
-
 
 #define _PyObject_SIZE(typeobj) ( (typeobj)->tp_basicsize )
 
@@ -279,38 +227,6 @@ _PyObject_INIT_VAR(PyVarObject *op, PyTypeObject *tp, Py_ssize_t n)
     _Py_SIZE_ROUND_UP((typeobj)->tp_basicsize + \
         (nitems)*(typeobj)->tp_itemsize,        \
         SIZEOF_VOID_P)
-
-#ifndef WITH_PARALLEL
-#define PyObject_NEW(type, typeobj)                                        \
-( (type *) PyObject_Init(                                                  \
-    (PyObject *) PyObject_MALLOC( _PyObject_SIZE(typeobj) ), (typeobj)) )
-
-#define PyObject_NEW_VAR(type, typeobj, n)                                 \
-( (type *) PyObject_InitVar(                                               \
-      (PyVarObject *) PyObject_MALLOC(_PyObject_VAR_SIZE((typeobj),(n)) ), \
-      (typeobj), (n)) )
-#else /* !WITH_PARALLEL */
-static __inline
-PyObject *
-_PyObject_NEW(PyTypeObject *tp)
-{
-    Px_RETURN(_PxObject_New(tp));
-    return PyObject_Init((PyObject *)PyObject_MALLOC(_PyObject_SIZE(tp)), tp);
-}
-
-static __inline
-PyVarObject *
-_PyObject_NEW_VAR(PyTypeObject *tp, Py_ssize_t n)
-{
-    register PyObject *op;
-    Px_RETURN(_PxObject_NewVar(tp, n));
-    op = (PyObject *)PyObject_MALLOC(_PyObject_VAR_SIZE(tp, n));
-    return (PyVarObject *)PyObject_InitVar((PyVarObject*)op, tp, n);
-}
-#define PyObject_NEW(type, tp) ((type *)_PyObject_NEW(tp))
-#define PyObject_NEW_VAR(type, tp, n) ((type *)_PyObject_NEW_VAR(tp, n))
-
-#endif /* WITH_PARALLEL */
 
 PyAPI_FUNC(PyObject *) PyVarObject_Copy(PyObject *);
 
@@ -352,37 +268,19 @@ PyAPI_FUNC(Py_ssize_t) PyGC_Collect(void);
 
 PyAPI_FUNC(PyVarObject *) _PyObject_GC_Resize(PyVarObject *, Py_ssize_t);
 
-#ifndef WITH_PARALLEL
-/* Test if a type has a GC head */
-#define PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
-
-/* Test if an object has a GC head */
-#define PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
-    (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
-
 #define PyObject_GC_Resize(type, op, n) \
                 ( (type *) _PyObject_GC_Resize((PyVarObject *)(op), (n)) )
-#else
-#define __PyType_IS_GC(t) PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC)
+
+#define _PyObject_GC_RESIZE(type, op, n) \
+                ( (type *) _PyObject_GC_Resize((PyVarObject *)(op), (n)) )
+
+/* Test if a type has a GC head */
+PyAPI_FUNC(int) PyType_Is_GC(PyTypeObject *t);
+#define PyType_IS_GC(t) (PyType_Is_GC((PyTypeObject *)t))
 
 /* Test if an object has a GC head */
-#define __PyObject_IS_GC(o) (PyType_IS_GC(Py_TYPE(o)) && \
-    (Py_TYPE(o)->tp_is_gc == NULL || Py_TYPE(o)->tp_is_gc(o)))
-
-#define PyType_IS_GC(t)   (Py_PXCTX()   ? (0) : __PyType_IS_GC(t))
-#define PyObject_IS_GC(o) (Py_ISPX(o) ? (0) : __PyObject_IS_GC(o))
-static __inline
-PyVarObject *
-__PyObject_GC_RESIZE(PyVarObject *op, Py_ssize_t nitems)
-{
-    if (Py_ISPX(op))
-        return _PxObject_Resize(op, nitems);
-    else
-        return _PyObject_GC_Resize(op, nitems);
-}
-
-#define PyObject_GC_Resize(type, op, n) ((type *)__PyObject_GC_RESIZE(op, n))
-#endif
+PyAPI_FUNC(int) PyObject_Is_GC(PyObject *o);
+#define PyObject_IS_GC(o) (PyObject_Is_GC((PyObject *)o))
 
 /* GC information is stored BEFORE the object structure. */
 #ifndef Py_LIMITED_API
@@ -395,151 +293,50 @@ typedef union _gc_head {
     long double dummy;  /* force worst-case alignment */
 } PyGC_Head;
 
-extern PyGC_Head *_PyGC_generation0;
+PyAPI_FUNC(PyGC_Head *) _Py_As_GC(PyObject *o);
+#define _Py_AS_GC(o) (_Py_As_GC((PyObject *)o))
 
-#ifndef WITH_PARALLEL
-#define _Py_AS_GC(o) ((PyGC_Head *)(o)-1)
-#else
-#define _Py_AS_GC(o)   (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)-1))
-#define _Py_FROM_GC(o) (Py_ISPX(o) ? (PyGC_Head *)0 : ((PyGC_Head *)(o)+1))
-#endif
+PyAPI_FUNC(PyObject *) _Py_From_GC(PyGC_Head *);
+#define _Py_FROM_GC(h) (_Py_From_GC((PyGC_Head *)h))
 
 #define _PyGC_REFS_UNTRACKED                    (-2)
 #define _PyGC_REFS_REACHABLE                    (-3)
 #define _PyGC_REFS_TENTATIVELY_UNREACHABLE      (-4)
 
-#ifndef WITH_PARALLEL
-/* Tell the GC to track this object.  NB: While the object is tracked the
- * collector it must be safe to call the ob_traverse method. */
-#define _PyObject_GC_TRACK(o) do { \
-    PyGC_Head *g = _Py_AS_GC(o); \
-    if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED) \
-        Py_FatalError("GC object already tracked"); \
-    g->gc.gc_refs = _PyGC_REFS_REACHABLE; \
-    g->gc.gc_next = _PyGC_generation0; \
-    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev; \
-    g->gc.gc_prev->gc.gc_next = g; \
-    _PyGC_generation0->gc.gc_prev = g; \
-    } while (0);
-
-/* Tell the GC to stop tracking this object.
- * gc_next doesn't need to be set to NULL, but doing so is a good
- * way to provoke memory errors if calling code is confused.
- */
-#define _PyObject_GC_UNTRACK(o) do { \
-    PyGC_Head *g = _Py_AS_GC(o); \
-    assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED); \
-    g->gc.gc_refs = _PyGC_REFS_UNTRACKED; \
-    g->gc.gc_prev->gc.gc_next = g->gc.gc_next; \
-    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev; \
-    g->gc.gc_next = NULL; \
-    } while (0);
-
 /* True if the object is currently tracked by the GC. */
+PyAPI_FUNC(int) _PyObject_GC_IsTracked(PyObject *);
 #define _PyObject_GC_IS_TRACKED(o) \
-    ((_Py_AS_GC(o))->gc.gc_refs != _PyGC_REFS_UNTRACKED)
+    (_PyObject_GC_IsTracked((PyObject *)(o)))
 
 /* True if the object may be tracked by the GC in the future, or already is.
    This can be useful to implement some optimizations. */
-#define _PyObject_GC_MAY_BE_TRACKED(obj) \
-    (PyObject_IS_GC(obj) && \
-        (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
-
-#else /* !WITH_PARALLEL */
-
-#define __PyObject_GC_TRACK(o) do {                 \
-    PyGC_Head *g;                                   \
-    Px_BREAK();                                     \
-    g = _Py_AS_GC(o);                               \
-    if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED)      \
-        Py_FatalError("GC object already tracked"); \
-    g->gc.gc_refs = _PyGC_REFS_REACHABLE;           \
-    g->gc.gc_next = _PyGC_generation0;              \
-    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev;  \
-    g->gc.gc_prev->gc.gc_next = g;                  \
-    _PyGC_generation0->gc.gc_prev = g;              \
-    } while (0)
-
-#define __PyObject_GC_UNTRACK(o) do {               \
-    PyGC_Head *g;                                   \
-    Px_BREAK();                                     \
-    g = _Py_AS_GC(o);                               \
-    assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED);  \
-    g->gc.gc_refs = _PyGC_REFS_UNTRACKED;           \
-    g->gc.gc_prev->gc.gc_next = g->gc.gc_next;      \
-    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev;      \
-    g->gc.gc_next = NULL;                           \
-    } while (0)
-
-#define __PyObject_GC_IS_TRACKED(o)                 \
-    ((_Py_AS_GC(o))->gc.gc_refs != _PyGC_REFS_UNTRACKED)
-
-#define __PyObject_GC_MAY_BE_TRACKED(obj)           \
-    (PyObject_IS_GC(obj) &&                         \
-     (!PyTuple_CheckExact(obj) || _PyObject_GC_IS_TRACKED(obj)))
-
-#define _PxObject_GC_Del(o)
-#define _PxObject_GC_Track(o)
-#define _PxObject_GC_UnTrack(o)
-#define _PxObject_GC_Is_Tracked(o) (0)
-#define _PxObject_GC_May_Be_Tracked(o) (0)
-
-#define _PyObject_GC_TRACK(o)          \
-    if (!Py_ISPX(o))                   \
-        __PyObject_GC_TRACK(o)
-
-#define _PyObject_GC_UNTRACK(o)        \
-    if (!Py_ISPX(o))                   \
-        __PyObject_GC_UNTRACK(o)
-
-#define _PyObject_GC_IS_TRACKED(o)     \
-    (Py_ISPX(o) ? (0) : __PyObject_GC_IS_TRACKED(o))
-
+PyAPI_FUNC(int) _PyObject_GC_MayBeTracked(PyObject *o);
 #define _PyObject_GC_MAY_BE_TRACKED(o) \
-    (Py_ISPX(o) ? (0) : __PyObject_GC_MAY_BE_TRACKED(o))
-
-#endif /* WITH_PARALLEL */
+    (_PyObject_GC_MayBeTracked((PyObject *)o))
 
 #endif /* Py_LIMITED_API */
 
 PyAPI_FUNC(PyObject *) _PyObject_GC_Malloc(size_t);
 PyAPI_FUNC(PyObject *) _PyObject_GC_New(PyTypeObject *);
 PyAPI_FUNC(PyVarObject *) _PyObject_GC_NewVar(PyTypeObject *, Py_ssize_t);
-PyAPI_FUNC(void) PyObject_GC_Track(void *);
-PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
-PyAPI_FUNC(void) PyObject_GC_Del(void *);
 
-#ifndef WITH_PARALLEL
 #define PyObject_GC_New(type, typeobj)                             \
                 ( (type *) _PyObject_GC_New(typeobj) )
 #define PyObject_GC_NewVar(type, typeobj, n)                       \
                 ( (type *) _PyObject_GC_NewVar((typeobj), (n)) )
-#else /* !WITH_PARALLEL */
 
-#define PyObject_GC_New(type, typeobj)                             \
-    (Py_PXCTX() ? ((type *) _PxObject_New(typeobj)) :              \
-                ((type *) _PyObject_GC_New(typeobj)))
+PyAPI_FUNC(void) PyObject_GC_Track(void *);
+PyAPI_FUNC(void) PyObject_GC_UnTrack(void *);
+PyAPI_FUNC(void) PyObject_GC_Del(void *);
 
-#define PyObject_GC_NewVar(type, typeobj, n)                       \
-    (Py_PXCTX() ? ((type *) _PxObject_NewVar((typeobj), (n))) :    \
-                ((type *) _PyObject_GC_NewVar((typeobj), (n))))
-#endif /* WITH_PARALLEL */
+#define _PyObject_GC_TRACK(o) (PyObject_GC_Track(o))
+#define _PyObject_GC_UNTRACK(o) (PyObject_GC_UnTrack(o))
 
 /* Utility macro to help write tp_traverse functions.
  * To use this macro, the tp_traverse function must name its arguments
  * "visit" and "arg".  This is intended to keep tp_traverse functions
  * looking as much alike as possible.
  */
-#ifndef WITH_PARALLEL
-#define Py_VISIT(op)                                                    \
-    do {                                                                \
-        if (op) {                                                       \
-            int vret = visit((PyObject *)(op), arg);                    \
-            if (vret)                                                   \
-                return vret;                                            \
-        }                                                               \
-    } while (0)
-#else
 #define Py_VISIT(op)                                                    \
     do {                                                                \
         Py_GUARD();                                                     \
@@ -549,7 +346,6 @@ PyAPI_FUNC(void) PyObject_GC_Del(void *);
                 return vret;                                            \
         }                                                               \
     } while (0)
-#endif
 
 /* Test if a type supports weak references */
 #define PyType_SUPPORTS_WEAKREFS(t) ((t)->tp_weaklistoffset > 0)

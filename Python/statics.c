@@ -14,37 +14,37 @@ _init_statics(void)
     statics.empty =              PyUnicode_New(0, 0);
     statics.nul =                PyUnicode_FromStringAndSize("\0", 1);
 
-    statics.comma =              PyUnicode_InternFromString(",");
-    statics.space =              PyUnicode_InternFromString(" ");
-    statics.tab =                PyUnicode_InternFromString("\t");
-    statics.cr =                 PyUnicode_InternFromString("\r");
-    statics.lf =                 PyUnicode_InternFromString("\n");
+    statics.comma =              PyUnicode_FromString(",");
+    statics.space =              PyUnicode_FromString(" ");
+    statics.tab =                PyUnicode_FromString("\t");
+    statics.cr =                 PyUnicode_FromString("\r");
+    statics.lf =                 PyUnicode_FromString("\n");
 
-    statics.comma_space =        PyUnicode_InternFromString(", ");
+    statics.comma_space =        PyUnicode_FromString(", ");
 
-    statics.s_true =             PyUnicode_InternFromString("true");
-    statics.s_false =            PyUnicode_InternFromString("false");
-    statics.s_null =             PyUnicode_InternFromString("null");
+    statics.s_true =             PyUnicode_FromString("true");
+    statics.s_false =            PyUnicode_FromString("false");
+    statics.s_null =             PyUnicode_FromString("null");
 
-    statics.infinity =           PyUnicode_InternFromString("Infinity");
-    statics.neg_infinity =       PyUnicode_InternFromString("-Infinity");
-    statics.nan =                PyUnicode_InternFromString("NaN");
+    statics.infinity =           PyUnicode_FromString("Infinity");
+    statics.neg_infinity =       PyUnicode_FromString("-Infinity");
+    statics.nan =                PyUnicode_FromString("NaN");
 
-    statics.open_dict =          PyUnicode_InternFromString("{");
-    statics.close_dict =         PyUnicode_InternFromString("}");
-    statics.empty_dict =         PyUnicode_InternFromString("{}");
-    statics.ellipsis_dict =      PyUnicode_InternFromString("{...}");
+    statics.open_dict =          PyUnicode_FromString("{");
+    statics.close_dict =         PyUnicode_FromString("}");
+    statics.empty_dict =         PyUnicode_FromString("{}");
+    statics.ellipsis_dict =      PyUnicode_FromString("{...}");
 
-    statics.open_array =         PyUnicode_InternFromString("[");
-    statics.close_array =        PyUnicode_InternFromString("]");
-    statics.empty_array =        PyUnicode_InternFromString("[]");
-    statics.ellipsis_array =     PyUnicode_InternFromString("[...]");
+    statics.open_array =         PyUnicode_FromString("[");
+    statics.close_array =        PyUnicode_FromString("]");
+    statics.empty_array =        PyUnicode_FromString("[]");
+    statics.ellipsis_array =     PyUnicode_FromString("[...]");
 
-    statics.open_tuple =         PyUnicode_InternFromString("(");
-    statics.close_tuple =        PyUnicode_InternFromString(")");
-    statics.empty_tuple =        PyUnicode_InternFromString("()");
-    statics.ellipsis_tuple =     PyUnicode_InternFromString("(...)");
-    statics.comma_close_tuple =  PyUnicode_InternFromString(",)");
+    statics.open_tuple =         PyUnicode_FromString("(");
+    statics.close_tuple =        PyUnicode_FromString(")");
+    statics.empty_tuple =        PyUnicode_FromString("()");
+    statics.ellipsis_tuple =     PyUnicode_FromString("(...)");
+    statics.comma_close_tuple =  PyUnicode_FromString(",)");
 
     if (!(
         statics.empty            &&
@@ -124,6 +124,27 @@ static
 PyObject *
 Py_Static(PyObject *o)
 {
-    return _Py_Static(o);
+    Py_INCREF(o);
+    return o;
 }
 
+int
+_Py_IsStatic(PyObject *o, int *index)
+{
+    PyObject **p = (PyObject **)&statics;
+    int num_statics = sizeof(PyStatics) / sizeof(PyObject *);
+    int found = 0;
+    int i;
+
+    for (i = 0; i < num_statics; i++, p++) {
+        if (*p == o) {
+            found = 1;
+            break;
+        }
+    }
+
+    if (found && index)
+        *index = i;
+
+    return found;
+}

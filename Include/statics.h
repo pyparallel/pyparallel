@@ -35,23 +35,18 @@ typedef struct _statics {
     PyObject *empty_tuple;                            /* "()"                 */
     PyObject *ellipsis_tuple;                         /* "(...)"              */
     PyObject *comma_close_tuple;                      /* ",)"                 */
-
 } PyStatics;
 
 PyAPI_DATA(PyStatics) statics;
 
 int _init_statics();
 
-static __inline
-PyObject *
-_Py_Static(PyObject *o)
-{
-    Py_INCREF(o);
-    return o;
-}
+/* If PyObject *o is a static object, return 1, else, return 0.  Index the
+ * static was found is written to `index` if non-NULL. */
+PyAPI_FUNC(int) _Py_IsStatic(PyObject *o, int *index);
 
 PyAPI_FUNC(PyObject *) Py_Static(PyObject *);
 
-#define Py_STATIC(n) _Py_Static(statics.##n)
+#define Py_STATIC(n) (Py_INCREF(statics.##n), statics.##n)
 
 #endif /* PY_STATICS_H */

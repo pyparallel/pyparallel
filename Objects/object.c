@@ -230,21 +230,74 @@ _Py_DecRef(PyObject *op)
 void
 Py_IncRef(PyObject *o)
 {
+    if (o == NULL)
+        return;
 #ifdef Py_DEBUG
     PyPx_GUARD_OBJ(o);
 #endif
-    if (Py_PXCTX() || !o)
+    if (Py_PXCTX())
         return;
     _Py_IncRef(o);
 }
 
 void
+_PyObject_InitHead(PyObject *op)
+{
+    assert(Py_TYPE(op));
+    op->is_px = _Py_NOT_PARALLEL;
+    op->px_flags  = Py_PXFLAGS_ISPY;
+    op->orig_type = NULL;
+#ifndef WITH_PARALLEL
+#ifdef Py_TRACE_REFS
+    op->_ob_next = NULL;
+    op->_ob_prev = NULL;
+#endif
+#endif
+}
+
+void
+_PyObject_VerifyHead(PyObject *op)
+{
+#ifdef Py_DEBUG
+    if (op == NULL)
+        __debugbreak();
+
+    if (!Py_TYPE(op))
+        __debugbreak();
+
+    if (op->is_px) {
+        if (op->is_px != _Py_NOT_PARALLEL &&
+            op->is_px != _Py_IS_PARALLEL)
+            __debugbreak();
+    }
+
+    if (!Px_ISPY(op) && !Px_ISPX(op) && !Px_WASPX(op))
+        __debugbreak();
+
+    if (Py_ORIG_TYPE(op))
+        _PyObject_VerifyHead((PyObject *)Py_ORIG_TYPE(op));
+#endif
+}
+
+PyObject *
+_PyObject_Init(PyObject *op, PyTypeObject *tp)
+{
+    Px_RETURN(_PxObject_Init(op, tp));
+    Py_TYPE(op) = tp;
+    _PyObject_InitHead(op);
+    _Py_NewReference(op);
+    return op;
+}
+
+void
 Py_DecRef(PyObject *o)
 {
+    if (o == NULL)
+        return;
 #ifdef Py_DEBUG
     PyPx_GUARD_OBJ(o);
 #endif
-    if (Py_PXCTX() || !o)
+    if (Py_PXCTX())
         return;
     _Py_DecRef(o);
 }
@@ -286,7 +339,7 @@ _PyObject_New(PyTypeObject *tp)
     op = (PyObject *) PyObject_MALLOC(_PyObject_SIZE(tp));
     if (op == NULL)
         return PyErr_NoMemory();
-    return PyObject_INIT(op, tp);
+    return PyObject_Init(op, tp);
 }
 
 PyVarObject *
@@ -300,7 +353,7 @@ _PyObject_NewVar(PyTypeObject *tp, Py_ssize_t nitems)
     op = (PyVarObject *) PyObject_MALLOC(size);
     if (op == NULL)
         return (PyVarObject *)PyErr_NoMemory();
-    return PyObject_INIT_VAR(op, tp, nitems);
+    return PyObject_InitVar(op, tp, nitems);
 }
 
 PyObject *
@@ -1851,35 +1904,38 @@ _Py_ReadyTypes(void)
 #endif
 }
 
-#if defined(Py_DEBUG) && defined(WITH_PARALLEL)
 void
 _Py_VerifyObjectHead(PyObject *op)
 {
-    assert(Py_TYPE(op));
-    assert(op->ob_refcnt == 1);
-    assert(op->is_px    == _Py_NOT_PARALLEL);
-    assert(op->orig_type == NULL);
+    _PyObject_VerifyHead(op);
+
+    if (op->ob_refcnt != 1)
+        __debugbreak();
+
+    if (op->is_px != _Py_NOT_PARALLEL)
+        __debugbreak();
+
+    if (Py_ORIG_TYPE(op))
+        __debugbreak();
+
 #ifdef Py_TRACE_REFS
     assert(op->_ob_next == NULL);
     assert(op->_ob_prev == NULL);
 #endif
 }
-#else
-#define _Py_VerifyObjectHead(o)
-#endif
-
-#ifdef Py_TRACE_REFS
 
 void
 _Py_NewReference(PyObject *op)
 {
     Px_RETURN_VOID(_Px_NewReference(op));
     Py_GUARD_OBJ(op);
-    _Py_INC_REFTOTAL;
     op->ob_refcnt = 1;
     _Py_VerifyObjectHead(op);
+#ifdef Py_TRACE_REFS
+    _Py_INC_REFTOTAL;
     _Py_AddToAllObjects(op, 1);
     _Py_INC_TPALLOCS(op);
+#endif
 }
 
 void
@@ -1894,6 +1950,7 @@ _Py_ForgetReference(register PyObject *op)
     Py_GUARD_OBJ(op);
     if (op->ob_refcnt < 0)
         Py_FatalError("UNREF negative refcnt");
+#ifdef Py_TRACE_REFS
     if (op == &refchain ||
         op->_ob_prev->_ob_next != op || op->_ob_next->_ob_prev != op) {
         fprintf(stderr, "* ob\n");
@@ -1916,6 +1973,7 @@ _Py_ForgetReference(register PyObject *op)
     op->_ob_prev->_ob_next = op->_ob_next;
     op->_ob_next = op->_ob_prev = NULL;
     _Py_INC_TPFREES(op);
+#endif
 }
 
 void
@@ -1933,6 +1991,7 @@ _Py_Dealloc(PyObject *op)
 /* Print all live objects.  Because PyObject_Print is called, the
  * interpreter must be in a healthy state.
  */
+#ifdef Py_TRACE_REFS
 void
 _Py_PrintReferences(FILE *fp)
 {
@@ -2208,21 +2267,6 @@ _PyTrash_thread_destroy_chain(void)
         --tstate->trash_delete_nesting;
     }
 }
-
-#ifndef Py_TRACE_REFS
-/* For Py_LIMITED_API, we need an out-of-line version of _Py_Dealloc.
-   Define this here, so we can undefine the macro. */
-#undef _Py_Dealloc
-PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
-void
-_Py_Dealloc(PyObject *op)
-{
-    Px_RETURN_VOID_OP(op, _Px_Dealloc(op));
-    Py_GUARD_OBJ(op);
-    _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA
-    (*Py_TYPE(op)->tp_dealloc)(op);
-}
-#endif
 
 #ifdef __cplusplus
 }

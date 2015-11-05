@@ -1750,20 +1750,23 @@ _PyParallel_DecRef(void *vp)
         if (Px_PERSISTED(op) || Px_CLONED(op))
             Px_DECREF(op);
         else if (!Px_ISPX(op)) {
-            /*
-            Py_ssize_t refcnt = op->ob_refcnt;
-            if (refcnt <= 0)
-                __debugbreak();
-            if (--op->ob_refcnt == 0)
-                _Py_Dealloc(op);
-            */
-            //--_Py_RefTotal;
+            int index = 0;
 
             if ((--((PyObject *)(op))->ob_refcnt) != 0) {
                 if ((((PyObject *)(op))->ob_refcnt) < 0)
                     __debugbreak();
-            } else
+                if ((((PyObject *)(op))->ob_refcnt) == 1) {
+                /* Statics shouldn't get below 2. */
+                    if (_Py_IsStatic(op, &index))
+                        __debugbreak();
+                }
+            } else {
+#ifdef Py_DEBUG
+                if (_Py_IsStatic(op, &index))
+                    __debugbreak();
+#endif
                 _Py_Dealloc((PyObject *)(op));
+            }
         }
     }
 }
@@ -2720,8 +2723,6 @@ PxPages_Dump(PxPages *pages)
 void
 _PxState_InitPxPages(PxState *px)
 {
-    Py_GUARD();
-
     InitializeSRWLock(&px->pages_srwlock);
 }
 

@@ -804,111 +804,21 @@ PyAPI_FUNC(void) dec_count(PyTypeObject *);
 PyAPI_FUNC(void) _Px_Dealloc(PyObject *);
 #endif
 
-#ifdef Py_TRACE_REFS
+#if defined(Py_TRACE_REFS) || defined(WITH_PARALLEL)
 /* Py_TRACE_REFS is such major surgery that we call external routines. */
 PyAPI_FUNC(void) _Py_NewReference(PyObject *);
 PyAPI_FUNC(void) _Py_ForgetReference(PyObject *);
-PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
+#ifndef WITH_PARALLEL
 PyAPI_FUNC(void) _Py_PrintReferences(FILE *);
 PyAPI_FUNC(void) _Py_PrintReferenceAddresses(FILE *);
 PyAPI_FUNC(void) _Py_AddToAllObjects(PyObject *, int force);
-
-#else
-/* Without Py_TRACE_REFS, there's little enough to do that we expand code
- * inline.
- */
-#ifndef WITH_PARALLEL
-#define _Py_NewReference(op) (                      \
-    _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA     \
-    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA           \
-    Py_REFCNT(op) = 1)
-#define _Py_ForgetReference(op) _Py_INC_TPFREES(op)
-#else
-#ifdef Py_DEBUG
-#define _Py_NewReference(op)                        \
-    (Py_ISPX(op) ? (_Px_NewReference(op)) : (       \
-        _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
-        _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
-        Py_REFCNT(op) = 1))
-#else
-#define _Py_NewReference(op) (                          \
-    (Py_PXCTX() ? (_Px_NewReference(op)) : (            \
-        (Py_ISPX(op) ? (_Px_NewReference(op)) : (       \
-            _Py_INC_TPALLOCS(op) _Py_COUNT_ALLOCS_COMMA \
-            _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA       \
-            Py_REFCNT(op) = 1                           \
-        ))                                              \
-    ))                                                  \
-)
+#endif
 #endif
 
-#define _Py_ForgetReference(op)                     \
-    do {                                            \
-        if (Py_PXCTX())                             \
-            _Px_ForgetReference(op);                \
-        else                                        \
-            _Py_INC_TPFREES(op);                    \
-        break;                                      \
-    } while (0)
-
-#endif /* WITH_PARALLEL */
-
-#ifdef Py_LIMITED_API
 PyAPI_FUNC(void) _Py_Dealloc(PyObject *);
-#else
-#ifndef WITH_PARALLEL
-#define _Py_Dealloc(op) (                           \
-    _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
-    (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op)))
-#else
-
-#ifdef Py_DEBUG
-#define _Py_Dealloc(op)                             \
-    (Py_ISPX(op) ? _Px_Dealloc(op) : (              \
-        _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA  \
-        (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))))
-#else
-#define _Py_Dealloc(op) (                                   \
-    (Py_PXCTX() ? (_Px_Dealloc(op)) : (                     \
-        (Py_ISPX(op) ? (_Px_Dealloc(op)) : (                \
-            _Py_INC_TPFREES(op) _Py_COUNT_ALLOCS_COMMA      \
-            (*Py_TYPE(op)->tp_dealloc)((PyObject *)(op))    \
-        ))                                                  \
-    ))                                                      \
-)
-#endif
-
-#endif /* WITH_PARALLEL */
-#endif /* Py_LIMITED_API */
-#endif /* !Py_TRACE_REFS */
-
-#ifndef WITH_PARALLEL
-#define Py_INCREF(op) (                                       \
-    _Py_INC_REFTOTAL  _Py_REF_DEBUG_COMMA                     \
-    ((PyObject*)(op))->ob_refcnt++)
-
-#define Py_DECREF(op)                                         \
-    do {                                                      \
-        if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA             \
-        --((PyObject*)(op))->ob_refcnt != 0)                  \
-            _Py_CHECK_REFCNT(op)                              \
-        else                                                  \
-        _Py_Dealloc((PyObject *)(op));                        \
-    } while (0)
-
-#else /* !WITH_PARALLEL */
 
 PyAPI_FUNC(void) Px_DecRef(PyObject *o);
-#ifndef Py_LIMITED_API
 #define Px_DECREF(o) (Px_DecRef((PyObject *)o))
-#endif
-
-PyAPI_FUNC(void) _Py_IncRef(PyObject *op);
-PyAPI_FUNC(void) _Py_DecRef(PyObject *op);
-#define Py_INCREF(op) (_Py_IncRef((PyObject *)op))
-#define Py_DECREF(op) (_Py_DecRef((PyObject *)op))
-
-#endif /* WITH_PARALLEL */
 
 /* Safely decref `op` and set `op` to NULL, especially useful in tp_clear
  * and tp_dealloc implementatons.
@@ -986,12 +896,9 @@ they can have object code that is not dependent on Python compilation flags.
 */
 PyAPI_FUNC(void) Py_IncRef(PyObject *);
 PyAPI_FUNC(void) Py_DecRef(PyObject *);
-#ifdef WITH_PARALLEL
-PyAPI_FUNC(void) Px_DecRef(PyObject *o);
-#ifndef Py_LIMITED_API
-#define Px_DECREF(o) (Px_DecRef((PyObject *)o))
-#endif
-#endif
+
+#define Py_INCREF(op) (Py_IncRef((PyObject *)op))
+#define Py_DECREF(op) (Py_DecRef((PyObject *)op))
 
 PyAPI_DATA(PyTypeObject) _PyNone_Type;
 PyAPI_DATA(PyTypeObject) _PyNotImplemented_Type;

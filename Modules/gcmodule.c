@@ -26,31 +26,13 @@
 #include "Python.h"
 #include "frameobject.h"        /* for PyFrame_ClearFreeList */
 
-#ifndef WITH_PARALLEL
 /* Get an object's GC head */
-#define AS_GC(o) ((PyGC_Head *)(o)-1)
+#define AS_GC(o) (_Py_As_GC((PyObject *)(o)))
+#define _AS_GC(o) ((PyGC_Head *)(o)-1)
 
 /* Get the object given the GC head */
-#define FROM_GC(g) ((PyObject *)(((PyGC_Head *)g)+1))
-#else
-#define __AS_GC(o)   ((PyGC_Head *)(o)-1)
-#define __FROM_GC(g) ((PyObject *)(((PyGC_Head *)g)+1))
-/* Force a debugbreak as soon as we're hit from a parallel context. */
-#define AS_GC(o)   (                                \
-    Py_PXCTX() ?                                    \
-        __debugbreak(), (PyGC_Head *)0 :            \
-        (Py_ISPX(o) ?                               \
-            __debugbreak(), (PyGC_Head *)0 :        \
-            __AS_GC(o)))
-
-#define FROM_GC(g) (                                \
-    Py_PXCTX() ?                                    \
-        __debugbreak(), (PyObject *)0 :             \
-            (Py_ISPX(__FROM_GC(g)) ?                \
-                __debugbreak(), (PyObject *)0 :     \
-                __FROM_GC(g)                        \
-            ))
-#endif
+#define FROM_GC(h) (_Py_From_GC((PyGC_Head *)h))
+#define _FROM_GC(h) ((PyObject *)(((PyGC_Head *)g)+1))
 
 /*** Global GC state ***/
 
@@ -231,12 +213,7 @@ GC_TENTATIVELY_UNREACHABLE
 #define GC_REACHABLE                    _PyGC_REFS_REACHABLE
 #define GC_TENTATIVELY_UNREACHABLE      _PyGC_REFS_TENTATIVELY_UNREACHABLE
 
-#ifndef WITH_PARALLEL
-#define IS_TRACKED(o) ((AS_GC(o))->gc.gc_refs != GC_UNTRACKED)
-#else
-#define IS_TRACKED(o) \
-    (Py_ISPX(o) ? 0 : ((AS_GC(o))->gc.gc_refs != GC_UNTRACKED))
-#endif
+#define IS_TRACKED(o) (_PyObject_GC_IsTracked((PyObject *)o))
 #define IS_REACHABLE(o) ((AS_GC(o))->gc.gc_refs == GC_REACHABLE)
 #define IS_TENTATIVELY_UNREACHABLE(o) ( \
     (AS_GC(o))->gc.gc_refs == GC_TENTATIVELY_UNREACHABLE)
@@ -1607,27 +1584,142 @@ _PyGC_Dump(PyGC_Head *g)
 /* extension modules might be compiled with GC support so these
    functions must always be available */
 
-#undef PyObject_GC_Track
-#undef PyObject_GC_UnTrack
-#undef PyObject_GC_Del
-#undef _PyObject_GC_Malloc
-
+/* Tell the GC to track this object.  NB: While the object is tracked the
+ * collector it must be safe to call the ob_traverse method. */
 void
 PyObject_GC_Track(void *op)
 {
-    Px_VOID();
-    _PyObject_GC_TRACK(op);
+    PyObject *o = (PyObject *)op;
+    PyGC_Head *g;
+    if (Py_PXCTX())
+        return;
+    _PyObject_VerifyHead(o);
+    g = _Py_AS_GC(op);
+    if (g->gc.gc_refs != _PyGC_REFS_UNTRACKED)
+        Py_FatalError("GC object already tracked");
+    g->gc.gc_refs = _PyGC_REFS_REACHABLE;
+    g->gc.gc_next = _PyGC_generation0;
+    g->gc.gc_prev = _PyGC_generation0->gc.gc_prev;
+    g->gc.gc_prev->gc.gc_next = g;
+    _PyGC_generation0->gc.gc_prev = g;
 }
 
+/* Tell the GC to stop tracking this object.
+ * gc_next doesn't need to be set to NULL, but doing so is a good
+ * way to provoke memory errors if calling code is confused.
+ */
 void
-PyObject_GC_UnTrack(void *op)
+PyObject_GC_UnTrack(void *o)
 {
-    Px_VOID();
+    PyGC_Head *g;
+    PyObject *op = (PyObject *)o;
+    if (Py_PXCTX())
+        return;
+    _PyObject_VerifyHead(op);
     /* Obscure:  the Py_TRASHCAN mechanism requires that we be able to
      * call PyObject_GC_UnTrack twice on an object.
      */
-    if (IS_TRACKED(op))
-        _PyObject_GC_UNTRACK(op);
+    if (!IS_TRACKED(op))
+        return;
+
+    g = _Py_AS_GC(op);
+    assert(g->gc.gc_refs != _PyGC_REFS_UNTRACKED);
+    g->gc.gc_refs = _PyGC_REFS_UNTRACKED;
+    g->gc.gc_prev->gc.gc_next = g->gc.gc_next;
+    g->gc.gc_next->gc.gc_prev = g->gc.gc_prev;
+    g->gc.gc_next = NULL;
+}
+
+PyGC_Head *
+_Py_As_GC(PyObject *o)
+{
+    PyGC_Head *g1, *g2, *g3;
+
+    if (Py_PXCTX())
+        __debugbreak();
+
+    if (Py_ISPX(o))
+        __debugbreak();
+
+    _PyObject_VerifyHead(o);
+
+    g1 = ((PyGC_Head *)(o)-1);
+    g2 = (PyGC_Head *)(Px_PTR_SUB(o, sizeof(PyGC_Head)));
+    g3 = _AS_GC(o);
+    if (g1 != g3)
+        __debugbreak();
+    if (g1 != g2)
+        __debugbreak();
+    return g1;
+}
+
+PyObject *
+_Py_From_GC(PyGC_Head *g)
+{
+    PyObject *o1, *o2, *o3;
+
+    if (Py_PXCTX())
+        __debugbreak();
+
+    o1 = ((PyObject *)(g+1));
+    o2 = (PyObject *)(Px_PTR_ADD(g, sizeof(PyGC_Head)));
+    o3 = _FROM_GC(g);
+    if (o1 != o3)
+        __debugbreak();
+    else if (o1 != o2)
+        __debugbreak();
+    else if (Py_ISPX(o1))
+        __debugbreak();
+
+    //_PyObject_VerifyHead(o1);
+    return o1;
+}
+
+int
+PyType_Is_GC(PyTypeObject *t)
+{
+    if (Py_PXCTX())
+        return 0;
+
+    return PyType_HasFeature((t), Py_TPFLAGS_HAVE_GC);
+}
+
+int
+PyObject_Is_GC(PyObject *o)
+{
+    PyTypeObject *t = Py_TYPE(o);
+    return (PyType_IS_GC(t) && (t->tp_is_gc == NULL || t->tp_is_gc(o)));
+}
+
+int
+_PyObject_GC_IsTracked(PyObject *o)
+{
+    PyGC_Head *g;
+
+    if (Py_PXCTX())
+        return 0;
+
+    _PyObject_VerifyHead(o);
+
+    if (Py_ISPX(o))
+        return 0;
+
+    g = AS_GC(o);
+    return (g->gc.gc_refs != GC_UNTRACKED);
+}
+
+int
+_PyObject_GC_MayBeTracked(PyObject *o)
+{
+    if (Py_PXCTX() || Py_ISPX(o))
+        return 0;
+
+    return (
+        PyObject_Is_GC(o) && (
+            !PyTuple_CheckExact(o) ||
+            _PyObject_GC_IsTracked(o)
+        )
+    );
 }
 
 PyObject *
@@ -1635,7 +1727,7 @@ _PyObject_GC_Malloc(size_t basicsize)
 {
     PyObject *op;
     PyGC_Head *g;
-    Px_RETURN((PyObject *)_PxMem_Malloc(basicsize));
+    Py_GUARD();
     if (basicsize > PY_SSIZE_T_MAX - sizeof(PyGC_Head))
         return PyErr_NoMemory();
     g = (PyGC_Head *)PyObject_MALLOC(
