@@ -41,7 +41,6 @@ PCbuild/*.user
 PCbuild/*.suo
 PCbuild/Win32-pgo*
 .purify
-Parser/pgen
 __pycache__
 autom4te.cache
 build/
@@ -50,7 +49,6 @@ config.cache
 config.log
 config.status
 config.status.lineno
-core
 db_home
 config.log
 config.status
