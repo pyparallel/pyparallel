@@ -89,13 +89,6 @@ cdef extern from *:
         RelationGroup               = 4
         RelationAll                 = 0xffff
 
-    cpdef enum FILE_ID_TYPE:
-        FileIdType          = 0
-        ObjectIdType        = 1
-        ExtendedFileIdType  = 2
-        MaximumFileIdType
-    ctypedef FILE_ID_TYPE *PFILE_ID_TYPE
-
     cpdef enum IO_REPARSE_TAG:
         IO_REPARSE_TAG_CSV = 0x80000009
         IO_REPARSE_TAG_DEDUP = 0x80000013
