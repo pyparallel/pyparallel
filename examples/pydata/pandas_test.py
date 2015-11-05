@@ -4,6 +4,7 @@
 import sys
 import json
 import async
+import parallel
 
 import numpy as np
 import pandas as pd
@@ -39,7 +40,7 @@ from async.http.server import (
 #===============================================================================
 # Globals/Templates
 #===============================================================================
-df = pd.DataFrame({
+df2 = pd.DataFrame({
     'A' : 1.,
     'B' : pd.Timestamp('20130102'),
     'C' : pd.Series(1,index=list(range(4)),dtype='float32'),
@@ -48,6 +49,7 @@ df = pd.DataFrame({
     'F' : 'foo',
 })
 
+df = pd.DataFrame({'A': [1., 2.], 'B': [3., 4.]})
 
 #===============================================================================
 # Helpers
@@ -78,5 +80,20 @@ class PandasHttpServer(HttpServer):
     @route
     def repr(self, request):
         text_response(request, str(df))
+
+class PandasHttpServer2(HttpServer):
+    http11 = True
+
+    def json(self, transport, data):
+        # df.to_json() crashes
+        return df.to_dict()
+
+    def csv(self, transport, data):
+        parallel.debug(repr(df))
+        return bytes(df.to_csv())
+
+    def html(self, transport, data):
+        parallel.debug(repr(df))
+        return str(df.to_html())
 
 # vim:set ts=8 sw=4 sts=4 tw=80 et                                             :
