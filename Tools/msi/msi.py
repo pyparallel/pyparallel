@@ -1022,6 +1022,12 @@ class PyDirectory(Directory):
         if 'python_icon' in pdbpath:
             return
 
+        if '.egg' in pdbpath:
+            return
+
+        if self.absolute.endswith("Scripts"):
+            return
+
         print "%s -> %s" % (filename, pdbname)
         if not exists(pdbpath):
             import pdb
@@ -1219,6 +1225,7 @@ def add_files(db):
     pydirs = [
         (root, "Lib",       files["Lib"],      default_feature),
         (root, "examples",  files["examples"], default_feature),
+        (root, "Scripts",   files["Scripts"],  default_feature),
         (root, "Python",    files["Python"],  source),
         (root, "PCbuild",   files["PCbuild"], source),
         (root, "PC",        files["PC"],      source),
