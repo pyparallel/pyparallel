@@ -1348,6 +1348,107 @@ cdef extern from *:
         WCHAR         StreamName[1]
     ctypedef FILE_STREAM_INFO *PFILE_STREAM_INFO
 
+    ctypedef struct USN_RECORD_V2:
+        DWORD         RecordLength
+        WORD          MajorVersion
+        WORD          MinorVersion
+        DWORDLONG     FileReferenceNumber
+        DWORDLONG     ParentFileReferenceNumber
+        USN           Usn
+        LARGE_INTEGER TimeStamp
+        DWORD         Reason
+        DWORD         SourceInfo
+        DWORD         SecurityId
+        DWORD         FileAttributes
+        WORD          FileNameLength
+        WORD          FileNameOffset
+        WCHAR         FileName[1]
+    ctypedef USN_RECORD_V2 *PUSN_RECORD_V2
+    ctypedef USN_RECORD_V2  USN_RECORD
+    ctypedef USN_RECORD_V2 *PUSN_RECORD
+
+    ctypedef struct VOLUME_BITMAP_BUFFER:
+        LARGE_INTEGER StartingLcn
+        LARGE_INTEGER BitmapSize
+        BYTE          Buffer[1]
+    ctypedef VOLUME_BITMAP_BUFFER *PVOLUME_BITMAP_BUFFER
+
+    ctypedef struct LOOKUP_STREAM_FROM_CLUSTER_ENTRY:
+        DWORD         OffsetToNext
+        DWORD         Flags
+        LARGE_INTEGER Reserved
+        LARGE_INTEGER Cluster
+        WCHAR         FileName[1]
+    ctypedef LOOKUP_STREAM_FROM_CLUSTER_ENTRY *PLOOKUP_STREAM_FROM_CLUSTER_ENTRY
+
+    ctypedef struct READ_FILE_USN_DATA:
+        WORD MinMajorVersion
+        WORD MaxMajorVersion
+    ctypedef READ_FILE_USN_DATA *PREAD_FILE_USN_DATA
+
+    ctypedef struct USN_JOURNAL_DATA_V0:
+        DWORDLONG UsnJournalID
+        USN       FirstUsn
+        USN       NextUsn
+        USN       LowestValidUsn
+        USN       MaxUsn
+        DWORDLONG MaximumSize
+        DWORDLONG AllocationDelta
+    ctypedef USN_JOURNAL_DATA_V0 *PUSN_JOURNAL_DATA_V0
+    ctypedef USN_JOURNAL_DATA_V0 USN_JOURNAL_DATA
+    ctypedef USN_JOURNAL_DATA_V0 *PUSN_JOURNAL_DATA
+
+    ctypedef struct USN_JOURNAL_DATA_V1:
+        DWORDLONG UsnJournalID
+        USN       FirstUsn
+        USN       NextUsn
+        USN       LowestValidUsn
+        USN       MaxUsn
+        DWORDLONG MaximumSize
+        DWORDLONG AllocationDelta
+        WORD      MinSupportedMajorVersion
+        WORD      MaxSupportedMajorVersion
+    ctypedef USN_JOURNAL_DATA_V1 *PUSN_JOURNAL_DATA_V1
+
+    ctypedef struct READ_USN_JOURNAL_DATA_V0:
+        USN       StartUsn
+        DWORD     ReasonMask
+        DWORD     ReturnOnlyOnClose
+        DWORDLONG Timeout
+        DWORDLONG BytesToWaitFor
+        DWORDLONG UsnJournalID
+    ctypedef READ_USN_JOURNAL_DATA_V0 *PREAD_USN_JOURNAL_DATA_V0
+    ctypedef READ_USN_JOURNAL_DATA_V0  READ_USN_JOURNAL_DATA
+    ctypedef READ_USN_JOURNAL_DATA_V0 *PREAD_USN_JOURNAL_DATA
+
+    ctypedef struct READ_USN_JOURNAL_DATA_V1:
+        USN       StartUsn
+        DWORD     ReasonMask
+        DWORD     ReturnOnlyOnClose
+        DWORDLONG Timeout
+        DWORDLONG BytesToWaitFor
+        DWORDLONG UsnJournalID
+        WORD      MinMajorVersion
+        WORD      MaxMajorVersion
+    ctypedef READ_USN_JOURNAL_DATA_V1 *PREAD_USN_JOURNAL_DATA_V1
+
+    ctypedef struct USN_RECORD_V3:
+        DWORD         RecordLength
+        WORD          MajorVersion
+        WORD          MinorVersion
+        BYTE          FileReferenceNumber[16]
+        BYTE          ParentFileReferenceNumber[16]
+        USN           Usn
+        LARGE_INTEGER TimeStamp
+        DWORD         Reason
+        DWORD         SourceInfo
+        DWORD         SecurityId
+        DWORD         FileAttributes
+        WORD          FileNameLength
+        WORD          FileNameOffset
+        WCHAR         FileName[1]
+    ctypedef USN_RECORD_V3 *PUSN_RECORD_V3
+
     ctypedef enum KPROFILE_SOURCE:
         ProfileTime
         ProfileAlignmentFixup
