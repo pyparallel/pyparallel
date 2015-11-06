@@ -2,7 +2,6 @@
 *.o
 *.orig
 *.pyc
-*.pyd
 *.pyo
 *.rej
 *.swp
@@ -43,7 +42,6 @@ PCbuild/Win32-pgo*
 .purify
 __pycache__
 autom4te.cache
-build/
 buildno
 config.cache
 config.log
@@ -54,7 +52,6 @@ config.log
 config.status
 libpython*.a
 libpython*.so*
-platform
 pybuilddir.txt
 pyconfig.h
 python.exe
