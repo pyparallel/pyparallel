@@ -992,11 +992,6 @@ PyMODINIT_FUNC PyInit_http(void)
     if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 16; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_int(HTTP_SEND_RESPONSE_FLAG_OPAQUE);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "HTTP_SEND_RESPONSE_FLAG_OPAQUE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 19; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
     PyObject* wrapped = __Pyx_PyInt_From_int(CERT_E_UNTRUSTEDROOT);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "CERT_E_UNTRUSTEDROOT", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 25; __pyx_clineno = __LINE__; goto __pyx_L1_error;};

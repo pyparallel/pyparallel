@@ -134,8 +134,10 @@ const static GUID _TransmitFile_GUID = WSAID_TRANSMITFILE;
 const static GUID _TransmitPackets_GUID = WSAID_TRANSMITPACKETS;
 const static GUID _GetAcceptExSockaddrs_GUID = WSAID_GETACCEPTEXSOCKADDRS;
 
+#ifdef RIO
 static RIO_EXTENSION_FUNCTION_TABLE _rio = { 0, };
 const static GUID _rio_GUID = WSAID_MULTIPLE_RIO;
+#endif
 
 #endif /* MS_WINDOWS */
 #endif /* WITH_PARALLEL */
@@ -279,7 +281,9 @@ typedef struct {
     LPFN_TRANSMITPACKETS TransmitPackets;
     LPFN_GETACCEPTEXSOCKADDRS GetAcceptExSockaddrs;
 
+#ifdef RIO
     RIO_EXTENSION_FUNCTION_TABLE rio;
+#endif
 #else /* MS_WINDOWS */
     void (*null01)(void); /* LPFN_ACCEPTEX             */
     void (*null02)(void); /* LPFN_CONNECTEX            */

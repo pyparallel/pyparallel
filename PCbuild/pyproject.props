@@ -27,20 +27,52 @@
     <tcltkLibDebug>$(tcltkDir)\lib\tcl85g.lib;$(tcltkDir)\lib\tk85g.lib</tcltkLibDebug>
     <tcltk64Lib>$(tcltk64Dir)\lib\tcl85.lib;$(tcltk64Dir)\lib\tk85.lib</tcltk64Lib>
     <tcltk64LibDebug>$(tcltk64Dir)\lib\tcl85g.lib;$(tcltk64Dir)\lib\tk85g.lib</tcltk64LibDebug>
+
+    <!-- https://github.com/tpn/winsdk-7 -->
+    <Win71ASDKDir>$(externalsDir)\winsdk-7\v7.1A</Win71ASDKDir>
+    <Win71ASDKIncludeDir>$(Win71ASDKDir)\Include</Win71ASDKIncludeDir>
+    <Win71ASDKIncludeDirs>$(Win71ASDKIncludeDir)</Win71ASDKIncludeDirs>
+    <Win71ASDKLibDir>$(Win71ASDKDir)\Lib</Win71ASDKLibDir>
+    <Win71ASDKLib32Dirs>$(Win71ASDKLibDir)</Win71ASDKLib32Dirs>
+    <Win71ASDKLib64Dir>$(Win71ASDKDir)\Lib\x64</Win71ASDKLib64Dir>
+    <Win71ASDKLib64Dirs>$(Win71ASDKLib64Dir)</Win71ASDKLib64Dirs>
     <Win81SDKDir>C:\Program Files (x86)\Windows Kits\8.1</Win81SDKDir>
     <Win81SDKIncludeDir>$(Win81SDKDir)\Include</Win81SDKIncludeDir>
+    <Win81SDKIncludeDirs>$(Win10SDKIncludeDir)\shared;$(Win10SDKIncludeDir)\km;$(Win10SDKIncludeDir)\um</Win81SDKIncludeDirs>
     <Win10SDKVersion>10.0.10240.0</Win10SDKVersion>
     <Win10SDKDir>C:\Program Files (x86)\Windows Kits\10</Win10SDKDir>
+    <!-- https://github.com/tpn/winsdk-10 -->
+    <Win10SDKDirLocal>$(externalsDir)\winsdk-10</Win10SDKDirLocal>
     <Win10SDKIncludeDir>$(Win10SDKDir)\Include\$(Win10SDKVersion)</Win10SDKIncludeDir>
-    <WinSDKLibDir>$(Win10SDKDir)\Lib\$(Win10SDKVersion)</WinSDKLibDir>
-    <WinSDKIncludeDir>$(Win10SDKIncludeDir)</WinSDKIncludeDir>
+    <Win10SDKIncludeDirs>$(Win10SDKIncludeDir)\shared;$(Win10SDKIncludeDir)\km;$(Win10SDKIncludeDir)\um</Win10SDKIncludeDirs>
+    <Win10SDKLibDir>$(Win10SDKDir)\Lib\$(Win10SDKVersion)</Win10SDKLibDir>
+    <Win10SDKLib32Dirs>$(Win10SDKLibDir)\km;$(Win10SDKLibDir)\um</Win10SDKLib32Dirs>
+    <Win10SDKLib64Dirs>$(WinSDKLibDir)\km\x64;$(WinSDKLibDir)\um\x64</Win10SDKLib64Dirs>
+
+    <!--
+    <WinSDKLib32Dirs>$(Win71ASDKLib32Dirs)</WinSDKLib32Dirs>
+    <WinSDKLib64Dirs>$(Win71ASDKLib64Dirs)</WinSDKLib64Dirs>
+    <WinSDKIncludeDirs>$(Win71ASDKIncludeDirs)</WinSDKIncludeDirs>
+    -->
+
+    <WinSDKLib32Dirs></WinSDKLib32Dirs>
+    <WinSDKLib64Dirs></WinSDKLib64Dirs>
+    <WinSDKIncludeDirs></WinSDKIncludeDirs>
   </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Platform)'=='Win32'">
+    <WinSDKLibDirs>$(WinSDKLib32Dirs)</WinSDKLibDirs>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <WinSDKLibDirs>$(WinSDKLib64Dirs)</WinSDKLibDirs>
+  </PropertyGroup>
+
   <ItemDefinitionGroup>
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <AdditionalIncludeDirectories>$(WinSDKIncludeDir)\shared;$(WinSDKIncludeDir)\km;$(WinSDKIncludeDir)\um; ..\Include; ..\PC;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(WinSDKIncludeDirs); ..\Include; ..\PC;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_WIN32;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>

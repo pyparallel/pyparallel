@@ -3580,9 +3580,9 @@ static void __pyx_tp_dealloc_4user_Screenshot(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    Py_INCREF(o);
+    ++Py_REFCNT(o);
     __pyx_pw_4user_10Screenshot_7__dealloc__(o);
-    Py_DECREF(o);
+    --Py_REFCNT(o);
     PyErr_Restore(etype, eval, etb);
   }
   (*Py_TYPE(o)->tp_free)(o);

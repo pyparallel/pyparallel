@@ -544,9 +544,9 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__CONTEXT_FLAGS(enum CONTEXT
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(enum PROCESSOR_ARCHITECTURE value);
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value);
-
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value);
 
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(enum LOGICAL_PROCESSOR_RELATIONSHIP value);
 
@@ -800,11 +800,6 @@ PyMODINIT_FUNC PyInit_constants(void)
     if (PyObject_SetAttrString(__pyx_m, "PROCESSOR_ARCHITECTURE_UNKNOWN", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 20; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_DEDUP);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_DEDUP", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 94; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
     PyObject* wrapped = __Pyx_PyInt_From_int(TRUNCATE_EXISTING);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "TRUNCATE_EXISTING", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 11; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
@@ -843,11 +838,6 @@ PyMODINIT_FUNC PyInit_constants(void)
     PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_FREE_TYPE(MEM_RELEASE);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "MEM_RELEASE", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 34; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__MEMORY_ALLOCATION_TYPE(MEM_RESET_UNDO);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MEM_RESET_UNDO", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 26; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_enum__LOGICAL_PROCESSOR_RELATIONSHIP(RelationGroup);
@@ -978,11 +968,6 @@ PyMODINIT_FUNC PyInit_constants(void)
     PyObject* wrapped = __Pyx_PyInt_From_int(CREATE_NEW);
     if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
     if (PyObject_SetAttrString(__pyx_m, "CREATE_NEW", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 8; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__IO_REPARSE_TAG(IO_REPARSE_TAG_NFS);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "IO_REPARSE_TAG_NFS", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 100; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
   }
   {
     PyObject* wrapped = __Pyx_PyInt_From_enum__CONTEXT_FLAGS(CONTEXT_AMD64);
@@ -1707,32 +1692,6 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__PROCESSOR_ARCHITECTURE(enu
     }
 }
 
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value) {
-    const enum IO_REPARSE_TAG neg_one = (enum IO_REPARSE_TAG) -1, const_zero = (enum IO_REPARSE_TAG) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(enum IO_REPARSE_TAG) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(enum IO_REPARSE_TAG) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum IO_REPARSE_TAG),
-                                     little, !is_unsigned);
-    }
-}
-
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
     const int neg_one = (int) -1, const_zero = (int) 0;
     const int is_unsigned = neg_one > const_zero;
@@ -1755,6 +1714,32 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
         int one = 1; int little = (int)*(unsigned char *)&one;
         unsigned char *bytes = (unsigned char *)&value;
         return _PyLong_FromByteArray(bytes, sizeof(int),
+                                     little, !is_unsigned);
+    }
+}
+
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__IO_REPARSE_TAG(enum IO_REPARSE_TAG value) {
+    const enum IO_REPARSE_TAG neg_one = (enum IO_REPARSE_TAG) -1, const_zero = (enum IO_REPARSE_TAG) 0;
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(enum IO_REPARSE_TAG) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+        }
+    } else {
+        if (sizeof(enum IO_REPARSE_TAG) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(enum IO_REPARSE_TAG) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+        }
+    }
+    {
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        unsigned char *bytes = (unsigned char *)&value;
+        return _PyLong_FromByteArray(bytes, sizeof(enum IO_REPARSE_TAG),
                                      little, !is_unsigned);
     }
 }

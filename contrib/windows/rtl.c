@@ -3866,9 +3866,9 @@ static void __pyx_tp_dealloc_3rtl_Bitmap(PyObject *o) {
   {
     PyObject *etype, *eval, *etb;
     PyErr_Fetch(&etype, &eval, &etb);
-    Py_INCREF(o);
+    ++Py_REFCNT(o);
     __pyx_pw_3rtl_6Bitmap_3__dealloc__(o);
-    Py_DECREF(o);
+    --Py_REFCNT(o);
     PyErr_Restore(etype, eval, etb);
   }
   (*Py_TYPE(o)->tp_free)(o);

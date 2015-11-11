@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Include">
@@ -458,9 +458,6 @@
     </ClInclude>
     <ClInclude Include="..\Python\ujson_py_defines.h">
       <Filter>Include</Filter>
-    </ClInclude>
-    <ClInclude Include="..\contrib\windows\_wdm.h">
-      <Filter>Windows</Filter>
     </ClInclude>
     <ClInclude Include="..\contrib\windows\_adv.h">
       <Filter>Windows</Filter>
@@ -1028,9 +1025,6 @@
     <ClCompile Include="..\contrib\windows\avrt.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
-    <ClCompile Include="..\contrib\windows\adv.c">
-      <Filter>Windows\Generated</Filter>
-    </ClCompile>
     <ClCompile Include="..\contrib\windows\base.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
@@ -1056,9 +1050,6 @@
       <Filter>Windows\Generated</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\error.c">
-      <Filter>Windows\Generated</Filter>
-    </ClCompile>
-    <ClCompile Include="..\contrib\windows\rtl.c">
       <Filter>Windows\Generated</Filter>
     </ClCompile>
     <ClCompile Include="..\contrib\windows\user.c">

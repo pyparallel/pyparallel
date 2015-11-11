@@ -1075,8 +1075,8 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
             data = f.read()
 
         #dbg.set_trace()
-        data = data.replace(b'++Py_REFCNT(', b'Py_INCREF(') \
-                   .replace(b'--Py_REFCNT(', b'Py_DECREF(')
+        #data = data.replace(b'++Py_REFCNT(', b'Py_INCREF(') \
+        #           .replace(b'--Py_REFCNT(', b'Py_DECREF(')
 
         #data = data.replace(b' Py_INCREF(', b' Py_IncRef(') \
         #           .replace(b' Py_DECREF(', b' Py_DecRef(')

@@ -1151,7 +1151,7 @@ cdef extern from *:
     ctypedef EXT_FILE_ID_128 *PEXT_FILE_ID_128
     ctypedef EXT_FILE_ID_128 FILE_ID_128
 
-    cpdef enum FILE_ID_TYPE:
+    ctypedef enum FILE_ID_TYPE:
         FileIdType          = 0
         ObjectIdType        = 1
         ExtendedFileIdType  = 2

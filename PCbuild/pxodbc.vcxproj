@@ -106,7 +106,6 @@
     <Import Project="pxodbc.props" />
     <Import Project="pxodbc_debug.props" />
     <Import Project="pyd_d.props" />
-    <Import Project="debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -133,7 +132,6 @@
     <Import Project="pxodbc.props" />
     <Import Project="pxodbc_debug.props" />
     <Import Project="pyd_d.props" />
-    <Import Project="debug.props" />
     <Import Project="x64.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />

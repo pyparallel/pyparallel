@@ -446,7 +446,6 @@ static const char *__pyx_filename;
 
 static const char *__pyx_f[] = {
   "types.pyx",
-  "types.pxd",
 };
 
 /*--- Type declarations ---*/
@@ -538,8 +537,6 @@ static CYTHON_INLINE long __Pyx_PyInt_As_long(PyObject *);
 static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 static int __Pyx_check_binary_version(void);
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value);
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t);
 
@@ -764,26 +761,6 @@ PyMODINIT_FUNC PyInit_types(void)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /*--- Wrapped vars code ---*/
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(FileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1155; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "FileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1155; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ObjectIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1156; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ObjectIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1156; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(MaximumFileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1158; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "MaximumFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1158; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
-  {
-    PyObject* wrapped = __Pyx_PyInt_From_enum__FILE_ID_TYPE(ExtendedFileIdType);
-    if (unlikely(!wrapped)) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1157; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
-    if (PyObject_SetAttrString(__pyx_m, "ExtendedFileIdType", wrapped) < 0) {__pyx_filename = __pyx_f[1]; __pyx_lineno = 1157; __pyx_clineno = __LINE__; goto __pyx_L1_error;};
-  }
 
   goto __pyx_L0;
   __pyx_L1_error:;
@@ -1423,32 +1400,6 @@ static int __Pyx_check_binary_version(void) {
         return PyErr_WarnEx(NULL, message, 1);
     }
     return 0;
-}
-
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_enum__FILE_ID_TYPE(enum FILE_ID_TYPE value) {
-    const enum FILE_ID_TYPE neg_one = (enum FILE_ID_TYPE) -1, const_zero = (enum FILE_ID_TYPE) 0;
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(enum FILE_ID_TYPE) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-        }
-    } else {
-        if (sizeof(enum FILE_ID_TYPE) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(enum FILE_ID_TYPE) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-        }
-    }
-    {
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        unsigned char *bytes = (unsigned char *)&value;
-        return _PyLong_FromByteArray(bytes, sizeof(enum FILE_ID_TYPE),
-                                     little, !is_unsigned);
-    }
 }
 
 static int __Pyx_InitStrings(__Pyx_StringTabEntry *t) {

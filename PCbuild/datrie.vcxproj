@@ -106,7 +106,6 @@
     <Import Project="datrie.props" />
     <Import Project="datrie_debug.props" />
     <Import Project="pyd_d.props" />
-    <Import Project="debug.props" />
   </ImportGroup>
   <ImportGroup Condition="'$(Configuration)|$(Platform)'=='PGUpdate|x64'" Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
@@ -133,9 +132,9 @@
     <Import Project="datrie.props" />
     <Import Project="datrie_debug.props" />
     <Import Project="pyd_d.props" />
-    <Import Project="debug.props" />
     <Import Project="x64.props" />
   </ImportGroup>
+  <Import Project="cython.props" />
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
@@ -248,7 +247,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\contrib\datrie\src\datrie.pyx" />
+    <CythonFile Include="$(datrieDir)\src\datrie.pyx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

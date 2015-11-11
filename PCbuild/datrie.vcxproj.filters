@@ -82,8 +82,8 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\contrib\datrie\src\datrie.pyx">
+    <CythonFile Include="$(datrieDir)\src\datrie.pyx">
       <Filter>Cython</Filter>
-    </None>
+    </CythonFile>
   </ItemGroup>
 </Project>

@@ -15,7 +15,7 @@ extern "C" {
 #include "frameobject.h"
 #include "structmember.h"
 #include <dbghelp.h>
-#include <VersionHelpers.h>
+//#include <VersionHelpers.h>
 
 #pragma comment(lib, "dbghelp.lib")
 
@@ -14428,11 +14428,15 @@ _async_refresh_rio_availability(PyObject *self, PyObject *o)
 {
     PyObject *m = _asyncmodule_obj;
     Py_GUARD();
+#ifdef RIO
     if (RIOReceive) {
         _set_true("_sys_registered_io_available");
         _PyParallel_RegisteredIOAvailable = 1;
     } else
         _set_false("_sys_registered_io_available");
+#else
+    _set_false("_sys_registered_io_available");
+#endif
     Py_RETURN_NONE;
 }
 
@@ -14799,9 +14803,10 @@ _PyAsync_ModInit(void)
         return NULL;
     }
 
-    /* See if skipping the odbc stuff allows us to load on <= Win 7. */
+#if 0
     if (!IsWindows8OrGreater())
         goto add_loaded_dynamic_modules;
+#endif
 
     if (_pxodbc() && pxodbc_registered) {
         SQLHENV henv = 0;
