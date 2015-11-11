@@ -3,4 +3,13 @@
 	url = https://github.com/pyparallel/pxodbc
 [submodule "contrib/sqlite3"]
 	path = contrib/sqlite3
-	url = ssh://git@github.com/pyparallel/sqlite3
+	url = https://github.com/pyparallel/sqlite3
+[submodule "contrib/numpy"]
+	path = contrib/numpy
+	url = https://github.com/pyparallel/numpy
+[submodule "contrib/cython"]
+	path = contrib/cython
+	url = https://github.com/pyparallel/cython
+[submodule "contrib/pandas"]
+	path = contrib/pandas
+	url = https://github.com/pyparallel/pandas
