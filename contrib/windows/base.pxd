@@ -358,4 +358,31 @@ cdef extern from *:
         LPCSTR  lpProcName
     )
 
+    HMODULE __stdcall LoadLibrary(
+        LPCTSTR lpFileName
+    )
+    ctypedef HMODULE (__stdcall *LPFN_LoadLibrary)(
+        LPCTSTR lpFileName
+    )
+
+    HMODULE __stdcall LoadLibraryEx(
+        LPCTSTR lpFileName,
+        HANDLE  hFile,
+        DWORD   dwFlags
+    )
+    ctypedef HMODULE (__stdcall *LPFN_LoadLibraryEx)(
+        LPCTSTR lpFileName,
+        HANDLE  hFile,
+        DWORD   dwFlags
+    )
+
+    FARPROC __stdcall GetProcAddress(
+        HMODULE hModule,
+        LPCSTR  lpProcName
+    )
+    ctypedef FARPROC (__stdcall *LPFN_GetProcAddress)(
+        HMODULE hModule,
+        LPCSTR  lpProcName
+    )
+
 # vim:set ts=8 sw=4 sts=4 tw=80 et nospell:                                    #
