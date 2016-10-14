@@ -22,26 +22,26 @@ We encourage existing committers to play around and experiment, to fork and to s
 # Catalyst
 --
 
-PyParallel and `asyncio` share the same origin.  They were both products of an innocuous e-mail to `python-ideas` in September 2012 titled [asyncore: included batteries don't fit](https://mail.python.org/pipermail/python-ideas/2012-October/016311.html).  The general discussion centered around providing better asynchronous I/O primitives in Python 3.4.  PyParallel took the wildly ambitious (and at the time, somewhat ridiculous) path of trying to solve both asynchronous I/O and the parallel problem at the same time.  The efforts paid off, as we consider the whole experiment to be a success (at least in terms of its original goals), but it is a much longer term project, alluded to above.  There is some inevitable overlap between the `asyncio` interface, and the `async` interface we exposed for PyParallel.  Additionally, `async` became a keyword in Python 3.5, so we will need to change the module name when we rebase against 3.5.  The most likely name will be `parallel`.  At the time of writing (August 2015), all examples and public documentation to date, including examples in this document, use the `async` module name.
+PyParallel and `asyncio` share the same origin.  They were both products of an innocuous e-mail to `python-ideas` in September 2012 titled [asyncore: included batteries don't fit](https://mail.python.org/pipermail/python-ideas/2012-October/016311.html).  The general discussion centered around providing better asynchronous I/O primitives in Python 3.4.  PyParallel took the wildly ambitious (and at the time, somewhat ridiculous) path of trying to solve both asynchronous I/O and the parallel problem at the same time.  The efforts paid off, as we consider the whole experiment to be a success (at least in terms of its original goals), but it is a much longer term project, alluded to above.
 
 > Note: the parallel facilities provided by PyParallel are actually complementary to the single-threaded event loop facilities provided by `asyncio`.  In fact, we envision hybrid solutions emerging that use `asyncio` to drive the parallel facilities behind the scenes, where the main thread dispatches requests to parallel servers behind the scenes, acting as the coordinator for parallel computation.
 
 # Overview
 --
 
-We expose a new `async` module to Python user code which must be used in order to leverage the new parallel execution facilities.  Specifically, users implement completion-oriented protocol classes, then *register* them with PyParallel TCP/IP *client* or *server* objects.
+We expose a new `parallel` module to Python user code which must be used in order to leverage the new parallel execution facilities.  Specifically, users implement completion-oriented protocol classes, then *register* them with PyParallel TCP/IP *client* or *server* objects.
 
 ```python
-import async
+import parallel
 class Hello:
     def connection_made(self, transport, data):
         return b'Hello, World!\r\n'
     def data_received(self, transport, data):
         return b'You said: ' + data + '\r\n'
 
-server = async.server('0.0.0.0', 8080)
-async.register(transport=server, protocol=Hello)
-async.run()
+server = parallel.server('0.0.0.0', 8080)
+parallel.register(transport=server, protocol=Hello)
+parallel.run()
 ```
 
 The protocol callbacks are automatically executed in parallel.  This is achieved by creating parallel contexts for each client socket that connects to a server.  The parallel context owns the underlying socket object, and all memory allocations required during callback execution are served from the context's heap, which is a simple block allocator.  If callbacks need to send data back to the client, they must return a sendable object: `bytes`, `bytearray` or `string`.  (That is, they do not explicitly call `read()` and `write()` methods against the transport directly.)  If the contents of a file needs to be returned, `transport.sendfile()` can be used.  Byte ranges can also be efficiently returned via `transport.ranged_sendfile()`.  Both of these methods serve file content directly from the kernel's cache via `TransmitFile`.
@@ -80,7 +80,7 @@ For a more contained example, we present the following.  We load an array with a
 
 ```python
 import numpy as np
-import async
+import parallel
 
 one_billion = 1000000000
 large_array = np.random.randints(low=0, high=100, size=one_billion)
@@ -114,11 +114,11 @@ class Random:
         end = start + 10
         return fmt % (start, end, large_array[start:end].sum())
 
-server = async.server('0.0.0.0', 8080)
-async.register(transport=server, protocol=Random)
+server = parallel.server('0.0.0.0', 8080)
+parallel.register(transport=server, protocol=Random)
 print("Random server now accessible at http://localhost:8080/random")
 print("Press Ctrl-C to quit.")
-async.run()
+parallel.run()
 ```
 
 This split-brain *main-thread versus parallel thread* approach to object allocation and ownership is a unique breakthrough.  By separating the two concepts, we get the best of both worlds: reference counting and garbage collection at the global, "main thread" level, where object lifetime cannot be implicitly known any other way, *and* very fast GC-less allocation at the parallel level, where we can rely on the temporal nature of our protocol semantics to manage object lifetime.  _The incumbent "main thread" behavior doesn't need to know anything about the latter parallel behavior, and the parallel environment knows how to avoid disturbing the former._
