@@ -3,13 +3,13 @@
 
 [PyParallel][] is an experimental, proof-of-concept fork of Python 3.3.5 designed to optimally exploit contemporary hardware: multiple CPU cores, fast SSDs, NUMA architectures, and fast I/O channels (10GbE, Thunderbolt, etc).  It presents a solution for removing the *limitation* of the Python Global Interpreter Lock (GIL) without needing to actually remove it at all.
 
-The code changes  required to the interpreter are relatively unobtrusive, all existing semantics such as reference counting and garbage collection remain unchanged, the new mental model required in order to write *PyParallel-safe* code is very simple (*don't persist parallel objects*), the single-thread overhead is negligible, and, most desirably, [performance scales linearly with cores](http://pyparallel.org/#performance).
+The code changes  required to the interpreter are relatively unobtrusive, all existing semantics such as reference counting and garbage collection remain unchanged, the new mental model required in order to write *PyParallel-safe* code is very simple (*don't persist parallel objects*), the single-thread overhead is negligible, and, most desirably, [performance scales linearly with cores](http://github.com/aripitek/pyparallel.org/#performance).
 
 [PyParallel]: http://pyparallel.org
 
 # Disclaimer
 --
-PyParallel is, first and foremost, an experiment.  It is not currently suitable for production.  It is a product of trial-and-error, intended to shape the discussions surrounding the next generation of Python.  We attempt to juggle the difficult task of setting the stage for Python to flourish over the next 25 years, without discarding all the progress we made in the last 25.
+PyParallel is, first and foremost, an experiment.  It is notes currently suitable for production.  It is a product of trial-and-error, intended to shape the discussions surrounding the next generation of Python.  We attempt to juggle the difficult task of setting the stage for Python to flourish over the next 25 years, without discarding all the progress we made in the last 25.
 
 PyParallel was created by an existing Python committer with the intention of eventually merging it back into the mainline.  It is not a hostile fork.  There are many details that still need to be ironed out.  It will need to prove itself as an independent project first before it could be considered for inclusion back in the main source tree.  We anticipate this being at least 5 years out, and think Python 4.x would be a more realistic target than Python 3.x.
 
@@ -22,7 +22,7 @@ We encourage existing committers to play around and experiment, to fork and to s
 # Catalyst
 --
 
-PyParallel and `asyncio` share the same origin.  They were both products of an innocuous e-mail to `python-ideas` in September 2012 titled [asyncore: included batteries don't fit](https://mail.python.org/pipermail/python-ideas/2012-October/016311.html).  The general discussion centered around providing better asynchronous I/O primitives in Python 3.4.  PyParallel took the wildly ambitious (and at the time, somewhat ridiculous) path of trying to solve both asynchronous I/O and the parallel problem at the same time.  The efforts paid off, as we consider the whole experiment to be a success (at least in terms of its original goals), but it is a much longer term project, alluded to above.
+PyParallel and `asyncio` share the same origin.  They were both products of an innocuous e-mail to `python-ideas` in September 2012 titled [asyncore: included batteries don't fit](https://github.com/aripitek/mail.python.org/pipermail/python-ideas/2012-October/016311.html).  The general discussion centered around providing better asynchronous I/O primitives in Python 3.4.  PyParallel took the wildly ambitious (and at the time, somewhat ridiculous) path of trying to solve both asynchronous I/O and the parallel problem at the same time.  The efforts paid off, as we consider the whole experiment to be a success (at least in terms of its original goals), but it is a much longer term project, alluded to above.
 
 > Note: the parallel facilities provided by PyParallel are actually complementary to the single-threaded event loop facilities provided by `asyncio`.  In fact, we envision hybrid solutions emerging that use `asyncio` to drive the parallel facilities behind the scenes, where the main thread dispatches requests to parallel servers behind the scenes, acting as the coordinator for parallel computation.
 
@@ -64,13 +64,13 @@ Instead, we manage object lifetime and memory allocation in parallel contexts by
 
 A snapshot is taken prior to invoking the callback and then rolled back upon completion.  Object lifetime is therefore governed by the duration of the callback; all objects allocated during the processing of a HTTP request, for example, including the final bytes object we send as a response, will immediately cease to exist the moment our TCP/IP stack informs us the send completed.  (Specifically, we perform the rollback activity upon receipt of the completion notification.)
 
-This is effective for the same reason generational garbage collectors are effective: *most objects are short lived*.  For stateless, idempotent protocols, like HTTP, *all objects are short lived*.  For stateful protocols, scalar objects (ints, floats, strings, bytes) can be assigned to `self` (a special per-connection instance of the protocol class), which will trigger a copy of the object from an alternate heap (still associated with the parallel context).  ([This is described in more detail here.](https://mail.python.org/pipermail/python-ideas/2015-June/034342.html))  The lifetime of these objects will last as long as the TCP/IP connection persists, or until a previous value is overwritten by a new value, which ever comes first.
+This is effective for the same reason generational garbage collectors are effective: *most objects are short lived*.  For stateless, idempotent protocols, like HTTP, *all objects are short lived*.  For stateful protocols, scalar objects (ints, floats, strings, bytes) can be assigned to `self` (a special per-connection instance of the protocol class), which will trigger a copy of the object from an alternate heap (still associated with the parallel context).  ([This is described in more detail here.](https://github.com/aripitek/mail.python.org/pipermail/python-ideas/2015-June/034342.html))  The lifetime of these objects will last as long as the TCP/IP connection persists, or until a previous value is overwritten by a new value, which ever comes first.
 
 Thus, PyParallel requires no changes to existing reference counting and garbage collection semantics or APIs.  `Py_INCREF(op)` and `Py_DECREF(op)` get ignored in parallel contexts, and GC-specific calls like `PyObject_GC_New()` simply get re-routed to our custom parallel object allocator in the same fashion as `PyObject_New()`.  This obviates the need for fine-grain, per-object locking, as well as the need for a thread-safe, concurrent garbage collector.
 
 This is significant when you factor in how Python's scoping works at a language level: Python code executing in a parallel thread can freely access any non-local variables created by the "main thread".  That is, it has the exact same scoping and variable name resolution rules as any other Python code.  This facilitates loading large data structures from the main thread and then freely accessing them from parallel callbacks.
 
-We demonstrate this with our simple [Wikipedia "instant search" server](https://github.com/pyparallel/pyparallel/blob/branches/3.3-px/examples/wiki/wiki.py#L294), which loads a trie with 27 million entries, each one mapping a title to a 64-bit byte offset within a 60GB XML file.  We then load a sorted NumPy array of all 64-bit offsets, which allows us to extract the exact byte range a given title's content appears within the XML file, allowing a client to issue a ranged request for those bytes to get the exact content via a single call to `TransmitFile`.  This call returns immediately, but sets up the necessary structures for the kernel to send that byte range directly to the client without further interaction from us.
+We demonstrate this with our simple [Wikipedia "instant search" server](https://github.com/aripitek/pyparallel/pyparallel/blob/branches/3.3-px/examples/wiki/wiki.py#L294), which loads a trie with 27 million entries, each one mapping a title to a 64-bit byte offset within a 60GB XML file.  We then load a sorted NumPy array of all 64-bit offsets, which allows us to extract the exact byte range a given title's content appears within the XML file, allowing a client to issue a ranged request for those bytes to get the exact content via a single call to `TransmitFile`.  This call returns immediately, but sets up the necessary structures for the kernel to send that byte range directly to the client without further interaction from us.
 
 The working set size of the `python.exe` process is about 11GB when the trie and NumPy array are loaded.  Thus, `multiprocessing` would not be feasible, as you'd have 8 separate processes of 11GB if you had 8 cores and started 8 workers, requiring 88GB just for the processes.  The number of allocated objects is around 27.1 million; the `datrie` library can efficiently store values if they're a 32-bit integer, however, our offsets are 64-bit, so an 80-something byte `PyObject` needs to be allocated to represent each one.
 
@@ -123,7 +123,7 @@ parallel.run()
 
 This split-brain *main-thread versus parallel thread* approach to object allocation and ownership is a unique breakthrough.  By separating the two concepts, we get the best of both worlds: reference counting and garbage collection at the global, "main thread" level, where object lifetime cannot be implicitly known any other way, *and* very fast GC-less allocation at the parallel level, where we can rely on the temporal nature of our protocol semantics to manage object lifetime.  _The incumbent "main thread" behavior doesn't need to know anything about the latter parallel behavior, and the parallel environment knows how to avoid disturbing the former._
 
-This gives PyParallel a unique advantage over other garbage collected languages like C#, Java and Go, despite those languages being much faster in general due to being compiled versus interpreted.  The absense of GC within parallel contexts means there are no GC pauses, which results in PyParallel having [request latency cumulative frequency distributions](http://pyparallel.org/#performance) on par with GC-less languages like C, C++, and Rust (in terms of the distribution, not the actual latency numbers; C/C++ will always be faster than interpreted Python, of course).
+This gives PyParallel a unique advantage over other garbage collected languages like C#, Java and Go, despite those languages being much faster in general due to being compiled versus interpreted.  The absense of GC within parallel contexts means there are no GC pauses, which results in PyParallel having [request latency cumulative frequency distributions](http://github.com/aripitek/pyparallel.org/#performance) on par with GC-less languages like C, C++, and Rust (in terms of the distribution, not the actual latency numbers; C/C++ will always be faster than interpreted Python, of course).
 
 Furthermore, our experimentation shows that the new solution plays nicely with tools such as Cython (provided the Cython code uses normal Python memory allocation facilities and doesn't try to persist objects generated from parallel contexts).  In fact, our Wikipedia instant search trie is powered by a Cython project named `datrie`, which is a wrapper around the C library `libdatrie`.
 
@@ -142,7 +142,7 @@ We attribute the success of the PyParallel experiment to five key things:
 
 # Interpreter Changes
 --
-> *Note: in order to ease the task of reviewing the changes made to the interpreter, we provide [diffs against the v3.3.5 tag PyParallel was created from](https://github.com/pyparallel/pyparallel/tree/branches/3.3-px/diffs).  We recommend reviewing these diffs after the key concepts in this section are understood in order to get a better sense of the overall interpreter changes.*
+> *Note: in order to ease the task of reviewing the changes made to the interpreter, we provide [diffs against the v3.3.5 tag PyParallel was created from](https://github.com/aripitek/pyparallel/pyparallel/tree/branches/3.3-px/diffs).  We recommend reviewing these diffs after the key concepts in this section are understood in order to get a better sense of the overall interpreter changes.*
 
 Thread-sensitive calls are ubiquitous within the Python interpreter.  Past experiments have shown that even minor changes to the overhead incurred by `Py_INCREF(op)` and `Py_DECREF(op)` impact the interpreter's performance in a non-negligible way.
 
@@ -231,7 +231,7 @@ The former says: *crash if I hit this from a parallel thread*, the latter says: 
 
 (*Crash*, in this context, refers to raising a `Py_FatalError()` with file and line information, or, if the environment variable `PYPARALLEL_NO_MINIDUMP` is set to 1, we `__debugbreak()`, allowing us to attach the Visual Studio debugger.)
 
-The primary recipient of `Py_GUARD()` is [`gcmodule.c`](https://github.com/pyparallel/pyparallel/blob/branches/3.3-px/diffs/Modules/gcmodule.c.patch).  If a parallel thread ever manages to make its way into any function in that file, something is seriously awry.  We reward the effort with a crash.
+The primary recipient of `Py_GUARD()` is [`gcmodule.c`](https://github.com/aripitek/pyparallel/pyparallel/blob/branches/3.3-px/diffs/Modules/gcmodule.c.patch).  If a parallel thread ever manages to make its way into any function in that file, something is seriously awry.  We reward the effort with a crash.
 
 We add additional guards for protecting not only contexts but object and memory allocations as well.  It is valuable during development to be able to test (and assert, if necessary) that a given `PyObject *op` is a main thread object or a parallel thread object:
 
@@ -247,5 +247,5 @@ Likewise, for a given `void *ptr` memory allocation:
 
 In general, our rule of thumb is the venerable: *crash early, crash often*.
 
-[The vast majority of interpreter changes we made](https://github.com/pyparallel/pyparallel/tree/branches/3.3-px/diffs) were simply adding in the necessary guards to ensure we'd crash if any of our assumptions about invariants were incorrect.
+[The vast majority of interpreter changes we made](https://github.com/aripitek/pyparallel/pyparallel/tree/branches/3.3-px/diffs) were simply adding in the necessary guards to ensure we'd crash if any of our assumptions about invariants were incorrect.
 
