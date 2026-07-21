@@ -30,7 +30,7 @@ __all__ = ["ref", "proxy", "getweakrefcount", "getweakrefs",
            "WeakSet"]
 
 
-class WeakValueDictionary(collections.MutableMapping):
+class WeakValueDictionary(collections.abc.MutableMapping):
     """Mapping class that references values weakly.
 
     Entries in the dictionary will be discarded when no strong
@@ -243,7 +243,7 @@ class KeyedRef(ref):
         super().__init__(ob, callback)
 
 
-class WeakKeyDictionary(collections.MutableMapping):
+class WeakKeyDictionary(collections.abc.MutableMapping):
     """ Mapping class that references keys weakly.
 
     Entries in the dictionary will be discarded when there is no
